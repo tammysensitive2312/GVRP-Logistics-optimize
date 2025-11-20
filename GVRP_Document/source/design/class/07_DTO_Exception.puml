@@ -1,0 +1,181 @@
+@startuml 07_DTO_Exception
+!include 00_Styling.puml
+
+package "DTO Layer" {
+
+'    class DepotInputDTO <<DTO>> {
+'        - name: String
+'        - address: String
+'        - latitude: Double
+'        - longitude: Double
+'    }
+'
+'    class DepotDTO <<DTO>> {
+'        - id: Long
+'        - name: String
+'        - address: String
+'        - latitude: Double
+'        - longitude: Double
+'        - createdAt: LocalDateTime
+'    }
+'
+'    class FleetInputDTO <<DTO>> {
+'        - fleetName: String
+'        - vehicles: List<VehicleInputDTO>
+'    }
+'
+'    class FleetDTO <<DTO>> {
+'        - id: Long
+'        - fleetName: String
+'        - vehicles: List<VehicleDTO>
+'        - totalCapacity: Integer
+'        - vehicleCount: Integer
+'    }
+'
+'    class VehicleInputDTO <<DTO>> {
+'        - vehicleCode: String
+'        - vehicleType: String
+'        - capacity: Integer
+'        - maxDistance: Double
+'    }
+'
+'    class VehicleDTO <<DTO>> {
+'        - id: Long
+'        - vehicleCode: String
+'        - vehicleType: String
+'        - capacity: Integer
+'        - status: VehicleStatus
+'    }
+'
+'    class OrderInputDTO <<DTO>> {
+'        - orderCode: String
+'        - customerName: String
+'        - address: String
+'        - latitude: Double
+'        - longitude: Double
+'        - demand: Double
+'        - timeWindowStart: LocalTime
+'        - timeWindowEnd: LocalTime
+'    }
+'
+'    class OrderDTO <<DTO>> {
+'        - id: Long
+'        - orderCode: String
+'        - customerName: String
+'        - address: String
+'        - demand: Double
+'        - status: OrderStatus
+'    }
+'
+'    class SolutionDTO <<DTO>> {
+'        - id: Long
+'        - status: SolutionStatus
+'        - type: SolutionType
+'        - createdAt: LocalDateTime
+'        - totalDistance: Double
+'        - totalCO2: Double
+'        - totalServiceTime: Double
+'        - servedOrders: Integer
+'        - unservedOrders: Integer
+'    }
+'
+'    class SolutionDetailedDTO <<DTO>> {
+'        - id: Long
+'        - status: SolutionStatus
+'        - routes: List<RouteDTO>
+'    }
+'
+'    class RouteDTO <<DTO>> {
+'        - id: Long
+'        - vehicleCode: String
+'        - routeOrder: Integer
+'        - distance: Double
+'        - orderCount: Integer
+'    }
+'
+'    class RouteSegmentDTO <<DTO>> {
+'        - id: Long
+'        - sequenceNumber: Integer
+'        - fromAddress: String
+'        - toAddress: String
+'        - distance: Double
+'        - arrivalTime: LocalTime
+'    }
+'
+'    class ImportResult <<DTO>> {
+'        - success: boolean
+'        - importedCount: int
+'        - skippedCount: int
+'        - errors: List<ImportError>
+'        --
+'        + isPartialSuccess(): boolean
+'        + hasErrors(): boolean
+'    }
+'
+'    class ValidationResult <<DTO>> {
+'        - valid: boolean
+'        - errors: Map<String, String>
+'        --
+'        + isValid(): boolean
+'        + addError(field: String, message: String): void
+'    }
+'
+'    class SolutionStatistics <<DTO>> {
+'        - sampleSize: int
+'        - avgDistance: double
+'        - minDistance: double
+'        - maxDistance: double
+'        - avgCO2: double
+'        - avgServiceTime: double
+'    }
+'
+'    class ComparisonResult <<DTO>> {
+'        - currentSolution: SolutionDTO
+'        - historicalStats: SolutionStatistics
+'        - deviations: List<DeviationMetric>
+'    }
+'
+'    class MainScreenData <<DTO>> {
+'        - depots: List<DepotDTO>
+'        - fleet: FleetDTO
+'        - orders: List<OrderDTO>
+'        - needsSetup: boolean
+'    }
+'
+'    class OrderImportRequest <<DTO>> {
+'        - file: MultipartFile
+'        - textData: String
+'        - userId: Long
+'        - overwriteExisting: boolean
+'        --
+'        + hasFile(): boolean
+'        + hasText(): boolean
+'        + hasBothInputs(): boolean
+'        + hasNoInput(): boolean
+'    }
+'
+'    class RoutePlanningRequest <<DTO>> {
+'        - userId: Long
+'        - orderIds: List<Long>
+'        - vehicleIds: List<Long>
+'    }
+'
+'    class SolutionImportDTO <<DTO>> {
+'        - routes: List<RouteImportDTO>
+'        - totalDistance: Double
+'        - totalCO2: Double
+'    }
+'
+'    class SolutionExportDTO <<DTO>> {
+'        - solution: SolutionDTO
+'        - routes: List<RouteExportDTO>
+'        - exportTimestamp: LocalDateTime
+'    }
+}
+
+' ============================================
+' EXCEPTION LAYER
+' ============================================
+package "Exception Layer" {
+}
+@enduml

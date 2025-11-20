@@ -1,0 +1,57 @@
+@startuml VRP_02_Sub_Create_Fleet
+title Sub-process: Create Fleet & Vehicles Detail
+
+participant "Frontend (UI)" as UI
+participant "FleetController" as FC
+participant "FleetService" as FS
+participant "FleetMapper" as FM
+participant "DepotRepository" as DR
+participant "FleetRepository" as FR
+database "Database" as DB
+
+autonumber 20
+
+activate UI
+UI -> FC: POST /api/fleets (FleetInputDTO)
+activate FC
+
+FC -> FS: createFleet(dto, branchId)
+activate FS
+
+' Logic check Depot tồn tại (Bắt buộc phải có Depot mới tạo được xe)
+FS -> DR: existsByBranchId(branchId)
+activate DR
+DR -> DB: SELECT count(1)...
+DB --> DR: boolean
+deactivate DR
+
+alt No Depot Found
+    FS --> FC: throw BusinessException("Create depot first")
+    FC --> UI: 400 Bad Request
+else Depot Exists
+    ' Map & Link
+    FS -> FM: toEntity(dto, branch)
+    activate FM
+    FM --> FS: Fleet (with Vehicles list)
+    deactivate FM
+
+    FS -> FS: linkVehiclesAndDepots(fleet)
+    note right: Loop vehicles -> Set Start/End Depot
+
+    ' Save Cascade
+    FS -> FR: save(fleet)
+    activate FR
+    FR -> DB: INSERT fleet; INSERT vehicles...
+    DB --> FR: Saved Fleet
+    deactivate FR
+
+    FS -> FM: toDTO(fleet)
+    FM --> FS: FleetDTO
+    FS --> FC: FleetDTO
+end
+
+deactivate FS
+FC --> UI: 201 Created
+deactivate FC
+deactivate UI
+@enduml

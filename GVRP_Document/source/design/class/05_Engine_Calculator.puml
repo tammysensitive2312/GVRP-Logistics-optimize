@@ -1,0 +1,35 @@
+@startuml 05_Engine_Calculator
+!include 00_Styling.puml
+!include 02_Repository_Layer.puml
+
+package "Engine & Calculator Layer" {
+    class OptimizationEngine <<Engine>> {
+        + optimize(request: OptimizationRequest): OptimizationResponse
+'        + checkProgress(jobId: String): OptimizationProgress
+        + cancelOptimization(jobId: String): void
+    }
+    class MetricsCalculator <<Engine>> {
+        + calculateSolutionMetrics(solution: Solution): SolutionMetrics
+        + calculateRouteMetrics(route: Route): RouteMetrics
+        + calculateDeviation(current: double, historical: double): double
+        + calculateLoadUtilization(route: Route): double
+    }
+    class StatisticsEngine <<Engine>> {
+        + calculateStatistics(solutions: List<Solution>): SolutionStatistics
+        + calculateDistanceStats(solutions: List<Solution>): DoubleSummaryStatistics
+        + calculateCO2Stats(solutions: List<Solution>): DoubleSummaryStatistics
+    }
+    class VehicleAvailabilityChecker <<Engine>> {
+        - vehicleRepository: VehicleRepository
+        + checkAvailability(vehicleIds: List<Long>): List<VehicleAvailability>
+        + getAvailableVehicles(userId: Long): List<Vehicle>
+    }
+}
+VehicleAvailabilityChecker --> VehicleRepository
+
+note top of SolutionOptimizationEngine
+    Interface to external
+    optimization engine
+    (Graphhopper, OR-Tools, etc.)
+end note
+@enduml

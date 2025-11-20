@@ -1,0 +1,171 @@
+entry-service/
+├── src/
+│   ├── main/
+│   │   ├── java/
+│   │   │   └── com/
+│   │   │       └── vrp/
+│   │   │           └── entryservice/
+│   │   │               │
+│   │   │               ├── EntryServiceApplication.java  (Main class)
+│   │   │               │
+│   │   │               ├── controller/                   (API Layer)
+│   │   │               │   ├── BranchController.java
+│   │   │               │   ├── UserController.java
+│   │   │               │   ├── DepotController.java
+│   │   │               │   ├── FleetController.java
+│   │   │               │   ├── OrderController.java
+│   │   │               │   ├── SolutionPlanningController.java
+│   │   │               │   ├── SolutionImportController.java
+│   │   │               │   ├── SolutionExportController.java
+│   │   │               │   ├── SolutionHistoryController.java
+│   │   │               │   └── SolutionAnalysisController.java
+│   │   │               │
+│   │   │               ├── service/                      (Business Logic)
+│   │   │               │   ├── BranchService.java
+│   │   │               │   ├── UserService.java
+│   │   │               │   ├── DepotService.java
+│   │   │               │   ├── FleetService.java
+│   │   │               │   ├── OrderImportService.java
+│   │   │               │   ├── OrderService.java
+│   │   │               │   ├── SolutionPlanningService.java    (@Async)
+│   │   │               │   ├── SolutionImportService.java
+│   │   │               │   ├── SolutionExportService.java
+│   │   │               │   ├── SolutionHistoryService.java
+│   │   │               │   ├── SolutionAnalysisService.java
+│   │   │               │   └── EmailService.java
+│   │   │               │
+│   │   │               ├── integration/                  (External Systems)
+│   │   │               │   ├── engine/
+│   │   │               │   │   ├── EngineClient.java
+│   │   │               │   │   ├── OptimizationRequest.java
+│   │   │               │   │   ├── OptimizationResponse.java
+│   │   │               │   │   └── EngineException.java
+│   │   │               │   │
+│   │   │               │   ├── email/
+│   │   │               │   │   ├── EmailClient.java
+│   │   │               │   │   └── EmailTemplate.java
+│   │   │               │   │
+│   │   │               │   └── file/
+│   │   │               │       ├── FileParser.java
+│   │   │               │       ├── FileGenerator.java
+│   │   │               │       ├── CsvParser.java
+│   │   │               │       ├── JsonParser.java
+│   │   │               │       └── PdfGenerator.java
+│   │   │               │
+│   │   │               ├── repository/                   (Data Access)
+│   │   │               │   ├── BranchRepository.java
+│   │   │               │   ├── UserRepository.java
+│   │   │               │   ├── DepotRepository.java
+│   │   │               │   ├── FleetRepository.java
+│   │   │               │   ├── VehicleRepository.java
+│   │   │               │   ├── OrderRepository.java
+│   │   │               │   ├── SolutionRepository.java
+│   │   │               │   ├── RouteRepository.java
+│   │   │               │   └── RouteSegmentRepository.java
+│   │   │               │
+│   │   │               ├── entity/                       (Domain Models)
+│   │   │               │   ├── Branch.java
+│   │   │               │   ├── User.java
+│   │   │               │   ├── Depot.java               (with Point location)
+│   │   │               │   ├── Fleet.java
+│   │   │               │   ├── Vehicle.java
+│   │   │               │   ├── Order.java               (with Point location)
+│   │   │               │   ├── Solution.java
+│   │   │               │   ├── Route.java
+│   │   │               │   ├── RouteSegment.java
+│   │   │               │   │
+│   │   │               │   └── enums/
+│   │   │               │       ├── UserRole.java
+│   │   │               │       ├── VehicleStatus.java
+│   │   │               │       ├── OrderStatus.java
+│   │   │               │       ├── SolutionStatus.java
+│   │   │               │       ├── SolutionType.java
+│   │   │               │       └── LocationType.java
+│   │   │               │
+│   │   │               ├── dto/                          (Data Transfer Objects)
+│   │   │               │   ├── request/
+│   │   │               │   │   ├── BranchInputDTO.java
+│   │   │               │   │   ├── DepotInputDTO.java
+│   │   │               │   │   ├── FleetInputDTO.java
+│   │   │               │   │   ├── VehicleInputDTO.java
+│   │   │               │   │   ├── OrderInputDTO.java
+│   │   │               │   │   ├── OrderImportRequest.java
+│   │   │               │   │   ├── RoutePlanningRequest.java
+│   │   │               │   │   └── SolutionImportRequest.java
+│   │   │               │   │
+│   │   │               │   └── response/
+│   │   │               │       ├── BranchDTO.java
+│   │   │               │       ├── DepotDTO.java
+│   │   │               │       ├── FleetDTO.java
+│   │   │               │       ├── VehicleDTO.java
+│   │   │               │       ├── OrderDTO.java
+│   │   │               │       ├── ImportResult.java
+│   │   │               │       ├── StartOptimizationResponse.java
+│   │   │               │       ├── SolutionSummaryDTO.java
+│   │   │               │       ├── SolutionDetailedDTO.java
+│   │   │               │       ├── RouteDTO.java
+│   │   │               │       ├── RouteSegmentDTO.java
+│   │   │               │       └── ComparisonResult.java
+│   │   │               │
+│   │   │               ├── mapper/                       (DTO Converters)
+│   │   │               │   ├── BranchMapper.java
+│   │   │               │   ├── DepotMapper.java
+│   │   │               │   ├── FleetMapper.java
+│   │   │               │   ├── VehicleMapper.java
+│   │   │               │   ├── OrderMapper.java
+│   │   │               │   ├── SolutionMapper.java
+│   │   │               │   ├── RouteMapper.java
+│   │   │               │   └── RouteSegmentMapper.java
+│   │   │               │
+│   │   │               ├── config/                       (Configuration)
+│   │   │               │   ├── AsyncConfig.java         (@EnableAsync)
+│   │   │               │   ├── EmailConfig.java
+│   │   │               │   ├── RestTemplateConfig.java
+│   │   │               │   ├── JpaConfig.java           (Hibernate Spatial)
+│   │   │               │   ├── SecurityConfig.java      (Mock Auth)
+│   │   │               │   └── CorsConfig.java
+│   │   │               │
+│   │   │               ├── util/                         (Utilities)
+│   │   │               │   ├── GeometryUtils.java
+│   │   │               │   ├── ValidationUtils.java
+│   │   │               │   ├── DateTimeUtils.java
+│   │   │               │   └── StringUtils.java
+│   │   │               │
+│   │   │               └── exception/                    (Error Handling)
+│   │   │                   ├── GlobalExceptionHandler.java
+│   │   │                   ├── BranchNotFoundException.java
+│   │   │                   ├── DepotNotFoundException.java
+│   │   │                   ├── OrderNotFoundException.java
+│   │   │                   ├── SolutionNotFoundException.java
+│   │   │                   ├── ValidationException.java
+│   │   │                   ├── EngineServiceException.java
+│   │   │                   └── FileParsingException.java
+│   │   │
+│   │   └── resources/
+│   │       ├── application.properties           (Main config)
+│   │       ├── application-dev.properties       (Development)
+│   │       ├── application-prod.properties      (Production)
+│   │       │
+│   │       ├── templates/                       (Email templates)
+│   │       │   ├── optimization-success.html
+│   │       │   └── optimization-failure.html
+│   │       │
+│   │       └── static/                          (Static resources)
+│   │           └── sample-data/
+│   │               ├── sample-orders.csv
+│   │               └── sample-solution.json
+│   │
+│   └── test/
+│       └── java/
+│           └── com/
+│               └── vrp/
+│                   └── entryservice/
+│                       ├── controller/          (Controller tests)
+│                       ├── service/             (Service tests)
+│                       ├── repository/          (Repository tests)
+│                       └── integration/         (Integration tests)
+│
+├── pom.xml                                      (Maven dependencies)
+├── docker-compose.yml                           (Local development)
+├── Dockerfile                                   (Container image)
+└── README.md                                    (Project documentation)

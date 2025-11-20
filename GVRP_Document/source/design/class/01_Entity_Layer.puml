@@ -1,0 +1,347 @@
+@startuml 01_Entity_Layer
+!include 00_Styling.puml
+
+package "Entity Layer" {
+
+    class Branch <<Entity>> {
+        - id: Long
+        - name: String
+        --
+        + getDepots(): List<Depot>
+        + getUsers(): List<User>
+        + getOrders(): List<Order>
+        + getSolutions(): List<Solution>
+        + getJobs(): List<OptimizationJob>
+    }
+
+    class User <<Entity>> {
+        - id: Long
+        - username: String
+        - password: String
+        - email: String
+        - fullName: String
+        - role: UserRole
+        - enabled: boolean
+        --
+        + hasRole(role: UserRole): boolean
+        + isPlanner(): boolean
+        + isCustomer(): boolean
+    }
+
+    enum UserRole {
+        PLANNER
+        CUSTOMER
+    }
+
+    class Depot <<Entity>> {
+        - id: Long
+        - branchId: Long
+        - name: String
+        - address: String
+        - location: Point
+        --
+        + isValidLocation(): boolean
+        + getLatitude(): double
+        + getLongitude(): double
+        + toGHPoint(): GHPoint
+    }
+
+    class Fleet <<Entity>> {
+        - id: Long
+        - branchId: Long
+        - fleetName: String
+        --
+        + getTotalCapacity(): int
+        + getVehicleCount(): int
+        + getAvailableVehicles(): List<Vehicle>
+    }
+
+    class Vehicle <<Entity>> {
+        - id: Long
+        - vehicleLicensePlate: String
+        - vehicleFeature: String
+        - capacity: Integer
+        - fixedCost: Double
+        - costPerKm: Double
+        - costPerHour: Double
+        - maxDistance: Double
+        - startDepotId: Long
+        - endDepotId: Long
+        - maxDuration: Double
+        - status: VehicleStatus
+        --
+        + isAvailable(): boolean
+        + canFulfill(demand: Double): boolean
+    }
+
+    class Order <<Entity>> {
+        - id: Long
+        - branchId: Long
+        - orderCode: String
+        - customerName: String
+        - customerPhone: String
+        - address: String
+        - location: Point
+        - demand: Double
+        - timeWindowStart: LocalTime
+        - timeWindowEnd: LocalTime
+        - status: OrderStatus
+        - priority: Integer
+        - deliveryNotes: String
+        --
+        + hasTimeWindow(): boolean
+        + isWithinTimeWindow(time: LocalTime): boolean
+        + isUrgent(): boolean
+        + isHighPriority(): boolean
+        + canBeScheduled(): boolean
+        + getLatitude(): double
+        + getLongitude(): double
+        + toGHPoint(): GHPoint
+    }
+
+    class OptimizationJob <<Entity>> {
+        - id: Long
+        - branchId: Long
+        - userId: Long
+        - status: JobStatus
+        - createdAt: LocalDateTime
+        - startedAt: LocalDateTime
+        - completedAt: LocalDateTime
+        - cancelledAt: LocalDateTime
+        - inputData: String
+        - errorMessage: String
+        - externalJobId: String
+        --
+        + isRunning(): boolean
+        + isPending(): boolean
+        + isCompleted(): boolean
+        + isFailed(): boolean
+        + isCancelled(): boolean
+        + canBeCancelled(): boolean
+        + getRemainingSeconds(): Integer
+        + getElapsedSeconds(): Long
+    }
+
+    enum JobStatus {
+        PENDING
+        PROCESSING
+        COMPLETED
+        FAILED
+        CANCELLED
+    }
+
+    class Solution <<Entity>> {
+        - id: Long
+        - jobId: Long
+        - branchId: Long
+        - status: SolutionStatus
+        - type: SolutionType
+        - createdBy: String
+        - totalDistance: Double
+        - totalCO2: Double
+        - totalServiceTime: Double
+        - totalVehiclesUsed: Integer
+        - servedOrders: Integer
+        - unservedOrders: Integer
+        - createdAt: LocalDateTime
+        --
+        + getNumberOfRoutes(): int
+        + isFeasible(): boolean
+        + isOptimized(): boolean
+        + isEngineGenerated(): boolean
+        + isFileImported(): boolean
+    }
+
+    class Route <<Entity>> {
+        - id: Long
+        - routeOrder: Integer
+        - distance: Double
+        - co2Emission: Double
+        - serviceTime: Double
+        - orderCount: Integer
+        - loadUtilization: Double
+        --
+        + getEstimatedStartTime(): LocalTime
+        + getEstimatedEndTime(): LocalTime
+        + isOverloaded(): boolean
+        + getFirstSegment(): RouteSegment
+        + getLastSegment(): RouteSegment
+    }
+
+    class RouteSegment <<Entity>> {
+        - id: Long
+        - sequenceNumber: Integer
+        - fromType: LocationType
+        - fromLocationId: Long
+        - fromAddress: String
+        - fromLocation: Point
+        - toType: LocationType
+        - toLocationId: Long
+        - toAddress: String
+        - toLocation: Point
+        - distance: Double
+        - duration: Double
+        - arrivalTime: LocalTime
+        - departureTime: LocalTime
+        - serviceTime: Double
+        - loadBefore: Double
+        - loadAfter: Double
+        --
+        + isDepotToDepot(): boolean
+        + isDepotToOrder(): boolean
+        + isOrderToOrder(): boolean
+        + getLoadDelivered(): Double
+    }
+
+    enum VehicleStatus {
+        AVAILABLE
+        IN_USE
+        MAINTENANCE
+        RETIRED
+    }
+
+    enum OrderStatus {
+        SCHEDULED
+        ON_ROUTE
+        SERVICING
+        COMPLETED
+        FAILED
+        REJECTED
+    }
+
+    enum SolutionStatus {
+        FEASIBLE
+        INFEASIBLE
+        OPTIMIZED
+    }
+
+    enum SolutionType {
+        ENGINE_GENERATED
+        FILE_IMPORTED
+    }
+
+    enum LocationType {
+        DEPOT
+        ORDER
+    }
+}
+
+' ============================================
+' RELATIONSHIPS
+' ============================================
+
+' Branch relationships
+Branch "1" *-- "*" Depot : owns
+Branch "1" *-- "*" Fleet : owns
+Branch "1" *-- "*" User : owns
+Branch "1" *-- "*" Order : owns
+Branch "1" *-- "*" Solution : owns
+Branch "1" *-- "*" OptimizationJob : owns
+
+User --> "1" Branch : belongs to
+Depot --> "1" Branch : belongs to
+Fleet --> "1" Branch : belongs to
+Order --> "1" Branch : belongs to
+
+' Fleet and Vehicle relationships
+Depot "1" *-- "*" Vehicle : contains
+Fleet "1" *-- "*" Vehicle : contains
+Vehicle "*" --> "1" Depot : stored at
+Vehicle "*" --> "1" Fleet : belongs to
+
+' NEW: Job and Solution relationship
+OptimizationJob "1" -- "0..1" Solution : produces
+Solution "*" --> "1" OptimizationJob : created by
+OptimizationJob "*" --> "1" Branch : belongs to
+OptimizationJob "*" --> "1" User : submitted by
+
+' Solution and Route relationships
+Solution "1" *-- "*" Route : contains
+Route "*" --> "1" Solution : part of
+Route "*" --> "1" Vehicle : uses
+Route "1" *-- "*" RouteSegment : contains
+RouteSegment "*" --> "1" Route : part of
+RouteSegment "*" --> "0..1" Order : references
+
+' Enum associations
+Vehicle ..> VehicleStatus
+Order ..> OrderStatus
+Solution ..> SolutionStatus
+Solution ..> SolutionType
+RouteSegment ..> LocationType
+User ..> UserRole
+OptimizationJob ..> JobStatus
+OptimizationJob ..> JobType
+
+' ============================================
+' NOTES
+' ============================================
+
+note top of OptimizationJob
+    **NEW ENTITY: Optimization Job**
+
+    Represents the process/task of optimization.
+    Separates concern: Job = process, Solution = result.
+
+    Key fields:
+    • status: Track job lifecycle (PENDING → PROCESSING → COMPLETED/FAILED/CANCELLED)
+    • inputData: JSON of RoutePlanningRequest (for retry/audit)
+    • externalJobId: ID from optimization engine (for cancellation)
+'    • progress: 0-100 (if engine supports progress tracking)
+
+    Business logic:
+    • canBeCancelled(): Only PENDING or PROCESSING jobs
+    • Job can exist without Solution (if FAILED or CANCELLED)
+end note
+
+note top of Solution
+    **UPDATED: Solution Entity**
+
+    Now references OptimizationJob via jobId.
+    Solution = result of successful job.
+
+    Changes:
+    • Added: jobId (FK to OptimizationJob)
+    • Removed: Job-related status (now in Job entity)
+
+    SolutionStatus now only about quality:
+    • FEASIBLE: Valid solution found
+    • INFEASIBLE: No valid solution
+    • OPTIMIZED: Near-optimal solution
+end note
+
+note top of Depot
+    Uses JTS Point for
+    geospatial data storage.
+    Hibernate Spatial handles
+    conversion to MySQL POINT.
+end note
+
+note top of RouteSegment
+    Stores detailed step-by-step
+    information for each route.
+    Tracks load, time, and distance
+    for each segment.
+end note
+
+note top of Branch
+    Root entity for multi-tenant.
+    All data belongs to a Branch.
+    Simple: only id + name.
+    Expandable: add polygon, config later.
+end note
+
+legend right
+    **NEW in this version:**
+    • OptimizationJob entity (job management)
+    • JobStatus enums
+    • 1:0..1 relationship Job → Solution
+    • Solution.jobId foreign key
+
+    **Key changes:**
+    • Solution no longer tracks job status
+    • Clear separation: Job = process, Solution = result
+    • Support for failed/cancelled jobs (no solution)
+endlegend
+
+@enduml

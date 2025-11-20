@@ -1,0 +1,507 @@
+@startuml VRP-001_Input_Data_Sequence_Diagram
+
+title VRP-001: Nhập dữ liệu bài toán (Complete Flow)
+
+actor User
+participant "Frontend\n(UI)" as UI
+participant "DepotController" as DC
+participant "DepotService" as DS
+participant "FleetController" as FC
+participant "FleetService" as FS
+participant "OrderController" as OC
+participant "OrderImportService" as OIS
+participant "FileParser" as FP
+participant "TextParser" as TP
+participant "OrderMapper" as OM
+participant "DepotRepository" as DR
+participant "FleetRepository" as FR
+participant "VehicleRepository" as VR
+participant "OrderRepository" as OR
+participant "BranchRepository" as BR
+database "Database" as DB
+
+autonumber
+
+== Bước 1-4: Nhập thông tin Depot (First-time setup) ==
+
+UI -> User: Hiển thị form nhập Depot
+activate UI
+note right: Check if first-time login\n(hasExistingDepot == false)
+
+User -> UI: Nhập thông tin Depot\n(name, address, lat, lng)
+UI -> DC: POST /api/depots\n{depotInputDTO}
+activate DC
+DC -> DC: getBranchIdFromAuth()
+DC -> DS: createDepot(depotInputDTO, branchId)
+activate DS
+
+DS -> BR: findById(branchId)
+activate BR
+BR -> DB: SELECT * FROM branch WHERE id = ?
+DB --> BR: Branch entity
+BR --> DS: Branch
+deactivate BR
+
+alt Branch không tồn tại
+    DS --> DC: throw BranchNotFoundException
+    DC --> UI: 404 Not Found
+    UI -> User: Hiện popup "Chi nhánh không tồn tại"
+else Branch hợp lệ
+    DS -> DS: validate(depotInputDTO)
+    note right: Kiểm tra:\n- name không rỗng\n- lat/lng hợp lệ\n- address không rỗng
+
+    alt Validation thất bại
+        DS --> DC: throw ValidationException
+        DC --> UI: 400 Bad Request
+        UI -> User: Hiện popup báo lỗi chi tiết
+        User -> UI: Sửa thông tin và submit lại
+        note right: Quay lại bước 2
+    else Validation thành công
+        DS -> DS: toEntity(depotInputDTO, branchId)
+        note right: Convert DTO → Entity\nTạo Point từ lat/lng
+
+        DS -> DR: save(depot)
+        activate DR
+        DR -> DB: INSERT INTO depot (...)
+        DB --> DR: Depot entity (with id)
+        DR --> DS: Depot
+        deactivate DR
+
+        DS -> DS: toDTO(depot)
+        DS --> DC: DepotDTO
+        deactivate DS
+
+        DC --> UI: 201 Created\n{depotDTO}
+        UI -> User: Hiển thị thông báo\n"Thêm depot thành công"
+    end
+end
+deactivate DC
+
+== Bước 5-8: Nhập thông tin Fleet & Vehicles ==
+
+UI -> User: Hiển thị form nhập Fleet
+User -> UI: Nhập thông tin Fleet\n(fleetName, vehicles[])
+
+UI -> FC: POST /api/fleets\n{fleetInputDTO}
+activate FC
+FC -> FC: getBranchIdFromAuth()
+FC -> FS: createFleet(fleetInputDTO, branchId)
+activate FS
+
+FS -> BR: findById(branchId)
+activate BR
+BR -> DB: SELECT * FROM branch WHERE id = ?
+DB --> BR: Branch entity
+BR --> FS: Branch
+deactivate BR
+
+FS -> DR: findByBranchId(branchId)
+activate DR
+DR -> DB: SELECT * FROM depot WHERE branch_id = ?
+DB --> DR: List<Depot>
+DR --> FS: List<Depot>
+deactivate DR
+
+alt Không có depot
+    FS --> FC: throw DepotNotFoundException
+    FC --> UI: 400 Bad Request
+    UI -> User: "Vui lòng tạo depot trước"
+else Có depot
+    FS -> FS: validate(fleetInputDTO)
+    note right: Kiểm tra:\n- fleetName không rỗng\n- vehicles không empty\n- capacity > 0
+
+    alt Validation thất bại
+        FS --> FC: throw ValidationException
+        FC --> UI: 400 Bad Request
+        UI -> User: Hiện popup báo lỗi chi tiết
+        User -> UI: Sửa thông tin và submit lại
+    else Validation thành công
+        FS -> FR: save(fleet)
+        activate FR
+        FR -> DB: INSERT INTO fleet (...)
+        DB --> FR: Fleet entity (with id)
+        FR --> FS: Fleet
+        deactivate FR
+
+        loop Cho mỗi vehicle trong danh sách
+            FS -> FS: validateVehicle(vehicleDTO)
+            FS -> FS: toEntity(vehicleDTO, fleet, depot)
+
+            FS -> VR: save(vehicle)
+            activate VR
+            VR -> DB: INSERT INTO vehicle (...)
+            DB --> VR: Vehicle entity
+            VR --> FS: Vehicle
+            deactivate VR
+        end
+
+        FS -> FS: toDTO(fleet)
+        FS --> FC: FleetDTO
+        deactivate FS
+
+        FC --> UI: 201 Created\n{fleetDTO}
+        UI -> User: Hiển thị thông báo\n"Thêm fleet thành công"
+    end
+end
+deactivate FC
+
+== Bước 9-10: Mở Form Import ==
+
+UI -> User: Chuyển đến màn hình chính
+User -> UI: Ấn nút "Import Orders"
+UI -> User: Hiển thị form import với:\n- File picker (CSV/Excel)\n- Text area (paste text)\n- Planning date picker\n- Service duration input (minutes)\n- Overwrite checkbox
+
+note right of UI
+    Form fields:
+    • File upload OR Text paste
+    • Delivery date (required)
+    • Service time (required, minutes)
+    • Overwrite existing (optional)
+end note
+
+== Bước 11-15: User Submit Import ==
+
+alt User chọn upload file (CSV/Excel)
+    User -> UI: 1. Chọn file CSV/Excel\n2. Chọn delivery date: 2025-10-21\n3. Nhập service time: 5 (minutes)\n4. Chọn overwrite: true/false
+    User -> UI: Ấn "Import"
+
+    UI -> OC: POST /api/v1/orders/import\nContent-Type: multipart/form-data\n{\n  file: <file>,\n  deliveryDate: 2025-10-21,\n  serviceTime: 5,\n  overwrite: false\n}
+    activate OC
+
+    OC -> OC: getBranchIdFromJWT()
+    note right: Extract branchId from token\nNo need client to send!
+
+    OC -> OIS: processImportRequest(request, branchId)
+    activate OIS
+
+    OIS -> BR: findById(branchId)
+    activate BR
+    BR -> DB: SELECT * FROM branches WHERE id = ?
+    DB --> BR: Branch entity
+    BR --> OIS: Branch
+    deactivate BR
+
+    alt Branch không tồn tại
+        OIS --> OC: throw BranchNotFoundException
+        OC --> UI: 404 Not Found
+        UI -> User: "Chi nhánh không tồn tại"
+        note right: Use case kết thúc
+    end
+
+    OIS -> OIS: validateRequest(request)
+    note right: Validate:\n- hasFile() XOR hasText()\n- deliveryDate not null\n- serviceTime >= 0
+
+    alt Validation request thất bại
+        OIS --> OC: throw ValidationException
+        OC --> UI: 400 Bad Request\n{"error": "Validation failed"}
+
+        alt Không có input
+            UI -> User: "Vui lòng chọn file hoặc nhập text"
+        else Có cả 2 inputs
+            UI -> User: "Chỉ chọn 1 cách: file HOẶC text"
+        else deliveryDate null
+            UI -> User: "Delivery date is required"
+        else serviceTime invalid
+            UI -> User: "Service time must be >= 0"
+        end
+
+        note right: User quay lại form, sửa lại
+    end
+
+    OIS -> FP: parseOrders(file, deliveryDate, serviceTime)
+    activate FP
+    note right: Pass context to parser
+
+    FP -> FP: validateFile(file)
+    note right: Check:\n- File size < 10MB\n- Extension: .csv, .xlsx\n- Content type valid
+
+    alt File không hợp lệ
+        FP --> OIS: throw InvalidFileFormatException
+        OIS --> OC: InvalidFileFormatException
+        OC --> UI: 400 Bad Request
+        UI -> User: "File không hợp lệ.\nChỉ chấp nhận CSV/Excel"
+        note right: User chọn file khác
+    end
+
+    FP -> FP: getFileExtension(filename)
+
+    alt File CSV
+        FP -> FP: parseOrdersFromCSV(file)
+        note right: Use Apache Commons CSV:\n- Auto-detect headers\n- Case-insensitive columns\n- Trim whitespace\n- Parse time formats
+        FP -> FP: List<OrderInputDTO>
+
+    else File Excel
+        FP -> FP: parseOrdersFromExcel(file)
+        note right: Use Apache POI:\n- Read first sheet\n- Auto-detect header row\n- Parse cells by type
+        FP -> FP: List<OrderInputDTO>
+    end
+
+    FP -> FP: enrichOrdersWithContext(orders, deliveryDate, serviceTime)
+    note right: For EACH order parsed from file:\nSet deliveryDate & serviceTime\nfrom request context
+
+    FP --> OIS: List<OrderInputDTO>
+    deactivate FP
+
+else User chọn nhập text
+    User -> UI: 1. Paste text vào textarea\n2. Chọn delivery date: 2025-10-21\n3. Nhập service time: 5\n4. Chọn overwrite: false
+
+    note right of UI
+        Text format (pipe-separated):
+        OrderCode|Name|Phone|Address|Lat|Lng|Demand|TWStart|TWEnd|Priority|Notes
+        ORD001|John|0901234567|123 St|21.02|105.80|50.5|08:00|12:00|1|Fragile
+        ORD002|Jane||456 St|21.03|105.81|30.0||||Call first
+    end note
+
+    User -> UI: Ấn "Import"
+
+    UI -> OC: POST /api/v1/orders/import\nContent-Type: multipart/form-data\n{\n  textData: "ORD001|John|...",\n  deliveryDate: 2025-10-21,\n  serviceTime: 5,\n  overwrite: false\n}
+    activate OC
+
+    OC -> OC: getBranchIdFromJWT()
+
+    OC -> OIS: processImportRequest(request, branchId)
+    activate OIS
+
+    OIS -> BR: findById(branchId)
+    activate BR
+    BR -> DB: SELECT * FROM branches WHERE id = ?
+    DB --> BR: Branch entity
+    BR --> OIS: Branch
+    deactivate BR
+
+    OIS -> OIS: validateRequest(request)
+
+    OIS -> TP: parseOrdersFromText(textData, deliveryDate, serviceTime)
+    activate TP
+
+    TP -> TP: Split text into lines
+
+    loop For each line (skip empty)
+        TP -> TP: parseOrderLine(line)
+        note right: Parse pipe-separated:\nField1|Field2|...|FieldN\nHandle optional fields
+
+        alt Line parse success
+            TP -> TP: orders.add(orderDTO)
+        else Line parse failed
+            TP -> TP: Log warning, skip line
+        end
+    end
+
+    TP -> TP: enrichOrdersWithContext(orders, deliveryDate, serviceTime)
+    note right: Set deliveryDate & serviceTime\nfor all parsed orders
+
+    TP --> OIS: List<OrderInputDTO>
+    deactivate TP
+end
+
+== Bước 16-17: Validation & Classification ==
+
+OIS -> OIS: validateAndClassifyOrders(orderDTOs, branchId)
+note right: Validate business rules:\n- orderCode unique in branch\n- demand > 0\n- lat/lng in valid range\n- timeWindow valid (start < end)
+
+group Classification
+    OIS -> OIS: validOrders = []\ninvalidOrders = []\nskippedOrders = []
+
+    loop For each OrderInputDTO
+        OIS -> OIS: validateOrder(dto)
+
+        alt Validation passed
+            OIS -> OR: existsByBranchIdAndOrderCode(branchId, orderCode)
+            activate OR
+            OR -> DB: SELECT EXISTS(SELECT 1 FROM orders\nWHERE branch_id = ? AND order_code = ?)
+            DB --> OR: boolean exists
+            OR --> OIS: exists
+            deactivate OR
+
+            alt Order exists & overwrite = false
+                OIS -> OIS: skippedOrders.add(dto, "Already exists")
+                note right: Skip this order
+            else Order exists & overwrite = true
+                OIS -> OIS: validOrders.add(dto, UPDATE_MODE)
+                note right: Will update existing
+            else Order not exists
+                OIS -> OIS: validOrders.add(dto, CREATE_MODE)
+                note right: Will create new
+            end
+
+        else Validation failed
+            OIS -> OIS: invalidOrders.add(dto, validationError)
+            note right: Collect error details:\n- lineNumber\n- orderCode\n- field\n- errorMessage
+        end
+    end
+end
+
+OIS -> OIS: buildPartialResult(validOrders, invalidOrders, skippedOrders)
+
+alt Tất cả orders không hợp lệ (all invalid)
+    OIS -> OIS: result = ImportResult(\n  success: false,\n  imported: 0,\n  skipped: orders.size,\n  errors: [all errors]\n)
+
+    OIS --> OC: ImportResult
+    OC --> UI: 400 Bad Request\n{importResult}
+    deactivate OIS
+    deactivate OC
+
+    UI -> User: Show error dialog:\n"Không có đơn hàng nào hợp lệ"\n+ Error details list
+
+    note right: User có thể:\n- Xem chi tiết lỗi\n- Sửa file/text\n- Thử import lại
+
+else Có một số orders không hợp lệ (partial success)
+    OIS --> OC: ImportResult (partial)
+    OC --> UI: 200 OK\n{\n  "success": false,\n  "validCount": X,\n  "invalidCount": Y,\n  "errors": [...]\n}
+    deactivate OIS
+    deactivate OC
+
+    UI -> User: Show confirmation dialog:\n"Tìm thấy X orders hợp lệ\nvà Y orders lỗi.\n\nBạn có muốn import\nX orders hợp lệ không?"
+
+    alt User chọn "Cancel"
+        User -> UI: Click "Cancel"
+        note right: Không import gì cả\nUser có thể sửa file
+
+    else User chọn "Import Valid Orders"
+        User -> UI: Click "Yes, Import"
+
+        UI -> OC: POST /api/v1/orders/import/confirmed\n{\n  validOrders: [...],\n  deliveryDate: 2025-10-21,\n  serviceTime: 5,\n  overwrite: false\n}
+        activate OC
+
+        OC -> OIS: importConfirmedOrders(validOrders, branchId)
+        activate OIS
+
+        note right: Process only valid orders
+
+        loop For each valid order
+            OIS -> OM: toEntity(orderDTO, branch)
+            activate OM
+
+            OM -> OM: Create Order entity:\n- Set branch\n- Create Point from lat/lng\n- Set deliveryDate\n- Set serviceTime\n- Set status = SCHEDULED
+
+            OM --> OIS: Order entity
+            deactivate OM
+
+            alt UPDATE mode (exists & overwrite=true)
+                OIS -> OR: findByBranchIdAndOrderCode(branchId, orderCode)
+                activate OR
+                OR -> DB: SELECT * FROM orders\nWHERE branch_id = ? AND order_code = ?
+                DB --> OR: Order (existing)
+                OR --> OIS: Order
+                deactivate OR
+
+                OIS -> OM: updateEntity(existingOrder, orderDTO)
+                activate OM
+                OM -> OM: Update fields (keep id, createdAt)
+                OM --> OIS: Updated Order
+                deactivate OM
+
+                OIS -> OR: save(order)
+                activate OR
+                OR -> DB: UPDATE orders SET ... WHERE id = ?
+                DB --> OR: Order
+                OR --> OIS: Order
+                deactivate OR
+
+            else CREATE mode (new order)
+                OIS -> OR: save(order)
+                activate OR
+                OR -> DB: INSERT INTO orders (...) VALUES (...)
+                DB --> OR: Order (with id)
+                OR --> OIS: Order
+                deactivate OR
+            end
+        end
+
+        OIS -> OIS: buildImportResult(imported, skipped, errors)
+        OIS --> OC: ImportResult(success: true, imported: X, skipped: Y)
+        deactivate OIS
+
+        OC --> UI: 200 OK\n{importResult}
+        deactivate OC
+
+        UI -> User: Show success dialog:\n"✅ Import thành công!\n\nImported: X orders\nSkipped: Y orders\n(Already exist)"
+    end
+
+else Tất cả orders hợp lệ (all valid)
+    note right of OIS: Skip confirmation,\nimport directly
+
+    loop For each valid order
+        OIS -> OM: toEntity(orderDTO, branch)
+        activate OM
+
+        OM -> OM: Create Order:\n- branch\n- Point(lng, lat)\n- deliveryDate from request\n- serviceTime from request\n- status = SCHEDULED
+
+        OM --> OIS: Order
+        deactivate OM
+
+        alt Order exists & overwrite = true
+            OIS -> OR: findByBranchIdAndOrderCode(branchId, orderCode)
+            OR --> OIS: Existing order
+
+            OIS -> OM: updateEntity(existing, dto)
+            OM --> OIS: Updated order
+
+            OIS -> OR: save(order)
+            OR -> DB: UPDATE orders ...
+            DB --> OR: Order
+            OR --> OIS: Order
+
+        else New order
+            OIS -> OR: save(order)
+            activate OR
+            OR -> DB: INSERT INTO orders (...)
+            DB --> OR: Order (with id)
+            OR --> OIS: Order
+            deactivate OR
+        end
+    end
+
+    OIS -> OIS: buildImportResult(imported, skipped)
+    OIS --> OC: ImportResult(success: true)
+    deactivate OIS
+
+    OC --> UI: 200 OK\n{importResult}
+    deactivate OC
+
+    UI -> User: Show success:\n"✅ Import thành công!\n\nImported: X orders"
+end
+
+== Bước 18-19: Hiển thị danh sách Orders ==
+
+UI -> OC: GET /api/v1/orders?deliveryDate=2025-10-21
+activate OC
+
+OC -> OC: getBranchIdFromJWT()
+
+OC -> OIS: getOrdersByBranchAndDate(branchId, deliveryDate)
+activate OIS
+
+OIS -> OR: findByBranchIdAndDeliveryDate(branchId, deliveryDate)
+activate OR
+OR -> DB: SELECT * FROM orders\nWHERE branch_id = ?\nAND delivery_date = ?\nORDER BY order_code
+DB --> OR: List<Order>
+OR --> OIS: List<Order>
+deactivate OR
+
+OIS -> OM: toDTOList(orders)
+activate OM
+OM --> OIS: List<OrderDTO>
+deactivate OM
+
+OIS --> OC: List<OrderDTO>
+deactivate OIS
+
+OC --> UI: 200 OK\n{orders: [...]}
+deactivate OC
+
+UI -> User: Hiển thị table/map:\n- Order list với status\n- Locations trên map\n- Filters & search
+
+note right of UI
+    Display information:
+    • Order code
+    • Customer name
+    • Address
+    • Demand
+    • Service time
+    • Time window
+    • Status
+    • Actions (edit/delete)
+end note
+
+@enduml

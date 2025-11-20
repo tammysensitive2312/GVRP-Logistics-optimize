@@ -1,0 +1,237 @@
+@startuml Entry_Service_Component_Simple
+
+title Entry Service - Component Diagram (Simplified View)
+
+skinparam componentStyle rectangle
+skinparam packageStyle rectangle
+skinparam backgroundColor #FFFFFF
+
+' ============================================
+' EXTERNAL
+' ============================================
+actor Frontend
+database "MySQL\nDatabase" as DB
+node "Engine\nService" as Engine
+node "Email\nServer" as Email
+
+' ============================================
+' ENTRY SERVICE
+' ============================================
+
+component "Entry Service" {
+
+    package "API Layer" {
+        component "REST\nControllers" as Controllers {
+            [Branch API]
+            [User API]
+            [Depot API]
+            [Fleet API]
+            [Order API]
+            [Solution API]
+        }
+    }
+
+    package "Service Layer" {
+        component "Business\nServices" as Services {
+            [Branch Service]
+            [Depot Service]
+            [Fleet Service]
+            [Order Import Service]
+            [Optimization Job Service\n(@Async)]
+            [Solution Import/Export Service]
+            [Solution Analysis Service]
+            [Email Service]
+        }
+    }
+
+    package "Integration Layer" {
+        component "External\nClients" as Clients {
+            [Engine Client\n(HTTP REST)]
+            [Email Client\n(SMTP)]
+            [File Parser]
+            [File Generator]
+        }
+    }
+
+    package "Data Access Layer" {
+        component "JPA\nRepositories" as Repos {
+            [Branch Repository]
+            [Depot Repository]
+            [Vehicle Repository]
+            [Order Repository]
+            [Solution Repository]
+            [Route Repository]
+        }
+    }
+
+    package "Supporting Components" {
+        component "Mappers" as Mappers {
+            [Entity ↔ DTO\nConverters]
+        }
+
+        component "Utilities" as Utils {
+            [Geometry Utils]
+            [Validation Utils]
+            [DateTime Utils]
+        }
+
+        component "Configuration" as Config {
+            [Async Config\n(ThreadPool)]
+            [Email Config\n(SMTP)]
+            [Security Config\n(Mock Auth)]
+            [JPA Config]
+        }
+    }
+}
+
+' ============================================
+' CONNECTIONS - VERTICAL FLOW
+' ============================================
+Frontend --> Controllers : "HTTP/REST"
+
+Controllers --> Services : "Business Logic\nCalls"
+
+Services --> Repos : "Data Access"
+Services --> Clients : "External\nIntegration"
+Services --> Mappers : "DTO Conversion"
+Services ..> Utils : "Uses"
+
+Repos --> DB : "JDBC/JPA"
+
+Clients --> Engine : "HTTP REST"
+Clients --> Email : "SMTP"
+
+Services ..> Config : "Configured by"
+
+' ============================================
+' USE CASE FLOW ANNOTATIONS
+' ============================================
+note right of Controllers
+    **VRP-001: Nhập dữ liệu**
+    • Depot API
+    • Fleet API
+    • Order API
+
+    **VRP-002: Optimization**
+    • Solution API
+      POST /api/solutions/plan
+
+    **VRP-003: Export**
+    • Solution API
+      GET /api/solutions/{id}/export
+
+    **VRP-004: Import**
+    • Solution API
+      POST /api/solutions/import
+
+    **VRP-005: Analysis**
+    • Solution API
+      GET /api/solutions/analyze
+end note
+
+note left of Services
+    **Core Services:**
+
+    • OptimizationJobService
+      → @Async processing
+      → Calls Engine Service
+      → Sends email notification
+
+    • OrderImportService
+      → File parsing
+      → Validation
+      → Batch save
+
+    • SolutionAnalysisService
+      → Compare solutions
+      → Calculate statistics
+      → Generate insights
+end note
+
+note bottom of Clients
+    **Integration Points:**
+
+    • Engine Client
+      → POST /api/optimize
+      → Timeout: 15 minutes
+      → Retry: 3 attempts
+
+    • Email Client
+      → JavaMailSender
+      → SMTP: smtp.gmail.com:587
+      → TLS enabled
+
+    • File Parser/Generator
+      → CSV, JSON, PDF formats
+end note
+
+note top of DB
+    **Database:**
+
+    MySQL 8.x with Spatial Extension
+
+    Key tables:
+    • branches
+    • depots (POINT location)
+    • vehicles
+    • orders (POINT location)
+    • solutions
+    • routes
+    • route_segments
+
+    Spatial queries for:
+    • Distance calculations
+    • Radius searches
+end note
+
+' ============================================
+' LAYER BOUNDARIES
+' ============================================
+note as LayerNote
+    **Layered Architecture:**
+
+    1. API Layer
+       └─ HTTP endpoints, request/response handling
+
+    2. Service Layer
+       └─ Business logic, transactions, async processing
+
+    3. Integration Layer
+       └─ External system communication
+
+    4. Data Access Layer
+       └─ Database operations via JPA
+
+    5. Supporting Components
+       └─ Cross-cutting concerns (mapping, utils, config)
+
+    **Benefits:**
+    • Clear separation of concerns
+    • Easy to test (mock dependencies)
+    • Easy to maintain
+    • Follows Spring Boot best practices
+end note
+
+' ============================================
+' LEGEND
+' ============================================
+legend bottom left
+    **Component Responsibilities:**
+
+    • Controllers: Handle HTTP requests/responses
+    • Services: Implement business logic
+    • Repositories: Abstract database operations
+    • Clients: Communicate with external systems
+    • Mappers: Convert between layers (Entity ↔ DTO)
+    • Utils: Reusable helper functions
+    • Config: Application configuration
+
+    **Key Design Patterns:**
+    • Dependency Injection (Spring)
+    • Repository Pattern (Data access)
+    • DTO Pattern (Data transfer)
+    • Facade Pattern (Service layer)
+    • Async Pattern (@Async processing)
+endlegend
+
+@enduml

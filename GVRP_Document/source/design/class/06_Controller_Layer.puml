@@ -1,0 +1,252 @@
+@startuml 06_Controller_Layer
+!include 00_Styling.puml
+!include 03_Service_Layer.puml
+!include 02_Repository_Layer.puml
+
+' ============================================
+' CONTROLLER LAYER (UPDATED WITH JOB CONTROLLER)
+' ============================================
+package "Controller Layer" {
+
+    class BranchController <<Controller>> {
+        - branchService: BranchService
+        --
+        + createBranch(dto: BranchInputDTO): ResponseEntity<BranchDTO>
+        + getAllBranches(): ResponseEntity<List<BranchDTO>>
+        + getBranchById(id: Long): ResponseEntity<BranchDTO>
+        + updateBranch(id: Long, dto: BranchInputDTO): ResponseEntity<BranchDTO>
+        + deleteBranch(id: Long): ResponseEntity<Void>
+    }
+
+    class UserController <<Controller>> {
+        - userService: UserService
+        --
+        + createUser(dto: UserInputDTO, branchId: Long): ResponseEntity<UserDTO>
+        + getUsersByBranchId(branchId: Long): ResponseEntity<List<UserDTO>>
+        + getUserById(id: Long): ResponseEntity<UserDTO>
+        + updateUser(id: Long, dto: UserInputDTO): ResponseEntity<UserDTO>
+        + deleteUser(id: Long): ResponseEntity<Void>
+        + changePassword(id: Long, request: ChangePasswordRequest): ResponseEntity<Void>
+    }
+
+    class DepotController <<Controller>> {
+        - depotService: DepotService
+        --
+        + createDepot(dto: DepotInputDTO, branchId: Long): ResponseEntity<DepotDTO>
+        + getDepotsByBranchId(branchId: Long): ResponseEntity<List<DepotDTO>>
+        + getDepotById(id: Long): ResponseEntity<DepotDTO>
+        + updateDepot(id: Long, dto: DepotInputDTO): ResponseEntity<DepotDTO>
+        + deleteDepot(id: Long): ResponseEntity<Void>
+    }
+
+    class FleetController <<Controller>> {
+        - fleetService: FleetService
+        --
+        + createFleet(dto: FleetInputDTO, branchId: Long): ResponseEntity<FleetDTO>
+        + getFleetByBranchId(branchId: Long): ResponseEntity<FleetDTO>
+        + updateFleet(id: Long, dto: FleetInputDTO): ResponseEntity<FleetDTO>
+        + addVehicles(fleetId: Long, vehicles: List<VehicleInputDTO>): ResponseEntity<List<VehicleDTO>>
+        + removeVehicle(vehicleId: Long): ResponseEntity<Void>
+    }
+
+    class OrderController <<Controller>> {
+        - orderImportService: OrderImportService
+        - orderService: OrderService
+        --
+        + importOrders(file: MultipartFile, text: String, overwrite: boolean, branchId: Long): ResponseEntity<ImportResult>
+        + getOrdersByBranchId(branchId: Long): ResponseEntity<List<OrderDTO>>
+        + getOrderById(id: Long): ResponseEntity<OrderDTO>
+        + updateOrderStatus(id: Long, status: OrderStatus): ResponseEntity<OrderDTO>
+        + deleteOrder(id: Long): ResponseEntity<Void>
+    }
+
+    ' ============================================
+    ' SOLUTION PLANNING CONTROLLER (CONSOLIDATED)
+    ' ============================================
+    class SolutionPlanningController <<Controller>> {
+        - optimizationJobService: OptimizationJobService
+        - vehicleService: VehicleService
+        - solutionService: SolutionService
+        --
+        ' Planning endpoints
+        + planRoutes(request: RoutePlanningRequest, branchId: Long, userId: Long): ResponseEntity<OptimizationJobDTO>
+        + getAvailableVehicles(branchId: Long): ResponseEntity<List<VehicleDTO>>
+        --
+        ' Job management endpoints
+        + getCurrentJob(branchId: Long): ResponseEntity<OptimizationJobDTO>
+        + getJobHistory(branchId: Long, limit: int): ResponseEntity<List<OptimizationJobDTO>>
+        + getJobById(jobId: Long, branchId: Long): ResponseEntity<OptimizationJobDTO>
+        + cancelJob(jobId: Long, branchId: Long): ResponseEntity<Void>
+        + retryJob(jobId: Long, branchId: Long): ResponseEntity<OptimizationJobDTO>
+        --
+        ' Solution detail endpoint
+        + getSolutionById(solutionId: Long, branchId: Long): ResponseEntity<SolutionDetailedDTO>
+    }
+
+    class SolutionImportController <<Controller>> {
+        - solutionImportService: SolutionImportService
+        --
+        + importSolution(file: MultipartFile, branchId: Long): ResponseEntity<SolutionDTO>
+    }
+
+    class SolutionExportController <<Controller>> {
+        - solutionExportService: SolutionExportService
+        - solutionRepository: SolutionRepository
+        --
+        + exportSolution(solutionId: Long, format: ExportFormat): ResponseEntity<byte[]>
+        + listExportableSolutions(branchId: Long): ResponseEntity<List<SolutionDTO>>
+    }
+
+    class SolutionAnalysisController <<Controller>> {
+        - solutionAnalysisService: SolutionAnalysisService
+        - solutionHistoryService: SolutionHistoryService
+        --
+        + analyzeSolution(solutionId: Long, comparisonCount: int): ResponseEntity<ComparisonResult>
+        + getSolutionHistory(branchId: Long, count: int): ResponseEntity<List<SolutionDTO>>
+        + exportAnalysisReport(result: ComparisonResult, format: ExportFormat): ResponseEntity<byte[]>
+    }
+
+    class MainController <<Controller>> {
+        - depotService: DepotService
+        - fleetService: FleetService
+        - orderService: OrderService
+        --
+        + initialize(branchId: Long): ResponseEntity<MainScreenData>
+    }
+}
+
+' ============================================
+' CONTROLLER → SERVICE
+' ============================================
+BranchController --> BranchService
+UserController --> UserService
+DepotController --> DepotService
+FleetController --> FleetService
+OrderController --> OrderImportService
+OrderController --> OrderService
+
+SolutionPlanningController --> OptimizationJobService
+SolutionImportController --> SolutionImportService
+SolutionExportController --> SolutionExportService
+SolutionExportController --> SolutionRepository
+SolutionAnalysisController --> SolutionAnalysisService
+SolutionAnalysisController --> SolutionHistoryService
+MainController --> DepotService
+MainController --> FleetService
+MainController --> OrderService
+
+' ============================================
+' NOTES
+' ============================================
+
+note top of SolutionPlanningController
+    **UPDATED: SolutionPlanningController**
+
+    Now handles both planning AND job management.
+    Base path: /api/solutions
+
+    **Planning Endpoints:**
+    • POST   /api/solutions/plan
+      Submit optimization job
+      Request: RoutePlanningRequest
+      Response: 202 Accepted + OptimizationJobDTO
+
+    • GET    /api/solutions/available-vehicles
+      Get available vehicles for planning
+      Response: List<VehicleDTO>
+
+    **Job Management Endpoints:**
+    • GET    /api/solutions/jobs/current
+      Get current running job
+      Response: OptimizationJobDTO or null
+
+    • GET    /api/solutions/jobs/history?limit=20
+      Get job history (paginated)
+      Response: List<OptimizationJobDTO>
+
+    • GET    /api/solutions/jobs/{id}
+      Get job details
+      Response: OptimizationJobDTO
+
+    • DELETE /api/solutions/jobs/{id}
+      Cancel running job
+      Response: 204 No Content
+
+    • POST   /api/solutions/jobs/{id}/retry
+      Retry failed job
+      Response: 201 Created + OptimizationJobDTO
+
+    **Solution Detail Endpoint:**
+    • GET    /api/solutions/{id}
+      Get solution with routes
+      Response: SolutionDetailedDTO
+
+    **Why consolidated:**
+    • Single controller = less confusion
+    • Semantic URLs: /api/solutions/jobs/*
+    • Frontend doesn't need to change base URL
+    • Perfect for MVP, can split later if needed
+
+    Security:
+    • All endpoints require authentication
+    • Branch ID from authenticated user
+    • Authorization check in service layer
+end note
+
+note bottom of BranchController
+    REST API Layer for multi-tenant management.
+    All endpoints require **branchId** for data isolation.
+end note
+
+note right of UserController
+    PLANNER: can create/update routes
+    CUSTOMER: can view own orders
+end note
+
+note left of MainController
+    initialize(branchId) loads:
+    • Depots
+    • Fleet summary
+    • Recent orders
+    • Latest solution
+end note
+
+legend right
+    **Controller Architecture (Simplified):**
+
+    **UPDATED Controllers:**
+    • SolutionPlanningController - Handles BOTH:
+      1. Job submission (/api/solutions/plan)
+      2. Job management (/api/solutions/jobs/*)
+      3. Solution detail (/api/solutions/{id})
+
+    **REMOVED Controllers:**
+    • OptimizationJobController (merged into SolutionPlanningController)
+
+    **API Response Patterns:**
+    • Submit job: 202 Accepted
+    • Cancel job: 204 No Content
+    • Get job: 200 OK
+    • Job not found: 404 Not Found
+    • Cannot cancel: 409 Conflict
+    • Validation error: 400 Bad Request
+    • Auth error: 401/403
+
+    **URL Structure:**
+    /api/solutions
+      ├── /plan                    (POST - submit job)
+      ├── /available-vehicles      (GET - get vehicles)
+      ├── /{solutionId}            (GET - solution detail)
+      └── /jobs
+          ├── /current             (GET - running job)
+          ├── /history             (GET - job list)
+          ├── /{jobId}             (GET - job detail)
+          ├── /{jobId}             (DELETE - cancel)
+          └── /{jobId}/retry       (POST - retry)
+
+    **Headers:**
+    • Branch-Id: Long (from auth context)
+    • User-Id: Long (from auth context)
+endlegend
+
+@enduml

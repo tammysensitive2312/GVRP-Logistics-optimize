@@ -1,0 +1,89 @@
+@startuml VRP_03_Sub_Import_Orders
+title Sub-process: Import Orders (Validate & Confirm Logic)
+
+participant "Frontend (UI)" as UI
+participant "OrderController" as OC
+participant "OrderImportService" as OIS
+participant "Parsers (File/Text)" as P
+participant "OrderRepository" as OR
+database "Database" as DB
+
+autonumber 30
+
+' === REQUEST LẦN 1: DRY-RUN ===
+UI -> OC: POST /import (file/text, **skipErrors=false**)
+activate OC
+OC -> OIS: processImport(request)
+activate OIS
+
+' 1. PARSE
+OIS -> P: parseData(request)
+activate P
+P --> OIS: List<OrderInputDTO>
+deactivate P
+
+' 2. VALIDATE & CHECK LOGIC
+OIS -> OIS: validOrders = [], errorList = []
+
+loop for each DTO
+    OIS -> OIS: validate(dto)
+    alt Error Found
+        OIS -> OIS: errorList.add(error)
+    else Valid
+        OIS -> OIS: validOrders.add(dto)
+    end
+end
+
+' 3. DECISION GATE
+alt errorList > 0 AND skipErrors == false
+    ' Case A: Có lỗi & Chưa confirm -> Trả về để User duyệt
+    OIS --> OC: ImportResult(success=false, requireConfirm=true, errors=...)
+    deactivate OIS
+    OC --> UI: 200 OK (Result with Errors)
+    deactivate OC
+
+    UI -> User: **POPUP CONFIRMATION**\n"Có X lỗi. Bạn có muốn bỏ qua lỗi\nvà chỉ lưu Y dòng hợp lệ?"
+
+    alt User CANCEL
+        User -> UI: Click "Cancel"
+        note right: Dừng luồng, KHÔNG lưu DB
+    else User CONFIRM
+        User -> UI: Click "Import Valid Only"
+
+        ' === REQUEST LẦN 2: COMMIT ===
+        UI -> OC: POST /import (**skipErrors=true**)
+        activate OC
+        OC -> OIS: processImport(request)
+        activate OIS
+
+        OIS -> OIS: Parse & Filter Valid Orders
+
+        ' Batch Save
+        OIS -> OR: saveAll(validOrders)
+        activate OR
+        OR -> DB: BATCH INSERT/UPDATE
+        DB --> OR: Success
+        deactivate OR
+
+        OIS --> OC: ImportResult(success=true, imported=Y, skipped=X)
+        deactivate OIS
+        OC --> UI: 200 OK
+        deactivate OC
+        UI -> User: "Import thành công Y đơn hàng!"
+    end
+
+else No Errors OR (Errors exist AND skipErrors == true)
+    ' Case B: Hoàn hảo HOẶC Đã confirm skip -> Lưu luôn
+    OIS -> OR: saveAll(validOrders)
+    activate OR
+    OR -> DB: BATCH INSERT/UPDATE
+    deactivate OR
+
+    OIS --> OC: ImportResult(success=true)
+    deactivate OIS
+    OC --> UI: 200 OK
+    deactivate OC
+    UI -> User: "Import thành công!"
+end
+
+@enduml

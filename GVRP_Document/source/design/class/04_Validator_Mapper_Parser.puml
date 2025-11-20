@@ -1,0 +1,103 @@
+@startuml 04_Validator_Mapper_Parser
+!include 00_Styling.puml
+!include 02_Repository_Layer.puml
+!include 03_Service_Layer.puml
+
+package "Mapper Layer" {
+    class DepotMapper <<Mapper>> {
+        + toEntity(dto: DepotInputDTO, branchId: Long): Depot
+        + toDTO(entity: Depot): DepotDTO
+        + toDTOList(entities: List<Depot>): List<DepotDTO>
+    }
+    class FleetMapper <<Mapper>> {
+        - vehicleMapper: VehicleMapper
+        + toEntity(dto: FleetInputDTO, branchId: Long): Fleet
+        + toDTO(entity: Fleet): FleetDTO
+    }
+    class VehicleMapper <<Mapper>> {
+        + toEntity(dto: VehicleInputDTO, fleet: Fleet, depot: Depot): Vehicle
+        + toDTO(entity: Vehicle): VehicleDTO
+        + toDTOList(entities: List<Vehicle>): List<VehicleDTO>
+    }
+    class OrderMapper <<Mapper>> {
+        + toEntity(dto: OrderInputDTO, branchId: Long): Order
+        + toDTO(entity: Order): OrderDTO
+        + toDTOList(entities: List<Order>): List<OrderDTO>
+    }
+    class SolutionMapper <<Mapper>> {
+        - routeMapper: RouteMapper
+        + toDTO(entity: Solution): SolutionDTO
+        + toDetailedDTO(entity: Solution): SolutionDetailedDTO
+        + toExportDTO(entity: Solution): SolutionExportDTO
+        + toDTOList(entities: List<Solution>): List<SolutionDTO>
+    }
+    class RouteMapper <<Mapper>> {
+        - routeSegmentMapper: RouteSegmentMapper
+        + toDTO(entity: Route): RouteDTO
+        + toDetailedDTO(entity: Route): RouteDetailedDTO
+    }
+    class RouteSegmentMapper <<Mapper>> {
+        + toDTO(entity: RouteSegment): RouteSegmentDTO
+        + toDTOList(entities: List<RouteSegment>): List<RouteSegmentDTO>
+    }
+}
+FleetMapper --> VehicleMapper
+SolutionMapper --> RouteMapper
+RouteMapper --> RouteSegmentMapper
+
+package "Parser & Generator Layer" {
+    class FileParser <<Parser>> {
+        - objectMapper: ObjectMapper
+        + parseOrders(file: MultipartFile): List<OrderInputDTO>
+        - parseOrdersFromCSV(file: MultipartFile): List<OrderInputDTO>
+        - parseOrdersFromJSON(file: MultipartFile): List<OrderInputDTO>
+        + parseSolution(file: MultipartFile): SolutionImportDTO
+        - parseSolutionFromCSV(file: MultipartFile): SolutionImportDTO
+        - parseSolutionFromJSON(file: MultipartFile): SolutionImportDTO
+        - parseSolutionFromTXT(file: MultipartFile): SolutionImportDTO
+        - getFileExtension(filename: String): String
+    }
+    class TextParser <<Parser>> {
+        + parseOrdersFromText(text: String): List<OrderInputDTO>
+        - parseOrderLine(line: String): OrderInputDTO
+    }
+    class FileGenerator <<Parser>> {
+        + generateCSV(data: SolutionExportDTO): byte[]
+        + generateTXT(data: SolutionExportDTO): byte[]
+        + generateReportCSV(data: ComparisonResult): byte[]
+    }
+}
+note top of FileParser
+    Pragmatic approach:
+    Single class for simplicity.
+    Can be refactored to Strategy Pattern when needed.
+end note
+
+package "Validator Layer" {
+    class SolutionValidator <<Validator>> {
+        - orderRepository: OrderRepository
+        - vehicleRepository: VehicleRepository
+        - depotRepository: DepotRepository
+        + validateImportedSolution(dto: SolutionImportDTO, branchId: Long): ValidationResult
+        - validateRouteConsistency(route: RouteImportDTO): ValidationResult
+        - checkOrderExists(orderId: Long, branchId: Long): boolean
+        - checkVehicleExists(vehicleId: Long, branchId: Long): boolean
+    }
+}
+SolutionValidator --> OrderRepository
+SolutionValidator --> VehicleRepository
+SolutionValidator --> DepotRepository
+
+note right of SolutionValidator
+    Only validator needed due to complex import logic:
+    • Check order/vehicle exists in same branch
+    • Validate route consistency
+    • Check capacity, time windows
+end note
+
+'note left of Mapper Layer
+'    All mappers now use **branchId** instead of userId
+'    Validation for simple DTOs: use @Valid + Bean Validation
+'end note
+
+@enduml

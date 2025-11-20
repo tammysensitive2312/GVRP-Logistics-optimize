@@ -1,0 +1,48 @@
+@startuml VRP_00_Master_Flow
+title VRP-001: Input Problem Data - Master Flow (Orchestration)
+
+actor User
+participant "Frontend (UI)" as UI
+participant "Backend API" as BE
+
+autonumber
+
+== Phase 1: Thiết lập Depot (First-time Setup) ==
+note right of User: Điều kiện: Hệ thống chưa có Depot
+
+User -> UI: Nhập thông tin Depot & Tọa độ
+UI -> BE: POST /api/v1/branches/{id}/depots
+
+' Sử dụng REF để tham chiếu đến diagram chi tiết
+ref over UI, BE: **Xem file: VRP_01_Sub_Create_Depot**\n(Validate, Geo-mapping, Save)
+
+BE --> UI: 201 Created (DepotDTO)
+UI -> User: Hiển thị thông báo thành công & Chuyển bước
+|||
+
+== Phase 2: Thiết lập Đội xe (Fleet Setup) ==
+note right of User: Điều kiện: Đã có Depot
+
+User -> UI: Nhập tên Đội xe & Danh sách xe
+UI -> BE: POST /api/v1/branches/{id}/fleets
+
+' Sử dụng REF để tham chiếu đến diagram chi tiết
+ref over UI, BE: **Xem file: VRP_02_Sub_Create_Fleet**\n(Check Depot, Validate Vehicles, Cascade Save)
+
+BE --> UI: 201 Created (FleetDTO)
+UI -> User: Hiển thị thông báo & Mở màn hình Dashboard
+|||
+
+== Phase 3: Nhập đơn hàng (Import Orders) ==
+note right of User: Điều kiện: Đã có Depot & Fleet
+
+User -> UI: Mở form Import (File/Text + Config)
+UI -> BE: POST /api/v1/branches/{id}/orders/import
+
+' Sử dụng REF để tham chiếu đến diagram chi tiết
+ref over UI, BE: **Xem file: VRP_03_Sub_Import_Orders**\n(Parse, Validate, Dry-Run, Confirmation, Batch Save)
+
+BE --> UI: 200 OK (ImportResult)
+UI -> User: Hiển thị kết quả (Success/Partial/Error)
+
+@enduml

@@ -1,0 +1,56 @@
+@startuml VRP_01_Sub_Create_Depot
+title Sub-process: Create Depot Detail
+
+participant "Frontend (UI)" as UI
+participant "DepotController" as DC
+participant "DepotService" as DS
+participant "DepotRepository" as DR
+participant "BranchRepository" as BR
+database "Database" as DB
+
+autonumber 10
+
+activate UI
+UI -> DC: POST /api/depots (DepotInputDTO)
+activate DC
+
+DC -> DS: createDepot(dto, branchId)
+activate DS
+
+' Validate Branch
+DS -> BR: findById(branchId)
+activate BR
+BR -> DB: SELECT
+DB --> BR: Branch Entity
+deactivate BR
+
+alt Branch Not Found
+    DS --> DC: throw ResourceNotFound
+    DC --> UI: 404 Not Found
+else Branch Valid
+    ' Validate Logic
+    DS -> DS: validate(dto)
+
+    alt Validation Failed
+        DS --> DC: throw ValidationEx
+        DC --> UI: 400 Bad Request
+    else Validation Passed
+        DS -> DS: toEntity(dto)
+        note right: Map Lat/Lng to Point
+
+        DS -> DR: save(depot)
+        activate DR
+        DR -> DB: INSERT INTO depot...
+        DB --> DR: Saved Entity
+        deactivate DR
+
+        DS -> DS: toDTO(entity)
+        DS --> DC: DepotDTO
+    end
+end
+
+deactivate DS
+DC --> UI: 201 Created
+deactivate DC
+deactivate UI
+@enduml

@@ -1,0 +1,306 @@
+@startuml 03_Service_Layer
+!include 00_Styling.puml
+!include 02_Repository_Layer.puml
+
+' ============================================
+' SERVICE LAYER (UPDATED WITH JOB SERVICE)
+' ============================================
+package "Service Layer" {
+
+    class BranchService <<Service>> {
+        - branchRepository: BranchRepository
+        - branchMapper: BranchMapper
+        --
+        + createBranch(dto: BranchInputDTO): BranchDTO
+        + getAllBranches(): List<BranchDTO>
+        + getBranchById(id: Long): BranchDTO
+        + updateBranch(id: Long, dto: BranchInputDTO): BranchDTO
+        + deleteBranch(id: Long): void
+        + existsByName(name: String): boolean
+    }
+
+    class UserService <<Service>> {
+        - userRepository: UserRepository
+        - branchRepository: BranchRepository
+        - userMapper: UserMapper
+        - passwordEncoder: PasswordEncoder
+        --
+        + createUser(dto: UserInputDTO, branchId: Long): UserDTO
+        + getUsersByBranchId(branchId: Long): List<UserDTO>
+        + getUserById(id: Long): UserDTO
+        + updateUser(id: Long, dto: UserInputDTO): UserDTO
+        + deleteUser(id: Long): void
+        + changePassword(id: Long, request: ChangePasswordRequest): void
+        + authenticate(username: String, password: String): JwtResponse
+    }
+
+    class DepotService <<Service>> {
+        - depotRepository: DepotRepository
+        - branchRepository: BranchRepository
+        - depotMapper: DepotMapper
+        --
+        + createDepot(dto: DepotInputDTO, branchId: Long): DepotDTO
+        + getDepotsByBranchId(branchId: Long): List<DepotDTO>
+        + getDepotById(id: Long): DepotDTO
+        + updateDepot(id: Long, dto: DepotInputDTO): DepotDTO
+        + deleteDepot(id: Long): void
+        + hasExistingDepot(branchId: Long): boolean
+    }
+
+    class FleetService <<Service>> {
+        - fleetRepository: FleetRepository
+        - vehicleRepository: VehicleRepository
+        - depotRepository: DepotRepository
+        - branchRepository: BranchRepository
+        - fleetMapper: FleetMapper
+        - vehicleMapper: VehicleMapper
+        --
+        + createFleet(dto: FleetInputDTO, branchId: Long): FleetDTO
+        + getFleetByBranchId(branchId: Long): FleetDTO
+        + updateFleet(id: Long, dto: FleetInputDTO): FleetDTO
+        + deleteFleet(id: Long): void
+        + addVehicles(fleetId: Long, vehicles: List<VehicleInputDTO>): List<VehicleDTO>
+        + removeVehicle(vehicleId: Long): void
+        + getAvailableVehicles(branchId: Long): List<VehicleDTO>
+    }
+
+    class OrderImportService <<Service>> {
+        - orderRepository: OrderRepository
+        - branchRepository: BranchRepository
+        - fileParser: FileParser
+        - textParser: TextParser
+        - orderMapper: OrderMapper
+        --
+        + processImportRequest(request: OrderImportRequest, branchId: Long): ImportResult
+        - validateInputType(request: OrderImportRequest): void
+        - parseInput(request: OrderImportRequest): List<OrderInputDTO>
+        - saveOrders(branchId: Long, orders: List<OrderInputDTO>, overwrite: boolean): SaveResult
+    }
+
+    class OrderService <<Service>> {
+        - orderRepository: OrderRepository
+        - branchRepository: BranchRepository
+        - orderMapper: OrderMapper
+        --
+        + getOrdersByBranchId(branchId: Long): List<OrderDTO>
+        + getOrderById(id: Long): OrderDTO
+        + getOrdersByStatus(branchId: Long, status: OrderStatus): List<OrderDTO>
+        + updateOrderStatus(orderId: Long, status: OrderStatus): OrderDTO
+        + deleteOrder(id: Long): void
+    }
+
+    ' ============================================
+    ' OPTIMIZATION JOB SERVICE (CORE BUSINESS LOGIC)
+    ' ============================================
+    class OptimizationJobService <<Service>> {
+        - jobRepository: OptimizationJobRepository
+        - solutionRepository: SolutionRepository
+        - routeRepository: RouteRepository
+        - routeSegmentRepository: RouteSegmentRepository
+        - orderRepository: OrderRepository
+        - vehicleRepository: VehicleRepository
+        - depotRepository: DepotRepository
+        - userRepository: UserRepository
+        - optimizationEngine: OptimizationEngine
+        - emailService: EmailService
+        - jobMapper: OptimizationJobMapper
+        - solutionMapper: SolutionMapper
+        - objectMapper: ObjectMapper
+        --
+        + submitJob(request: RoutePlanningRequest, branchId: Long, userId: Long): OptimizationJobDTO
+        + cancelJob(jobId: Long, branchId: Long): void
+        + getJobById(jobId: Long, branchId: Long): OptimizationJobDTO
+        + getCurrentRunningJob(branchId: Long): OptimizationJobDTO
+        + getJobHistory(branchId: Long, limit: int): List<OptimizationJobDTO>
+        + retryJob(jobId: Long, branchId: Long): OptimizationJobDTO
+        --
+        - processOptimization(job: OptimizationJob): void
+        - validateJobInput(request: RoutePlanningRequest, branchId: Long): void
+        - handleJobCompletion(job: OptimizationJob, result: OptimizationResult): void
+        - handleJobFailure(job: OptimizationJob, error: Exception): void
+        - saveSolution(job: OptimizationJob, result: OptimizationResult): Solution
+        - estimateDuration(request: RoutePlanningRequest): Integer
+    }
+
+    class SolutionImportService <<Service>> {
+        - solutionRepository: SolutionRepository
+        - routeRepository: RouteRepository
+        - routeSegmentRepository: RouteSegmentRepository
+        - branchRepository: BranchRepository
+        - fileParser: FileParser
+        - solutionValidator: SolutionValidator
+        - solutionMapper: SolutionMapper
+        --
+        + importSolution(file: MultipartFile, branchId: Long): SolutionDTO
+        - validateSolutionData(dto: SolutionImportDTO, branchId: Long): ValidationResult
+        - buildSolutionFromImport(dto: SolutionImportDTO, branchId: Long): Solution
+    }
+
+    class SolutionExportService <<Service>> {
+        - solutionRepository: SolutionRepository
+        - fileGenerator: FileGenerator
+        --
+        + exportSolution(solutionId: Long, format: ExportFormat): byte[]
+        + getSolutionForExport(solutionId: Long): SolutionExportDTO
+        + generateFileName(solution: Solution, format: ExportFormat): String
+    }
+
+    class SolutionHistoryService <<Service>> {
+        - solutionRepository: SolutionRepository
+        - solutionMapper: SolutionMapper
+        --
+        + getRecentSolutions(branchId: Long, count: int): List<SolutionDTO>
+        + getLatestSolution(branchId: Long): SolutionDTO
+        + getSolutionsByType(branchId: Long, type: SolutionType): List<SolutionDTO>
+        + hasHistory(branchId: Long): boolean
+        + getSolutionCount(branchId: Long): long
+        + calculateStatistics(branchId: Long, sampleSize: int): SolutionStatistics
+    }
+
+    class SolutionAnalysisService <<Service>> {
+        - solutionHistoryService: SolutionHistoryService
+        - metricsCalculator: MetricsCalculator
+        - statisticsEngine: StatisticsEngine
+        --
+        + analyzeSolution(solutionId: Long, comparisonCount: int): ComparisonResult
+        + compareWithHistory(current: SolutionDTO, historical: List<SolutionDTO>): ComparisonResult
+        + calculateDeviations(current: SolutionDTO, stats: SolutionStatistics): List<DeviationMetric>
+    }
+
+    class EmailService <<Service>> {
+        - mailSender: JavaMailSender
+        - frontendUrl: String
+        - templateEngine: TemplateEngine
+        --
+        + sendOptimizationSuccessEmail(user: User, job: OptimizationJob, solution: Solution): void
+        + sendOptimizationFailureEmail(user: User, job: OptimizationJob, error: Exception): void
+        - buildSuccessEmailBody(user: User, job: OptimizationJob, solution: Solution): String
+        - buildFailureEmailBody(user: User, job: OptimizationJob, error: Exception): String
+        - sendEmail(to: String, subject: String, body: String): void
+    }
+}
+
+' ============================================
+' SERVICE → REPOSITORY / MAPPER / ENGINE
+' ============================================
+
+BranchService --> BranchRepository
+BranchService --> BranchMapper
+
+UserService --> UserRepository
+UserService --> BranchRepository
+UserService --> UserMapper
+UserService --> PasswordEncoder
+
+DepotService --> DepotRepository
+DepotService --> BranchRepository
+DepotService --> DepotMapper
+
+FleetService --> FleetRepository
+FleetService --> VehicleRepository
+FleetService --> DepotRepository
+FleetService --> BranchRepository
+FleetService --> FleetMapper
+FleetService --> VehicleMapper
+
+OrderImportService --> OrderRepository
+OrderImportService --> BranchRepository
+OrderImportService --> FileParser
+OrderImportService --> TextParser
+OrderImportService --> OrderMapper
+
+OrderService --> OrderRepository
+OrderService --> BranchRepository
+OrderService --> OrderMapper
+
+' NEW: OptimizationJobService dependencies
+OptimizationJobService --> OptimizationJobRepository
+OptimizationJobService --> SolutionRepository
+OptimizationJobService --> RouteRepository
+OptimizationJobService --> RouteSegmentRepository
+OptimizationJobService --> OrderRepository
+OptimizationJobService --> VehicleRepository
+OptimizationJobService --> DepotRepository
+OptimizationJobService --> UserRepository
+OptimizationJobService --> OptimizationEngine
+OptimizationJobService --> EmailService
+OptimizationJobService --> OptimizationJobMapper
+OptimizationJobService --> SolutionMapper
+OptimizationJobService --> ObjectMapper
+
+SolutionImportService --> SolutionRepository
+SolutionImportService --> RouteRepository
+SolutionImportService --> RouteSegmentRepository
+SolutionImportService --> BranchRepository
+SolutionImportService --> FileParser
+SolutionImportService --> SolutionValidator
+SolutionImportService --> SolutionMapper
+
+SolutionExportService --> SolutionRepository
+SolutionExportService --> FileGenerator
+
+SolutionHistoryService --> SolutionRepository
+SolutionHistoryService --> SolutionMapper
+
+SolutionAnalysisService --> SolutionHistoryService
+SolutionAnalysisService --> MetricsCalculator
+SolutionAnalysisService --> StatisticsEngine
+
+' ============================================
+' NOTES
+' ============================================
+
+note top of OptimizationJobService
+    **NEW: OptimizationJobService**
+
+    Core service for job management.
+    Responsibilities:
+    • Submit new optimization jobs
+    • Cancel running jobs
+    • Track job status and progress
+    • Handle async optimization process
+    • Save solutions when completed
+    • Send email notifications
+
+    Key methods:
+    • submitJob(): Create job, start async processing
+    • cancelJob(): Cancel job in engine + update status
+    • processOptimization(): Background async method
+
+    Business rules:
+    • Max 1 PROCESSING job per branch
+    • Only PROCESSING jobs can be cancelled
+    • inputData stored for retry capability
+end note
+
+note bottom of EmailService
+    **UPDATED: EmailService**
+
+    Now receives OptimizationJob + Solution.
+    Can access job metadata:
+    • Job ID, timestamps
+    • User who submitted
+    • Input parameters
+
+    Email content includes:
+    • Job details
+    • Solution metrics
+    • Direct link to solution
+end note
+
+legend right
+    **Service Architecture:**
+
+    **NEW Services:**
+    • OptimizationJobService (job lifecycle management)
+
+    **UPDATED Services:**
+    • EmailService (now job-aware)
+
+    **Async Processing:**
+    • submitJob() returns immediately
+    • processOptimization() runs in background
+    • Email sent when completed/failed
+endlegend
+
+@enduml

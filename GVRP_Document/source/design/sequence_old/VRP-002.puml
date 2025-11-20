@@ -1,0 +1,377 @@
+@startuml VRP-002_Sequence_Updated
+
+title VRP-002: Lập lịch tuyến đường (Updated with Job Management & Cancel)
+
+actor User
+participant "Frontend" as UI
+participant "Vehicle\nController" as VC
+participant "Vehicle\nService" as VS
+participant "Solution\nPlanningController" as SPC
+participant "Optimization\nJobService" as JS
+participant "Optimization\nEngine" as OE
+participant "Solution\nRepository" as SR
+participant "Route\nRepository" as RR
+participant "RouteSegment\nRepository" as RSR
+participant "Job\nRepository" as JR
+participant "Order\nRepository" as OR
+participant "Vehicle\nRepository" as VR
+participant "Depot\nRepository" as DR
+participant "Email\nService" as ES
+database "Database" as DB
+
+autonumber
+
+== Bước 1-7: Chọn Orders & Vehicles ==
+
+User -> UI: Chọn orders (checkbox)
+UI -> UI: selectedOrders.add(orderId)
+
+User -> UI: Click "Plan Routes"
+
+UI -> VC: GET /api/vehicles?branchId={id}&status=AVAILABLE
+activate VC
+VC -> VS: getAvailableVehicles(branchId)
+activate VS
+VS -> VR: findByBranchIdAndStatus(branchId, AVAILABLE)
+activate VR
+VR -> DB: SELECT * FROM vehicles\nWHERE branch_id = ? AND status = 'AVAILABLE'
+DB --> VR: List<Vehicle>
+VR --> VS: List<Vehicle>
+deactivate VR
+VS --> VC: List<VehicleDTO>
+deactivate VS
+VC --> UI: 200 OK {availableVehicles}
+deactivate VC
+
+UI -> User: Hiển thị dialog chọn xe
+
+User -> UI: Chọn vehicles
+User -> UI: Click "Start Optimization"
+
+UI -> User: Hiển thị confirmation:\n"Will run in background (5-15 min)\nYou will receive email"
+
+User -> UI: Click "Confirm"
+
+== Bước 8-11: Validation & Submit Job ==
+
+UI -> SPC: POST /api/solutions/plan\n{orderIds: [...], vehicleIds: [...]}
+activate SPC
+
+SPC -> JS: submitJob(request, branchId, userId)
+activate JS
+
+note over JS
+    ⚠️ CRITICAL: Validate EVERYTHING before creating job
+    Fail fast - return error immediately if invalid
+end note
+
+' Step 1: Check concurrent job limit
+JS -> JR: existsByBranchIdAndStatus(branchId, PROCESSING)
+activate JR
+JR -> DB: SELECT EXISTS(...)\nWHERE branch_id = ? AND status = 'PROCESSING'
+DB --> JR: false
+JR --> JS: false
+deactivate JR
+
+alt Has running job
+    JS --> SPC: throw JobLimitException
+    SPC --> UI: 409 Conflict\n{"error": "Already have 1 job running"}
+    UI -> User: Toast: "Bạn đang có job đang chạy"
+    note right: End use case
+end
+
+' Step 2: Validate orders BEFORE creating job
+JS -> OR: findAllById(orderIds)
+activate OR
+OR -> DB: SELECT * FROM orders WHERE id IN (...)
+DB --> OR: List<Order>
+OR --> JS: List<Order>
+deactivate OR
+
+JS -> JS: validateOrders(orders, branchId)
+note right
+    Check:
+    • All orders exist
+    • All belong to branch
+    • Status = SCHEDULED
+    • Not already in active route
+    • Valid coordinates
+    • Valid demand
+end note
+
+alt Order validation failed
+    JS --> SPC: throw ValidationException\n("Order #123 not found" or\n"Order #456 belongs to different branch")
+    SPC --> UI: 400 Bad Request\n{"error": "Invalid orders", "details": [...]}
+    UI -> User: Show error dialog:\n"❌ Validation Failed\n• Order #123 not found\n• Order #456 already in route"
+    note right: End use case - no job created
+end
+
+' Step 3: Validate vehicles BEFORE creating job
+JS -> VR: findAllById(vehicleIds)
+activate VR
+VR -> DB: SELECT * FROM vehicles WHERE id IN (...)
+DB --> VR: List<Vehicle>
+VR --> JS: List<Vehicle>
+deactivate VR
+
+JS -> JS: validateVehicles(vehicles, branchId)
+note right
+    Check:
+    • All vehicles exist
+    • All belong to branch's fleet
+    • Status = AVAILABLE
+    • Have valid depots
+    • Capacity > 0
+end note
+
+alt Vehicle validation failed
+    JS --> SPC: throw ValidationException\n("Vehicle #10 not available")
+    SPC --> UI: 400 Bad Request\n{"error": "Invalid vehicles", "details": [...]}
+    UI -> User: Show error dialog:\n"❌ Validation Failed\n• Vehicle ABC-123 is in maintenance\n• Vehicle DEF-456 not found"
+    note right: End use case - no job created
+end
+
+' Step 4: Validate depots BEFORE creating job
+JS -> DR: findByBranchId(branchId)
+activate DR
+DR -> DB: SELECT * FROM depots WHERE branch_id = ?
+DB --> DR: List<Depot>
+DR --> JS: List<Depot>
+deactivate DR
+
+alt No depots found
+    JS --> SPC: throw ValidationException\n("No depot found for branch")
+    SPC --> UI: 400 Bad Request\n{"error": "No depot configured"}
+    UI -> User: Show error dialog:\n"❌ Please configure depot first"
+    note right: End use case - no job created
+end
+
+note over JS
+    ✅ ALL VALIDATION PASSED
+    Now safe to create job
+end note
+
+' Step 5: Create job (only after validation passes)
+JS -> JS: Create OptimizationJob entity\nstatus = PROCESSING\ninputData = JSON(request)
+
+JS -> JR: save(job)
+activate JR
+JR -> DB: INSERT INTO optimization_jobs\n(branch_id, user_id, status='PROCESSING',\ninput_data=...)
+DB --> JR: Job (id=1524)
+JR --> JS: Job
+deactivate JR
+
+' Step 6: Start async processing
+JS -> JS: CompletableFuture.runAsync(\n  () -> processOptimization(job))
+
+note over JS
+    Async method starts in background thread
+    submitJob() returns immediately
+
+    Only optimization engine logic in async thread
+    All validation already done!
+end note
+
+' Return immediately
+JS --> SPC: OptimizationJobDTO
+deactivate JS
+
+SPC --> UI: 202 Accepted\n{jobId: 1524, status: "PROCESSING"}
+deactivate SPC
+
+UI -> User: Toast: "✅ Optimization started!\nYou will receive email in 5-15 minutes"
+UI -> UI: Redirect to Solution History (2s)
+
+deactivate UI
+
+== Bước 12: Async Background Processing ==
+
+note over JS, OE
+    Background thread processes job
+    User can close browser/do other work
+
+    ⚠️ NO VALIDATION HERE - already done in submitJob()
+    Only optimization engine logic
+end note
+
+activate JS #LightBlue
+
+note over JS
+    Job already validated, just run optimization
+end note
+
+' Build optimization request
+JS -> JS: buildOptimizationRequest(job.inputData)
+note right
+    Deserialize inputData JSON:
+    • orderIds
+    • vehicleIds
+
+    Load entities from DB:
+    • Orders (already validated)
+    • Vehicles (already validated)
+    • Depots (already validated)
+end note
+
+' Call optimization engine
+JS -> OE: optimize(request, jobId)
+activate OE
+
+OE -> OE: Solve VRP (5-15 minutes)
+
+note over OE
+    External optimization engine:
+    - GraphHopper Jsprit
+    - OR-Tools
+    - Custom solver
+
+    Can be cancelled via externalJobId
+end note
+
+alt Optimization successful
+    OE --> JS: OptimizationResult
+    deactivate OE
+
+    ' Save solution
+    JS -> JS: Create Solution entity\njobId = 1524
+
+    JS -> SR: save(solution)
+    activate SR
+    SR -> DB: INSERT INTO solutions\n(job_id=1524, ...)
+    DB --> SR: Solution (id=5001)
+    SR --> JS: Solution
+    deactivate SR
+
+    ' Save routes
+    loop For each route
+        JS -> RR: save(route)
+        RR -> DB: INSERT INTO routes
+
+        loop For each segment
+            JS -> RSR: save(segment)
+            RSR -> DB: INSERT INTO route_segments
+        end
+    end
+
+    ' Update job to COMPLETED
+    JS -> JR: update(job, status=COMPLETED, completedAt=now())
+    activate JR
+    JR -> DB: UPDATE optimization_jobs\nSET status='COMPLETED'
+    JR --> JS: Job
+    deactivate JR
+
+    ' Send success email
+    JS -> ES: sendOptimizationSuccessEmail(user, job, solution)
+    activate ES
+    ES -> ES: Build HTML email with:\n- Job metrics\n- Solution summary\n- Link to view details
+    ES -> User: 📧 Success email
+    deactivate ES
+
+else Optimization failed
+    OE --> JS: throw OptimizationException
+    deactivate OE
+
+    JS -> JR: update(job, status=FAILED, error=...)
+    JR -> DB: UPDATE ... SET status='FAILED'
+
+    JS -> ES: sendOptimizationFailureEmail(user, job, error)
+    ES -> User: 📧 Failure email with suggestions
+end
+
+deactivate JS
+
+== Bước 14-16: User Receives Email & Views Result ==
+
+User -> User: 📧 Receive email notification
+
+User -> User: Click link in email
+
+User -> UI: Browser opens:\n/solutions/{id}
+activate UI
+
+UI -> SPC: GET /api/solutions/{id}
+activate SPC
+SPC -> SR: findById(id)
+SR --> SPC: Solution (with routes)
+SPC --> UI: 200 OK {solutionDetailedDTO}
+deactivate SPC
+
+UI -> User: Display Solution Detail:\n- Routes on map\n- Metrics\n- Timeline view
+deactivate UI
+
+== Alternative Flow: Cancel Job ==
+
+note over User, DB
+    User changes mind and wants to cancel job
+    Can happen at any time while job is PROCESSING
+end note
+
+User -> UI: Navigate to Solution History
+activate UI
+
+UI -> SPC: GET /api/solutions/jobs?branchId={id}
+activate SPC
+SPC -> JS: getJobHistory(branchId, 20)
+activate JS
+JS -> JR: findByBranchIdOrderByCreatedAtDesc(branchId, limit)
+JR --> JS: List<OptimizationJob>
+JS --> SPC: List<OptimizationJobDTO>
+deactivate JS
+SPC --> UI: 200 OK {jobs: [...]}
+deactivate SPC
+
+UI -> User: Display job list:\n#1524 - ⏳ PROCESSING [Cancel button]
+
+User -> UI: Click "Cancel" button
+
+UI -> User: Confirmation dialog:\n"Bạn chắc chắn muốn hủy?"
+
+User -> UI: Click "Xác nhận hủy"
+
+UI -> SPC: PUT /api/solutions/jobs/ (ids in request body)
+activate SPC
+
+SPC -> JS: cancelJob(1524, branchId)
+activate JS
+
+' Check if can cancel
+JS -> JR: findById(1524)
+JR --> JS: Job (status=PROCESSING)
+
+JS -> JS: Check: job.canBeCancelled()
+
+alt Job already completed (race condition)
+    JS --> SPC: throw JobCancellationException
+    SPC --> UI: 409 Conflict\n{"error": "Job already completed"}
+    UI -> User: Info toast:\n"Job đã hoàn thành, không thể hủy"
+    UI -> UI: Refresh job list
+else Job can be cancelled
+    ' Cancel in engine
+    JS -> OE: cancelOptimization(externalJobId)
+    activate OE
+    OE -> OE: Stop solver
+    OE --> JS: Cancelled
+    deactivate OE
+
+    ' Update job status
+    JS -> JR: update(job, status=CANCELLED, cancelledAt=now())
+    activate JR
+    JR -> DB: UPDATE optimization_jobs\nSET status='CANCELLED'
+    JR --> JS: Job
+    deactivate JR
+
+    JS --> SPC: void
+    deactivate JS
+
+    SPC --> UI: 204 No Content
+    deactivate SPC
+
+    UI -> User: Success toast:\n"✅ Đã hủy job #1524"
+    UI -> UI: Auto-refresh job list
+
+    UI -> User: Job hiển thị:\n#1524 - 🚫 CANCELLED
+end
+
+deactivate UI
+
+@enduml

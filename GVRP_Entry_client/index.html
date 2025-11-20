@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VRP System - Vehicle Route Planning</title>
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<!-- ============================================ -->
+<!-- SCREEN 1: DEPOT SETUP -->
+<!-- ============================================ -->
+<div id="screen-depot-setup" class="screen active">
+  <div class="setup-container">
+    <div class="setup-header">
+      <h1>🏢 Thiết lập Depot - Kho hàng</h1>
+      <p>Vui lòng chọn vị trí kho hàng của bạn trên bản đồ</p>
+    </div>
+
+    <form id="depot-form" class="setup-form">
+      <!-- Tên Depot -->
+      <div class="form-group">
+        <label for="depot-name">Tên Depot <span class="required">*</span></label>
+        <input
+                type="text"
+                id="depot-name"
+                name="name"
+                placeholder="Ví dụ: Kho Hà Nội"
+                maxlength="100"
+                required
+        />
+      </div>
+
+      <!-- Interactive Map -->
+      <div class="form-group">
+        <label>Vị trí Depot <span class="required">*</span></label>
+        <div id="depot-map" class="setup-map"></div>
+        <p class="form-hint">
+          💡 Click vào bản đồ để chọn vị trí kho hàng của bạn
+        </p>
+      </div>
+
+      <!-- Auto-filled Location Info -->
+      <div class="form-group">
+        <label for="depot-address">Địa chỉ</label>
+        <input
+                type="text"
+                id="depot-address"
+                name="address"
+                placeholder="Click vào bản đồ để tự động điền địa chỉ"
+                readonly
+        />
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="depot-lat">Latitude</label>
+          <input
+                  type="text"
+                  id="depot-lat"
+                  name="latitude"
+                  placeholder="21.028511"
+                  readonly
+          />
+        </div>
+        <div class="form-group">
+          <label for="depot-lng">Longitude</label>
+          <input
+                  type="text"
+                  id="depot-lng"
+                  name="longitude"
+                  placeholder="105.804817"
+                  readonly
+          />
+        </div>
+      </div>
+
+      <!-- Form Actions -->
+      <div class="form-actions">
+        <button type="button" class="btn btn-secondary" onclick="resetDepotForm()">
+          Hủy
+        </button>
+        <button type="submit" class="btn btn-primary">
+          Lưu Depot
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ============================================ -->
+<!-- SCREEN 2: FLEET SETUP -->
+<!-- ============================================ -->
+<div id="screen-fleet-setup" class="screen">
+  <div class="setup-container">
+    <div class="setup-header">
+      <h1>🚚 Thiết lập Đội xe</h1>
+      <p>Thêm thông tin về đội xe và phương tiện của bạn</p>
+    </div>
+
+    <form id="fleet-form" class="setup-form">
+      <!-- Tên đội xe -->
+      <div class="form-group">
+        <label for="fleet-name">Tên đội xe <span class="required">*</span></label>
+        <input
+                type="text"
+                id="fleet-name"
+                name="fleetName"
+                placeholder="Ví dụ: Đội xe giao hàng nội thành"
+                required
+        />
+      </div>
+
+      <!-- Vehicle List -->
+      <div class="form-group">
+        <div class="section-header">
+          <label>Danh sách Xe <span class="required">*</span></label>
+          <button type="button" class="btn btn-sm btn-success" onclick="addVehicle()">
+            + Thêm xe
+          </button>
+        </div>
+
+        <div id="vehicles-container" class="vehicles-container">
+          <!-- Vehicle items will be added here dynamically -->
+        </div>
+      </div>
+
+      <!-- Fleet Summary -->
+      <div class="fleet-summary">
+        <div class="summary-item">
+          <span class="summary-label">📊 Tổng số xe:</span>
+          <span class="summary-value" id="total-vehicles">0</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">📦 Tổng tải trọng:</span>
+          <span class="summary-value" id="total-capacity">0 kg</span>
+        </div>
+      </div>
+
+      <!-- Form Actions -->
+      <div class="form-actions">
+        <button type="button" class="btn btn-secondary" onclick="goToScreen('screen-depot-setup')">
+          ← Quay lại
+        </button>
+        <button type="submit" class="btn btn-primary">
+          Lưu Đội xe
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ============================================ -->
+<!-- SCREEN 3: MAIN SCREEN (Dashboard) -->
+<!-- ============================================ -->
+<div id="screen-main" class="screen">
+  <!-- Top Navbar -->
+  <nav class="navbar">
+    <div class="navbar-left">
+      <button class="btn-icon" onclick="toggleSidebar()">☰</button>
+      <div class="brand">
+        <span class="brand-icon">📦</span>
+        <span class="brand-name">VRP System™</span>
+      </div>
+    </div>
+
+    <div class="navbar-center">
+      <button class="nav-menu-item active">Dashboard</button>
+      <button class="nav-menu-item" onclick="alert('Planning screen - VRP-002')">Planning</button>
+      <button class="nav-menu-item" onclick="alert('Analysis screen - VRP-006')">Analysis</button>
+      <button class="nav-menu-item" onclick="alert('History screen - VRP-005')">History</button>
+    </div>
+
+    <div class="navbar-right">
+      <div class="user-menu">
+        <span class="user-avatar">👤</span>
+        <span class="user-name">Admin</span>
+        <button class="btn-icon">▼</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <div class="main-layout">
+    <!-- Left Sidebar -->
+    <aside id="main-sidebar" class="sidebar">
+      <!-- Stats Cards (Horizontal) -->
+      <div class="stats-section">
+        <h3 class="section-title">📊 TODAY'S STATS</h3>
+        <div class="stats-grid">
+          <div class="stat-card" onclick="filterOrdersByStatus('SCHEDULED')">
+            <div class="stat-number">0</div>
+            <div class="stat-label">Scheduled</div>
+          </div>
+          <div class="stat-card" onclick="filterOrdersByStatus('COMPLETED')">
+            <div class="stat-number">0</div>
+            <div class="stat-label">Completed</div>
+          </div>
+          <div class="stat-card" onclick="filterOrdersByStatus('ALL')">
+            <div class="stat-number">24</div>
+            <div class="stat-label">Total</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number">0</div>
+            <div class="stat-label">Routes</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Depots Section -->
+      <div class="sidebar-section">
+        <h3 class="section-title">📍 DEPOTS</h3>
+        <div id="depots-list" class="depots-list">
+          <!-- Will be populated dynamically -->
+          <div class="depot-item">
+            <div class="depot-header">
+              <span class="depot-icon">📍</span>
+              <span class="depot-name">Kho Hà Nội</span>
+            </div>
+            <div class="depot-details">
+              <div class="depot-address">123 Main Street</div>
+              <div class="depot-coords">Lat: 21.028511, Lng: 105.804817</div>
+              <button class="btn btn-sm btn-text" onclick="centerMapToDepot(21.028511, 105.804817)">
+                📍 View on Map
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Fleet Info -->
+      <div class="sidebar-section">
+        <h3 class="section-title">🚚 FLEET INFO</h3>
+        <div class="fleet-info">
+          <div class="info-row">
+            <span class="info-label">Available:</span>
+            <span class="info-value">3 / 5 vehicles</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">In Use:</span>
+            <span class="info-value">2 vehicles</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Total Capacity:</span>
+            <span class="info-value">1500 kg</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Available:</span>
+            <span class="info-value">900 kg (60%)</span>
+          </div>
+          <button class="btn btn-sm btn-text" onclick="alert('Fleet details')">
+            View Fleet Details →
+          </button>
+        </div>
+      </div>
+
+      <!-- Collapse Button -->
+      <button class="btn-collapse" onclick="toggleSidebar()">
+        ◄ Hide Sidebar
+      </button>
+    </aside>
+
+    <!-- Main Content Area (70%) -->
+    <main class="main-content">
+      <!-- Map View -->
+      <div class="map-container" id="map-section">
+        <div id="main-map" class="main-map"></div>
+      </div>
+
+      <!-- Resizable Divider -->
+      <div class="resize-divider" id="resize-divider">
+        <div class="resize-handle">
+          <span class="resize-icon">⋮</span>
+        </div>
+      </div>
+
+      <!-- Orders Table -->
+      <div class="table-container" id="table-section">
+        <div class="table-header">
+          <!-- Row 1: Action Buttons -->
+          <div class="table-actions-row">
+            <button class="btn btn-primary" onclick="openAddOrderModal()">
+              <span>+</span> Add Order
+            </button>
+            <button class="btn btn-secondary" onclick="openImportModal()">
+              <span>📥</span> Import Orders
+            </button>
+            <button class="btn btn-success" id="btn-plan-routes" disabled>
+              <span>📊</span> Plan Routes
+              <span class="badge" id="selected-count">0</span>
+            </button>
+            <div class="dropdown">
+              <button class="btn btn-menu">⋮</button>
+              <div class="dropdown-content">
+                <a href="#" onclick="exportOrders()">Export to CSV</a>
+                <a href="#" onclick="deleteSelectedOrders()">Delete Selected</a>
+                <a href="#" onclick="bulkEditOrders()">Bulk Edit</a>
+              </div>
+            </div>
+          </div>
+
+          <!-- Row 2: Filters -->
+          <div class="table-filters-row">
+            <div class="filter-group">
+              <label>📅</label>
+              <input type="date" id="filter-date" value="2025-10-21" onchange="loadOrders()" />
+            </div>
+            <div class="filter-group">
+              <label>Status:</label>
+              <select id="filter-status" onchange="applyFilters()">
+                <option value="">All</option>
+                <option value="SCHEDULED">Scheduled</option>
+                <option value="ON_ROUTE">On Route</option>
+                <option value="COMPLETED">Completed</option>
+                <option value="FAILED">Failed</option>
+              </select>
+            </div>
+            <div class="filter-group">
+              <label>Priority:</label>
+              <select id="filter-priority" onchange="applyFilters()">
+                <option value="">All</option>
+                <option value="high">High (1-3)</option>
+                <option value="medium">Medium (4-6)</option>
+                <option value="low">Low (7+)</option>
+              </select>
+            </div>
+            <div class="filter-group search">
+              <span>🔍</span>
+              <input type="text" id="filter-search" placeholder="Search orders..." oninput="applyFilters()" />
+            </div>
+            <button class="btn btn-text" onclick="clearFilters()">Clear</button>
+          </div>
+        </div>
+
+        <!-- Table Content -->
+        <div class="table-content">
+          <table id="orders-table" class="data-table">
+            <thead>
+            <tr>
+              <th><input type="checkbox" id="select-all" onchange="toggleSelectAll()" /></th>
+              <th>Order ID</th>
+              <th>Customer</th>
+              <th>Address</th>
+              <th>Demand</th>
+              <th>Status</th>
+            </tr>
+            </thead>
+            <tbody id="orders-tbody">
+            <!-- Empty state -->
+            <tr class="empty-state">
+              <td colspan="6">
+                <div class="empty-content">
+                  <div class="empty-icon">📦</div>
+                  <div class="empty-text">There are no orders on the selected date</div>
+                  <button class="btn btn-primary" onclick="openImportModal()">
+                    📥 Import Orders
+                  </button>
+                </div>
+              </td>
+            </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Table Footer -->
+        <div class="table-footer">
+          <div class="footer-info">
+            <span>✅ Selected: <strong id="footer-selected">0</strong> orders</span>
+            <span class="separator">|</span>
+            <span>Showing <strong id="footer-showing">0</strong> of <strong id="footer-total">0</strong> orders</span>
+          </div>
+          <div class="pagination">
+            <button class="btn-page" onclick="previousPage()" disabled>« Previous</button>
+            <button class="btn-page active">1</button>
+            <button class="btn-page" onclick="nextPage()" disabled>Next »</button>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ============================================ -->
+<!-- SCREEN 4: IMPORT ORDERS MODAL -->
+<!-- ============================================ -->
+<div id="modal-import" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>📥 Import Đơn hàng</h2>
+      <button class="btn-close" onclick="closeImportModal()">✕</button>
+    </div>
+
+    <form id="import-form" class="modal-body">
+      <!-- Import Method Selection (Horizontal) -->
+      <div class="form-group">
+        <div class="import-method-grid">
+          <div class="import-method-label">
+            <label>Import method:</label>
+          </div>
+          <div class="import-method-options">
+            <label class="radio-label-inline">
+              <input type="radio" name="import-method" value="file" checked onchange="toggleImportMethod()" />
+              <span>📁 File (CSV/Excel)</span>
+            </label>
+            <label class="radio-label-inline">
+              <input type="radio" name="import-method" value="text" onchange="toggleImportMethod()" />
+              <span>📝 Raw Text</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Overwrite Checkbox (Right below import method) -->
+      <div class="form-group">
+        <div class="import-method-grid">
+          <div class="import-method-label">
+            <label>Overwrite existing:</label>
+          </div>
+          <div class="import-method-options">
+            <label class="checkbox-label-inline">
+              <input type="checkbox" id="import-overwrite" />
+              <span>Ghi đè đơn hàng đã tồn tại</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- File Upload Section -->
+      <div id="import-file-section" class="import-section">
+        <div class="form-group">
+          <label>Upload File</label>
+          <div class="file-upload-zone" id="file-drop-zone">
+            <input type="file" id="import-file" accept=".csv,.xlsx" onchange="handleFileSelect(event)" hidden />
+            <div class="upload-content">
+              <div class="upload-icon">📁</div>
+              <div class="upload-text">
+                <p><strong>Click to select file</strong> or drag and drop</p>
+                <p class="upload-hint">CSV or Excel files (max 10MB)</p>
+              </div>
+            </div>
+            <div class="file-selected" id="file-selected" style="display: none;">
+              <span class="file-name" id="file-name"></span>
+              <button type="button" class="btn-remove" onclick="removeFile()">✕</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Text Input Section -->
+      <div id="import-text-section" class="import-section" style="display: none;">
+        <div class="form-group">
+          <label>Dữ liệu đơn hàng</label>
+          <div class="format-hint">
+            <strong>Định dạng:</strong> OrderCode|Name|Phone|Address|Lat|Lng|Demand|TWStart|TWEnd|Priority|Notes
+          </div>
+          <textarea
+                  id="import-text"
+                  rows="10"
+                  placeholder="ORD001|John|0901234567|123 Main St|21.028511|105.804817|50.5|08:00|12:00|1|Handle with care&#10;ORD002|Jane|0912345678|456 Second Ave|21.030000|105.810000|30.0||||2|"
+          ></textarea>
+        </div>
+      </div>
+
+      <!-- Common Fields -->
+      <div class="form-row">
+        <div class="form-group">
+          <label for="import-delivery-date">Ngày giao hàng <span class="required">*</span></label>
+          <input type="date" id="import-delivery-date" required />
+        </div>
+        <div class="form-group">
+          <label for="import-service-time">Thời gian phục vụ (phút) <span class="required">*</span></label>
+          <input type="number" id="import-service-time" value="5" min="0" required />
+        </div>
+      </div>
+
+      <!-- Helper Section -->
+      <div class="help-section">
+        <h4>💡 Gợi ý:</h4>
+        <ul>
+          <li>File CSV: tối đa 10MB</li>
+          <li>Hỗ trợ UTF-8 encoding</li>
+          <li>Template: <a href="#" onclick="downloadTemplate()">Tải file mẫu</a></li>
+        </ul>
+      </div>
+    </form>
+
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" onclick="closeImportModal()">
+        Hủy
+      </button>
+      <button type="button" class="btn btn-primary" onclick="submitImport()">
+        Import
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Loading Overlay -->
+<div id="loading-overlay" class="loading-overlay" style="display: none;">
+  <div class="loading-spinner"></div>
+  <div class="loading-text">Đang xử lý...</div>
+</div>
+
+<!-- Toast Notification -->
+<div id="toast" class="toast"></div>
+
+<!-- Scripts -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="api.js"></script>
+<script src="map.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

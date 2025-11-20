@@ -1,0 +1,40 @@
+@startuml 00_Styling
+' ============================================
+' STYLING
+' ============================================
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+skinparam linetype ortho
+skinparam backgroundColor #FFFFFF
+skinparam class {
+    BackgroundColor<<Entity>> LightYellow
+    BackgroundColor<<Service>> LightBlue
+    BackgroundColor<<Repository>> LightGreen
+    BackgroundColor<<Controller>> LightCoral
+    BackgroundColor<<DTO>> Wheat
+    BackgroundColor<<Validator>> LightPink
+    BackgroundColor<<Mapper>> LightCyan
+    BackgroundColor<<Parser>> Lavender
+    BackgroundColor<<Engine>> LightGoldenRodYellow
+    BorderColor Black
+    ArrowColor Black
+}
+
+legend right
+    |<back:LightYellow>   </back>| Entity Classes |
+    |<back:LightBlue>     </back>| Service Classes |
+    |<back:LightGreen>    </back>| Repository Interfaces |
+    |<back:LightCoral>    </back>| Controller Classes |
+    |<back:Wheat>         </back>| DTO Classes |
+    |<back:LightPink>     </back>| Validator Classes |
+    |<back:LightCyan>     </back>| Mapper Classes |
+    |<back:Lavender>      </back>| Parser/Generator |
+    |<back:LightGoldenRodYellow></back>| Engine/Calculator |
+
+    **Relationships:**
+    ---> uses/depends on
+    *--> composition (strong ownership)
+    o--> aggregation (weak ownership)
+    ..> association
+endlegend
+@enduml

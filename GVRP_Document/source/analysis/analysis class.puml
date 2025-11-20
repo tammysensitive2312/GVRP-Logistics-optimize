@@ -1,0 +1,574 @@
+@startuml
+entity "Branches" as branches {
+* id : bigint <<PK>>
+--
+name : varchar(128)
+}
+
+entity "Depots" as depots {
+* id : bigint <<PK>>
+--
+location(lat, long) : POINT not null
+earliest_time : TIME
+latest_time : TIME
+name : varchar(128)
+}
+
+entity "Vehicles" as vehicles {
+* id : bigint <<PK>>
+--
+license_plate : varchar(32)
+capacity : int
+enabled : boolean
+fixed_cost : double
+cost_per_km : double
+cost_per_hour : double
+start_depot_id : bigint
+end_depot_id : bigint
+max_working_time : int
+max_distance : int
+vehicle_features : JSON
+}
+
+entity "orders" as orders {
+* id : bigint <<PK>>
+--
+address : varchar(256)
+location(lat, long) : POINT not null
+duration : int
+time_window_from : TIME
+time_window_to : TIME
+weight : int
+vehicle_features : JSON
+}
+
+entity "customers" as customers {
+* id : bigint <<PK>>
+--
+name : varchar(128)
+email : varchar(154)
+notification_channel : int
+}
+
+branches ||--|{ depots : "has"
+branches ||--|{ vehicles : "owns"
+depots ||--o{ vehicles : "stores"
+
+customers ||--o{ orders : "places""
+@enduml
+
+@startuml overview use-case
+left to right direction
+
+Planning_Officer as User
+
+(Schedule route for drivers) as (schedule)
+(Export results in .csv/.txt format) as (export)
+(Input problem data) as (input)
+(Import problem data using file in json/csv format) as (import data)
+(Import solution file in json/csv format) as (import solution)
+(evaluate solution) as (evaluate)
+
+User --> (input)
+User --> (schedule)
+User --> (export)
+User --> (import solution)
+User --> (evaluate)
+
+(import data) .> (input) : <<extend>>
+@enduml
+
+@startuml VRP-001
+autonumber
+
+actor "Planning Officer" as User
+boundary "DepotInputForm" as DepotForm
+boundary "FleetInputForm" as FleetForm
+boundary "MainScreen" as MainScreen
+boundary "OrderImportDialog" as OrderImportDialog
+boundary "ErrorPopup" as ErrorPopup
+boundary "SuccessPopup" as SuccessPopup
+control "DataInputController" as DataInputController
+control "DepotValidator" as DepotValidator
+control "FleetValidator" as FleetValidator
+control "OrderValidator" as OrderValidator
+control "FileParser" as FileParser
+control "TextParser" as TextParser
+entity "Depot"
+entity "Vehicle"
+entity "Order"
+entity "Fleet"
+
+User --> DataInputController : access system
+
+alt first time login (no existing data)
+    DataInputController --> DepotForm : show depot input form
+
+    User --> DepotForm : input depot information
+    DepotForm --> DataInputController : submit depot data
+    DataInputController --> DepotValidator : validate depot data
+    alt validation successful
+        DepotValidator --> Depot : save valid depot
+        Depot --> DataInputController : confirm saved
+    else validation failed
+        DepotValidator --> ErrorPopup : show error message
+        ErrorPopup --> User : display error
+    end
+
+    DataInputController --> FleetForm : show fleet input form
+    User --> FleetForm : input fleet information
+    FleetForm --> DataInputController : submit fleet data
+    DataInputController --> FleetValidator : validate fleet data
+    alt validation successful
+        FleetValidator --> Fleet : save valid fleet
+        FleetValidator --> Vehicle : save vehicles in fleet
+        Fleet --> DataInputController : confirm saved
+        Vehicle --> DataInputController : confirm saved
+    else validation failed
+        FleetValidator --> ErrorPopup : show error message
+        ErrorPopup --> User : display error
+    end
+
+else returning user (existing data found)
+    DataInputController --> DataInputController : load existing depot & fleet data
+end
+
+DataInputController --> MainScreen : navigate to main screen
+MainScreen --> User : display main screen
+
+User --> MainScreen : click "Import Orders" button
+MainScreen --> OrderImportDialog : open import dialog
+OrderImportDialog --> User : display dialog with:\n- File picker (top)\n- Text area (bottom)
+
+alt user uploads file
+    User --> OrderImportDialog : select and upload file (CSV/JSON)
+    OrderImportDialog --> DataInputController : submit file
+    DataInputController --> FileParser : parse file
+
+    alt file format valid
+        FileParser --> OrderValidator : validate each order from file
+    else file format invalid
+        FileParser --> ErrorPopup : show file format error
+        ErrorPopup --> User : display error message
+    end
+
+else user inputs text manually
+    User --> OrderImportDialog : input order data (one per line)
+    OrderImportDialog --> DataInputController : submit text data
+    DataInputController --> TextParser : parse each line
+    TextParser --> OrderValidator : validate each order from text
+
+else user provides both file and text
+    User --> OrderImportDialog : provide both file and text
+    OrderImportDialog --> DataInputController : submit both
+    DataInputController --> ErrorPopup : show warning "Please choose one input method"
+    ErrorPopup --> User : display warning
+
+else user provides nothing
+    User --> OrderImportDialog : click submit without data
+    OrderImportDialog --> DataInputController : submit empty
+    DataInputController --> ErrorPopup : show warning "No data provided"
+    ErrorPopup --> User : display warning
+end
+
+alt validation has errors
+    OrderValidator --> ErrorPopup : show validation errors with details\n(line numbers, error reasons)
+    ErrorPopup --> User : display error list
+    ErrorPopup --> User : ask "Import valid orders (X) and skip invalid (Y)?"
+
+    alt user accepts partial import
+        User --> OrderImportDialog : click "Yes"
+        OrderValidator --> Order : save valid orders (overwrite if duplicate)
+        Order --> MainScreen : display orders
+        MainScreen --> SuccessPopup : show partial success\n(X imported, Y skipped, Z overwritten)
+        SuccessPopup --> User : display result
+    else user rejects
+        User --> OrderImportDialog : click "No" to fix data
+    end
+
+else all orders valid
+    OrderValidator --> Order : save all orders (overwrite if duplicate)
+    Order --> MainScreen : display all orders
+    MainScreen --> SuccessPopup : show success\n(X orders imported, Y overwritten)
+    SuccessPopup --> User : display success message
+end
+
+@enduml
+
+@startuml VRP-002
+autonumber
+
+actor "Planning Officer" as User
+boundary "MainScreen" as MainScreen
+boundary "VehicleSelectionDialog" as VehicleDialog
+boundary "OptimizationProgressPopup" as ProgressPopup
+boundary "RouteResultDisplay" as RouteDisplay
+boundary "ErrorPopup" as ErrorPopup
+control "RoutePlanningController" as RoutePlanningController
+control "OrderSelectionValidator" as OrderValidator
+control "VehicleAvailabilityChecker" as VehicleChecker
+control "RouteOptimizationEngine" as OptimizationEngine
+entity "Order"
+entity "Vehicle"
+entity "Route"
+
+User --> MainScreen : select orders for delivery
+
+alt no orders selected
+    User --> MainScreen : click "Plan Routes" button
+    MainScreen --> RoutePlanningController : request route planning
+    RoutePlanningController --> OrderValidator : validate order selection
+    OrderValidator --> ErrorPopup : no orders selected error
+    ErrorPopup --> User : display "Please select at least one order"
+    User --> ErrorPopup : click "OK"
+    ErrorPopup --> MainScreen : return to main screen
+
+else orders selected
+    User --> MainScreen : click "Plan Routes" button
+    MainScreen --> RoutePlanningController : request route planning with selected orders
+    RoutePlanningController --> OrderValidator : validate order selection
+    OrderValidator --> Order : retrieve selected orders
+    Order --> OrderValidator : return order details
+    OrderValidator --> RoutePlanningController : validation successful
+
+    RoutePlanningController --> VehicleDialog : show vehicle selection dialog
+    VehicleDialog --> VehicleChecker : check available vehicles
+    VehicleChecker --> Vehicle : retrieve available vehicles
+    Vehicle --> VehicleChecker : return vehicle list
+    VehicleChecker --> VehicleDialog : return available vehicles
+
+    alt no vehicles available
+        VehicleDialog --> User : display dialog with no vehicles\nhide "Plan Routes" button
+    else vehicles available
+        VehicleDialog --> User : display vehicle list with checkboxes
+
+        alt user cancels
+            User --> VehicleDialog : click "Cancel" button
+            VehicleDialog --> MainScreen : close dialog, keep order selection
+            MainScreen --> User : return to main screen
+        else user selects vehicles
+            User --> VehicleDialog : select vehicles
+            User --> VehicleDialog : click "Plan Routes"
+            VehicleDialog --> RoutePlanningController : submit selected vehicles
+
+            RoutePlanningController --> OptimizationEngine : start route optimization\n(orders, vehicles)
+            OptimizationEngine --> ProgressPopup : show optimization progress
+            ProgressPopup --> User : display processing status\n(progress bar, elapsed time)
+
+            alt optimization successful
+                OptimizationEngine --> Route : save optimized routes
+                Route --> OptimizationEngine : confirm saved
+                OptimizationEngine --> RoutePlanningController : return route data
+                RoutePlanningController --> ProgressPopup : close progress popup
+                RoutePlanningController --> RouteDisplay : prepare route visualization
+                RouteDisplay --> MainScreen : display routes on main screen
+                MainScreen --> User : show routes with metrics:\n- Distance\n- CO2 emissions\n- Service time\n- Route details per vehicle
+
+            else optimization failed (timeout or no solution)
+                OptimizationEngine --> ErrorPopup : optimization failed
+                ErrorPopup --> ProgressPopup : close progress popup
+                ErrorPopup --> User : display error message:\n"Unable to find solution\nPlease try again or contact admin"
+                User --> ErrorPopup : acknowledge error
+                ErrorPopup --> MainScreen : return to main screen
+            end
+        end
+    end
+end
+
+@enduml
+
+@startuml VRP-003
+autonumber
+
+actor "Planning Officer" as User
+boundary "MainScreen" as MainScreen
+boundary "ExportFormatDialog" as ExportDialog
+boundary "ResultSelectionDropdown" as ResultDropdown
+boundary "SuccessToast" as SuccessToast
+boundary "ErrorPopup" as ErrorPopup
+control "ExportController" as ExportController
+control "ResultValidator" as ResultValidator
+control "FileGenerator" as FileGenerator
+control "DownloadManager" as DownloadManager
+entity "Route"
+
+MainScreen --> ResultValidator : on page load, check route results
+ResultValidator --> Route : query existing routes
+Route --> ResultValidator : return routes count
+
+alt no route results available
+    ResultValidator --> MainScreen : disable "Export Results" button
+    MainScreen --> User : display disabled export button\nwith tooltip "No results available"
+
+else route results available
+    ResultValidator --> MainScreen : enable "Export Results" button
+    MainScreen --> User : display enabled export button
+
+    User --> MainScreen : click "Export Results" button
+    MainScreen --> ExportController : request export
+
+    ExportController --> Route : check number of results
+    Route --> ExportController : return results count
+
+    alt single result
+        ExportController --> ExportDialog : show format selection dialog
+        ExportDialog --> User : display format options (CSV/TXT)
+
+    else multiple results (>1)
+        ExportController --> ResultDropdown : show result selection dropdown
+        ResultDropdown --> Route : retrieve all route results
+        Route --> ResultDropdown : return results list with metadata
+        ResultDropdown --> User : display results with:\n- Timestamp\n- Number of routes\n- Number of orders
+        User --> ResultDropdown : select specific result
+        ResultDropdown --> ExportController : submit selected result ID
+        ExportController --> ExportDialog : show format selection dialog
+        ExportDialog --> User : display format options (CSV/TXT)
+    end
+
+    alt user cancels
+        User --> ExportDialog : click "Cancel" button
+        ExportDialog --> MainScreen : close dialog
+        MainScreen --> User : return to main screen
+
+    else user selects format
+        User --> ExportDialog : select format (CSV or TXT)
+        ExportDialog --> ExportController : submit selected format
+
+        ExportController --> Route : retrieve route data for selected result
+        Route --> ExportController : return complete route details
+
+        ExportController --> FileGenerator : generate file with format and data
+        FileGenerator --> FileGenerator : create filename:\nVRP_Results_[Date]_[Time].[ext]
+
+        alt file generation successful
+            FileGenerator --> DownloadManager : prepare file for download
+
+            alt download successful
+                DownloadManager --> User : trigger browser download
+                User --> User : receive downloaded file
+                DownloadManager --> ExportController : confirm download success
+                ExportController --> SuccessToast : show success notification
+                SuccessToast --> User : display "File exported successfully"
+
+            else download failed
+                DownloadManager --> ErrorPopup : download error
+                ErrorPopup --> User : display error message:\n"Download failed. Please try again"
+                User --> ErrorPopup : click "OK"
+                ErrorPopup --> MainScreen : return to main screen
+            end
+
+        else file generation failed
+            FileGenerator --> ErrorPopup : generation error
+            ErrorPopup --> User : display error message:\n"Unable to generate file"
+            User --> ErrorPopup : click "OK"
+            ErrorPopup --> MainScreen : return to main screen
+        end
+    end
+end
+
+@enduml
+
+@startuml VRP-004
+autonumber
+
+actor "Planning Officer" as User
+boundary "MainScreen" as MainScreen
+boundary "FileUploadDialog" as UploadDialog
+boundary "SuccessPopup" as SuccessPopup
+boundary "ErrorPopup" as ErrorPopup
+control "EvaluationController" as EvaluationController
+control "FileUploadHandler" as FileUploadHandler
+control "FileValidator" as FileValidator
+control "FileParser" as FileParser
+entity "Route"
+entity "Depot"
+entity "Vehicle"
+entity "Order"
+
+User --> MainScreen : click "Evaluate Result" button
+MainScreen --> EvaluationController : request file upload
+EvaluationController --> UploadDialog : show file upload dialog
+UploadDialog --> User : display file selection (CSV/JSON/TXT)
+
+User --> UploadDialog : select and upload file
+UploadDialog --> FileUploadHandler : submit file
+
+FileUploadHandler --> FileValidator : validate file format and structure
+
+alt file validation successful
+    FileValidator --> FileParser : parse file content
+    FileParser --> Route : retrieve depot data for validation
+    Route --> Depot : check depot information
+    Depot --> FileParser : return depot details
+
+    FileParser --> Vehicle : retrieve vehicle data for validation
+    Vehicle --> FileParser : return vehicle details
+
+    FileParser --> Order : retrieve order data for validation
+    Order --> FileParser : return order details
+
+    alt file content valid and consistent
+        FileParser --> Route : save route from file
+        Route --> EvaluationController : confirm route saved
+        EvaluationController --> MainScreen : display routes from file
+        MainScreen --> User : show route visualization
+        EvaluationController --> SuccessPopup : import successful
+        SuccessPopup --> User : display success message
+    else file content invalid or inconsistent
+        FileParser --> ErrorPopup : data inconsistency error
+        ErrorPopup --> User : display error message\n(invalid data or mismatch)
+    end
+else file validation failed
+    FileValidator --> ErrorPopup : file format error
+    ErrorPopup --> User : display error message\n(invalid format or corrupted file)
+end
+
+@enduml
+
+@startuml VRP-005
+autonumber
+
+actor "Planning Officer" as User
+boundary "MainScreen" as MainScreen
+boundary "EvaluationDialog" as EvaluationDialog
+boundary "AnalysisTab" as AnalysisTab
+boundary "ComparisonTable" as ComparisonTable
+boundary "ChartVisualization" as ChartVisualization
+boundary "ResultDetailModal" as DetailModal
+boundary "ExportReportDialog" as ExportDialog
+boundary "ErrorPopup" as ErrorPopup
+boundary "InfoPopup" as InfoPopup
+control "EvaluationController" as EvaluationController
+control "RouteHistoryManager" as RouteHistoryManager
+control "MetricsCalculator" as MetricsCalculator
+control "StatisticsEngine" as StatisticsEngine
+control "ChartGenerator" as ChartGenerator
+control "ReportGenerator" as ReportGenerator
+entity "Route"
+
+User --> MainScreen : navigate after importing solution (VRP-004)
+MainScreen --> EvaluationController : request evaluation
+EvaluationController --> RouteHistoryManager : check available route results
+
+RouteHistoryManager --> Route : query historical routes count
+Route --> RouteHistoryManager : return count
+
+alt no historical routes
+    RouteHistoryManager --> InfoPopup : no history available
+    InfoPopup --> User : display "Chưa có dữ liệu lịch sử để so sánh"
+    User --> InfoPopup : click "OK"
+    InfoPopup --> MainScreen : return to main screen
+
+else historical routes available
+    RouteHistoryManager --> EvaluationController : return available count
+    EvaluationController --> EvaluationDialog : show evaluation dialog
+    EvaluationDialog --> User : display dropdown options:\n"1", "5", "10" results to compare
+
+    User --> EvaluationDialog : select number (e.g., "5")
+    EvaluationDialog --> EvaluationController : submit selection
+
+    EvaluationController --> RouteHistoryManager : check if enough routes
+    RouteHistoryManager --> Route : query route count
+    Route --> RouteHistoryManager : return actual count
+
+    alt fewer routes than requested
+        RouteHistoryManager --> InfoPopup : insufficient results warning
+        InfoPopup --> User : display "Chỉ có X kết quả trong lịch sử"
+        User --> InfoPopup : click "Continue"
+        InfoPopup --> EvaluationController : proceed with available
+    end
+
+    EvaluationController --> RouteHistoryManager : retrieve historical routes
+    RouteHistoryManager --> Route : fetch N most recent route solutions\n(both optimized and imported)
+
+    alt retrieval error
+        Route --> ErrorPopup : database error
+        ErrorPopup --> User : display "Lỗi truy xuất dữ liệu. Vui lòng thử lại"
+        User --> ErrorPopup : click "Retry" or "Cancel"
+
+        alt user retries
+            ErrorPopup --> RouteHistoryManager : retry retrieval
+        else user cancels
+            ErrorPopup --> MainScreen : return to main screen
+        end
+
+    else retrieval successful
+        Route --> RouteHistoryManager : return routes list with:\n- Route data\n- Metrics (distance, CO2, time)\n- Timestamp\n- Type (optimized/imported)
+        RouteHistoryManager --> EvaluationController : provide historical routes data
+
+        EvaluationController --> Route : get current imported solution (latest)
+        Route --> EvaluationController : return current solution data
+
+        EvaluationController --> MetricsCalculator : calculate comparison metrics
+        MetricsCalculator --> MetricsCalculator : compute for each route:\n- Distance deviation (%)\n- CO2 deviation (%)\n- Time deviation (%)\n- Unserved orders\nCompare current vs each historical
+
+        alt calculation error
+            MetricsCalculator --> ErrorPopup : calculation error
+            ErrorPopup --> User : display "Lỗi tính toán. Vui lòng thử lại"
+            User --> ErrorPopup : click "Retry" or "Cancel"
+
+        else calculation successful
+            MetricsCalculator --> StatisticsEngine : compute statistics
+            StatisticsEngine --> StatisticsEngine : calculate from historical routes:\n- Min, Max, Avg, Median\n- Standard deviation\n- Percentiles
+            StatisticsEngine --> EvaluationController : return all metrics
+
+            EvaluationController --> AnalysisTab : navigate to Analysis tab
+            AnalysisTab --> MainScreen : switch to Analysis view
+            MainScreen --> User : display Analysis tab
+
+            EvaluationController --> ComparisonTable : prepare comparison table
+            ComparisonTable --> User : display table with:\n- Current solution metrics\n- Historical avg/min/max\n- Deviation percentages\n- Color-coded indicators
+
+            EvaluationController --> ChartGenerator : generate visualizations
+            ChartGenerator --> ChartGenerator : create charts:\n- Line chart (routes trend over time)\n- Bar chart (current vs avg)\n- Radar chart (multi-metric)
+            ChartGenerator --> ChartVisualization : provide chart data
+            ChartVisualization --> User : display interactive charts
+
+            EvaluationController --> ComparisonTable : apply highlighting
+            ComparisonTable --> ComparisonTable : color code:\n🟢 Better than average\n🟡 Within ±5% of average\n🔴 Worse than average >5%
+            ComparisonTable --> User : show highlighted metrics
+
+            ' Optional: View detail flow
+            alt user views historical route detail
+                User --> ComparisonTable : click on specific route row
+                ComparisonTable --> EvaluationController : request detail view
+                EvaluationController --> RouteHistoryManager : fetch full route data
+                RouteHistoryManager --> Route : retrieve complete route with ID
+                Route --> RouteHistoryManager : return route details:\n- All route data\n- Vehicle assignments\n- Order sequences\n- Metrics\n- Timestamp\n- Type (optimized/imported)
+                RouteHistoryManager --> DetailModal : prepare detail view
+                DetailModal --> User : display modal with:\n- Route map visualization\n- Complete metrics\n- Timestamp\n- Solution type\n- Vehicle details
+                User --> DetailModal : review and close
+                DetailModal --> AnalysisTab : return to analysis view
+            end
+
+            ' Optional: Export report flow
+            alt user exports analysis report
+                User --> AnalysisTab : click "Export Report" button
+                AnalysisTab --> EvaluationController : request report export
+                EvaluationController --> ReportGenerator : generate report
+                ReportGenerator --> ReportGenerator : compile:\n- Summary statistics\n- Comparison table data\n- Chart images/data\n- Timestamp and metadata
+
+                ReportGenerator --> ExportDialog : show export options
+                ExportDialog --> User : display format: CSV
+
+                User --> ExportDialog : confirm CSV export
+                ExportDialog --> ReportGenerator : submit format choice
+
+                ReportGenerator --> ReportGenerator : generate file:\nAnalysis_Report_[Date]_[Time].csv
+
+                alt export successful
+                    ReportGenerator --> User : trigger download
+                    User --> User : receive report file
+                    ReportGenerator --> InfoPopup : show success
+                    InfoPopup --> User : display "Báo cáo đã được xuất thành công"
+
+                else export failed
+                    ReportGenerator --> ErrorPopup : export error
+                    ErrorPopup --> User : display "Lỗi xuất báo cáo"
+                end
+            end
+        end
+    end
+end
+
+@enduml
