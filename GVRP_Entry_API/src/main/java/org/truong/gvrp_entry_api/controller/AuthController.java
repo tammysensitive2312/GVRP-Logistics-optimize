@@ -14,6 +14,7 @@ import org.truong.gvrp_entry_api.dto.response.LoginResponse;
 import org.truong.gvrp_entry_api.dto.request.RegisterRequest;
 import org.truong.gvrp_entry_api.entity.User;
 import org.truong.gvrp_entry_api.repository.UserRepository;
+import org.truong.gvrp_entry_api.security.BranchUsernamePasswordAuthenticationToken;
 import org.truong.gvrp_entry_api.security.jwt.JwtTokenProvider;
 
 /**
@@ -35,9 +36,10 @@ public class AuthController {
 
         // Authenticate user
         Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
+                new BranchUsernamePasswordAuthenticationToken(
                         loginRequest.getUsername(),
-                        loginRequest.getPassword()
+                        loginRequest.getPassword(),
+                        loginRequest.getBranchName()
                 )
         );
 

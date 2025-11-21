@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - VRP System</title>
+
+    <!-- Login Styles -->
+    <link rel="stylesheet" href="login.css">
+</head>
+<body>
+<div class="login-container">
+    <!-- Left Side - Branding -->
+    <div class="login-left">
+        <div class="branding">
+            <div class="brand-icon">🚚</div>
+            <h1 class="brand-title">VRP System</h1>
+            <p class="brand-subtitle">Vehicle Route Planning & Optimization</p>
+        </div>
+
+        <div class="features-list">
+            <div class="feature-item">
+                <span class="feature-icon">📍</span>
+                <div class="feature-text">
+                    <strong>Multi-Depot Management</strong>
+                    <p>Quản lý nhiều kho hàng trên bản đồ</p>
+                </div>
+            </div>
+            <div class="feature-item">
+                <span class="feature-icon">🗺️</span>
+                <div class="feature-text">
+                    <strong>Route Optimization</strong>
+                    <p>Tối ưu hóa tuyến đường giao hàng</p>
+                </div>
+            </div>
+            <div class="feature-item">
+                <span class="feature-icon">📊</span>
+                <div class="feature-text">
+                    <strong>Analytics & Reports</strong>
+                    <p>Phân tích và báo cáo chi tiết</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer-text">
+            <p>© 2025 VRP System. All rights reserved.</p>
+        </div>
+    </div>
+
+    <!-- Right Side - Login Form -->
+    <div class="login-right">
+        <div class="login-form-container">
+            <div class="form-header">
+                <h2>Đăng nhập</h2>
+                <p>Nhập thông tin để truy cập hệ thống</p>
+            </div>
+
+            <form id="login-form" class="login-form">
+                <!-- Branch Name -->
+                <div class="form-group">
+                    <label for="branch-name">
+                        <span class="label-icon">🏢</span>
+                        Tên Chi nhánh
+                    </label>
+                    <input
+                            type="text"
+                            id="branch-name"
+                            name="branchName"
+                            placeholder="Ví dụ: Hanoi Branch"
+                            required
+                            autocomplete="organization"
+                    />
+                    <span class="field-hint">Tên chi nhánh của công ty bạn</span>
+                </div>
+
+                <!-- Username -->
+                <div class="form-group">
+                    <label for="username">
+                        <span class="label-icon">👤</span>
+                        Tên đăng nhập
+                    </label>
+                    <input
+                            type="text"
+                            id="username"
+                            name="username"
+                            placeholder="Nhập tên đăng nhập"
+                            required
+                            autocomplete="username"
+                    />
+                </div>
+
+                <!-- Password -->
+                <div class="form-group">
+                    <label for="password">
+                        <span class="label-icon">🔒</span>
+                        Mật khẩu
+                    </label>
+                    <div class="password-field">
+                        <input
+                                type="password"
+                                id="password"
+                                name="password"
+                                placeholder="Nhập mật khẩu"
+                                required
+                                autocomplete="current-password"
+                        />
+                        <button type="button" class="toggle-password" onclick="togglePassword()">
+                            <span id="eye-icon">👁️</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Remember Me -->
+                <div class="form-options">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="remember-me" name="rememberMe" />
+                        <span>Ghi nhớ đăng nhập</span>
+                    </label>
+                    <a href="#" class="forgot-password" onclick="handleForgotPassword(event)">
+                        Quên mật khẩu?
+                    </a>
+                </div>
+
+                <!-- Error Message -->
+                <div id="login-error" class="error-message" style="display: none;"></div>
+
+                <!-- Submit Button -->
+                <button type="submit" class="btn-login" id="btn-login">
+                    <span class="btn-text">Đăng nhập</span>
+                    <span class="btn-loader" style="display: none;">
+                            <span class="spinner"></span>
+                            Đang xử lý...
+                        </span>
+                </button>
+            </form>
+
+            <!-- Divider -->
+            <div class="divider">
+                <span>hoặc</span>
+            </div>
+
+            <!-- Register Link -->
+            <div class="register-section">
+                <p>Chưa có tài khoản?</p>
+                <a href="#" class="btn-register" onclick="handleRegister(event)">
+                    Đăng ký ngay
+                </a>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- Loading Overlay -->
+<div id="loading-overlay" class="loading-overlay" style="display: none;">
+    <div class="loading-spinner"></div>
+    <div class="loading-text">Đang đăng nhập...</div>
+</div>
+
+<!-- Toast Notification -->
+<div id="toast" class="toast"></div>
+
+<!-- Scripts -->
+<script src="auth.js"></script>
+<script src="login.js"></script>
+</body>
+</html>

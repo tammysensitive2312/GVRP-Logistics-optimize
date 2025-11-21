@@ -9,6 +9,9 @@ import lombok.*;
 @AllArgsConstructor
 public class LoginRequest {
 
+    @NotBlank(message = "Branch name is required")
+    private String branchName;
+
     @NotBlank(message = "Username is required")
     private String username;
 

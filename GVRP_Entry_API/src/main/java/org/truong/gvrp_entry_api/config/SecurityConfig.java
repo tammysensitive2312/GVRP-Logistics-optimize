@@ -3,10 +3,9 @@ package org.truong.gvrp_entry_api.config;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
-import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -16,9 +15,12 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.truong.gvrp_entry_api.security.BranchAwareAuthenticationProvider;
 import org.truong.gvrp_entry_api.security.CustomUserDetailsService;
 import org.truong.gvrp_entry_api.security.jwt.JwtAuthenticationFilter;
 import org.truong.gvrp_entry_api.security.jwt.JwtAuthenticationEntryPoint;
+
+import java.util.Arrays;
 
 /**
  * Spring Security Configuration
@@ -32,23 +34,25 @@ public class SecurityConfig {
     private final CustomUserDetailsService userDetailsService;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+    private final BranchAwareAuthenticationProvider branchAwareAuthenticationProvider;
+    private final PasswordEncoder passwordEncoder;
+
 
     @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
+    public AuthenticationManager authenticationManager() throws Exception {
 
-    @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {
-        return authConfig.getAuthenticationManager();
-    }
+        DaoAuthenticationProvider defaultProvider = new DaoAuthenticationProvider();
+        defaultProvider.setUserDetailsService(userDetailsService);
+        defaultProvider.setPasswordEncoder(passwordEncoder);
 
-    @Bean
-    public DaoAuthenticationProvider authenticationProvider() {
-        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
-        authProvider.setUserDetailsService(userDetailsService);
-        authProvider.setPasswordEncoder(passwordEncoder());
-        return authProvider;
+
+        return new ProviderManager(
+                Arrays.asList(
+                        defaultProvider,
+                        branchAwareAuthenticationProvider
+                )
+        );
+
     }
 
     @Bean
@@ -77,7 +81,6 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 );
 
-        http.authenticationProvider(authenticationProvider());
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

@@ -3,12 +3,23 @@
  * Manages screens, forms, and business logic
  */
 
-// Application state
+// ============================================
+// IMPORTS (Phase 1)
+// ============================================
+import { Toast } from './utils/toast.js';
+import { Loading } from './utils/loading.js';
+import { Validator } from './utils/validation.js';
+import { DOMHelpers } from './utils/dom-helpers.js';
+
+// ============================================
+// APPLICATION STATE
+// ============================================
 let currentScreen = 'screen-depot-setup';
 let vehicleCount = 0;
 let selectedOrders = new Set();
 let allOrders = [];
 let filteredOrders = [];
+let availableDepots = [];
 
 // ============================================
 // INITIALIZATION
@@ -16,6 +27,14 @@ let filteredOrders = [];
 
 document.addEventListener('DOMContentLoaded', function() {
     console.log('VRP System initializing...');
+
+    // Check authentication
+    if (!requireAuth()) {
+        return;
+    }
+
+    // Display user info in navbar
+    displayUserInfo();
 
     // Check if setup is complete
     checkSetupStatus();
@@ -25,6 +44,37 @@ document.addEventListener('DOMContentLoaded', function() {
 
     console.log('VRP System ready!');
 });
+
+/**
+ * Display user info in navbar
+ */
+function displayUserInfo() {
+    const user = getCurrentUser();
+    const branch = getCurrentBranch();
+
+    if (user && branch) {
+        // Update brand name with branch
+        const brandName = document.querySelector('.brand-name');
+        if (brandName) {
+            brandName.textContent = `VRP System™ - ${branch.name}`;
+        }
+
+        // Update user info
+        const userName = document.querySelector('.user-name');
+        if (userName) {
+            userName.textContent = user.fullName || user.username;
+        }
+    }
+}
+
+/**
+ * Handle logout
+ */
+function handleLogout() {
+    if (confirm('Bạn có chắc chắn muốn đăng xuất?')) {
+        logout();
+    }
+}
 
 /**
  * Check if user has completed setup (Depot + Fleet)
@@ -45,7 +95,6 @@ async function checkSetupStatus() {
         }
     } catch (error) {
         console.error('Setup check failed:', error);
-        // On error, start from depot setup
         goToScreen('screen-depot-setup');
         initDepotSetupMap();
     }
@@ -65,12 +114,6 @@ function initEventListeners() {
     const fleetForm = document.getElementById('fleet-form');
     if (fleetForm) {
         fleetForm.addEventListener('submit', handleFleetSubmit);
-    }
-
-    // Import form
-    const importForm = document.getElementById('import-form');
-    if (importForm) {
-        // Form submission handled by submitImport()
     }
 
     // File drop zone
@@ -140,15 +183,13 @@ function initResizableDivider() {
         const deltaY = e.clientY - startY;
         const newMapHeight = startMapHeight + deltaY;
 
-        // Constraints: min 200px, max 80% of main content
         const mainHeight = mainContent.offsetHeight;
         const minHeight = 200;
-        const maxHeight = mainHeight - 200; // Reserve at least 200px for table
+        const maxHeight = mainHeight - 200;
 
         if (newMapHeight >= minHeight && newMapHeight <= maxHeight) {
             mapSection.style.height = newMapHeight + 'px';
 
-            // Invalidate map size to prevent rendering issues
             if (mainMap) {
                 setTimeout(() => mainMap.invalidateSize(), 10);
             }
@@ -171,7 +212,6 @@ function initResizableDivider() {
 
 /**
  * Navigate to a screen
- * @param {string} screenId
  */
 function goToScreen(screenId) {
     // Hide all screens
@@ -184,15 +224,12 @@ function goToScreen(screenId) {
     if (targetScreen) {
         targetScreen.classList.add('active');
         currentScreen = screenId;
-
-        // Initialize screen-specific logic
         onScreenActivated(screenId);
     }
 }
 
 /**
  * Handle screen activation
- * @param {string} screenId
  */
 function onScreenActivated(screenId) {
     switch(screenId) {
@@ -200,10 +237,7 @@ function onScreenActivated(screenId) {
             setTimeout(() => initDepotSetupMap(), 100);
             break;
         case 'screen-fleet-setup':
-            // Add first vehicle by default
-            if (vehicleCount === 0) {
-                addVehicle();
-            }
+            loadDepotsForFleet();
             break;
         case 'screen-main':
             setTimeout(() => {
@@ -225,35 +259,30 @@ async function handleDepotSubmit(event) {
     event.preventDefault();
 
     const formData = {
-        name: document.getElementById('depot-name').value.trim(),
-        address: document.getElementById('depot-address').value.trim(),
-        latitude: parseFloat(document.getElementById('depot-lat').value),
-        longitude: parseFloat(document.getElementById('depot-lng').value)
+        name: DOMHelpers.getValue('depot-name').trim(),
+        address: DOMHelpers.getValue('depot-address').trim(),
+        latitude: parseFloat(DOMHelpers.getValue('depot-lat')),
+        longitude: parseFloat(DOMHelpers.getValue('depot-lng'))
     };
 
-    // Validation
-    if (!formData.name) {
-        showToast('Vui lòng nhập tên depot', 'error');
+    // Validation using Validator
+    const validation = Validator.validateDepot(formData);
+    if (!validation.isValid) {
+        Toast.error(validation.errors[0]);
         return;
     }
 
-    if (!formData.latitude || !formData.longitude) {
-        showToast('Vui lòng chọn vị trí trên bản đồ', 'error');
-        return;
-    }
-
-    // Show loading
-    showLoading(true);
+    Loading.show();
 
     try {
         await createDepot(formData);
-
-        // Move to fleet setup
+        Toast.success('Depot đã được tạo thành công!');
         goToScreen('screen-fleet-setup');
     } catch (error) {
         console.error('Failed to create depot:', error);
+        Toast.error('Không thể tạo depot. Vui lòng thử lại.');
     } finally {
-        showLoading(false);
+        Loading.hide();
     }
 }
 
@@ -261,7 +290,7 @@ async function handleDepotSubmit(event) {
  * Reset depot form
  */
 function resetDepotForm() {
-    document.getElementById('depot-form').reset();
+    DOMHelpers.resetForm('depot-form');
     if (depotMarker && depotSetupMap) {
         depotSetupMap.removeLayer(depotMarker);
         depotMarker = null;
@@ -271,6 +300,77 @@ function resetDepotForm() {
 // ============================================
 // SCREEN 2: FLEET SETUP
 // ============================================
+
+/**
+ * Load available depots for fleet setup
+ */
+async function loadDepotsForFleet() {
+    Loading.show();
+
+    try {
+        availableDepots = await getDepots();
+
+        if (!availableDepots || availableDepots.length === 0) {
+            Toast.error('Không tìm thấy depot nào. Vui lòng tạo depot trước.');
+            goToScreen('screen-depot-setup');
+            return;
+        }
+
+        displayDepotInfo();
+
+        if (vehicleCount === 0) {
+            addVehicle();
+        }
+
+    } catch (error) {
+        console.error('Failed to load depots:', error);
+        Toast.error('Không thể tải danh sách depot');
+    } finally {
+        Loading.hide();
+    }
+}
+
+/**
+ * Display depot info in fleet setup
+ */
+function displayDepotInfo() {
+    const infoBox = document.getElementById('depots-info');
+    const listContainer = document.getElementById('depots-list-info');
+
+    if (!availableDepots || availableDepots.length === 0) {
+        infoBox.style.display = 'none';
+        return;
+    }
+
+    infoBox.style.display = 'block';
+    DOMHelpers.clearChildren('depots-list-info');
+
+    availableDepots.forEach(depot => {
+        const item = DOMHelpers.createElement('div',
+            { class: 'depot-info-item', html: true },
+            `<strong>${depot.name}</strong> - ${depot.address}`
+        );
+        DOMHelpers.appendChild('depots-list-info', item);
+    });
+}
+
+/**
+ * Build depot options HTML
+ */
+function buildDepotOptions(selectedId = '') {
+    if (!availableDepots || availableDepots.length === 0) {
+        return '<option value="">No depots available</option>';
+    }
+
+    let html = '<option value="">-- Chọn depot --</option>';
+
+    availableDepots.forEach(depot => {
+        const selected = depot.id == selectedId ? 'selected' : '';
+        html += `<option value="${depot.id}" ${selected}>${depot.name}</option>`;
+    });
+
+    return html;
+}
 
 /**
  * Add a new vehicle form
@@ -301,18 +401,18 @@ function addVehicle() {
             </div>
             <div class="form-group">
                 <label>Tải trọng (kg) <span class="required">*</span></label>
-                <input type="number" name="capacity" placeholder="500" min="1" required onchange="updateFleetSummary()" />
+                <input type="number" name="capacity" placeholder="500" min="1" required oninput="updateFleetSummary()" />
             </div>
             <div class="form-group">
-                <label>Chi phí cố định</label>
+                <label>Chi phí cố định (VND)</label>
                 <input type="number" name="fixedCost" placeholder="100000" min="0" step="1000" />
             </div>
             <div class="form-group">
-                <label>Chi phí/km</label>
+                <label>Chi phí/km (VND)</label>
                 <input type="number" name="costPerKm" placeholder="5000" min="0" step="100" />
             </div>
             <div class="form-group">
-                <label>Chi phí/giờ</label>
+                <label>Chi phí/giờ (VND)</label>
                 <input type="number" name="costPerHour" placeholder="50000" min="0" step="1000" />
             </div>
             <div class="form-group">
@@ -323,6 +423,18 @@ function addVehicle() {
                 <label>Thời gian tối đa (giờ)</label>
                 <input type="number" name="maxDuration" placeholder="8" min="0" step="0.5" />
             </div>
+            <div class="form-group">
+                <label>Điểm xuất phát <span class="required">*</span></label>
+                <select name="startDepotId" required>
+                    ${buildDepotOptions()}
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Điểm kết thúc <span class="required">*</span></label>
+                <select name="endDepotId" required>
+                    ${buildDepotOptions()}
+                </select>
+            </div>
         </div>
     `;
 
@@ -332,20 +444,16 @@ function addVehicle() {
 
 /**
  * Remove a vehicle form
- * @param {number} id
  */
 function removeVehicle(id) {
     if (vehicleCount <= 1) {
-        showToast('Phải có ít nhất 1 xe', 'error');
+        Toast.error('Phải có ít nhất 1 xe');
         return;
     }
 
-    const vehicleCard = document.getElementById(`vehicle-${id}`);
-    if (vehicleCard) {
-        vehicleCard.remove();
-        vehicleCount--;
-        updateFleetSummary();
-    }
+    DOMHelpers.removeElement(`vehicle-${id}`);
+    vehicleCount--;
+    updateFleetSummary();
 }
 
 /**
@@ -362,8 +470,8 @@ function updateFleetSummary() {
         }
     });
 
-    document.getElementById('total-vehicles').textContent = vehicles.length;
-    document.getElementById('total-capacity').textContent = totalCapacity + ' kg';
+    DOMHelpers.setText('total-vehicles', vehicles.length);
+    DOMHelpers.setText('total-capacity', totalCapacity + ' kg');
 }
 
 /**
@@ -372,10 +480,10 @@ function updateFleetSummary() {
 async function handleFleetSubmit(event) {
     event.preventDefault();
 
-    const fleetName = document.getElementById('fleet-name').value.trim();
+    const fleetName = DOMHelpers.getValue('fleet-name').trim();
 
     if (!fleetName) {
-        showToast('Vui lòng nhập tên đội xe', 'error');
+        Toast.error('Vui lòng nhập tên đội xe');
         return;
     }
 
@@ -383,43 +491,54 @@ async function handleFleetSubmit(event) {
     const vehicles = [];
     const vehicleCards = document.querySelectorAll('.vehicle-card');
 
-    vehicleCards.forEach(card => {
+    for (const card of vehicleCards) {
+        const startDepotId = parseInt(card.querySelector('select[name="startDepotId"]').value);
+        const endDepotId = parseInt(card.querySelector('select[name="endDepotId"]').value);
+
+        if (!startDepotId || !endDepotId) {
+            Toast.error('Vui lòng chọn điểm xuất phát và điểm kết thúc cho tất cả xe');
+            return;
+        }
+
         const vehicle = {
-            vehicleLicensePlate: card.querySelector('input[name="vehicleLicensePlate"]').value.trim(),
-            vehicleFeature: card.querySelector('input[name="vehicleFeature"]').value.trim(),
+            vehicle_license_plate: card.querySelector('input[name="vehicleLicensePlate"]').value.trim(),
+            vehicle_feature: card.querySelector('input[name="vehicleFeature"]').value.trim(),
             capacity: parseInt(card.querySelector('input[name="capacity"]').value) || 0,
-            fixedCost: parseFloat(card.querySelector('input[name="fixedCost"]').value) || 0,
-            costPerKm: parseFloat(card.querySelector('input[name="costPerKm"]').value) || 0,
-            costPerHour: parseFloat(card.querySelector('input[name="costPerHour"]').value) || 0,
-            maxDistance: parseFloat(card.querySelector('input[name="maxDistance"]').value) || null,
-            maxDuration: parseFloat(card.querySelector('input[name="maxDuration"]').value) || null
+            fixed_cost: parseFloat(card.querySelector('input[name="fixedCost"]').value) || 0,
+            cost_per_km: parseFloat(card.querySelector('input[name="costPerKm"]').value) || 0,
+            cost_per_hour: parseFloat(card.querySelector('input[name="costPerHour"]').value) || 0,
+            max_distance: parseFloat(card.querySelector('input[name="maxDistance"]').value) || null,
+            max_duration: parseFloat(card.querySelector('input[name="maxDuration"]').value) || null,
+            start_depot_id: startDepotId,
+            end_depot_id: endDepotId
         };
 
         vehicles.push(vehicle);
-    });
-
-    // Validation
-    if (vehicles.length === 0) {
-        showToast('Vui lòng thêm ít nhất 1 xe', 'error');
-        return;
     }
 
     const fleetData = {
-        fleetName,
+        fleet_name: fleetName,
         vehicles
     };
 
-    showLoading(true);
+    // Validation using Validator
+    const validation = Validator.validateFleet(fleetData);
+    if (!validation.isValid) {
+        Toast.error(validation.errors[0]);
+        return;
+    }
+
+    Loading.show();
 
     try {
         await createFleet(fleetData);
-
-        // Move to main screen
+        Toast.success('Đội xe đã được tạo thành công!');
         goToScreen('screen-main');
     } catch (error) {
         console.error('Failed to create fleet:', error);
+        Toast.error('Không thể tạo đội xe. Vui lòng thử lại.');
     } finally {
-        showLoading(false);
+        Loading.hide();
     }
 }
 
@@ -431,35 +550,32 @@ async function handleFleetSubmit(event) {
  * Load data for main screen
  */
 async function loadMainScreenData() {
-    showLoading(true);
+    Loading.show();
 
     try {
-        // Load depots
         const depots = await getDepots();
         if (depots && depots.length > 0) {
             loadDepotMarkers(depots);
             updateDepotsList(depots);
         }
 
-        // Load orders for today
         const today = new Date().toISOString().split('T')[0];
-        document.getElementById('filter-date').value = today;
+        DOMHelpers.setValue('filter-date', today);
         await loadOrders();
 
     } catch (error) {
         console.error('Failed to load main screen data:', error);
     } finally {
-        showLoading(false);
+        Loading.hide();
     }
 }
 
 /**
  * Update depots list in sidebar
- * @param {Array} depots
  */
 function updateDepotsList(depots) {
     const container = document.getElementById('depots-list');
-    container.innerHTML = '';
+    DOMHelpers.clearChildren('depots-list');
 
     depots.forEach(depot => {
         const depotItem = document.createElement('div');
@@ -485,21 +601,16 @@ function updateDepotsList(depots) {
  * Load orders from API
  */
 async function loadOrders() {
-    const date = document.getElementById('filter-date').value;
+    const date = DOMHelpers.getValue('filter-date');
 
-    showLoading(true);
+    Loading.show();
 
     try {
         allOrders = await getOrders(date);
         filteredOrders = [...allOrders];
 
-        // Update map
         loadOrderMarkers(filteredOrders);
-
-        // Update table
         updateOrdersTable(filteredOrders);
-
-        // Update stats
         updateStats(allOrders);
 
     } catch (error) {
@@ -508,17 +619,16 @@ async function loadOrders() {
         filteredOrders = [];
         updateOrdersTable([]);
     } finally {
-        showLoading(false);
+        Loading.hide();
     }
 }
 
 /**
  * Update orders table
- * @param {Array} orders
  */
 function updateOrdersTable(orders) {
     const tbody = document.getElementById('orders-tbody');
-    tbody.innerHTML = '';
+    DOMHelpers.clearChildren('orders-tbody');
 
     if (orders.length === 0) {
         tbody.innerHTML = `
@@ -561,14 +671,12 @@ function updateOrdersTable(orders) {
         tbody.appendChild(row);
     });
 
-    // Update footer
-    document.getElementById('footer-showing').textContent = orders.length;
-    document.getElementById('footer-total').textContent = allOrders.length;
+    DOMHelpers.setText('footer-showing', orders.length);
+    DOMHelpers.setText('footer-total', allOrders.length);
 }
 
 /**
  * Update stats cards
- * @param {Array} orders
  */
 function updateStats(orders) {
     const scheduled = orders.filter(o => o.status === 'SCHEDULED').length;
@@ -584,8 +692,6 @@ function updateStats(orders) {
 
 /**
  * Toggle order selection
- * @param {number} orderId
- * @param {boolean} checked
  */
 function toggleOrderSelection(orderId, checked) {
     if (checked) {
@@ -593,7 +699,6 @@ function toggleOrderSelection(orderId, checked) {
     } else {
         selectedOrders.delete(orderId);
     }
-
     updateSelectionCount();
 }
 
@@ -621,8 +726,8 @@ function toggleSelectAll() {
 function updateSelectionCount() {
     const count = selectedOrders.size;
 
-    document.getElementById('selected-count').textContent = count;
-    document.getElementById('footer-selected').textContent = count;
+    DOMHelpers.setText('selected-count', count);
+    DOMHelpers.setText('footer-selected', count);
 
     const planButton = document.getElementById('btn-plan-routes');
     planButton.disabled = count === 0;
@@ -630,19 +735,16 @@ function updateSelectionCount() {
 
 /**
  * Highlight table row
- * @param {number} orderId
  */
 function highlightTableRow(orderId) {
-    // Remove previous highlights
     document.querySelectorAll('.data-table tbody tr').forEach(row => {
         row.classList.remove('selected');
     });
 
-    // Add highlight
     const row = document.getElementById(`order-row-${orderId}`);
     if (row) {
         row.classList.add('selected');
-        row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        DOMHelpers.scrollIntoView(`order-row-${orderId}`);
     }
 }
 
@@ -650,24 +752,21 @@ function highlightTableRow(orderId) {
  * Apply filters
  */
 function applyFilters() {
-    const statusFilter = document.getElementById('filter-status').value;
-    const priorityFilter = document.getElementById('filter-priority').value;
-    const searchQuery = document.getElementById('filter-search').value.toLowerCase();
+    const statusFilter = DOMHelpers.getValue('filter-status');
+    const priorityFilter = DOMHelpers.getValue('filter-priority');
+    const searchQuery = DOMHelpers.getValue('filter-search').toLowerCase();
 
     filteredOrders = allOrders.filter(order => {
-        // Status filter
         if (statusFilter && order.status !== statusFilter) {
             return false;
         }
 
-        // Priority filter
         if (priorityFilter) {
             if (priorityFilter === 'high' && (!order.priority || order.priority > 3)) return false;
             if (priorityFilter === 'medium' && (!order.priority || order.priority < 4 || order.priority > 6)) return false;
             if (priorityFilter === 'low' && (!order.priority || order.priority < 7)) return false;
         }
 
-        // Search filter
         if (searchQuery) {
             const searchableText = `${order.orderCode} ${order.customerName} ${order.address}`.toLowerCase();
             if (!searchableText.includes(searchQuery)) {
@@ -686,21 +785,20 @@ function applyFilters() {
  * Clear all filters
  */
 function clearFilters() {
-    document.getElementById('filter-status').value = '';
-    document.getElementById('filter-priority').value = '';
-    document.getElementById('filter-search').value = '';
+    DOMHelpers.setValue('filter-status', '');
+    DOMHelpers.setValue('filter-priority', '');
+    DOMHelpers.setValue('filter-search', '');
     applyFilters();
 }
 
 /**
- * Filter orders by status (from stat card)
- * @param {string} status
+ * Filter orders by status
  */
 function filterOrdersByStatus(status) {
     if (status === 'ALL') {
-        document.getElementById('filter-status').value = '';
+        DOMHelpers.setValue('filter-status', '');
     } else {
-        document.getElementById('filter-status').value = status;
+        DOMHelpers.setValue('filter-status', status);
     }
     applyFilters();
 }
@@ -710,7 +808,7 @@ function filterOrdersByStatus(status) {
  */
 function toggleSidebar() {
     const sidebar = document.getElementById('main-sidebar');
-    sidebar.classList.toggle('collapsed');
+    DOMHelpers.toggleClass('main-sidebar', 'collapsed');
 
     const btn = sidebar.querySelector('.btn-collapse');
     if (sidebar.classList.contains('collapsed')) {
@@ -721,7 +819,6 @@ function toggleSidebar() {
         btn.title = 'Hide Sidebar';
     }
 
-    // Invalidate map size after animation
     setTimeout(() => {
         if (mainMap) mainMap.invalidateSize();
     }, 300);
@@ -735,24 +832,19 @@ function toggleSidebar() {
  * Open import modal
  */
 function openImportModal() {
-    const modal = document.getElementById('modal-import');
-    modal.classList.add('active');
+    DOMHelpers.addClass('modal-import', 'active');
 
-    // Set default date to today
     const today = new Date().toISOString().split('T')[0];
-    document.getElementById('import-delivery-date').value = today;
+    DOMHelpers.setValue('import-delivery-date', today);
 }
 
 /**
  * Close import modal
  */
 function closeImportModal() {
-    const modal = document.getElementById('modal-import');
-    modal.classList.remove('active');
-
-    // Reset form
-    document.getElementById('import-form').reset();
-    document.getElementById('file-selected').style.display = 'none';
+    DOMHelpers.removeClass('modal-import', 'active');
+    DOMHelpers.resetForm('import-form');
+    DOMHelpers.toggle('file-selected', false);
 }
 
 /**
@@ -761,55 +853,42 @@ function closeImportModal() {
 function toggleImportMethod() {
     const method = document.querySelector('input[name="import-method"]:checked').value;
 
-    const fileSection = document.getElementById('import-file-section');
-    const textSection = document.getElementById('import-text-section');
-
     if (method === 'file') {
-        fileSection.style.display = 'block';
-        textSection.style.display = 'none';
+        DOMHelpers.toggle('import-file-section', true);
+        DOMHelpers.toggle('import-text-section', false);
     } else {
-        fileSection.style.display = 'none';
-        textSection.style.display = 'block';
+        DOMHelpers.toggle('import-file-section', false);
+        DOMHelpers.toggle('import-text-section', true);
     }
 }
 
 /**
  * Handle file selection
- * @param {Event} event
  */
 function handleFileSelect(event) {
     const file = event.target.files[0];
     if (!file) return;
 
-    // Validate file
-    const validExtensions = ['.csv', '.xlsx'];
-    const fileName = file.name.toLowerCase();
-    const isValid = validExtensions.some(ext => fileName.endsWith(ext));
-
-    if (!isValid) {
-        showToast('Chỉ chấp nhận file CSV hoặc Excel', 'error');
-        return;
-    }
-
-    if (file.size > 10 * 1024 * 1024) {
-        showToast('File không được vượt quá 10MB', 'error');
+    // Validate file using Validator
+    const validation = Validator.validateFile(file);
+    if (!validation.isValid) {
+        Toast.error(validation.error);
         return;
     }
 
     // Show file info
     document.querySelector('.upload-content').style.display = 'none';
-    const fileSelected = document.getElementById('file-selected');
-    fileSelected.style.display = 'flex';
-    document.getElementById('file-name').textContent = file.name;
+    DOMHelpers.toggle('file-selected', true);
+    DOMHelpers.setText('file-name', file.name);
 }
 
 /**
  * Remove selected file
  */
 function removeFile() {
-    document.getElementById('import-file').value = '';
+    DOMHelpers.setValue('import-file', '');
     document.querySelector('.upload-content').style.display = 'block';
-    document.getElementById('file-selected').style.display = 'none';
+    DOMHelpers.toggle('file-selected', false);
 }
 
 /**
@@ -817,18 +896,21 @@ function removeFile() {
  */
 async function submitImport() {
     const method = document.querySelector('input[name="import-method"]:checked').value;
-    const deliveryDate = document.getElementById('import-delivery-date').value;
-    const serviceTime = document.getElementById('import-service-time').value;
+    const deliveryDate = DOMHelpers.getValue('import-delivery-date');
+    const serviceTime = DOMHelpers.getValue('import-service-time');
     const overwrite = document.getElementById('import-overwrite').checked;
 
-    // Validation
-    if (!deliveryDate) {
-        showToast('Vui lòng chọn ngày giao hàng', 'error');
-        return;
-    }
+    // Validation using Validator
+    const validation = Validator.validateImport({
+        method,
+        deliveryDate,
+        serviceTime,
+        file: method === 'file' ? document.getElementById('import-file').files[0] : null,
+        textData: method === 'text' ? DOMHelpers.getValue('import-text') : null
+    });
 
-    if (!serviceTime || serviceTime < 0) {
-        showToast('Thời gian phục vụ phải >= 0', 'error');
+    if (!validation.isValid) {
+        Toast.error(validation.errors[0]);
         return;
     }
 
@@ -837,17 +919,9 @@ async function submitImport() {
 
     if (method === 'file') {
         const file = document.getElementById('import-file').files[0];
-        if (!file) {
-            showToast('Vui lòng chọn file', 'error');
-            return;
-        }
         formData.append('file', file);
     } else {
-        const textData = document.getElementById('import-text').value.trim();
-        if (!textData) {
-            showToast('Vui lòng nhập dữ liệu', 'error');
-            return;
-        }
+        const textData = DOMHelpers.getValue('import-text').trim();
         formData.append('textData', textData);
     }
 
@@ -855,26 +929,24 @@ async function submitImport() {
     formData.append('serviceTime', serviceTime);
     formData.append('overwriteExisting', overwrite);
 
-    showLoading(true);
+    Loading.show('Đang import...');
 
     try {
         const result = await importOrders(formData);
 
         if (result.success) {
-            showToast(`Imported ${result.importedCount} orders successfully!`, 'success');
+            Toast.success(`Imported ${result.importedCount} orders successfully!`);
             closeImportModal();
-
-            // Reload orders
             await loadOrders();
         } else {
-            // Handle partial success
-            showToast(`Imported ${result.importedCount} orders. ${result.errors.length} errors.`, 'error');
+            Toast.error(`Imported ${result.importedCount} orders. ${result.errors.length} errors.`);
         }
 
     } catch (error) {
         console.error('Import failed:', error);
+        Toast.error('Import thất bại. Vui lòng thử lại.');
     } finally {
-        showLoading(false);
+        Loading.hide();
     }
 }
 
@@ -895,65 +967,43 @@ function downloadTemplate() {
     URL.revokeObjectURL(url);
 }
 
-// ============================================
-// UTILITY FUNCTIONS
-// ============================================
-
-/**
- * Show loading overlay
- * @param {boolean} show
- */
-function showLoading(show) {
-    const overlay = document.getElementById('loading-overlay');
-    overlay.style.display = show ? 'flex' : 'none';
-}
-
-/**
- * Show toast notification
- * @param {string} message
- * @param {string} type - 'success', 'error', or ''
- */
-function showToast(message, type = '') {
-    const toast = document.getElementById('toast');
-    toast.textContent = message;
-    toast.className = 'toast show ' + type;
-
-    setTimeout(() => {
-        toast.classList.remove('show');
-    }, 3000);
-}
-
 // Placeholder functions for incomplete features
 function openAddOrderModal() {
-    showToast('Add Order feature - Coming soon!', 'success');
+    Toast.success('Add Order feature - Coming soon!');
 }
 
 function exportOrders() {
-    showToast('Export feature - Coming soon!', 'success');
+    Toast.success('Export feature - Coming soon!');
 }
 
 function deleteSelectedOrders() {
     if (selectedOrders.size === 0) {
-        showToast('No orders selected', 'error');
+        Toast.error('No orders selected');
         return;
     }
-    showToast(`Delete ${selectedOrders.size} orders - Coming soon!`, 'success');
+    Toast.success(`Delete ${selectedOrders.size} orders - Coming soon!`);
 }
 
 function bulkEditOrders() {
-    showToast('Bulk Edit feature - Coming soon!', 'success');
+    Toast.success('Bulk Edit feature - Coming soon!');
 }
 
 function viewOrderDetails(orderId) {
-    showToast(`View order #${orderId} - Coming soon!`, 'success');
+    Toast.success(`View order #${orderId} - Coming soon!`);
 }
 
 function previousPage() {
-    showToast('Pagination - Coming soon!', 'success');
+    Toast.success('Pagination - Coming soon!');
 }
 
 function nextPage() {
-    showToast('Pagination - Coming soon!', 'success');
+    Toast.success('Pagination - Coming soon!');
 }
+
+window.resetDepotForm = resetDepotForm;
+
+window.addVehicle = addVehicle;
+window.updateFleetSummary = updateFleetSummary;
+window.removeVehicle = removeVehicle;
 
 console.log('App.js loaded successfully!');

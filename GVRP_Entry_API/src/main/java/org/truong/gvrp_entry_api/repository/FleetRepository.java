@@ -3,6 +3,7 @@ package org.truong.gvrp_entry_api.repository;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.truong.gvrp_entry_api.entity.Fleet;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface FleetRepository extends JpaRepository<Fleet, Long> {
@@ -22,10 +23,9 @@ public interface FleetRepository extends JpaRepository<Fleet, Long> {
     boolean existsByBranchId(Long branchId);
 
     /**
-     * Find fleet by branch ID and fleet name
+     * Find fleet by branch ID
      * @param branchId Branch ID
-     * @param fleetName Fleet name
-     * @return Optional Fleet
+     * @return List of Fleets
      */
-    Optional<Fleet> findByBranchIdAndFleetName(Long branchId, String fleetName);
+    List<Fleet> findAllByBranchId(Long branchId);
 }

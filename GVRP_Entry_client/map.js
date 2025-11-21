@@ -30,26 +30,29 @@ function initDepotSetupMap() {
 
     // Create map
     depotSetupMap = L.map('depot-map', {
-        // fadeAnimation: true,
-        // zoomAnimation: true,
-        // zoomAnimationThreshold: 500,
+        fadeAnimation: true,
+        zoomAnimation: true,
+        zoomAnimationThreshold: 500,
         updateWhenIdle: true,
         updateWhenZooming: false,
         preferCanvas: true
     }).setView(DEFAULT_CENTER, DEFAULT_ZOOM);
 
     // Add tile layer
-    L.tileLayer('https://mt1.google.com/vt/lyrs=r&x={x}&y={y}&z={z}', { // r = roadmap, s = satellite, y = hybrid
+    // L.tileLayer('https://mt1.google.com/vt/lyrs=r&x={x}&y={y}&z={z}', { // r = roadmap, s = satellite, y = hybrid
+    //     maxZoom: 20,
+    //     attribution: '© Google'
+    // }).addTo(depotSetupMap);
+
+    L.tileLayer('https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png', {
         maxZoom: 20,
-        attribution: '© Google'
-    }).addTo(map);
+        attribution: '© Stadia Maps'
+    }).addTo(depotSetupMap);
 
     // Add click event to place marker
     depotSetupMap.on('click', function(e) {
         placeDepotMarker(e.latlng);
     });
-
-    console.log('Depot setup map initialized');
 }
 
 /**

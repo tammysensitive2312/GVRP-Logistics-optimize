@@ -14,6 +14,9 @@ import org.truong.gvrp_entry_api.repository.BranchRepository;
 import org.truong.gvrp_entry_api.repository.DepotRepository;
 import org.truong.gvrp_entry_api.repository.FleetRepository;
 
+import java.util.Collections;
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class FleetService {
@@ -57,9 +60,12 @@ public class FleetService {
     }
 
     @Transactional(readOnly = true)
-    public FleetDTO getFleetByBranchId(Long branchId) {
-        Fleet fleet = fleetRepository.findByBranchId(branchId)
-                .orElseThrow(() -> new ResourceNotFoundException("Resources not found.", "fleet"));
-        return fleetMapper.toDTO(fleet);
+    public List<FleetDTO> getFleetByBranchId(Long branchId) {
+
+        List<Fleet> fleets = fleetRepository.findAllByBranchId(branchId);
+        if (fleets.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return fleetMapper.toDTOList(fleets);
     }
 }

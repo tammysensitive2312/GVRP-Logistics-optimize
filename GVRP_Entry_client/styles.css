@@ -141,6 +141,16 @@ body {
     box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
 }
 
+.form-group select {
+    cursor: pointer;
+    background-color: var(--white);
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23333' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 36px;
+}
+
 .form-group input[readonly] {
     background: var(--bg-light);
     cursor: not-allowed;
@@ -289,6 +299,33 @@ body {
     gap: var(--space-lg);
 }
 
+.depots-info-box {
+    background: var(--bg-light);
+    border: 2px solid var(--primary-blue);
+    border-radius: var(--radius-md);
+    padding: var(--space-lg);
+    margin-bottom: var(--space-lg);
+}
+
+.depots-info-box strong {
+    display: block;
+    color: var(--primary-blue);
+    margin-bottom: var(--space-sm);
+    font-size: var(--font-size-base);
+}
+
+#depots-list-info {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+    font-size: var(--font-size-sm);
+    color: var(--text-gray);
+}
+
+#depots-list-info .depot-info-item {
+    padding: var(--space-xs) 0;
+}
+
 .vehicle-card {
     background: var(--bg-light);
     padding: var(--space-xl);
@@ -324,6 +361,21 @@ body {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: var(--space-lg);
+}
+
+.vehicle-fields .form-group:nth-last-child(-n+2) {
+    /* Start and End Depot should span full width */
+    grid-column: 1 / -1;
+}
+
+@media (max-width: 768px) {
+    .vehicle-fields {
+        grid-template-columns: 1fr;
+    }
+
+    .vehicle-fields .form-group:nth-last-child(-n+2) {
+        grid-column: auto;
+    }
 }
 
 .fleet-summary {
@@ -429,6 +481,7 @@ body {
     cursor: pointer;
     padding: var(--space-sm) var(--space-md);
     border-radius: var(--radius-md);
+    position: relative;
 }
 
 .user-menu:hover {
@@ -437,6 +490,34 @@ body {
 
 .user-avatar {
     font-size: var(--font-size-xl);
+}
+
+.user-menu .dropdown {
+    position: relative;
+}
+
+.user-menu .dropdown-content {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: calc(100% + 8px);
+    background: var(--white);
+    min-width: 180px;
+    box-shadow: var(--shadow-lg);
+    border-radius: var(--radius-md);
+    padding: var(--space-sm) 0;
+    z-index: 1000;
+    border: 1px solid var(--border-color);
+}
+
+.user-menu .dropdown:hover .dropdown-content {
+    display: block;
+}
+
+.user-menu .dropdown-content .divider {
+    height: 1px;
+    background: var(--border-color);
+    margin: var(--space-sm) 0;
 }
 
 /* Main Layout */

@@ -10,6 +10,8 @@ import org.truong.gvrp_entry_api.dto.response.FleetDTO;
 import org.truong.gvrp_entry_api.security.CurrentUserUtil;
 import org.truong.gvrp_entry_api.service.FleetService;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/v1/fleets") // Đặt URL base
 @RequiredArgsConstructor
@@ -31,9 +33,9 @@ public class FleetController {
     }
 
     @GetMapping
-    public ResponseEntity<FleetDTO> getFleet() {
+    public ResponseEntity<List<FleetDTO>> getFleet() {
         Long branchId = CurrentUserUtil.getCurrentBranchId();
-        FleetDTO fleetDTO = fleetService.getFleetByBranchId(branchId);
+        List<FleetDTO> fleetDTO = fleetService.getFleetByBranchId(branchId);
         return ResponseEntity.ok(fleetDTO);
     }
 }

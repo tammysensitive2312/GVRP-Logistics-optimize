@@ -3,7 +3,10 @@ package org.truong.gvrp_entry_api.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -12,6 +15,7 @@ import org.truong.gvrp_entry_api.dto.request.OrderInputDTO;
 import org.truong.gvrp_entry_api.dto.response.ImportError;
 import org.truong.gvrp_entry_api.dto.response.ImportResultDTO;
 import org.truong.gvrp_entry_api.dto.response.OrderDTO;
+import org.truong.gvrp_entry_api.dto.response.PageResponse;
 import org.truong.gvrp_entry_api.entity.Branch;
 import org.truong.gvrp_entry_api.entity.Order;
 import org.truong.gvrp_entry_api.exception.InvalidFileFormatException;
@@ -266,9 +270,25 @@ public class OrderImportService {
         return null; // Valid
     }
 
-    public List<OrderDTO> getAllOrdersPaginated(Long branchId) {
-        List<Order> orders = orderRepository.findByBranchId(branchId);
-        List<OrderDTO> orderDTOs = orderMapper.toDTOList(orders);
-        return orderDTOs;
+    public PageResponse<OrderDTO> getAllOrdersPaginated(Long branchId, int pageNo, int pageSize) {
+        // 1. Tạo đối tượng Pageable (có thể thêm Sort nếu muốn, ví dụ sort theo ID giảm dần)
+        Pageable pageable = PageRequest.of(pageNo, pageSize, Sort.by("id").descending());
+
+        // 2. Gọi Repository
+        Page<Order> orderPage = orderRepository.findByBranchIdOrderByCreatedAtDesc(branchId, pageable);
+
+        // 3. Map Entity sang DTO
+        // Lưu ý: orderPage.getContent() trả về List<Order>
+        List<OrderDTO> content = orderMapper.toDTOList(orderPage.getContent());
+
+        // 4. Build PageResponse
+        return PageResponse.<OrderDTO>builder()
+                .content(content)
+                .pageNo(orderPage.getNumber())
+                .pageSize(orderPage.getSize())
+                .totalElements(orderPage.getTotalElements())
+                .totalPages(orderPage.getTotalPages())
+                .last(orderPage.isLast())
+                .build();
     }
 }

@@ -4,15 +4,14 @@
  */
 
 // Configuration
-const API_BASE_URL = 'http://localhost:8080/api';
-const BRANCH_ID = 1; // Mock branch ID - should be from auth context
+const API_BASE_URL = 'http://localhost:8080/api/v1';
+const BRANCH_ID = getCurrentBranch();
 
 // Helper function to get auth headers
 function getHeaders() {
     return {
         'Content-Type': 'application/json',
-        'Branch-Id': BRANCH_ID,
-        // 'Authorization': 'Bearer ' + getToken() // Add when auth is implemented
+        'Authorization': 'Bearer ' + getAuthToken()
     };
 }
 
@@ -34,7 +33,7 @@ function handleApiError(error) {
  */
 async function createDepot(depotData) {
     try {
-        const response = await fetch(`${API_BASE_URL}/depots?branchId=${BRANCH_ID}`, {
+        const response = await fetch(`${API_BASE_URL}/depots`, {
             method: 'POST',
             headers: getHeaders(),
             body: JSON.stringify(depotData)
@@ -57,7 +56,7 @@ async function createDepot(depotData) {
  */
 async function getDepots() {
     try {
-        const response = await fetch(`${API_BASE_URL}/depots?branchId=${BRANCH_ID}`, {
+        const response = await fetch(`${API_BASE_URL}/depots`, {
             headers: getHeaders()
         });
 
@@ -82,7 +81,7 @@ async function getDepots() {
  */
 async function createFleet(fleetData) {
     try {
-        const response = await fetch(`${API_BASE_URL}/fleets?branchId=${BRANCH_ID}`, {
+        const response = await fetch(`${API_BASE_URL}/fleets`, {
             method: 'POST',
             headers: getHeaders(),
             body: JSON.stringify(fleetData)
@@ -105,7 +104,7 @@ async function createFleet(fleetData) {
  */
 async function getFleet() {
     try {
-        const response = await fetch(`${API_BASE_URL}/fleets?branchId=${BRANCH_ID}`, {
+        const response = await fetch(`${API_BASE_URL}/fleets`, {
             headers: getHeaders()
         });
 
@@ -293,7 +292,7 @@ async function planRoutes(planningRequest) {
 // MOCK DATA (for development without backend)
 // ============================================
 
-const MOCK_MODE = true; // Set to false when backend is ready
+const MOCK_MODE = false; // Set to false when backend is ready
 
 // Mock depot data
 const mockDepots = [
