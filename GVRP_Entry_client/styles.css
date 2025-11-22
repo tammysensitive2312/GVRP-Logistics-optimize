@@ -876,10 +876,12 @@ body {
 .table-content {
     flex: 1;
     overflow-y: auto;
+    overflow-x: auto;
 }
 
 .data-table {
     width: 100%;
+    min-width: 1000px;
     border-collapse: collapse;
 }
 

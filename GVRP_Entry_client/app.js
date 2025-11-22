@@ -3,29 +3,47 @@
  * Manages screens, forms, and business logic
  */
 
-// ============================================
-// IMPORTS (Phase 1)
-// ============================================
+import { AppState } from './core/state.js';
+import { Router } from './core/router.js';
+
 import { Toast } from './utils/toast.js';
 import { Loading } from './utils/loading.js';
 import { Validator } from './utils/validation.js';
 import { DOMHelpers } from './utils/dom-helpers.js';
 
-// ============================================
-// APPLICATION STATE
-// ============================================
-let currentScreen = 'screen-depot-setup';
-let vehicleCount = 0;
-let selectedOrders = new Set();
-let allOrders = [];
-let filteredOrders = [];
-let availableDepots = [];
+// Depot Setup screen
+Router.onScreenActivated(Router.SCREENS.DEPOT_SETUP, () => {
+    setTimeout(() => initDepotSetupMap(), 100);
+});
 
-// ============================================
-// INITIALIZATION
-// ============================================
+// Fleet Setup screen
+Router.onScreenActivated(Router.SCREENS.FLEET_SETUP, async () => {
+    await loadDepotsForFleet();
+});
 
-document.addEventListener('DOMContentLoaded', function() {
+// Main screen
+Router.onScreenActivated(Router.SCREENS.MAIN, async () => {
+    setTimeout(() => {
+        initMainMap();
+        loadMainScreenData();
+    }, 100);
+});
+
+// Subscribe to state changes
+AppState.subscribe('selectedOrders', (newValue, oldValue) => {
+    updateSelectionCount();
+});
+
+AppState.subscribe('filteredOrders', (newOrders) => {
+    updateOrdersTable(newOrders);
+    loadOrderMarkers(newOrders);
+});
+
+AppState.subscribe('vehicleCount', (newCount) => {
+    updateFleetSummary();
+});
+
+document.addEventListener('DOMContentLoaded', async function() {
     console.log('VRP System initializing...');
 
     // Check authentication
@@ -36,8 +54,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Display user info in navbar
     displayUserInfo();
 
-    // Check if setup is complete
-    checkSetupStatus();
+    // Initialize app with screen restoration
+    await initializeApp();
 
     // Initialize event listeners
     initEventListeners();
@@ -72,31 +90,85 @@ function displayUserInfo() {
  */
 function handleLogout() {
     if (confirm('Bạn có chắc chắn muốn đăng xuất?')) {
+        // Clear saved state
+        AppState.clearLocalStorage();
+
+        // Logout
         logout();
     }
 }
 
 /**
- * Check if user has completed setup (Depot + Fleet)
+ * Initialize app with screen restoration
+ */
+async function initializeApp() {
+    // Load saved state (including last screen)
+    AppState.loadFromLocalStorage();
+
+    // Check setup status
+    const setupStatus = await checkSetupStatus();
+
+    if (!setupStatus.complete) {
+        // Setup incomplete - go to setup screens
+        if (!setupStatus.hasDepots) {
+            Router.goTo(Router.SCREENS.DEPOT_SETUP);
+        } else if (!setupStatus.hasFleet) {
+            Router.goTo(Router.SCREENS.FLEET_SETUP);
+        }
+    } else {
+        // Setup complete - restore last screen
+        restoreLastScreen();
+    }
+}
+
+/**
+ * Check if setup is complete
  */
 async function checkSetupStatus() {
     try {
-        const depots = await getDepots();
-        const fleet = await getFleet();
+        const [depots, fleet] = await Promise.all([
+            getDepots(),
+            getFleet()
+        ]);
 
-        if (depots && depots.length > 0 && fleet && fleet.vehicleCount > 0) {
-            // Setup complete - go to main screen
-            goToScreen('screen-main');
-            loadMainScreenData();
-        } else {
-            // Setup not complete - start from depot setup
-            goToScreen('screen-depot-setup');
-            initDepotSetupMap();
-        }
+        const totalVehicleCount = fleet ? fleet.reduce((sum, currentFleet) => sum + currentFleet.vehicle_count, 0) : 0;
+        const hasDepots = depots && depots.length > 0;
+        const hasFleet = totalVehicleCount > 0;
+
+        return {
+            complete: hasDepots && hasFleet,
+            hasDepots,
+            hasFleet,
+            depots,
+            fleet
+        };
     } catch (error) {
         console.error('Setup check failed:', error);
-        goToScreen('screen-depot-setup');
-        initDepotSetupMap();
+        return {
+            complete: false,
+            hasDepots: false,
+            hasFleet: false
+        };
+    }
+}
+
+/**
+ * Restore last screen user was on
+ */
+function restoreLastScreen() {
+    const lastScreen = AppState.getLastScreen();
+
+    // Valid screens to restore
+    const validScreens = [
+        Router.SCREENS.DEPOT_SETUP,
+        Router.SCREENS.FLEET_SETUP,
+        Router.SCREENS.MAIN
+    ];
+
+    if (lastScreen && validScreens.includes(lastScreen)) {
+        Router.goTo(lastScreen);
+    } else {
+        Router.goTo(Router.SCREENS.MAIN);
     }
 }
 
@@ -210,23 +282,6 @@ function initResizableDivider() {
 // SCREEN MANAGEMENT
 // ============================================
 
-/**
- * Navigate to a screen
- */
-function goToScreen(screenId) {
-    // Hide all screens
-    document.querySelectorAll('.screen').forEach(screen => {
-        screen.classList.remove('active');
-    });
-
-    // Show target screen
-    const targetScreen = document.getElementById(screenId);
-    if (targetScreen) {
-        targetScreen.classList.add('active');
-        currentScreen = screenId;
-        onScreenActivated(screenId);
-    }
-}
 
 /**
  * Handle screen activation
@@ -277,7 +332,7 @@ async function handleDepotSubmit(event) {
     try {
         await createDepot(formData);
         Toast.success('Depot đã được tạo thành công!');
-        goToScreen('screen-fleet-setup');
+        Router.goTo(Router.SCREENS.FLEET_SETUP);
     } catch (error) {
         console.error('Failed to create depot:', error);
         Toast.error('Không thể tạo depot. Vui lòng thử lại.');
@@ -308,17 +363,18 @@ async function loadDepotsForFleet() {
     Loading.show();
 
     try {
-        availableDepots = await getDepots();
+        const depots = await getDepots()
+        AppState.setAvailableDepots(depots);
 
-        if (!availableDepots || availableDepots.length === 0) {
+        if (!AppState.availableDepots || AppState.availableDepots.length === 0) {
             Toast.error('Không tìm thấy depot nào. Vui lòng tạo depot trước.');
-            goToScreen('screen-depot-setup');
+            Router.goTo(Router.SCREENS.DEPOT_SETUP);
             return;
         }
 
         displayDepotInfo();
 
-        if (vehicleCount === 0) {
+        if (AppState.vehicleCount === 0) {
             addVehicle();
         }
 
@@ -337,7 +393,7 @@ function displayDepotInfo() {
     const infoBox = document.getElementById('depots-info');
     const listContainer = document.getElementById('depots-list-info');
 
-    if (!availableDepots || availableDepots.length === 0) {
+    if (!AppState.availableDepots || AppState.availableDepots.length === 0) {
         infoBox.style.display = 'none';
         return;
     }
@@ -345,7 +401,7 @@ function displayDepotInfo() {
     infoBox.style.display = 'block';
     DOMHelpers.clearChildren('depots-list-info');
 
-    availableDepots.forEach(depot => {
+    AppState.availableDepots.forEach(depot => {
         const item = DOMHelpers.createElement('div',
             { class: 'depot-info-item', html: true },
             `<strong>${depot.name}</strong> - ${depot.address}`
@@ -358,13 +414,13 @@ function displayDepotInfo() {
  * Build depot options HTML
  */
 function buildDepotOptions(selectedId = '') {
-    if (!availableDepots || availableDepots.length === 0) {
+    if (!AppState.availableDepots || AppState.availableDepots.length === 0) {
         return '<option value="">No depots available</option>';
     }
 
     let html = '<option value="">-- Chọn depot --</option>';
 
-    availableDepots.forEach(depot => {
+    AppState.availableDepots.forEach(depot => {
         const selected = depot.id == selectedId ? 'selected' : '';
         html += `<option value="${depot.id}" ${selected}>${depot.name}</option>`;
     });
@@ -376,17 +432,18 @@ function buildDepotOptions(selectedId = '') {
  * Add a new vehicle form
  */
 function addVehicle() {
-    vehicleCount++;
+    AppState.incrementVehicleCount();
+    const vehicleNumber = AppState.vehicleCount;
 
     const container = document.getElementById('vehicles-container');
     const vehicleCard = document.createElement('div');
     vehicleCard.className = 'vehicle-card';
-    vehicleCard.id = `vehicle-${vehicleCount}`;
+    vehicleCard.id = `vehicle-${vehicleNumber}`;
 
     vehicleCard.innerHTML = `
         <div class="vehicle-header">
-            <span class="vehicle-number">Xe #${vehicleCount}</span>
-            <button type="button" class="btn-remove-vehicle" onclick="removeVehicle(${vehicleCount})">
+            <span class="vehicle-number">Xe #${vehicleNumber}</span>
+            <button type="button" class="btn-remove-vehicle" onclick="removeVehicle(${vehicleNumber})">
                 ✕ Xóa
             </button>
         </div>
@@ -446,13 +503,13 @@ function addVehicle() {
  * Remove a vehicle form
  */
 function removeVehicle(id) {
-    if (vehicleCount <= 1) {
+    if (AppState.vehicleCount <= 1) {
         Toast.error('Phải có ít nhất 1 xe');
         return;
     }
 
     DOMHelpers.removeElement(`vehicle-${id}`);
-    vehicleCount--;
+    AppState.decrementVehicleCount();
     updateFleetSummary();
 }
 
@@ -533,7 +590,7 @@ async function handleFleetSubmit(event) {
     try {
         await createFleet(fleetData);
         Toast.success('Đội xe đã được tạo thành công!');
-        goToScreen('screen-main');
+        Router.goTo(Router.SCREENS.MAIN);
     } catch (error) {
         console.error('Failed to create fleet:', error);
         Toast.error('Không thể tạo đội xe. Vui lòng thử lại.');
@@ -602,21 +659,19 @@ function updateDepotsList(depots) {
  */
 async function loadOrders() {
     const date = DOMHelpers.getValue('filter-date');
-
     Loading.show();
 
     try {
-        allOrders = await getOrders(date);
-        filteredOrders = [...allOrders];
+        const apiResponse = await getOrders(date);
+        const orders = apiResponse.content || [];
+        AppState.setOrders(orders);
 
-        loadOrderMarkers(filteredOrders);
-        updateOrdersTable(filteredOrders);
-        updateStats(allOrders);
-
+        loadOrderMarkers(AppState.filteredOrders);
+        updateOrdersTable(AppState.filteredOrders);
+        updateStats();
     } catch (error) {
         console.error('Failed to load orders:', error);
-        allOrders = [];
-        filteredOrders = [];
+        AppState.setOrders([]);
         updateOrdersTable([]);
     } finally {
         Loading.hide();
@@ -631,9 +686,10 @@ function updateOrdersTable(orders) {
     DOMHelpers.clearChildren('orders-tbody');
 
     if (orders.length === 0) {
+        // Cập nhật colspan lên 10 (tổng số cột mới)
         tbody.innerHTML = `
             <tr class="empty-state">
-                <td colspan="6">
+                <td colspan="10"> 
                     <div class="empty-content">
                         <div class="empty-icon">📦</div>
                         <div class="empty-text">There are no orders on the selected date</div>
@@ -659,34 +715,38 @@ function updateOrdersTable(orders) {
             'FAILED': '❌'
         }[order.status] || '⏱️';
 
+        const timeWindow = (order.time_window_start && order.time_window_end)
+            ? `${order.time_window_start.substring(0, 5)} - ${order.time_window_end.substring(0, 5)}`
+            : '—';
+
+        const notes = order.delivery_notes
+            ? `<span title="${order.delivery_notes}">${order.delivery_notes.substring(0, 20)}${order.delivery_notes.length > 20 ? '...' : ''}</span>`
+            : '—';
+
+        const priorityDisplay = order.priority !== null ? order.priority : '—';
+
         row.innerHTML = `
-            <td><input type="checkbox" onclick="event.stopPropagation(); toggleOrderSelection(${order.id}, this.checked)" ${selectedOrders.has(order.id) ? 'checked' : ''} /></td>
-            <td>${order.orderCode}</td>
-            <td>${order.customerName}</td>
-            <td>${order.address}</td>
-            <td>${order.demand} kg</td>
-            <td>${statusIcon} ${order.status}</td>
-        `;
+            <td><input type="checkbox" onclick="stopPropagation(); toggleOrderSelection(${order.id}, this.checked)" ${AppState.selectedOrders.has(order.id) ? 'checked' : ''} /></td>
+            <td>${order.order_code}</td> <td>${order.customer_name}</td> <td>${order.address}</td> <td>${priorityDisplay}</td> <td>${timeWindow}</td> <td>${order.demand} kg</td> <td>${order.service_time} phút</td> <td class="notes-col">${notes}</td> <td>${statusIcon} ${order.status}</td> `;
 
         tbody.appendChild(row);
     });
 
     DOMHelpers.setText('footer-showing', orders.length);
-    DOMHelpers.setText('footer-total', allOrders.length);
+    DOMHelpers.setText('footer-total', AppState.allOrders.length);
 }
 
 /**
  * Update stats cards
  */
-function updateStats(orders) {
-    const scheduled = orders.filter(o => o.status === 'SCHEDULED').length;
-    const completed = orders.filter(o => o.status === 'COMPLETED').length;
+function updateStats() {
+    const stats = AppState.orderStats;
 
     const statsCards = document.querySelectorAll('.stat-card');
     if (statsCards.length >= 3) {
-        statsCards[0].querySelector('.stat-number').textContent = scheduled;
-        statsCards[1].querySelector('.stat-number').textContent = completed;
-        statsCards[2].querySelector('.stat-number').textContent = orders.length;
+        statsCards[0].querySelector('.stat-number').textContent = stats.scheduled;
+        statsCards[1].querySelector('.stat-number').textContent = stats.completed;
+        statsCards[2].querySelector('.stat-number').textContent = stats.total;
     }
 }
 
@@ -695,9 +755,9 @@ function updateStats(orders) {
  */
 function toggleOrderSelection(orderId, checked) {
     if (checked) {
-        selectedOrders.add(orderId);
+        AppState.selectOrder(orderId);
     } else {
-        selectedOrders.delete(orderId);
+        AppState.deselectOrder(orderId);
     }
     updateSelectionCount();
 }
@@ -706,17 +766,13 @@ function toggleOrderSelection(orderId, checked) {
  * Toggle select all orders
  */
 function toggleSelectAll() {
-    const checked = document.getElementById('select-all').checked;
-
-    filteredOrders.forEach(order => {
-        if (checked) {
-            selectedOrders.add(order.id);
-        } else {
-            selectedOrders.delete(order.id);
-        }
-    });
-
-    updateOrdersTable(filteredOrders);
+    const checked = DOMHelpers.getElement('select-all').checked;
+    if (checked) {
+        AppState.selectAllOrders();
+    } else {
+        AppState.deselectAllOrders();
+    }
+    updateOrdersTable(AppState.filteredOrders);
     updateSelectionCount();
 }
 
@@ -724,7 +780,7 @@ function toggleSelectAll() {
  * Update selection count
  */
 function updateSelectionCount() {
-    const count = selectedOrders.size;
+    const count = AppState.selectedOrders.size;
 
     DOMHelpers.setText('selected-count', count);
     DOMHelpers.setText('footer-selected', count);
@@ -754,41 +810,29 @@ function highlightTableRow(orderId) {
 function applyFilters() {
     const statusFilter = DOMHelpers.getValue('filter-status');
     const priorityFilter = DOMHelpers.getValue('filter-priority');
-    const searchQuery = DOMHelpers.getValue('filter-search').toLowerCase();
+    const searchQuery = DOMHelpers.getValue('filter-search');
 
-    filteredOrders = allOrders.filter(order => {
-        if (statusFilter && order.status !== statusFilter) {
-            return false;
-        }
-
-        if (priorityFilter) {
-            if (priorityFilter === 'high' && (!order.priority || order.priority > 3)) return false;
-            if (priorityFilter === 'medium' && (!order.priority || order.priority < 4 || order.priority > 6)) return false;
-            if (priorityFilter === 'low' && (!order.priority || order.priority < 7)) return false;
-        }
-
-        if (searchQuery) {
-            const searchableText = `${order.orderCode} ${order.customerName} ${order.address}`.toLowerCase();
-            if (!searchableText.includes(searchQuery)) {
-                return false;
-            }
-        }
-
-        return true;
+    // Update state filters
+    AppState.setFilters({
+        status: statusFilter,
+        priority: priorityFilter,
+        search: searchQuery
     });
 
-    updateOrdersTable(filteredOrders);
-    loadOrderMarkers(filteredOrders);
+    // State will auto-apply filters
+    updateOrdersTable(AppState.filteredOrders);
+    loadOrderMarkers(AppState.filteredOrders);
 }
 
-/**
- * Clear all filters
- */
 function clearFilters() {
-    DOMHelpers.setValue('filter-status', '');
-    DOMHelpers.setValue('filter-priority', '');
-    DOMHelpers.setValue('filter-search', '');
-    applyFilters();
+    AppState.clearFilters();
+
+    DOMHelpers.getValue('filter-status');
+    DOMHelpers.getValue('filter-priority');
+    DOMHelpers.getValue('filter-search');
+
+    updateOrdersTable(AppState.filteredOrders);
+    loadOrderMarkers(AppState.filteredOrders);
 }
 
 /**
@@ -1005,5 +1049,22 @@ window.resetDepotForm = resetDepotForm;
 window.addVehicle = addVehicle;
 window.updateFleetSummary = updateFleetSummary;
 window.removeVehicle = removeVehicle;
+window.toggleSidebar = toggleSidebar;
+window.toggleOrderSelection = toggleOrderSelection;
+window.openImportModal = openImportModal;
+window.closeImportModal = closeImportModal;
+window.toggleImportMethod = toggleImportMethod;
+window.handleFileSelect = handleFileSelect;
+window.removeFile = removeFile;
+window.submitImport = submitImport;
+window.downloadTemplate = downloadTemplate;
+window.openAddOrderModal = openAddOrderModal;
+window.exportOrders = exportOrders;
+window.deleteSelectedOrders = deleteSelectedOrders;
+window.bulkEditOrders = bulkEditOrders;
+window.viewOrderDetails = viewOrderDetails;
+window.previousPage = previousPage;
+window.nextPage = nextPage;
+window.toggleSelectAll = toggleSelectAll;
 
 console.log('App.js loaded successfully!');

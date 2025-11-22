@@ -158,7 +158,7 @@ async function importOrders(formData) {
  */
 async function getOrders(deliveryDate) {
     try {
-        const url = `${API_BASE_URL}/orders?branchId=${BRANCH_ID}&deliveryDate=${deliveryDate}`;
+        const url = `${API_BASE_URL}/orders?order=desc`;
         const response = await fetch(url, {
             headers: getHeaders()
         });

@@ -22,6 +22,9 @@
   <script type="module" src="utils/validation.js"></script>
   <script type="module" src="utils/dom-helpers.js"></script>
 
+  <script type="module" src="core/state.js"></script>
+  <script type="module" src="core/router.js"></script>
+
   <script type="module" src="app.js"></script>
 </head>
 <body>
@@ -235,7 +238,7 @@
             <div class="stat-label">Completed</div>
           </div>
           <div class="stat-card" onclick="filterOrdersByStatus('ALL')">
-            <div class="stat-number">24</div>
+            <div class="stat-number">0</div>
             <div class="stat-label">Total</div>
           </div>
           <div class="stat-card">
@@ -380,26 +383,18 @@
             <thead>
             <tr>
               <th><input type="checkbox" id="select-all" onchange="toggleSelectAll()" /></th>
-              <th>Order ID</th>
-              <th>Customer</th>
-              <th>Address</th>
-              <th>Demand</th>
-              <th>Status</th>
+              <th>Mã ĐH</th>
+              <th>Khách hàng</th>
+              <th>Địa chỉ</th>
+              <th>Độ ưu tiên</th>
+              <th>Khung giờ</th>
+              <th>SL/Tải</th>
+              <th>Thời gian phục vụ</th>
+              <th>Ghi chú</th>
+              <th>Trạng thái</th>
             </tr>
             </thead>
             <tbody id="orders-tbody">
-            <!-- Empty state -->
-            <tr class="empty-state">
-              <td colspan="6">
-                <div class="empty-content">
-                  <div class="empty-icon">📦</div>
-                  <div class="empty-text">There are no orders on the selected date</div>
-                  <button class="btn btn-primary" onclick="openImportModal()">
-                    📥 Import Orders
-                  </button>
-                </div>
-              </td>
-            </tr>
             </tbody>
           </table>
         </div>
