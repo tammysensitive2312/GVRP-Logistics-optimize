@@ -53,10 +53,10 @@ public interface UserRepository extends JpaRepository<User, Long> {
     boolean existsByEmail(String email);
 
     /**
-     * Find enabled users by branch
+     * Find user by username and branch ID
+     * @param username Username
      * @param branchId Branch ID
-     * @param enabled Enabled status
-     * @return List of users
+     * @return Optional User
      */
-    List<User> findByBranchIdAndEnabled(Long branchId, Boolean enabled);
+    Optional<User> findByUsernameAndBranchId(String username, Long branchId);
 }

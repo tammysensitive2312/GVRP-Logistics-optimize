@@ -12,7 +12,10 @@ import org.springframework.web.bind.annotation.*;
 import org.truong.gvrp_entry_api.dto.request.LoginRequest;
 import org.truong.gvrp_entry_api.dto.response.LoginResponse;
 import org.truong.gvrp_entry_api.dto.request.RegisterRequest;
+import org.truong.gvrp_entry_api.entity.Branch;
 import org.truong.gvrp_entry_api.entity.User;
+import org.truong.gvrp_entry_api.exception.ResourceNotFoundException;
+import org.truong.gvrp_entry_api.repository.BranchRepository;
 import org.truong.gvrp_entry_api.repository.UserRepository;
 import org.truong.gvrp_entry_api.security.BranchUsernamePasswordAuthenticationToken;
 import org.truong.gvrp_entry_api.security.jwt.JwtTokenProvider;
@@ -28,11 +31,14 @@ public class AuthController {
     private final AuthenticationManager authenticationManager;
     private final JwtTokenProvider tokenProvider;
     private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
+    private final BranchRepository branchRepository;
 
 
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest loginRequest) {
+        String branchName = loginRequest.getBranchName();
+        Branch branch = branchRepository.findByName(branchName)
+                .orElseThrow(() -> new ResourceNotFoundException("Branch not found: " + branchName, "branchName"));
 
         // Authenticate user
         Authentication authentication = authenticationManager.authenticate(
@@ -46,8 +52,8 @@ public class AuthController {
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
         // Get user info
-        User user = userRepository.findByUsername(loginRequest.getUsername())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        User user = userRepository.findByUsernameAndBranchId(loginRequest.getUsername(), branch.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("User is not belong to this branch", "username"));
 
         // Generate JWT token with claims
         String jwt = tokenProvider.generateTokenWithClaims(

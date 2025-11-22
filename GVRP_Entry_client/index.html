@@ -15,7 +15,19 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="auth.js"></script>
   <script src="api.js"></script>
-  <script src="map.js"></script>
+
+  <script type="module" src="components/UI%20Components/sidebar.js"></script>
+  <script type="module" src="components/UI%20Components/resizable-divider.js"></script>
+  <script type="module" src="components/UI%20Components/orders-table.js"></script>
+  <script type="module" src="components/UI%20Components/orders-filters.js"></script>
+
+  <script type="module" src="components/Form%20Components/depot-form.js"></script>
+  <script type="module" src="components/Form%20Components/fleet-form.js"></script>
+  <script type="module" src="components/Form%20Components/vehicle-card.js"></script>
+  <script type="module" src="components/Form%20Components/import-modal.js"></script>
+
+  <script type="module" src="components/Map%20Components/depot-map.js"></script>
+  <script type="module" src="components/Map%20Components/main-map.js"></script>
 
   <script type="module" src="utils/toast.js"></script>
   <script type="module" src="utils/loading.js"></script>
@@ -98,7 +110,7 @@
 
       <!-- Form Actions -->
       <div class="form-actions">
-        <button type="button" class="btn btn-secondary" onclick="resetDepotForm()">
+        <button type="button" class="btn btn-secondary" onclick="DepotForm.reset()">
           Hủy
         </button>
         <button type="submit" class="btn btn-primary">
@@ -136,7 +148,7 @@
       <div class="form-group">
         <div class="section-header">
           <label>Danh sách Xe <span class="required">*</span></label>
-          <button type="button" class="btn btn-sm btn-success" onclick="addVehicle()">
+          <button type="button" class="btn btn-sm btn-success" onclick="FleetForm.addVehicle()">
             + Thêm xe
           </button>
         </div>
@@ -166,7 +178,7 @@
 
       <!-- Form Actions -->
       <div class="form-actions">
-        <button type="button" class="btn btn-secondary" onclick="goToScreen('screen-depot-setup')">
+        <button type="button" class="btn btn-secondary" onclick="Router.goTo(Router.SCREENS.DEPOT_SETUP)">
           ← Quay lại
         </button>
         <button type="submit" class="btn btn-primary">
@@ -184,7 +196,7 @@
   <!-- Top Navbar -->
   <nav class="navbar">
     <div class="navbar-left">
-      <button class="btn-icon" onclick="toggleSidebar()">☰</button>
+      <button class="btn-icon" onclick="Sidebar.toggle()">☰</button>
       <div class="brand">
         <span class="brand-icon">📦</span>
         <span class="brand-name">VRP System™</span>
@@ -229,15 +241,15 @@
       <div class="stats-section">
         <h3 class="section-title">📊 TODAY'S STATS</h3>
         <div class="stats-grid">
-          <div class="stat-card" onclick="filterOrdersByStatus('SCHEDULED')">
+          <div class="stat-card" onclick="OrdersFilters.filterByStatus('SCHEDULED')">
             <div class="stat-number">0</div>
             <div class="stat-label">Scheduled</div>
           </div>
-          <div class="stat-card" onclick="filterOrdersByStatus('COMPLETED')">
+          <div class="stat-card" onclick="OrdersFilters.filterByStatus('COMPLETED')">
             <div class="stat-number">0</div>
             <div class="stat-label">Completed</div>
           </div>
-          <div class="stat-card" onclick="filterOrdersByStatus('ALL')">
+          <div class="stat-card" onclick="OrdersFilters.filterByStatus('ALL')">
             <div class="stat-number">0</div>
             <div class="stat-label">Total</div>
           </div>
@@ -300,7 +312,7 @@
       </div>
 
       <!-- Collapse Button -->
-      <button class="btn-collapse" onclick="toggleSidebar()">
+      <button class="btn-collapse" onclick="Sidebar.toggle()">
         ◄ Hide Sidebar
       </button>
     </aside>

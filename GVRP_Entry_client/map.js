@@ -263,14 +263,14 @@ function loadOrderMarkers(orders) {
         // Add popup
         marker.bindPopup(`
             <div style="min-width: 200px;">
-                <strong style="font-size: 16px; color: #333;">${order.orderCode}</strong>
+                <strong style="font-size: 16px; color: #333;">${order.order_code}</strong>
                 <hr style="margin: 8px 0; border: none; border-top: 1px solid #E5E5E5;">
                 <div style="font-size: 13px; line-height: 1.6;">
-                    <strong>Customer:</strong> ${order.customerName}<br>
-                    ${order.customerPhone ? `<strong>Phone:</strong> ${order.customerPhone}<br>` : ''}
+                    <strong>Customer:</strong> ${order.customer_name}<br>
+                    ${order.customer_phone ? `<strong>Phone:</strong> ${order.customer_phone}<br>` : ''}
                     <strong>Address:</strong> ${order.address}<br>
                     <strong>Demand:</strong> ${order.demand} kg<br>
-                    ${order.timeWindowStart ? `<strong>Time:</strong> ${order.timeWindowStart} - ${order.timeWindowEnd}<br>` : ''}
+                    ${order.time_window_start ? `<strong>Time:</strong> ${order.time_window_start} - ${order.time_window_end}<br>` : ''}
                     <strong>Status:</strong> <span style="color: ${markerColor};">${order.status}</span>
                 </div>
                 <div style="margin-top: 12px; display: flex; gap: 8px;">

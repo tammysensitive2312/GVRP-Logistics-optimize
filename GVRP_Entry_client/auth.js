@@ -25,9 +25,6 @@ const SESSION_KEYS = {
  * @returns {Promise<Object>} Auth response with token and user data
  */
 async function login(credentials) {
-    if (MOCK_AUTH) {
-        return mockLogin(credentials);
-    }
 
     try {
         const response = await fetch(`${AUTH_API_URL}/login`, {
@@ -55,25 +52,18 @@ async function login(credentials) {
  */
 async function logout() {
     try {
-        // Call backend logout endpoint if needed
-        if (!MOCK_AUTH) {
-            const token = getAuthToken();
-            await fetch(`${AUTH_API_URL}/logout`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-        }
+        const token = getAuthToken();
+        await fetch(`${AUTH_API_URL}/logout`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
 
-        // Clear session data
         clearSession();
-
-        // Redirect to login
         window.location.href = 'login.html';
     } catch (error) {
         console.error('Logout error:', error);
-        // Clear session anyway
         clearSession();
         window.location.href = 'login.html';
     }
@@ -254,4 +244,4 @@ window.clearSession = clearSession;
 window.requireAuth = requireAuth;
 window.redirectAfterLogin = redirectAfterLogin;
 
-console.log('Auth module loaded. Mock mode:', MOCK_AUTH);
+console.log('Auth module loaded.');

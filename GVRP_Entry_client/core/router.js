@@ -55,9 +55,6 @@ export class Router {
 
         // Run afterNavigate hooks
         await this.#runAfterNavigateHooks(currentScreen, screenId, data);
-
-        // Log navigation
-        console.log(`Navigated: ${currentScreen} → ${screenId}`);
     }
 
     /**

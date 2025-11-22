@@ -3,8 +3,8 @@
  * Manages sidebar visibility, depot list, and fleet info display
  */
 
-import { AppState } from '../core/state.js';
-import { DOMHelpers } from '../utils/dom-helpers.js';
+import { AppState } from '../../core/state.js';
+import { DOMHelpers } from '../../utils/dom-helpers.js';
 
 export class Sidebar {
     static #sidebarElement = null;
@@ -20,12 +20,6 @@ export class Sidebar {
             return;
         }
 
-        // Restore collapsed state
-        if (AppState.sidebarCollapsed) {
-            this.collapse();
-        }
-
-        // Listen to state changes
         AppState.subscribe('sidebarCollapsed', (collapsed) => {
             if (collapsed) {
                 this.collapse();
@@ -33,32 +27,26 @@ export class Sidebar {
                 this.expand();
             }
         });
+
+        if (AppState.sidebarCollapsed) {
+            this.collapse();
+        } else {
+            this.expand();
+        }
     }
 
     /**
      * Toggle sidebar visibility
      */
     static toggle() {
-        if (!this.#sidebarElement) return;
-
-        const isCollapsed = this.#sidebarElement.classList.contains('collapsed');
-
-        if (isCollapsed) {
-            this.expand();
-        } else {
-            this.collapse();
-        }
+        const currentState = AppState.sidebarCollapsed;
+        AppState.setSidebarCollapsed(!currentState);
     }
 
-    /**
-     * Collapse sidebar
-     */
     static collapse() {
         if (!this.#sidebarElement) return;
 
         this.#sidebarElement.classList.add('collapsed');
-        AppState.setSidebarCollapsed(true);
-
         // Update button
         const btn = this.#sidebarElement.querySelector('.btn-collapse');
         if (btn) {
@@ -71,14 +59,13 @@ export class Sidebar {
     }
 
     /**
-     * Expand sidebar
+     * Expand sidebar UI
+     * SỬA: Chỉ update DOM/CSS, XÓA dòng setSidebarCollapsed
      */
     static expand() {
         if (!this.#sidebarElement) return;
 
         this.#sidebarElement.classList.remove('collapsed');
-        AppState.setSidebarCollapsed(false);
-
         // Update button
         const btn = this.#sidebarElement.querySelector('.btn-collapse');
         if (btn) {
@@ -186,11 +173,10 @@ export class Sidebar {
      * @param {number} lng
      */
     static centerMapOnDepot(lat, lng) {
-        // Call global map function (from map.js)
-        if (typeof centerMapToDepot === 'function') {
-            centerMapToDepot(lat, lng);
+        if (typeof MainMap !== 'undefined') {
+            MainMap.centerTo(lat, lng);
         } else {
-            console.warn('centerMapToDepot function not found');
+            console.warn('MainMap not available');
         }
     }
 
@@ -207,10 +193,8 @@ export class Sidebar {
     }
 }
 
-// Export for global access
 if (typeof window !== 'undefined') {
     window.Sidebar = Sidebar;
 }
 
-// Backward compatibility
 window.toggleSidebar = () => Sidebar.toggle();
