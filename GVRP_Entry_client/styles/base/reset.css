@@ -1,0 +1,12 @@
+/* styles/base/reset.css */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background: var(--bg-light);
+    line-height: 1.6;
+    overflow-x: hidden;
+}

@@ -1,0 +1,41 @@
+/* styles/components/misc.css */
+/* Loading */
+.loading-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex; flex-direction: column;
+    justify-content: center; align-items: center;
+    z-index: 9999;
+}
+.loading-spinner {
+    width: 50px; height: 50px;
+    border: 4px solid var(--border-color);
+    border-top-color: var(--primary-blue);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Toast */
+.toast {
+    position: fixed; top: 80px; right: 20px;
+    background: var(--text-dark); color: var(--white);
+    padding: var(--space-lg) var(--space-xl);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    z-index: 9999;
+    opacity: 0; transform: translateY(-20px);
+    transition: all 0.3s;
+}
+.toast.show { opacity: 1; transform: translateY(0); }
+.toast.success { background: var(--success-green); }
+.toast.error { background: var(--danger-red); }
+
+/* Badge & Divider */
+.badge {
+    background: var(--white); color: var(--success-green);
+    padding: 2px 8px; border-radius: 12px;
+    font-size: 11px; font-weight: 700;
+}
+.divider { height: 1px; background: var(--border-color); margin: var(--space-lg) 0; }

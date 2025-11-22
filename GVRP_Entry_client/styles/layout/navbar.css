@@ -1,0 +1,113 @@
+/* styles/layout/navbar.css */
+.navbar {
+    height: var(--navbar-height);
+    background: var(--white);
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 var(--space-xl);
+    box-shadow: var(--shadow-sm);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.navbar-left {
+    display: flex;
+    align-items: center;
+    gap: var(--space-lg);
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    font-size: var(--font-size-lg);
+    font-weight: 700;
+}
+
+.brand-icon {
+    font-size: var(--font-size-2xl);
+}
+
+.navbar-center {
+    display: flex;
+    gap: var(--space-sm);
+}
+
+.nav-menu-item {
+    background: transparent;
+    border: none;
+    padding: 10px 20px;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    font-size: var(--font-size-base);
+    font-weight: 500;
+    color: var(--text-gray);
+    transition: all 0.2s;
+}
+
+.nav-menu-item:hover {
+    background: var(--bg-light);
+    color: var(--text-dark);
+}
+
+.nav-menu-item.active {
+    background: var(--primary-blue);
+    color: var(--white);
+}
+
+.navbar-right {
+    display: flex;
+    align-items: center;
+}
+
+.user-menu {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    cursor: pointer;
+    padding: var(--space-sm) var(--space-md);
+    border-radius: var(--radius-md);
+    position: relative;
+}
+
+.user-menu:hover {
+    background: var(--bg-light);
+}
+
+.user-menu .dropdown {
+    position: relative;
+}
+
+.user-menu .dropdown-content {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: calc(100% + 8px);
+    background: var(--white);
+    min-width: 180px;
+    box-shadow: var(--shadow-lg);
+    border-radius: var(--radius-md);
+    padding: var(--space-sm) 0;
+    z-index: 1000;
+    border: 1px solid var(--border-color);
+}
+
+.user-menu .dropdown:hover .dropdown-content {
+    display: block;
+}
+
+.user-menu .dropdown-content .divider {
+    height: 1px;
+    background: var(--border-color);
+    margin: var(--space-sm) 0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .navbar-center {
+        display: none;
+    }
+}

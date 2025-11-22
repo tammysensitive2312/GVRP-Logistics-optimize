@@ -189,10 +189,6 @@ function initEventListeners() {
     OrdersFilters.init();
 }
 
-// ============================================
-// SCREEN MANAGEMENT
-// ============================================
-
 
 /**
  * Handle screen activation
@@ -213,10 +209,6 @@ function onScreenActivated(screenId) {
             break;
     }
 }
-
-// ============================================
-// SCREEN 3: MAIN SCREEN
-// ============================================
 
 /**
  * Load data for main screen
@@ -270,10 +262,6 @@ async function loadOrders() {
     }
 }
 
-// ============================================
-// SCREEN 4: IMPORT MODAL
-// ============================================
-
 // Placeholder functions for incomplete features
 function openAddOrderModal() {
     Toast.success('Add Order feature - Coming soon!');
@@ -307,22 +295,11 @@ function nextPage() {
     Toast.success('Pagination - Coming soon!');
 }
 
-window.resetDepotForm = resetDepotForm;
-
-window.addVehicle = addVehicle;
-window.updateFleetSummary = updateFleetSummary;
-window.removeVehicle = removeVehicle;
-window.openImportModal = openImportModal;
-window.closeImportModal = closeImportModal;
-window.toggleImportMethod = toggleImportMethod;
-window.handleFileSelect = handleFileSelect;
-window.removeFile = removeFile;
-window.submitImport = submitImport;
-window.downloadTemplate = downloadTemplate;
-window.openAddOrderModal = openAddOrderModal;
 window.exportOrders = exportOrders;
 window.previousPage = previousPage;
 window.nextPage = nextPage;
 window.loadOrders = loadOrders;
+window.openAddOrderModal = openAddOrderModal;
+window.viewOrderDetails = viewOrderDetails;
 
 console.log('App.js loaded successfully!');

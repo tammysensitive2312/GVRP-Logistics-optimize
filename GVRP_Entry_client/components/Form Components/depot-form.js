@@ -32,7 +32,7 @@ export class DepotForm {
     }
 
     /**
-     * Set map instance (from map.js)
+     * Set map instance 
      * @param {Object} map - Leaflet map instance
      */
     static setMap(map) {
@@ -40,7 +40,7 @@ export class DepotForm {
     }
 
     /**
-     * Set marker instance (from map.js)
+     * Set marker instance 
      * @param {Object} marker - Leaflet marker instance
      */
     static setMarker(marker) {

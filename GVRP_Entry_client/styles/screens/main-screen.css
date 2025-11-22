@@ -1,0 +1,18 @@
+.depots-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+}
+
+.fleet-info {
+    background: var(--bg-light);
+    padding: var(--space-lg);
+    border-radius: var(--radius-md);
+}
+
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: var(--space-sm);
+    font-size: var(--font-size-sm);
+}

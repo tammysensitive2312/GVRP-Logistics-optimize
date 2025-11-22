@@ -1,0 +1,52 @@
+/* styles/screens/fleet-setup.css */
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-lg);
+}
+
+.vehicles-container {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-lg);
+}
+
+.vehicle-fields {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-lg);
+}
+
+.vehicle-fields .form-group:nth-last-child(-n+2) {
+    /* Start and End Depot should span full width */
+    grid-column: 1 / -1;
+}
+
+.btn-remove-vehicle {
+    background: var(--danger-red);
+    color: var(--white);
+    border: none;
+    padding: 6px 12px;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    font-size: var(--font-size-sm);
+}
+
+.fleet-summary {
+    background: var(--bg-light);
+    padding: var(--space-xl);
+    border-radius: var(--radius-lg);
+    display: flex;
+    justify-content: space-around;
+    margin-top: var(--space-xl);
+}
+
+.summary-item { text-align: center; }
+.summary-label { display: block; font-size: var(--font-size-sm); color: var(--text-gray); }
+.summary-value { display: block; font-size: var(--font-size-xl); font-weight: 700; color: var(--primary-blue); }
+
+@media (max-width: 768px) {
+    .vehicle-fields { grid-template-columns: 1fr; }
+    .vehicle-fields .form-group:nth-last-child(-n+2) { grid-column: auto; }
+}

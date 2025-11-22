@@ -7,12 +7,27 @@
 const API_BASE_URL = 'http://localhost:8080/api/v1';
 const BRANCH_ID = getCurrentBranch();
 
-// Helper function to get auth headers
-function getHeaders() {
-    return {
+/**
+ * Helper function to get auth headers
+ *
+ * @param {Object} [customHeaders={}] - Các header bổ sung hoặc ghi đè (Optional).
+ * @returns {Object} Đối tượng chứa tất cả các header.
+ */
+function getHeaders(customHeaders = {}) {
+    const authToken = getAuthToken();
+
+    const defaultHeaders = {
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + getAuthToken()
+        'Authorization': authToken ? `Bearer ${authToken}` : ''
     };
+
+    const finalHeaders = {
+        ...defaultHeaders,
+        ...customHeaders
+    };
+    return Object.fromEntries(
+        Object.entries(finalHeaders).filter(([key, value]) => value !== undefined && value !== null)
+    );
 }
 
 // Helper function to handle API errors
@@ -129,10 +144,7 @@ async function getFleet() {
  */
 async function importOrders(formData) {
     try {
-        // Don't set Content-Type header - browser will set it with boundary for multipart
-        const headers = {
-            'Branch-Id': BRANCH_ID
-        };
+        const headers = getHeaders({ 'Content-Type': undefined });
 
         const response = await fetch(`${API_BASE_URL}/orders/import`, {
             method: 'POST',

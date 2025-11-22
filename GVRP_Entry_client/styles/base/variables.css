@@ -1,0 +1,48 @@
+:root {
+    /* Colors - OptimoRoute inspired */
+    --primary-blue: #4A90E2;
+    --success-green: #7ED321;
+    --warning-orange: #F5A623;
+    --danger-red: #D0021B;
+    --neutral-gray: #9B9B9B;
+    --bg-light: #F8F9FA;
+    --border-color: #E5E5E5;
+    --text-dark: #333333;
+    --text-gray: #666666;
+    --white: #FFFFFF;
+
+    /* Layout */
+    --navbar-height: 60px;
+    --sidebar-width: 30%;
+    --sidebar-collapsed-width: 50px;
+    --main-content-width: 70%;
+    --map-height: 60vh;
+    --table-height: 40vh;
+
+    /* Spacing */
+    --space-xs: 4px;
+    --space-sm: 8px;
+    --space-md: 12px;
+    --space-lg: 16px;
+    --space-xl: 24px;
+    --space-2xl: 32px;
+
+    /* Typography */
+    --font-family: 'Inter', 'Segoe UI', 'Arial', sans-serif;
+    --font-size-sm: 12px;
+    --font-size-base: 14px;
+    --font-size-lg: 16px;
+    --font-size-xl: 20px;
+    --font-size-2xl: 24px;
+
+    /* Shadows */
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+    --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.15);
+
+    /* Border Radius */
+    --radius-sm: 4px;
+    --radius-md: 6px;
+    --radius-lg: 8px;
+    --radius-xl: 12px;
+}

@@ -1,0 +1,86 @@
+/* styles/components/buttons.css */
+.btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-base);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.btn-primary {
+    background: var(--primary-blue);
+    color: var(--white);
+}
+
+.btn-primary:hover {
+    background: #3a7bc8;
+    box-shadow: var(--shadow-md);
+}
+
+.btn-secondary {
+    background: var(--white);
+    color: var(--text-dark);
+    border: 1px solid var(--border-color);
+}
+
+.btn-secondary:hover {
+    background: var(--bg-light);
+    border-color: var(--neutral-gray);
+}
+
+.btn-success {
+    background: var(--success-green);
+    color: var(--white);
+}
+
+.btn-success:hover {
+    background: #6cbd1c;
+}
+
+.btn:disabled,
+.btn-page:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn-sm {
+    padding: 6px 12px;
+    font-size: var(--font-size-sm);
+}
+
+.btn-text {
+    background: transparent;
+    color: var(--primary-blue);
+    padding: 6px 12px;
+}
+
+.btn-text:hover {
+    background: rgba(74, 144, 226, 0.1);
+}
+
+.btn-icon,
+.btn-close,
+.btn-menu {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    padding: 8px 12px;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+}
+
+.btn-icon {
+    font-size: var(--font-size-xl);
+    padding: var(--space-sm);
+    border-radius: var(--radius-sm);
+}
+
+.btn-icon:hover,
+.btn-close:hover,
+.btn-menu:hover {
+    background: var(--bg-light);
+}
