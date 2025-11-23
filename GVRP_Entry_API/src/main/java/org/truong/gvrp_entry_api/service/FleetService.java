@@ -68,4 +68,11 @@ public class FleetService {
         }
         return fleetMapper.toDTOList(fleets);
     }
+
+    @Transactional(readOnly = true)
+    public FleetDTO getFleetByIdAndBranchId(Long fleetId, Long branchId) {
+        Fleet fleet = fleetRepository.findByIdAndBranchId(fleetId, branchId)
+                .orElseThrow(() -> new ResourceNotFoundException("Resources not found.", "fleet"));
+        return fleetMapper.toDTO(fleet);
+    }
 }

@@ -16,10 +16,11 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     /**
      * Find all orders by branch ID
+     * @param orderId Order ID
      * @param branchId Branch ID
      * @return List of orders
      */
-    List<Order> findByBranchId(Long branchId);
+    Optional<Order> findByIdAndBranchId(Long orderId, Long branchId);
 
     /**
      * Find orders by branch ID and status

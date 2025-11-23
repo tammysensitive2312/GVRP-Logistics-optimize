@@ -52,5 +52,5 @@ public interface OrderMapper {
     @Mapping(target = "routeSegments", ignore = true)
     @Mapping(target = "deliveryDate", source = "deliveryDate")
     @Mapping(target = "location", expression = "java(geometryMapper.createPoint(dto.getLatitude(), dto.getLongitude()))")
-    void updateEntityFromDTO(OrderInputDTO dto, @MappingTarget Order entity, LocalDate deliveryDate);
+    Order updateEntityFromDTO(OrderInputDTO dto, @MappingTarget Order entity, LocalDate deliveryDate);
 }

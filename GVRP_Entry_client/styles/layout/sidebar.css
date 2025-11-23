@@ -50,6 +50,108 @@
     margin-bottom: var(--space-md);
 }
 
+/* Accordion Header */
+.sidebar-section {
+    border-bottom: 1px solid var(--border-color);
+}
+
+.section-header {
+    padding: 12px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    background: var(--white);
+    transition: background 0.2s;
+    user-select: none; /* Chặn bôi đen text khi click nhanh */
+}
+
+.section-header:hover {
+    background: var(--bg-light);
+}
+
+.section-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-gray);
+    margin: 0;
+}
+
+.toggle-icon {
+    font-size: 10px;
+    color: var(--text-gray);
+    transition: transform 0.2s ease;
+}
+
+/* Accordion Content */
+.section-content {
+    display: none; /* Mặc định ẩn */
+    padding: 8px 16px 16px;
+    max-height: 400px; /* Giới hạn chiều cao nếu danh sách quá dài */
+    overflow-y: auto;  /* Cho phép scroll bên trong section */
+}
+
+.section-content.expanded {
+    display: block; /* Hiện khi có class expanded */
+}
+
+/* Compact Items Style (Depot & Vehicle) */
+.compact-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+/* Style cho item Depot nhỏ */
+.depot-item-compact {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--text-dark);
+}
+
+.depot-item-compact:hover {
+    background: var(--bg-light);
+    color: var(--primary-blue);
+}
+
+/* Style cho item Vehicle nhỏ */
+.vehicle-item-compact {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--white);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.vehicle-item-compact:hover {
+    border-color: var(--primary-blue);
+    transform: translateX(2px);
+}
+
+.vehicle-plate {
+    font-weight: 600;
+    font-size: 13px;
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 6px;
+}
+.status-dot.available { background-color: var(--success-green); }
+.status-dot.in-use { background-color: var(--warning-orange); }
+
 .btn-collapse {
     margin-top: auto;
     padding: var(--space-md);

@@ -114,6 +114,13 @@ export class OrdersTable {
       <td>${this.#escapeHtml(order.service_time)} phút</td>
       <td class="notes-col">${notes}</td>
       <td>${statusIcon} ${order.status}</td>
+      <td>
+      <button class="btn-icon-sm" 
+              onclick="event.stopPropagation(); EditOrderModal.open(${order.id})" 
+              title="Edit order">
+        ✏️
+      </button>
+    </td>
     `;
 
         return row;

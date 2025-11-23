@@ -16,6 +16,7 @@ export class AppState {
         // Depot & Fleet
         availableDepots: [],
         fleetInfo: null,
+        allVehicles: [],
         vehicleCount: 0,
 
         // Orders
@@ -65,6 +66,10 @@ export class AppState {
 
     static get availableDepots() {
         return [...this.#state.availableDepots];
+    }
+
+    static get allVehicles() {
+        return [...this.#state.allVehicles];
     }
 
     static get fleetInfo() {
@@ -126,6 +131,10 @@ export class AppState {
     static setAvailableDepots(depots) {
         this.#state.availableDepots = depots || [];
         this.#notify('availableDepots', this.#state.availableDepots);
+    }
+
+    static setAllVehicles(vehicles) {
+        this.#state.allVehicles = vehicles || [];
     }
 
     static setFleetInfo(fleet) {

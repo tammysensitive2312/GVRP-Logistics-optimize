@@ -1,5 +1,7 @@
 package org.truong.gvrp_entry_api.repository;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -13,10 +15,10 @@ public interface VehicleRepository extends JpaRepository<Vehicle, Long> {
 
     /**
      * Find all vehicles by fleet ID
-     * @param fleetId Fleet ID
+     * @param branchId Fleet ID
      * @return List of vehicles
      */
-    List<Vehicle> findByFleetId(Long fleetId);
+    Page<Vehicle> findByFleetBranchId(Long branchId, Pageable pageable);
 
     /**
      * Find vehicles by status

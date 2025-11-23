@@ -38,4 +38,11 @@ public class FleetController {
         List<FleetDTO> fleetDTO = fleetService.getFleetByBranchId(branchId);
         return ResponseEntity.ok(fleetDTO);
     }
+
+    @GetMapping("/{fleetId}")
+    public ResponseEntity<FleetDTO> getFleetById(@PathVariable Long fleetId) {
+        Long branchId = CurrentUserUtil.getCurrentBranchId();
+        FleetDTO fleetDTO = fleetService.getFleetByIdAndBranchId(fleetId, branchId);
+        return ResponseEntity.ok(fleetDTO);
+    }
 }

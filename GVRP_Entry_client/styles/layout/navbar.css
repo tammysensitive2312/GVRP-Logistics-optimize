@@ -10,7 +10,7 @@
     box-shadow: var(--shadow-sm);
     position: sticky;
     top: 0;
-    z-index: 100;
+    z-index: 1050;
 }
 
 .navbar-left {
@@ -91,18 +91,12 @@
     box-shadow: var(--shadow-lg);
     border-radius: var(--radius-md);
     padding: var(--space-sm) 0;
-    z-index: 1000;
+    z-index: 1100;
     border: 1px solid var(--border-color);
 }
 
-.user-menu .dropdown:hover .dropdown-content {
+.user-menu .dropdown-content.show {
     display: block;
-}
-
-.user-menu .dropdown-content .divider {
-    height: 1px;
-    background: var(--border-color);
-    margin: var(--space-sm) 0;
 }
 
 /* Responsive */

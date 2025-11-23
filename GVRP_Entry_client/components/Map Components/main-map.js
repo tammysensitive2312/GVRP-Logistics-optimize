@@ -281,23 +281,23 @@ export class MainMap {
     static #createOrderPopup(order, markerColor) {
         return `
       <div style="min-width: 200px;">
-        <strong style="font-size: 16px; color: #333;">${order.orderCode || order.order_code}</strong>
+        <strong style="font-size: 16px; color: #333;">${order.order_code}</strong>
         <hr style="margin: 8px 0; border: none; border-top: 1px solid #E5E5E5;">
         <div style="font-size: 13px; line-height: 1.6;">
-          <strong>Customer:</strong> ${order.customerName || order.customer_name}<br>
-          ${order.customerPhone || order.customer_phone ? `<strong>Phone:</strong> ${order.customerPhone || order.customer_phone}<br>` : ''}
+          <strong>Customer:</strong> ${order.customer_name}<br>
+          ${order.customer_phone ? `<strong>Phone:</strong> ${order.customer_phone}<br>` : ''}
           <strong>Address:</strong> ${order.address}<br>
           <strong>Demand:</strong> ${order.demand} kg<br>
-          ${order.timeWindowStart || order.time_window_start ? `<strong>Time:</strong> ${order.timeWindowStart || order.time_window_start} - ${order.timeWindowEnd || order.time_window_end}<br>` : ''}
+          ${order.time_window_start ? `<strong>Time:</strong> ${order.time_window_start} - ${order.time_window_end}<br>` : ''}
           <strong>Status:</strong> <span style="color: ${markerColor};">${order.status}</span>
         </div>
         <div style="margin-top: 12px; display: flex; gap: 8px;">
           <label style="font-size: 12px; cursor: pointer;">
             <input type="checkbox" onchange="toggleOrderSelection(${order.id}, this.checked)"> Select
           </label>
-          <button onclick="viewOrderDetails(${order.id})" 
+          <button onclick="EditOrderModal.open(${order.id})" 
                   style="flex: 1; padding: 6px; background: #4A90E2; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">
-            View Details
+            Edit
           </button>
         </div>
       </div>

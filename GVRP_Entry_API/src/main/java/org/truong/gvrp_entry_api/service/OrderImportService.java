@@ -270,6 +270,7 @@ public class OrderImportService {
         return null; // Valid
     }
 
+    @Transactional(readOnly = true)
     public PageResponse<OrderDTO> getAllOrdersPaginated(Long branchId, int pageNo, int pageSize) {
         // 1. Tạo đối tượng Pageable (có thể thêm Sort nếu muốn, ví dụ sort theo ID giảm dần)
         Pageable pageable = PageRequest.of(pageNo, pageSize, Sort.by("id").descending());
@@ -290,5 +291,20 @@ public class OrderImportService {
                 .totalPages(orderPage.getTotalPages())
                 .last(orderPage.isLast())
                 .build();
+    }
+
+    public OrderDTO updateOrdersById(
+            Long orderId,
+            Long branchId,
+            LocalDate deliveryDate,
+            OrderInputDTO inputDTO) {
+
+        Order order = orderRepository.findByIdAndBranchId(orderId, branchId)
+                .orElseThrow(() -> new ResourceNotFoundException("Resources not found.", "order"));
+
+        order = orderMapper.updateEntityFromDTO(inputDTO, order, deliveryDate);
+        orderRepository.save(order);
+        OrderDTO orderDTO = orderMapper.toDTO(order);
+        return orderDTO;
     }
 }

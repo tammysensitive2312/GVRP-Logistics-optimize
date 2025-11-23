@@ -77,6 +77,22 @@ export class Sidebar {
         this.#invalidateMapAfterDelay();
     }
 
+    static toggleSection(contentId, headerElement) {
+        const content = document.getElementById(contentId);
+        const icon = headerElement.querySelector('.toggle-icon');
+
+        if (content) {
+            const isExpanded = content.classList.contains('expanded');
+            if (isExpanded) {
+                content.classList.remove('expanded');
+                if(icon) icon.style.transform = 'rotate(-90deg)';
+            } else {
+                content.classList.add('expanded');
+                if(icon) icon.style.transform = 'rotate(0deg)';
+            }
+        }
+    }
+
     /**
      * Check if sidebar is collapsed
      */
@@ -90,37 +106,70 @@ export class Sidebar {
      */
     static updateDepotsList(depots) {
         const container = document.getElementById('depots-list');
+        const countLabel = document.getElementById('depot-count');
         if (!container) return;
 
+        if(countLabel) countLabel.textContent = depots?.length || 0;
         container.innerHTML = '';
 
         if (!depots || depots.length === 0) {
-            container.innerHTML = '<div class="empty-message">No depots available</div>';
+            container.innerHTML = '<div class="empty-message">No depots</div>';
             return;
         }
 
         depots.forEach(depot => {
-            const depotItem = this.#createDepotItem(depot);
-            container.appendChild(depotItem);
+            const div = document.createElement('div');
+            div.className = 'depot-item-compact';
+            div.title = depot.address;
+            div.onclick = () => Sidebar.centerMapOnDepot(depot.latitude, depot.longitude);
+
+            div.innerHTML = `
+                <span>📍 ${depot.name}</span>
+                <span style="font-size: 10px; opacity: 0.5">➜</span>
+            `;
+            container.appendChild(div);
         });
     }
 
     /**
-     * Update fleet info
-     * @param {Object} fleetStats - Fleet statistics
+     * Update Vehicles List
      */
-    static updateFleetInfo(fleetStats = null) {
-        const stats = fleetStats || AppState.fleetStats;
+    static updateVehiclesList(vehicles) {
+        const container = document.getElementById('vehicles-list');
+        const countLabel = document.getElementById('vehicle-count');
+        if (!container) return;
 
-        DOMHelpers.setText('fleet-total', `${stats.available} / ${stats.total} vehicles`);
-        DOMHelpers.setText('fleet-in-use', `${stats.inUse} vehicles`);
-        DOMHelpers.setText('fleet-capacity', `${stats.totalCapacity} kg`);
+        // Lấy data từ AppState nếu không được truyền vào
+        const list = vehicles || (AppState.allVehicles ? AppState.allVehicles : []);
 
-        const availablePercent = stats.totalCapacity > 0
-            ? Math.round((stats.availableCapacity / stats.totalCapacity) * 100)
-            : 0;
+        if(countLabel) countLabel.textContent = list.length || 0;
+        container.innerHTML = '';
 
-        DOMHelpers.setText('fleet-available', `${stats.availableCapacity} kg (${availablePercent}%)`);
+        if (list.length === 0) {
+            container.innerHTML = '<div class="empty-message">No vehicles</div>';
+            return;
+        }
+
+        list.forEach(vehicle => {
+            const statusClass = vehicle.status === 'AVAILABLE' ? 'available' : 'in-use';
+            const div = document.createElement('div');
+            div.className = 'vehicle-item-compact';
+            div.onclick = () => {
+                // Logic khi click vào xe (ví dụ: highlight trên map)
+                console.log('Selected vehicle:', vehicle.vehicle_license_plate);
+            };
+
+            div.innerHTML = `
+                <div style="display:flex; align-items:center">
+                    <span class="status-dot ${statusClass}"></span>
+                    <span class="vehicle-plate">${vehicle.vehicle_license_plate}</span>
+                </div>
+                <div style="font-size: 11px; color: #666">
+                    ${vehicle.capacity}kg
+                </div>
+            `;
+            container.appendChild(div);
+        });
     }
 
     /**

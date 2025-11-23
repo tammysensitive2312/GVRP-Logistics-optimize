@@ -31,6 +31,46 @@
 .modal-body { flex: 1; overflow-y: auto; padding: var(--space-xl); }
 .modal-footer { border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; gap: var(--space-md); }
 
+/* Edit Order Modal specific */
+.modal-large {
+    max-width: 600px;
+}
+
+.form-section {
+    margin-bottom: var(--space-2xl);
+    padding-bottom: var(--space-xl);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.form-section:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+.form-section-title {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-dark);
+    margin-bottom: var(--space-lg);
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+/* Icon button for table */
+.btn-icon-sm {
+    background: transparent;
+    border: none;
+    padding: 4px 8px;
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    font-size: 16px;
+    transition: var(--transition-colors);
+}
+
+.btn-icon-sm:hover {
+    background: var(--bg-light);
+}
 
 .import-method-grid {
     display: grid;

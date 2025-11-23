@@ -133,6 +133,47 @@ async function getFleet() {
     }
 }
 
+/**
+ * Get vehicles by branch ID
+ * @returns {Promise<Object>} Vehicle DTO with vehicles
+ */
+async function getVehicle() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/vehicles`, {
+            headers: getHeaders()
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to fetch vehicles');
+        }
+
+        return await response.json();
+    } catch (error) {
+        return handleApiError(error);
+    }
+}
+
+/**
+ * Get specific fleet by fleet ID
+ * @returns {Promise<Object>} Fleet DTO with vehicles
+ */
+async function getFleetById(fleet_id) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/fleets/${fleet_id}`, {
+            headers: getHeaders()
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to fetch fleet');
+        }
+
+        return await response.json();
+    } catch (error) {
+        return handleApiError(error);
+    }
+}
+
+
 // ============================================
 // ORDER API
 // ============================================
@@ -252,6 +293,95 @@ async function deleteOrder(orderId) {
     }
 }
 
+
+
+/**
+ * Get order by ID
+ * @param {number} orderId
+ * @returns {Promise<Object>}
+ */
+async function getOrderById(orderId) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/orders/${orderId}`, {
+            method: 'GET',
+            headers: getHeaders()
+        });
+
+        if (!response.ok) {
+            const errorBody = await response.json().catch(() => ({ message: 'Unknown error' }));
+            throw new Error(`Failed to get order: ${errorBody.message || response.statusText}`);
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('API Error during get order:', error);
+        handleApiError(error);
+        throw error;
+    }
+}
+
+/**
+ * Update order
+ * @param {number} orderId - ID của đơn hàng cần cập nhật
+ * @param {Object} updateData - Dữ liệu cập nhật (OrderInputDTO)
+ * @param {string} [deliveryDate] - Ngày giao hàng mới (YYYY-MM-DD), tùy chọn
+ * @returns {Promise<Object>} - OrderDTO đã được cập nhật từ Server
+ */
+async function updateOrder(orderId, updateData, deliveryDate = null) {
+    let url = `${API_BASE_URL}/orders/${orderId}`;
+
+    if (deliveryDate) {
+        url += `?delivery_date=${deliveryDate}`;
+    }
+
+    try {
+        const response = await fetch(url, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                ...getHeaders()
+            },
+            body: JSON.stringify(updateData)
+        });
+
+        if (!response.ok) {
+            const errorBody = await response.json().catch(() => ({ message: 'Unknown error' }));
+            throw new Error(`Failed to update order: ${errorBody.message || response.statusText}`);
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('API Error during order update:', error);
+        handleApiError(error);
+        throw error;
+    }
+}
+
+/**
+ * Delete order
+ * @param {number} orderId
+ * @returns {Promise<void>}
+ */
+// async function deleteOrder(orderId) {
+//     try {
+//         const response = await fetch(`${API_BASE_URL}/orders/${orderId}`, {
+//             method: 'DELETE',
+//             headers: getHeaders()
+//         });
+//
+//         if (!response.ok) {
+//             const errorBody = await response.json().catch(() => ({ message: 'Unknown error' }));
+//             throw new Error(`Failed to delete order: ${errorBody.message || response.statusText}`);
+//         }
+//
+//         return true;
+//     } catch (error) {
+//         console.error('API Error during delete order:', error);
+//         handleApiError(error);
+//         throw error;
+//     }
+// }
+
 // ============================================
 // SOLUTION API (for future use)
 // ============================================
@@ -300,130 +430,17 @@ async function planRoutes(planningRequest) {
     }
 }
 
-// ============================================
-// MOCK DATA (for development without backend)
-// ============================================
+window.createDepot = createDepot;
+window.getDepots = getDepots;
+window.createFleet = createFleet;
+window.getFleet = getFleet;
+window.importOrders = importOrders;
+window.getOrders = getOrders;
+window.getOrderById = getOrderById;
+window.updateOrderStatus = updateOrderStatus;
+window.deleteOrder = deleteOrder;
+window.getAvailableVehicles = getAvailableVehicles;
+window.planRoutes = planRoutes;
+window.updateOrder = updateOrder;
 
-const MOCK_MODE = false; // Set to false when backend is ready
-
-// Mock depot data
-const mockDepots = [
-    {
-        id: 1,
-        branchId: 1,
-        name: 'Kho Hà Nội',
-        address: '123 Main Street, Hanoi',
-        latitude: 21.028511,
-        longitude: 105.804817
-    }
-];
-
-// Mock fleet data
-const mockFleet = {
-    id: 1,
-    branchId: 1,
-    fleetName: 'Đội xe giao hàng nội thành',
-    vehicles: [
-        {
-            id: 1,
-            vehicleLicensePlate: '29A-12345',
-            vehicleFeature: 'Xe tải nhỏ',
-            capacity: 500,
-            status: 'AVAILABLE'
-        },
-        {
-            id: 2,
-            vehicleLicensePlate: '29B-67890',
-            vehicleFeature: 'Xe tải trung',
-            capacity: 1000,
-            status: 'AVAILABLE'
-        }
-    ],
-    totalCapacity: 1500,
-    vehicleCount: 2
-};
-
-// Mock orders data
-const mockOrders = [];
-
-// Override API functions in mock mode
-if (MOCK_MODE) {
-    window.createDepot = async (depotData) => {
-        console.log('MOCK: Creating depot', depotData);
-        await new Promise(resolve => setTimeout(resolve, 500)); // Simulate network delay
-
-        const newDepot = {
-            id: mockDepots.length + 1,
-            branchId: BRANCH_ID,
-            ...depotData,
-            createdAt: new Date().toISOString()
-        };
-
-        mockDepots.push(newDepot);
-        showToast('Depot created successfully!', 'success');
-        return newDepot;
-    };
-
-    window.getDepots = async () => {
-        console.log('MOCK: Getting depots');
-        await new Promise(resolve => setTimeout(resolve, 300));
-        return mockDepots;
-    };
-
-    window.createFleet = async (fleetData) => {
-        console.log('MOCK: Creating fleet', fleetData);
-        await new Promise(resolve => setTimeout(resolve, 500));
-
-        showToast('Fleet created successfully!', 'success');
-        return {
-            id: 1,
-            branchId: BRANCH_ID,
-            ...fleetData,
-            totalCapacity: fleetData.vehicles.reduce((sum, v) => sum + v.capacity, 0),
-            vehicleCount: fleetData.vehicles.length
-        };
-    };
-
-    window.getFleet = async () => {
-        console.log('MOCK: Getting fleet');
-        await new Promise(resolve => setTimeout(resolve, 300));
-        return mockFleet;
-    };
-
-    window.importOrders = async (formData) => {
-        console.log('MOCK: Importing orders', formData);
-        await new Promise(resolve => setTimeout(resolve, 1000));
-
-        // Simulate successful import
-        const importedCount = 5;
-        showToast(`Successfully imported ${importedCount} orders!`, 'success');
-
-        return {
-            success: true,
-            importedCount: importedCount,
-            skippedCount: 0,
-            errors: []
-        };
-    };
-
-    window.getOrders = async (deliveryDate) => {
-        console.log('MOCK: Getting orders for date', deliveryDate);
-        await new Promise(resolve => setTimeout(resolve, 300));
-        return mockOrders;
-    };
-} else {
-    // Expose real API functions to global scope
-    window.createDepot = createDepot;
-    window.getDepots = getDepots;
-    window.createFleet = createFleet;
-    window.getFleet = getFleet;
-    window.importOrders = importOrders;
-    window.getOrders = getOrders;
-    window.getOrderById = getOrderById;
-    window.updateOrderStatus = updateOrderStatus;
-    window.deleteOrder = deleteOrder;
-    window.getAvailableVehicles = getAvailableVehicles;
-    window.planRoutes = planRoutes;
-}
-
-console.log('API Client initialized. Mock mode:', MOCK_MODE);
+console.log('API Client initialized.');

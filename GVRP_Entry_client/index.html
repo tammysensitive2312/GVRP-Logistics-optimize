@@ -17,6 +17,7 @@
   <script src="api.js"></script>
 
   <script type="module" src="components/UI%20Components/sidebar.js"></script>
+  <script type="module" src="components/UI%20Components/navbar.js"></script>
   <script type="module" src="components/UI%20Components/resizable-divider.js"></script>
   <script type="module" src="components/UI%20Components/orders-table.js"></script>
   <script type="module" src="components/UI%20Components/orders-filters.js"></script>
@@ -25,6 +26,7 @@
   <script type="module" src="components/Form%20Components/fleet-form.js"></script>
   <script type="module" src="components/Form%20Components/vehicle-card.js"></script>
   <script type="module" src="components/Form%20Components/import-modal.js"></script>
+  <script type="module" src="components/Form%20Components/edit-order-modal.js"></script>
 
   <script type="module" src="components/Map%20Components/depot-map.js"></script>
   <script type="module" src="components/Map%20Components/main-map.js"></script>
@@ -211,27 +213,29 @@
     </div>
 
     <div class="navbar-right">
-      <div class="user-menu">
+      <div class="user-menu" id="userMenuDropdown">
         <span class="user-avatar">👤</span>
         <span class="user-name">Admin</span>
-        <div class="dropdown">
-          <button class="btn-icon">▼</button>
-          <div class="dropdown-content">
-            <a href="#" onclick="event.preventDefault(); alert('Profile - Coming soon!')">
-              👤 Profile
-            </a>
-            <a href="#" onclick="event.preventDefault(); alert('Settings - Coming soon!')">
-              ⚙️ Settings
-            </a>
-            <div class="divider"></div>
-            <a href="#" onclick="event.preventDefault(); handleLogout()" style="color: var(--danger-red);">
-              🚪 Logout
-            </a>
-          </div>
+
+        <button class="btn-icon btn-dropdown-trigger" onclick="event.stopPropagation(); Navbar.toggleDropdown('userMenuDropdown')">
+          ▼
+        </button>
+
+        <div class="dropdown-content">
+          <a href="#" onclick="event.preventDefault(); alert('Profile - Coming soon!')">
+            👤 Profile
+          </a>
+          <a href="#" onclick="event.preventDefault(); alert('Settings - Coming soon!')">
+            ⚙️ Settings
+          </a>
+          <div class="divider"></div>
+          <a href="#" onclick="event.preventDefault(); Navbar.handleLogout()" style="color: var(--danger-red);">
+            🚪 Logout
+          </a>
         </div>
       </div>
     </div>
-  </nav>
+</nav>
 
   <!-- Main Content -->
   <div class="main-layout">
@@ -262,52 +266,29 @@
 
       <div class="divider"></div>
 
-      <!-- Depots Section -->
       <div class="sidebar-section">
-        <h3 class="section-title">📍 DEPOTS</h3>
-        <div id="depots-list" class="depots-list">
-          <!-- Will be populated dynamically -->
-          <div class="depot-item">
-            <div class="depot-header">
-              <span class="depot-icon">📍</span>
-              <span class="depot-name">Kho Hà Nội</span>
-            </div>
-            <div class="depot-details">
-              <div class="depot-address">123 Main Street</div>
-              <div class="depot-coords">Lat: 21.028511, Lng: 105.804817</div>
-              <button class="btn btn-sm btn-text" onclick="centerMapToDepot(21.028511, 105.804817)">
-                📍 View on Map
-              </button>
-            </div>
+        <div class="section-header" onclick="Sidebar.toggleSection('depots-content', this)">
+          <h3 class="section-title">📍 DEPOTS (<span id="depot-count">0</span>)</h3>
+          <span class="toggle-icon">▼</span>
+        </div>
+
+        <div class="section-content expanded" id="depots-content">
+          <div id="depots-list" class="compact-list">
+            <div class="empty-message">Loading depots...</div>
           </div>
         </div>
       </div>
 
-      <div class="divider"></div>
-
-      <!-- Fleet Info -->
       <div class="sidebar-section">
-        <h3 class="section-title">🚚 FLEET INFO</h3>
-        <div class="fleet-info">
-          <div class="info-row">
-            <span class="info-label">Available:</span>
-            <span class="info-value">3 / 5 vehicles</span>
+        <div class="section-header" onclick="Sidebar.toggleSection('vehicles-content', this)">
+          <h3 class="section-title">🚚 VEHICLES (<span id="vehicle-count">0</span>)</h3>
+          <span class="toggle-icon">▼</span>
+        </div>
+
+        <div class="section-content expanded" id="vehicles-content">
+          <div id="vehicles-list" class="compact-list">
+            <div class="empty-message">Loading vehicles...</div>
           </div>
-          <div class="info-row">
-            <span class="info-label">In Use:</span>
-            <span class="info-value">2 vehicles</span>
-          </div>
-          <div class="info-row">
-            <span class="info-label">Total Capacity:</span>
-            <span class="info-value">1500 kg</span>
-          </div>
-          <div class="info-row">
-            <span class="info-label">Available:</span>
-            <span class="info-value">900 kg (60%)</span>
-          </div>
-          <button class="btn btn-sm btn-text" onclick="alert('Fleet details')">
-            View Fleet Details →
-          </button>
         </div>
       </div>
 
@@ -395,15 +376,16 @@
             <thead>
             <tr>
               <th><input type="checkbox" id="select-all" onchange="toggleSelectAll()" /></th>
-              <th>Mã ĐH</th>
-              <th>Khách hàng</th>
-              <th>Địa chỉ</th>
-              <th>Độ ưu tiên</th>
-              <th>Khung giờ</th>
-              <th>SL/Tải</th>
-              <th>Thời gian phục vụ</th>
-              <th>Ghi chú</th>
-              <th>Trạng thái</th>
+              <th>Order Code</th>
+              <th>Customer</th>
+              <th>Address</th>
+              <th>Priority</th>
+              <th>Time window</th>
+              <th>Capacity</th>
+              <th>Time service</th>
+              <th>Notes</th>
+              <th>Status</th>
+              <th>Actions</th>
             </tr>
             </thead>
             <tbody id="orders-tbody">
@@ -540,6 +522,145 @@
       </button>
       <button type="button" class="btn btn-primary" onclick="submitImport()">
         Import
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================ -->
+<!-- EDIT ORDER MODAL -->
+<!-- ============================================ -->
+<div id="modal-edit-order" class="modal">
+  <div class="modal-content modal-large">
+    <div class="modal-header">
+      <h2 class="modal-title">📝 Edit Order</h2>
+      <button class="btn-close" onclick="EditOrderModal.close()">✕</button>
+    </div>
+
+    <form id="edit-order-form" class="modal-body">
+      <!-- Basic Information -->
+      <div class="form-section">
+        <h3 class="form-section-title">📋 Basic Information</h3>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="edit-order-code">Order Code <span class="required">*</span></label>
+            <input type="text" id="edit-order-code" placeholder="ORD001" required />
+          </div>
+
+          <div class="form-group">
+            <label for="edit-status">Status</label>
+            <select id="edit-status">
+              <option value="SCHEDULED">Scheduled</option>
+              <option value="ON_ROUTE">On Route</option>
+              <option value="COMPLETED">Completed</option>
+              <option value="FAILED">Failed</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="edit-customer-name">Customer Name <span class="required">*</span></label>
+            <input type="text" id="edit-customer-name" placeholder="John Doe" required />
+          </div>
+
+          <div class="form-group">
+            <label for="edit-customer-phone">Phone Number</label>
+            <input type="tel" id="edit-customer-phone" placeholder="0901234567" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Location -->
+      <div class="form-section">
+        <h3 class="form-section-title">📍 Location</h3>
+
+        <div class="form-group">
+          <label for="edit-address">Address <span class="required">*</span></label>
+          <input type="text" id="edit-address" placeholder="123 Main Street" required />
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="edit-latitude">Latitude <span class="required">*</span></label>
+            <input type="number" id="edit-latitude" step="any" placeholder="21.028511" required />
+          </div>
+
+          <div class="form-group">
+            <label for="edit-longitude">Longitude <span class="required">*</span></label>
+            <input type="number" id="edit-longitude" step="any" placeholder="105.804817" required />
+          </div>
+        </div>
+
+        <button type="button" class="btn btn-secondary btn-sm" onclick="EditOrderModal.openLocationPicker()">
+          🗺️ Pick Location on Map
+        </button>
+      </div>
+
+      <!-- Order Details -->
+      <div class="form-section">
+        <h3 class="form-section-title">📦 Order Details</h3>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="edit-demand">Demand (kg) <span class="required">*</span></label>
+            <input type="number" id="edit-demand" step="0.1" min="0.1" placeholder="50.5" required />
+          </div>
+
+          <div class="form-group">
+            <label for="edit-service-time">Service Time (minutes) <span class="required">*</span></label>
+            <input type="number" id="edit-service-time" min="0" value="5" required />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="edit-priority">Priority (1-10)</label>
+            <input type="number" id="edit-priority" min="1" max="10" value="5" />
+          </div>
+
+          <div class="form-group">
+            <label for="edit-delivery-date">Delivery Date</label>
+            <input type="date" id="edit-delivery-date" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Time Windows -->
+      <div class="form-section">
+        <h3 class="form-section-title">⏰ Time Windows (Optional)</h3>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="edit-time-window-start">Start Time</label>
+            <input type="time" id="edit-time-window-start" placeholder="08:00" />
+          </div>
+
+          <div class="form-group">
+            <label for="edit-time-window-end">End Time</label>
+            <input type="time" id="edit-time-window-end" placeholder="12:00" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Delivery Notes -->
+      <div class="form-section">
+        <h3 class="form-section-title">📝 Notes</h3>
+
+        <div class="form-group">
+          <label for="edit-delivery-notes">Delivery Notes</label>
+          <textarea id="edit-delivery-notes" rows="3" placeholder="Special instructions..."></textarea>
+        </div>
+      </div>
+    </form>
+
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" onclick="EditOrderModal.close()">
+        Cancel
+      </button>
+      <button type="submit" form="edit-order-form" class="btn btn-primary">
+        💾 Save
       </button>
     </div>
   </div>

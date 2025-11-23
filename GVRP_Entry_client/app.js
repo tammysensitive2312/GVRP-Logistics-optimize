@@ -4,6 +4,7 @@
  */
 
 import { Sidebar } from './components/UI Components/sidebar.js';
+import { Navbar } from "./components/UI Components/navbar.js";
 import { ResizableDivider } from './components/UI Components/resizable-divider.js';
 import { OrdersTable } from './components/UI Components/orders-table.js';
 import { OrdersFilters } from './components/UI Components/orders-filters.js';
@@ -12,6 +13,7 @@ import { DepotForm } from './components/Form Components/depot-form.js';
 import { VehicleCard } from './components/Form Components/vehicle-card.js';
 import { FleetForm } from './components/Form Components/fleet-form.js';
 import { ImportModal } from './components/Form Components/import-modal.js';
+import { EditOrderModal } from './components/Form Components/edit-order-modal.js';
 
 import { DepotMap } from './components/Map Components/depot-map.js';
 import { MainMap } from './components/Map Components/main-map.js';
@@ -83,7 +85,7 @@ function displayUserInfo() {
         // Update user info
         const userName = document.querySelector('.user-name');
         if (userName) {
-            userName.textContent = user.fullName || user.username;
+            userName.textContent = user.username;
         }
     }
 }
@@ -182,8 +184,10 @@ function initEventListeners() {
     DepotForm.init();
     FleetForm.init();
     ImportModal.init();
+    EditOrderModal.init();
 
     Sidebar.init();
+    Navbar.init();
     ResizableDivider.init();
     OrdersTable.init();
     OrdersFilters.init();
@@ -223,6 +227,11 @@ async function loadMainScreenData() {
             Sidebar.updateDepotsList(depots);
             AppState.setAvailableDepots(depots);
         }
+
+        const apiResponse = await getVehicle();
+        const vehicles = apiResponse.content || [];
+        Sidebar.updateVehiclesList(vehicles)
+        AppState.setAllVehicles(vehicles);
 
         const today = new Date().toISOString().split('T')[0];
         AppState.setFilterDate(today);
@@ -283,7 +292,7 @@ function bulkEditOrders() {
     Toast.success('Bulk Edit feature - Coming soon!');
 }
 
-function viewOrderDetails(orderId) {
+function editOrderDetails(orderId) {
     Toast.success(`View order #${orderId} - Coming soon!`);
 }
 
@@ -300,6 +309,6 @@ window.previousPage = previousPage;
 window.nextPage = nextPage;
 window.loadOrders = loadOrders;
 window.openAddOrderModal = openAddOrderModal;
-window.viewOrderDetails = viewOrderDetails;
+window.editOrderDetails = editOrderDetails;
 
 console.log('App.js loaded successfully!');

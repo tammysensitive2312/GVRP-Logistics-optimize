@@ -9,11 +9,12 @@ import java.util.Optional;
 public interface FleetRepository extends JpaRepository<Fleet, Long> {
 
     /**
-     * Find fleet by branch ID
+     * Find fleet by fleet ID and branch ID
+     * @param branchId Branch ID
      * @param branchId Branch ID
      * @return Optional Fleet
      */
-    Optional<Fleet> findByBranchId(Long branchId);
+    Optional<Fleet> findByIdAndBranchId(Long fleetId, Long branchId);
 
     /**
      * Check if branch has fleet
