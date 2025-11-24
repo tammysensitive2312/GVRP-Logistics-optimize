@@ -186,6 +186,32 @@ export class Router {
     }
 
     /**
+     * Switch between the main content tabs (Orders/Route/Timeline).
+     * @param {string} targetTabId - ID of the tab to activate (e.g., 'orders-tab').
+     */
+    static switchContentTab(targetTabId) {
+        document.querySelectorAll('.tab-content-item').forEach(content => {
+            content.classList.remove('active');
+        });
+
+        const targetContent = document.getElementById(targetTabId);
+        if (targetContent) {
+            targetContent.classList.add('active');
+        }
+
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            if (btn.getAttribute('data-tab') === targetTabId) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
+
+        // Cần gọi hàm refresh map ở đây nếu map được đặt trong tab khác orders.
+        // Ví dụ: map.invalidateSize();
+    }
+
+    /**
      * Get current screen
      * @returns {string}
      */
@@ -203,5 +229,10 @@ export class Router {
     }
 }
 
+if (typeof window !== 'undefined') {
+    window.Router = Router;
+}
+
 // Backward compatibility - Keep global function
 window.goToScreen = (screenId) => Router.goTo(screenId);
+window.switchContentTab = (tabId) => Router.switchContentTab(tabId);

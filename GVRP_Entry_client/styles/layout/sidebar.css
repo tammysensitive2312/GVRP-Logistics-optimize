@@ -132,14 +132,19 @@
     transition: all 0.2s;
 }
 
-.vehicle-item-compact:hover {
-    border-color: var(--primary-blue);
-    transform: translateX(2px);
+.vehicle-item-compact input[type="checkbox"] {
+    transform: scale(1.1);
 }
 
 .vehicle-plate {
+    margin-left: 4px;
     font-weight: 600;
     font-size: 13px;
+}
+
+.vehicle-item-compact input[type="checkbox"]:checked + .status-dot + .vehicle-plate {
+    color: var(--primary-blue);
+    font-weight: 700;
 }
 
 .status-dot {

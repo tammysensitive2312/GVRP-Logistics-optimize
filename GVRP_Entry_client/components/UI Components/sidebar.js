@@ -131,6 +131,17 @@ export class Sidebar {
         });
     }
 
+    static toggleVehicleSelection(vehicleId, isChecked) {
+        const id = Number(vehicleId);
+        if (isChecked) {
+            AppState.selectVehicle(id);
+        } else {
+            AppState.deselectVehicle(id);
+        }
+
+        // Router.updatePlanRoutesButton();
+    }
+
     /**
      * Update Vehicles List
      */
@@ -139,7 +150,7 @@ export class Sidebar {
         const countLabel = document.getElementById('vehicle-count');
         if (!container) return;
 
-        // Lấy data từ AppState nếu không được truyền vào
+        // Get data from AppState if not passed in
         const list = vehicles || (AppState.allVehicles ? AppState.allVehicles : []);
 
         if(countLabel) countLabel.textContent = list.length || 0;
@@ -152,21 +163,28 @@ export class Sidebar {
 
         list.forEach(vehicle => {
             const statusClass = vehicle.status === 'AVAILABLE' ? 'available' : 'in-use';
+            const isSelected = AppState.isVehicleSelected(vehicle.id);
+
             const div = document.createElement('div');
             div.className = 'vehicle-item-compact';
-            div.onclick = () => {
-                // Logic khi click vào xe (ví dụ: highlight trên map)
-                console.log('Selected vehicle:', vehicle.vehicle_license_plate);
-            };
+
 
             div.innerHTML = `
-                <div style="display:flex; align-items:center">
-                    <span class="status-dot ${statusClass}"></span>
-                    <span class="vehicle-plate">${vehicle.vehicle_license_plate}</span>
-                </div>
-                <div style="font-size: 11px; color: #666">
-                    ${vehicle.capacity}kg
-                </div>
+            <div style="display:flex; align-items:center; flex: 1;">
+                
+                <input 
+                    type="checkbox" 
+                    id="vehicle-${vehicle.id}" 
+                    style="margin-right: 8px;"
+                    onchange="Sidebar.toggleVehicleSelection(${vehicle.id}, this.checked)"
+                    ${isSelected ? 'checked' : ''}
+                />
+                <span class="status-dot ${statusClass}"></span>
+                <span class="vehicle-plate">${vehicle.vehicle_license_plate}</span>
+            </div>
+            <div style="font-size: 11px; color: #666">
+                ${vehicle.capacity}kg
+            </div>
             `;
             container.appendChild(div);
         });

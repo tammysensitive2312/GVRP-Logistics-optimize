@@ -193,27 +193,6 @@ function initEventListeners() {
     OrdersFilters.init();
 }
 
-
-/**
- * Handle screen activation
- */
-function onScreenActivated(screenId) {
-    switch(screenId) {
-        case 'screen-depot-setup':
-            setTimeout(() => initDepotSetupMap(), 100);
-            break;
-        case 'screen-fleet-setup':
-            loadDepotsForFleet();
-            break;
-        case 'screen-main':
-            setTimeout(() => {
-                initMainMap();
-                loadMainScreenData();
-            }, 100);
-            break;
-    }
-}
-
 /**
  * Load data for main screen
  */
@@ -280,22 +259,6 @@ function exportOrders() {
     Toast.success('Export feature - Coming soon!');
 }
 
-function deleteSelectedOrders() {
-    if (AppState.selectedOrdersCount === 0) {
-        Toast.error('No orders selected');
-        return;
-    }
-    Toast.success(`Delete ${selectedOrders.size} orders - Coming soon!`);
-}
-
-function bulkEditOrders() {
-    Toast.success('Bulk Edit feature - Coming soon!');
-}
-
-function editOrderDetails(orderId) {
-    Toast.success(`View order #${orderId} - Coming soon!`);
-}
-
 function previousPage() {
     Toast.success('Pagination - Coming soon!');
 }
@@ -309,6 +272,5 @@ window.previousPage = previousPage;
 window.nextPage = nextPage;
 window.loadOrders = loadOrders;
 window.openAddOrderModal = openAddOrderModal;
-window.editOrderDetails = editOrderDetails;
 
 console.log('App.js loaded successfully!');

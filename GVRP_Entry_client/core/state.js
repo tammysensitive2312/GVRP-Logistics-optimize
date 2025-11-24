@@ -16,8 +16,11 @@ export class AppState {
         // Depot & Fleet
         availableDepots: [],
         fleetInfo: null,
+
+        // Vehicles
         allVehicles: [],
         vehicleCount: 0,
+        selectedVehicles: new Set(),
 
         // Orders
         allOrders: [],
@@ -68,12 +71,16 @@ export class AppState {
         return [...this.#state.availableDepots];
     }
 
+    static get fleetInfo() {
+        return this.#state.fleetInfo;
+    }
+
     static get allVehicles() {
         return [...this.#state.allVehicles];
     }
 
-    static get fleetInfo() {
-        return this.#state.fleetInfo;
+    static get selectedVehicles() {
+        return new Set(this.#state.selectedVehicles);
     }
 
     static get vehicleCount() {
@@ -133,13 +140,43 @@ export class AppState {
         this.#notify('availableDepots', this.#state.availableDepots);
     }
 
-    static setAllVehicles(vehicles) {
-        this.#state.allVehicles = vehicles || [];
-    }
-
     static setFleetInfo(fleet) {
         this.#state.fleetInfo = fleet;
         this.#notify('fleetInfo', fleet);
+    }
+
+    static setAllVehicles(vehicles) {
+        this.#state.allVehicles = vehicles || [];
+        this.#notify('allVehicles', this.#state.allVehicles);
+    }
+
+    static selectVehicle(vehicleId) {
+        this.#state.selectedVehicles.add(vehicleId);
+        this.#notify('selectedVehicles', this.selectedVehicles);
+    }
+
+    static deselectVehicle(vehicleId) {
+        this.#state.selectedVehicles.delete(vehicleId);
+        this.#notify('selectedVehicles', this.selectedVehicles);
+    }
+
+    static toggleVehicleSelection(vehicleId) {
+        if (this.#state.selectedVehicles.has(vehicleId)) {
+            this.deselectVehicle(vehicleId);
+        } else {
+            this.selectVehicle(vehicleId);
+        }
+    }
+
+    static isVehicleSelected(vehicleId) {
+        return this.#state.selectedVehicles.has(vehicleId);
+    }
+
+    static deselectAllVehicles() {
+        if (this.#state.selectedVehicles.size > 0) {
+            this.#state.selectedVehicles.clear();
+            this.#notify('selectedVehicles', this.selectedVehicles);
+        }
     }
 
     static setVehicleCount(count) {
