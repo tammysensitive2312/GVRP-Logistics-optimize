@@ -111,7 +111,7 @@ export class OrdersTable {
       <td>${priorityDisplay}</td>
       <td>${timeWindow}</td>
       <td>${order.demand} kg</td>
-      <td>${this.#escapeHtml(order.service_time)} phút</td>
+      <td>${this.#escapeHtml(order.service_time)} minutes</td>
       <td class="notes-col">${notes}</td>
       <td>${statusIcon} ${order.status}</td>
       <td>
@@ -203,14 +203,14 @@ export class OrdersTable {
      * @param {number} orderId
      * @param {boolean} checked
      */
-    static toggleSelection(orderId, checked) {
+    static async toggleSelection(orderId, checked) {
         if (checked) {
             AppState.selectOrder(orderId);
         } else {
             AppState.deselectOrder(orderId);
         }
 
-        // Update Plan Routes button
+        this.updateCheckboxes();
         this.updatePlanButton();
     }
 

@@ -44,11 +44,11 @@ export class VehicleCard {
           <input type="text" name="vehicleLicensePlate" 
                  placeholder="29A-12345" required />
         </div>
-        <div class="form-group">
-          <label>Loại xe</label>
-          <input type="text" name="vehicleFeature" 
-                 placeholder="Xe tải nhỏ" />
-        </div>
+<!--        <div class="form-group">-->
+<!--          <label>Loại xe</label>-->
+<!--          <input type="text" name="vehicleFeature" -->
+<!--                 placeholder="Xe tải nhỏ" />-->
+<!--        </div>-->
         <div class="form-group">
           <label>Tải trọng (kg) <span class="required">*</span></label>
           <input type="number" name="capacity" 
@@ -150,7 +150,7 @@ export class VehicleCard {
 
         return {
             vehicle_license_plate: card.querySelector('input[name="vehicleLicensePlate"]').value.trim(),
-            vehicle_feature: card.querySelector('input[name="vehicleFeature"]').value.trim(),
+            // vehicle_feature: card.querySelector('input[name="vehicleFeature"]').value.trim(),
             capacity: parseInt(card.querySelector('input[name="capacity"]').value) || 0,
             fixed_cost: parseFloat(card.querySelector('input[name="fixedCost"]').value) || 0,
             cost_per_km: parseFloat(card.querySelector('input[name="costPerKm"]').value) || 0,
@@ -181,9 +181,9 @@ export class VehicleCard {
         if (data.vehicle_license_plate) {
             card.querySelector('input[name="vehicleLicensePlate"]').value = data.vehicle_license_plate;
         }
-        if (data.vehicle_feature) {
-            card.querySelector('input[name="vehicleFeature"]').value = data.vehicle_feature;
-        }
+        // if (data.vehicle_feature) {
+        //     card.querySelector('input[name="vehicleFeature"]').value = data.vehicle_feature;
+        // }
         if (data.capacity) {
             card.querySelector('input[name="capacity"]').value = data.capacity;
         }

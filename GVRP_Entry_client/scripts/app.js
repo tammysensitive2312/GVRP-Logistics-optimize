@@ -250,6 +250,38 @@ async function loadOrders() {
     }
 }
 
+/**
+ * Manual refresh - Invalidate cache và reload data
+ */
+async function refreshAllData() {
+    const branchId = getCurrentBranch();
+
+    // Show loading
+    Loading.show('Refreshing data...');
+
+    try {
+        // Invalidate all caches
+        invalidateQuery(QueryKeys.orders.all(branchId));
+        invalidateQuery(QueryKeys.vehicles.all(branchId));
+        invalidateQuery(QueryKeys.depots.all(branchId));
+
+        // Reload orders
+        await loadOrders();
+
+        // Reload vehicles
+        const apiResponse = await getVehicle();
+        const vehicles = apiResponse.content || [];
+        Sidebar.updateVehiclesList(vehicles);
+        AppState.setAllVehicles(vehicles);
+
+    } catch (error) {
+        console.error('Refresh failed:', error);
+        Toast.error('Failed to refresh data');
+    } finally {
+        Loading.hide();
+    }
+}
+
 // Placeholder functions for incomplete features
 function openAddOrderModal() {
     Toast.success('Add Order feature - Coming soon!');
@@ -272,5 +304,6 @@ window.previousPage = previousPage;
 window.nextPage = nextPage;
 window.loadOrders = loadOrders;
 window.openAddOrderModal = openAddOrderModal;
+window.refreshAllData = refreshAllData;
 
 console.log('App.js loaded successfully!');

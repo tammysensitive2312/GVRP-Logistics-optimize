@@ -70,19 +70,27 @@ async function createDepot(depotData) {
  * @returns {Promise<Array>} List of depot DTOs
  */
 async function getDepots() {
-    try {
-        const response = await fetch(`${API_BASE_URL}/depots`, {
-            headers: getHeaders()
-        });
+    const branchId = BRANCH_ID;
+    const queryKey = QueryKeys.depots.all(branchId);
 
-        if (!response.ok) {
-            throw new Error('Failed to fetch depots');
+    return await fetchQuery(
+        queryKey,
+        async () => {
+            const response = await fetch(`${API_BASE_URL}/depots`, {
+                headers: getHeaders()
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to fetch depots');
+            }
+
+            return await response.json();
+        },
+        {
+            staleTime: 10 * 60 * 1000,  // Fresh for 10 minutes (depots rarely change)
+            cacheTime: 30 * 60 * 1000
         }
-
-        return await response.json();
-    } catch (error) {
-        return handleApiError(error);
-    }
+    );
 }
 
 // ============================================
@@ -107,7 +115,11 @@ async function createFleet(fleetData) {
             throw new Error(error.message || 'Failed to create fleet');
         }
 
-        return await response.json();
+        const result = await response.json();
+        invalidateQuery(QueryKeys.fleets.all(BRANCH_ID));
+        invalidateQuery(QueryKeys.vehicles.all(BRANCH_ID));
+
+        return result;
     } catch (error) {
         return handleApiError(error);
     }
@@ -138,41 +150,28 @@ async function getFleet() {
  * @returns {Promise<Object>} Vehicle DTO with vehicles
  */
 async function getVehicle() {
-    try {
-        const response = await fetch(`${API_BASE_URL}/vehicles`, {
-            headers: getHeaders()
-        });
+    const branchId = BRANCH_ID;
+    const queryKey = QueryKeys.vehicles.all(branchId);
 
-        if (!response.ok) {
-            throw new Error('Failed to fetch vehicles');
+    return await fetchQuery(
+        queryKey,
+        async () => {
+            const response = await fetch(`${API_BASE_URL}/vehicles`, {
+                headers: getHeaders()
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to fetch vehicles');
+            }
+
+            return await response.json();
+        },
+        {
+            staleTime: 5 * 60 * 1000,  // Fresh for 5 minutes (vehicles don't change often)
+            cacheTime: 10 * 60 * 1000
         }
-
-        return await response.json();
-    } catch (error) {
-        return handleApiError(error);
-    }
+    );
 }
-
-/**
- * Get specific fleet by fleet ID
- * @returns {Promise<Object>} Fleet DTO with vehicles
- */
-async function getFleetById(fleet_id) {
-    try {
-        const response = await fetch(`${API_BASE_URL}/fleets/${fleet_id}`, {
-            headers: getHeaders()
-        });
-
-        if (!response.ok) {
-            throw new Error('Failed to fetch fleet');
-        }
-
-        return await response.json();
-    } catch (error) {
-        return handleApiError(error);
-    }
-}
-
 
 // ============================================
 // ORDER API
@@ -198,7 +197,10 @@ async function importOrders(formData) {
             throw new Error(error.message || 'Failed to import orders');
         }
 
-        return await response.json();
+        const result = await response.json();
+        invalidateQuery(QueryKeys.orders.all(BRANCH_ID));
+
+        return result;
     } catch (error) {
         return handleApiError(error);
     }
@@ -210,20 +212,31 @@ async function importOrders(formData) {
  * @returns {Promise<Array>} List of order DTOs
  */
 async function getOrders(deliveryDate) {
-    try {
-        const url = `${API_BASE_URL}/orders?order=desc`;
-        const response = await fetch(url, {
-            headers: getHeaders()
-        });
+    const branchId = BRANCH_ID;
 
-        if (!response.ok) {
-            throw new Error('Failed to fetch orders');
+    // Define query key
+    const queryKey = QueryKeys.orders.byDate(branchId, deliveryDate);
+
+    // Use fetchQuery with cache
+    return await fetchQuery(
+        queryKey,
+        async () => {
+            const url = `${API_BASE_URL}/orders?order=desc`;
+            const response = await fetch(url, {
+                headers: getHeaders()
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to fetch orders');
+            }
+
+            return await response.json();
+        },
+        {
+            staleTime: 2 * 60 * 1000,  // Fresh for 2 minutes
+            cacheTime: 5 * 60 * 1000   // Cache for 5 minutes
         }
-
-        return await response.json();
-    } catch (error) {
-        return handleApiError(error);
-    }
+    );
 }
 
 /**
@@ -248,30 +261,6 @@ async function getOrderById(orderId) {
 }
 
 /**
- * Update order status
- * @param {number} orderId
- * @param {string} status - OrderStatus enum value
- * @returns {Promise<Object>} Updated order DTO
- */
-async function updateOrderStatus(orderId, status) {
-    try {
-        const response = await fetch(`${API_BASE_URL}/orders/${orderId}/status`, {
-            method: 'PATCH',
-            headers: getHeaders(),
-            body: JSON.stringify({ status })
-        });
-
-        if (!response.ok) {
-            throw new Error('Failed to update order status');
-        }
-
-        return await response.json();
-    } catch (error) {
-        return handleApiError(error);
-    }
-}
-
-/**
  * Delete order
  * @param {number} orderId
  * @returns {Promise<void>}
@@ -287,36 +276,13 @@ async function deleteOrder(orderId) {
             throw new Error('Failed to delete order');
         }
 
+        const branchId = BRANCH_ID;
+        invalidateQuery(QueryKeys.orders.all(branchId));
+        removeQuery(QueryKeys.orders.detail(orderId));
+
         return true;
     } catch (error) {
         return handleApiError(error);
-    }
-}
-
-
-
-/**
- * Get order by ID
- * @param {number} orderId
- * @returns {Promise<Object>}
- */
-async function getOrderById(orderId) {
-    try {
-        const response = await fetch(`${API_BASE_URL}/orders/${orderId}`, {
-            method: 'GET',
-            headers: getHeaders()
-        });
-
-        if (!response.ok) {
-            const errorBody = await response.json().catch(() => ({ message: 'Unknown error' }));
-            throw new Error(`Failed to get order: ${errorBody.message || response.statusText}`);
-        }
-
-        return await response.json();
-    } catch (error) {
-        console.error('API Error during get order:', error);
-        handleApiError(error);
-        throw error;
     }
 }
 
@@ -349,38 +315,19 @@ async function updateOrder(orderId, updateData, deliveryDate = null) {
             throw new Error(`Failed to update order: ${errorBody.message || response.statusText}`);
         }
 
-        return await response.json();
+        const result = await response.json();
+
+        const branchId = BRANCH_ID;
+        invalidateQuery(QueryKeys.orders.all(branchId));
+        invalidateQuery(QueryKeys.orders.detail(orderId));
+
+        return result;
     } catch (error) {
         console.error('API Error during order update:', error);
         handleApiError(error);
         throw error;
     }
 }
-
-/**
- * Delete order
- * @param {number} orderId
- * @returns {Promise<void>}
- */
-// async function deleteOrder(orderId) {
-//     try {
-//         const response = await fetch(`${API_BASE_URL}/orders/${orderId}`, {
-//             method: 'DELETE',
-//             headers: getHeaders()
-//         });
-//
-//         if (!response.ok) {
-//             const errorBody = await response.json().catch(() => ({ message: 'Unknown error' }));
-//             throw new Error(`Failed to delete order: ${errorBody.message || response.statusText}`);
-//         }
-//
-//         return true;
-//     } catch (error) {
-//         console.error('API Error during delete order:', error);
-//         handleApiError(error);
-//         throw error;
-//     }
-// }
 
 // ============================================
 // SOLUTION API (for future use)
@@ -406,30 +353,6 @@ async function getAvailableVehicles() {
     }
 }
 
-/**
- * Plan routes (VRP-002)
- * @param {Object} planningRequest - {orderIds: [...], vehicleIds: [...]}
- * @returns {Promise<Object>} Optimization job DTO
- */
-async function planRoutes(planningRequest) {
-    try {
-        const response = await fetch(`${API_BASE_URL}/solutions/plan?branchId=${BRANCH_ID}`, {
-            method: 'POST',
-            headers: getHeaders(),
-            body: JSON.stringify(planningRequest)
-        });
-
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.message || 'Failed to start route planning');
-        }
-
-        return await response.json();
-    } catch (error) {
-        return handleApiError(error);
-    }
-}
-
 window.createDepot = createDepot;
 window.getDepots = getDepots;
 window.createFleet = createFleet;
@@ -437,10 +360,8 @@ window.getFleet = getFleet;
 window.importOrders = importOrders;
 window.getOrders = getOrders;
 window.getOrderById = getOrderById;
-window.updateOrderStatus = updateOrderStatus;
 window.deleteOrder = deleteOrder;
 window.getAvailableVehicles = getAvailableVehicles;
-window.planRoutes = planRoutes;
 window.updateOrder = updateOrder;
 
 console.log('API Client initialized.');

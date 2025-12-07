@@ -13,33 +13,37 @@
 
   <!-- Scripts -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="auth.js"></script>
-  <script src="api.js"></script>
+  <script src="scripts/auth.js"></script>
+  <script src="scripts/api/api.js"></script>
+  <script src="scripts/api/query-keys.js"></script>
 
-  <script type="module" src="components/UI%20Components/sidebar.js"></script>
-  <script type="module" src="components/UI%20Components/navbar.js"></script>
-  <script type="module" src="components/UI%20Components/resizable-divider.js"></script>
-  <script type="module" src="components/UI%20Components/orders-table.js"></script>
-  <script type="module" src="components/UI%20Components/orders-filters.js"></script>
+  <script type="module" src="scripts/components/UI%20Components/sidebar.js"></script>
+  <script type="module" src="scripts/components/UI%20Components/navbar.js"></script>
+  <script type="module" src="scripts/components/UI%20Components/resizable-divider.js"></script>
+  <script type="module" src="scripts/components/UI%20Components/orders-table.js"></script>
+  <script type="module" src="scripts/components/UI%20Components/orders-filters.js"></script>
 
-  <script type="module" src="components/Form%20Components/depot-form.js"></script>
-  <script type="module" src="components/Form%20Components/fleet-form.js"></script>
-  <script type="module" src="components/Form%20Components/vehicle-card.js"></script>
-  <script type="module" src="components/Form%20Components/import-modal.js"></script>
-  <script type="module" src="components/Form%20Components/edit-order-modal.js"></script>
+  <script type="module" src="scripts/components/Form%20Components/depot-form.js"></script>
+  <script type="module" src="scripts/components/Form%20Components/fleet-form.js"></script>
+  <script type="module" src="scripts/components/Form%20Components/vehicle-card.js"></script>
+  <script type="module" src="scripts/components/Form%20Components/import-modal.js"></script>
+  <script type="module" src="scripts/components/Form%20Components/edit-order-modal.js"></script>
 
-  <script type="module" src="components/Map%20Components/depot-map.js"></script>
-  <script type="module" src="components/Map%20Components/main-map.js"></script>
+  <script type="module" src="scripts/components/Map%20Components/depot-map.js"></script>
+  <script type="module" src="scripts/components/Map%20Components/main-map.js"></script>
 
-  <script type="module" src="utils/toast.js"></script>
-  <script type="module" src="utils/loading.js"></script>
-  <script type="module" src="utils/validation.js"></script>
-  <script type="module" src="utils/dom-helpers.js"></script>
+  <script type="module" src="scripts/utils/toast.js"></script>
+  <script type="module" src="scripts/utils/loading.js"></script>
+  <script type="module" src="scripts/utils/validation.js"></script>
+  <script type="module" src="scripts/utils/dom-helpers.js"></script>
 
-  <script type="module" src="core/state.js"></script>
-  <script type="module" src="core/router.js"></script>
+  <script type="module" src="scripts/core/state.js"></script>
+  <script type="module" src="scripts/core/router.js"></script>
 
-  <script type="module" src="app.js"></script>
+  <script type="module" src="scripts/lib/query-cache.js"></script>
+  <script type="module" src="scripts/lib/query-helpers.js"></script>
+
+  <script type="module" src="scripts/app.js"></script>
 </head>
 <body>
 <!-- ============================================ -->
@@ -362,6 +366,9 @@
                 <input type="text" id="filter-search" placeholder="Search orders..." oninput="applyFilters()" />
               </div>
               <button class="btn btn-text" onclick="clearFilters()">Clear</button>
+              <button class="btn btn-secondary" onclick="refreshAllData()" title="Refresh data from server">
+                🔄
+              </button>
             </div>
           </div>
 
@@ -426,7 +433,7 @@
 <div id="modal-import" class="modal">
   <div class="modal-content">
     <div class="modal-header">
-      <h2>📥 Import Đơn hàng</h2>
+      <h2>📥 Import Orders</h2>
       <button class="btn-close" onclick="closeImportModal()">✕</button>
     </div>
 
@@ -490,9 +497,9 @@
       <!-- Text Input Section -->
       <div id="import-text-section" class="import-section" style="display: none;">
         <div class="form-group">
-          <label>Dữ liệu đơn hàng</label>
+          <label>Order data</label>
           <div class="format-hint">
-            <strong>Định dạng:</strong> OrderCode|Name|Phone|Address|Lat|Lng|Demand|TWStart|TWEnd|Priority|Notes
+            <strong>Format:</strong> OrderCode|Name|Phone|Address|Lat|Lng|Demand|TWStart|TWEnd|Priority|Notes
           </div>
           <textarea
                   id="import-text"
@@ -505,29 +512,29 @@
       <!-- Common Fields -->
       <div class="form-row">
         <div class="form-group">
-          <label for="import-delivery-date">Ngày giao hàng <span class="required">*</span></label>
+          <label for="import-delivery-date">Delivery date <span class="required">*</span></label>
           <input type="date" id="import-delivery-date" required />
         </div>
         <div class="form-group">
-          <label for="import-service-time">Thời gian phục vụ (phút) <span class="required">*</span></label>
+          <label for="import-service-time">Service time (minutes) <span class="required">*</span></label>
           <input type="number" id="import-service-time" value="5" min="0" required />
         </div>
       </div>
 
       <!-- Helper Section -->
       <div class="help-section">
-        <h4>💡 Gợi ý:</h4>
+        <h4>💡 Hint:</h4>
         <ul>
-          <li>File CSV: tối đa 10MB</li>
-          <li>Hỗ trợ UTF-8 encoding</li>
-          <li>Template: <a href="#" onclick="downloadTemplate()">Tải file mẫu</a></li>
+          <li>CSV File: max 10MB</li>
+          <li>Support UTF-8 encoding</li>
+          <li>Template: <a href="#" onclick="downloadTemplate()">Download sample file</a></li>
         </ul>
       </div>
     </form>
 
     <div class="modal-footer">
       <button type="button" class="btn btn-secondary" onclick="closeImportModal()">
-        Hủy
+        Cancel
       </button>
       <button type="button" class="btn btn-primary" onclick="submitImport()">
         Import

@@ -10,7 +10,7 @@
     box-shadow: var(--shadow-sm);
     position: sticky;
     top: 0;
-    z-index: 1050;
+    z-index: var(--z-navbar);
 }
 
 .navbar-left {
@@ -91,7 +91,7 @@
     box-shadow: var(--shadow-lg);
     border-radius: var(--radius-md);
     padding: var(--space-sm) 0;
-    z-index: 1100;
+    z-index: var(--z-dropdown);
     border: 1px solid var(--border-color);
 }
 

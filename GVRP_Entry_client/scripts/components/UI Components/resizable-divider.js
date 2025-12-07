@@ -91,8 +91,8 @@ export class ResizableDivider {
 
         // Constraints
         const mainHeight = this.#mainContent.offsetHeight;
-        const minHeight = 200;
-        const maxHeight = mainHeight - 200; // Reserve at least 200px for table
+        const minHeight = mainHeight * 0.05;
+        const maxHeight = mainHeight * 0.95;
 
         if (newMapHeight >= minHeight && newMapHeight <= maxHeight) {
             this.#mapSection.style.height = newMapHeight + 'px';

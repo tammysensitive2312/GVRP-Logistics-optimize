@@ -27,6 +27,8 @@
     height: var(--map-height);
     position: relative;
     flex-shrink: 0;
+    min-height: 5vh;
+    max-height: 95vh;
 }
 
 .main-map {

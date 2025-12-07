@@ -5,7 +5,7 @@
     display: flex;
     flex-direction: column;
     border-top: 2px solid var(--border-color);
-    min-height: 200px;
+    min-height: 5vh;
     overflow: hidden;
     height: 100%;
 }
@@ -14,9 +14,10 @@
 .tab-switcher {
     display: flex;
     border-bottom: 2px solid var(--border-color);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
     margin-bottom: 0;
     background: var(--bg-light);
-    padding-top: var(--space-sm);
+    gap: 0;
     flex-shrink: 0;
 }
 
@@ -30,16 +31,40 @@
     color: var(--text-gray);
     border-bottom: 2px solid transparent;
     transition: all 0.2s;
+    position: relative;
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
 }
 
 .tab-btn:hover {
     color: var(--text-dark);
+    background: rgba(74, 144, 226, 0.1);
 }
 
 .tab-btn.active {
     color: var(--primary-blue);
     border-bottom: 2px solid var(--primary-blue);
+    background: var(--white);
     font-weight: 600;
+}
+
+.tab-btn.active::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--primary-blue);
+    animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+    from {
+        transform: scaleX(0);
+    }
+    to {
+        transform: scaleX(1);
+    }
 }
 
 .tab-content-item {
@@ -49,10 +74,23 @@
     flex-direction: column;
     flex: 1;
     min-height: 0;
+    animation: fadeIn 0.3s ease
 }
 
 .tab-content-item.active {
     display: flex;
+    flex-direction: column;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .table-header, .table-actions-row, .table-filters-row {

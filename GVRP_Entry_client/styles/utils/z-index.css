@@ -1,0 +1,19 @@
+/* styles/utils/z-index.css */
+:root {
+    /* Base layers */
+    --z-base: 1;
+    --z-dropdown: 1000;
+
+    /* Fixed elements */
+    --z-sticky: 1020;
+    --z-navbar: 1030;
+    --z-sidebar: 1040;
+
+    /* Overlays */
+    --z-modal-backdrop: 1050;
+    --z-modal: 1060;
+    --z-popover: 1070;
+    --z-tooltip: 1080;
+    --z-notification: 1090;
+    --z-loading: 1100;
+}
