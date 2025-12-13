@@ -25,6 +25,7 @@
 
   <script type="module" src="scripts/components/Form%20Components/depot-form.js"></script>
   <script type="module" src="scripts/components/Form%20Components/fleet-form.js"></script>
+  <script type="module" src="scripts/components/Form%20Components/vehicle-type-form.js"></script>
   <script type="module" src="scripts/components/Form%20Components/vehicle-card.js"></script>
   <script type="module" src="scripts/components/Form%20Components/import-modal.js"></script>
   <script type="module" src="scripts/components/Form%20Components/edit-order-modal.js"></script>
@@ -128,6 +129,95 @@
 </div>
 
 <!-- ============================================ -->
+<!-- SCREEN 1.5: VEHICLE TYPE SETUP -->
+<!-- ============================================ -->
+<div id="screen-vehicle-type-setup" class="screen">
+  <div class="setup-container">
+    <div class="setup-header">
+      <h1>🚚 Thiết lập Loại xe</h1>
+      <p>Thêm các loại xe mà đội của bạn sử dụng</p>
+    </div>
+
+    <!-- Existing Vehicle Types -->
+    <div class="existing-types-section">
+      <h3>Các loại xe hiện có</h3>
+      <div id="vehicle-types-list" class="vehicle-types-grid">
+        <div class="loading-message">Đang tải...</div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Add New Vehicle Type Form -->
+    <h3>Thêm loại xe mới</h3>
+    <form id="vehicle-type-form" class="setup-form">
+      <div class="form-group">
+        <label for="vtype-name">Tên loại xe <span class="required">*</span></label>
+        <input type="text" id="vtype-name" placeholder="VD: Xe tải 5 tấn" required />
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="vtype-capacity">Tải trọng (kg) <span class="required">*</span></label>
+          <input type="number" id="vtype-capacity" min="1" placeholder="5000" required />
+        </div>
+
+        <div class="form-group">
+          <label for="vtype-emission-factor">Emission Factor</label>
+          <input type="number" id="vtype-emission-factor" step="0.1" placeholder="12.3" />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="vtype-fixed-cost">Chi phí cố định (VND) <span class="required">*</span></label>
+          <input type="number" id="vtype-fixed-cost" min="0" step="1000" placeholder="50000" required />
+        </div>
+
+        <div class="form-group">
+          <label for="vtype-cost-per-km">Chi phí/km (VND) <span class="required">*</span></label>
+          <input type="number" id="vtype-cost-per-km" min="0" step="100" placeholder="5000" required />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="vtype-cost-per-hour">Chi phí/giờ (VND) <span class="required">*</span></label>
+          <input type="number" id="vtype-cost-per-hour" min="0" step="1000" placeholder="4000" required />
+        </div>
+
+        <div class="form-group">
+          <label for="vtype-max-distance">Quãng đường tối đa (km)</label>
+          <input type="number" id="vtype-max-distance" min="0" step="1" placeholder="300" />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="vtype-max-duration">Thời gian tối đa (phút)</label>
+          <input type="number" id="vtype-max-duration" min="0" step="1" placeholder="480" />
+        </div>
+        <div class="form-group">
+          <!-- Empty spacer -->
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="btn btn-secondary" onclick="Router.goTo(Router.SCREENS.DEPOT_SETUP)">
+          ← Quay lại
+        </button>
+        <button type="submit" class="btn btn-primary">
+          + Thêm loại xe
+        </button>
+        <button type="button" class="btn btn-success" onclick="VehicleTypeForm.continueToFleet()">
+          Tiếp tục →
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ============================================ -->
 <!-- SCREEN 2: FLEET SETUP -->
 <!-- ============================================ -->
 <div id="screen-fleet-setup" class="screen">
@@ -163,6 +253,11 @@
         <div id="depots-info" class="depots-info-box" style="display: none;">
           <strong>📍 Depots có sẵn:</strong>
           <div id="depots-list-info"></div>
+        </div>
+
+        <div id="vehicle-types-info" class="vehicle-types-info-box" style="display: none;">
+          <strong>🚚 Các loại xe có sẵn:</strong>
+          <div id="vehicle-types-list-info"></div>
         </div>
 
         <div id="vehicles-container" class="vehicles-container">

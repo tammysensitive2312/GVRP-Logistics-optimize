@@ -94,6 +94,65 @@ async function getDepots() {
 }
 
 // ============================================
+// VEHICLE TYPE API
+// ============================================
+
+/**
+ * Create a new vehicle type
+ * @param {Object} vehicleTypeData
+ * @returns {Promise<Object>} Created vehicle type DTO
+ */
+async function createVehicleType(vehicleTypeData) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/vehicle-types`, {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify(vehicleTypeData)
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.message || 'Failed to create vehicle type');
+        }
+
+        const result = await response.json();
+        invalidateQuery(QueryKeys.vehicleTypes.all(BRANCH_ID));
+
+        return result;
+    } catch (error) {
+        return handleApiError(error);
+    }
+}
+
+/**
+ * Get all vehicle types for current branch
+ * @returns {Promise<Array>} List of vehicle type DTOs
+ */
+async function getVehicleTypes() {
+    const branchId = BRANCH_ID;
+    const queryKey = QueryKeys.vehicleTypes.all(branchId);
+
+    return await fetchQuery(
+        queryKey,
+        async () => {
+            const response = await fetch(`${API_BASE_URL}/vehicle-types`, {
+                headers: getHeaders()
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to fetch vehicle types');
+            }
+
+            return await response.json();
+        },
+        {
+            staleTime: 10 * 60 * 1000,
+            cacheTime: 30 * 60 * 1000
+        }
+    );
+}
+
+// ============================================
 // FLEET API
 // ============================================
 
@@ -363,5 +422,7 @@ window.getOrderById = getOrderById;
 window.deleteOrder = deleteOrder;
 window.getAvailableVehicles = getAvailableVehicles;
 window.updateOrder = updateOrder;
+window.createVehicleType = createVehicleType;
+window.getVehicleTypes = getVehicleTypes;
 
 console.log('API Client initialized.');

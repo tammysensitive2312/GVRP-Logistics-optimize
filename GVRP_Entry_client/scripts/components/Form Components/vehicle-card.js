@@ -6,21 +6,23 @@
 import { AppState } from '../../core/state.js';
 import { Toast } from '../../utils/toast.js';
 import { DOMHelpers } from '../../utils/dom-helpers.js';
+import { Validator } from "../../utils/validation.js";
 
 export class VehicleCard {
     /**
      * Create a new vehicle card
      * @param {number} vehicleNumber - Vehicle number/ID
      * @param {Array} depots - Available depots
+     * @param {Array} vehicleTypes
      * @returns {HTMLElement}
      */
-    static create(vehicleNumber, depots = []) {
+    static create(vehicleNumber, depots = [], vehicleTypes = []) {
         const card = document.createElement('div');
         card.className = 'vehicle-card';
         card.id = `vehicle-${vehicleNumber}`;
         card.dataset.vehicleNumber = vehicleNumber;
 
-        card.innerHTML = this.#buildCardHTML(vehicleNumber, depots);
+        card.innerHTML = this.#buildCardHTML(vehicleNumber, depots, vehicleTypes);
 
         return card;
     }
@@ -29,7 +31,7 @@ export class VehicleCard {
      * Build card HTML
      * @private
      */
-    static #buildCardHTML(vehicleNumber, depots) {
+    static #buildCardHTML(vehicleNumber, depots, vehicleTypes) {
         return `
       <div class="vehicle-header">
         <span class="vehicle-number">Xe #${vehicleNumber}</span>
@@ -44,48 +46,24 @@ export class VehicleCard {
           <input type="text" name="vehicleLicensePlate" 
                  placeholder="29A-12345" required />
         </div>
-<!--        <div class="form-group">-->
-<!--          <label>Loại xe</label>-->
-<!--          <input type="text" name="vehicleFeature" -->
-<!--                 placeholder="Xe tải nhỏ" />-->
-<!--        </div>-->
+        
         <div class="form-group">
-          <label>Tải trọng (kg) <span class="required">*</span></label>
-          <input type="number" name="capacity" 
-                 placeholder="500" min="1" required 
-                 onchange="VehicleCard.onCapacityChange()" />
+          <label>Loại xe <span class="required">*</span></label>
+          <select name="vehicleTypeId" required onchange="VehicleCard.onTypeChange(this)">
+            ${this.#buildVehicleTypeOptions(vehicleTypes)}
+          </select>
+          <div class="type-info" style="font-size: 11px; color: #666; margin-top: 4px;">
+            <!-- Will be populated when type is selected -->
+          </div>
         </div>
-        <div class="form-group">
-          <label>Chi phí cố định (VND)</label>
-          <input type="number" name="fixedCost" 
-                 placeholder="100000" min="0" step="1000" />
-        </div>
-        <div class="form-group">
-          <label>Chi phí/km (VND)</label>
-          <input type="number" name="costPerKm" 
-                 placeholder="5000" min="0" step="100" />
-        </div>
-        <div class="form-group">
-          <label>Chi phí/giờ (VND)</label>
-          <input type="number" name="costPerHour" 
-                 placeholder="50000" min="0" step="1000" />
-        </div>
-        <div class="form-group">
-          <label>Quãng đường tối đa (km)</label>
-          <input type="number" name="maxDistance" 
-                 placeholder="100" min="0" step="1" />
-        </div>
-        <div class="form-group">
-          <label>Thời gian tối đa (giờ)</label>
-          <input type="number" name="maxDuration" 
-                 placeholder="8" min="0" step="0.5" />
-        </div>
+        
         <div class="form-group">
           <label>Điểm xuất phát <span class="required">*</span></label>
           <select name="startDepotId" required>
             ${this.#buildDepotOptions(depots)}
           </select>
         </div>
+        
         <div class="form-group">
           <label>Điểm kết thúc <span class="required">*</span></label>
           <select name="endDepotId" required>
@@ -94,6 +72,51 @@ export class VehicleCard {
         </div>
       </div>
     `;
+    }
+
+    /**
+    * Build vehicle type options HTML - NEW
+    * @private
+    */
+    static #buildVehicleTypeOptions(vehicleTypes) {
+        if (!vehicleTypes || vehicleTypes.length === 0) {
+            return '<option value="">No vehicle types available</option>';
+        }
+
+        let html = '<option value="">-- Chọn loại xe --</option>';
+
+        vehicleTypes.forEach(type => {
+            html += `<option value="${type.id}" 
+                        data-capacity="${type.capacity}"
+                        data-fixed-cost="${type.fixed_cost}"
+                        data-cost-km="${type.cost_per_km}">
+                    ${type.name} (${type.capacity}kg)
+                </option>`;
+        });
+
+        return html;
+    }
+
+    /**
+     * Handle vehicle type change - NEW
+     */
+    static onTypeChange(selectElement) {
+        const option = selectElement.options[selectElement.selectedIndex];
+        const infoDiv = selectElement.closest('.form-group').querySelector('.type-info');
+
+        if (option.value && infoDiv) {
+            const capacity = option.dataset.capacity;
+            const fixedCost = option.dataset.fixedCost;
+            const costKm = option.dataset.costKm;
+
+            infoDiv.innerHTML = `
+            📦 ${capacity}kg | 
+            💰 ${parseInt(fixedCost).toLocaleString('vi-VN')}đ cố định | 
+            🛣️ ${parseInt(costKm).toLocaleString('vi-VN')}đ/km
+        `;
+        } else if (infoDiv) {
+            infoDiv.innerHTML = '';
+        }
     }
 
     /**
@@ -141,22 +164,17 @@ export class VehicleCard {
 
     /**
      * Get data from a vehicle card
-     * @param {HTMLElement} card - Vehicle card element
+     * @param {HTMLElement} card
      * @returns {Object}
      */
     static getData(card) {
+        const vehicleTypeId = parseInt(card.querySelector('select[name="vehicleTypeId"]').value);
         const startDepotId = parseInt(card.querySelector('select[name="startDepotId"]').value);
         const endDepotId = parseInt(card.querySelector('select[name="endDepotId"]').value);
 
         return {
             vehicle_license_plate: card.querySelector('input[name="vehicleLicensePlate"]').value.trim(),
-            // vehicle_feature: card.querySelector('input[name="vehicleFeature"]').value.trim(),
-            capacity: parseInt(card.querySelector('input[name="capacity"]').value) || 0,
-            fixed_cost: parseFloat(card.querySelector('input[name="fixedCost"]').value) || 0,
-            cost_per_km: parseFloat(card.querySelector('input[name="costPerKm"]').value) || 0,
-            cost_per_hour: parseFloat(card.querySelector('input[name="costPerHour"]').value) || 0,
-            max_distance: parseFloat(card.querySelector('input[name="maxDistance"]').value) || null,
-            max_duration: parseFloat(card.querySelector('input[name="maxDuration"]').value) || null,
+            vehicle_type_id: vehicleTypeId || null,
             start_depot_id: startDepotId || null,
             end_depot_id: endDepotId || null
         };

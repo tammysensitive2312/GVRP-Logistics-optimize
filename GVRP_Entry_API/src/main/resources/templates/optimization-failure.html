@@ -1,10 +1,68 @@
 <!DOCTYPE html>
-<html lang="en">
+<html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <style>
+        .error-icon { font-size: 48px; text-align: center; margin: 20px 0; }
+        .error-box { background-color: #fff5f5; border-left: 4px solid #E74C3C; padding: 15px; margin: 20px 0; border-radius: 4px; }
+        .info-box { background-color: #f8f9fa; border-left: 4px solid #666; padding: 15px; margin: 20px 0; border-radius: 4px; }
+        .suggestion-box { background-color: #fffbf0; border-left: 4px solid #F39C12; padding: 15px; margin: 20px 0; border-radius: 4px; }
+        .btn { display: inline-block; padding: 12px 30px; background-color: #4A90E2; color: white !important; text-decoration: none; border-radius: 6px; font-weight: 600; margin: 20px 0; }
+    </style>
 </head>
 <body>
+<div class="error-icon">❌</div>
 
+<p class="greeting" th:text="'Hello ' + ${userName} + ','">Hello User,</p>
+
+<p>Unfortunately, your route optimization has failed to complete.</p>
+
+<div class="info-box">
+    <div class="info-row">
+        <span class="info-label">Job ID:</span>
+        <span class="info-value" th:text="'#' + ${jobId}">#123</span>
+    </div>
+    <div class="info-row">
+        <span class="info-label">Started:</span>
+        <span class="info-value" th:text="${createdAt}">2024-01-01 10:00:00</span>
+    </div>
+    <div class="info-row">
+        <span class="info-label">Failed:</span>
+        <span class="info-value" th:text="${failedAt}">2024-01-01 10:05:00</span>
+    </div>
+    <div class="info-row">
+        <span class="info-label">Duration:</span>
+        <span class="info-value" th:text="${duration}">5 min 30 sec</span>
+    </div>
+</div>
+
+<h3 style="color: #E74C3C; margin-top: 30px;">🔍 Error Details</h3>
+
+<div class="error-box">
+    <strong>Error Type:</strong> <span th:text="${errorType}">OptimizationException</span><br/>
+    <strong>Message:</strong> <span th:text="${errorMessage}">An error occurred</span>
+</div>
+
+<h3 style="color: #F39C12; margin-top: 30px;">💡 Suggestions</h3>
+
+<div class="suggestion-box">
+    <p th:text="${suggestions}">Please contact support if the problem persists.</p>
+
+    <ul style="margin-top: 15px; padding-left: 20px;">
+        <li>Verify all orders have valid locations and time windows</li>
+        <li>Check that vehicles have sufficient capacity</li>
+        <li>Ensure at least one depot is configured</li>
+        <li>Try reducing the number of orders or adding more vehicles</li>
+    </ul>
+</div>
+
+<div style="text-align: center; margin-top: 30px;">
+    <a th:href="${jobHistoryUrl}" class="btn">View Job History</a>
+</div>
+
+<p style="margin-top: 30px; color: #666; font-size: 14px;">
+    If this issue persists, please contact our support team with Job ID
+    <strong th:text="'#' + ${jobId}">#123</strong> for assistance.
+</p>
 </body>
 </html>

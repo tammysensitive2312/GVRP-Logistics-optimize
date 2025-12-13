@@ -32,13 +32,6 @@ public class Fleet extends BaseEntity{
     @Builder.Default
     private List<Vehicle> vehicles = new ArrayList<>();
 
-    // Business methods
-    public int getTotalCapacity() {
-        return vehicles.stream()
-                .mapToInt(Vehicle::getCapacity)
-                .sum();
-    }
-
     public int getVehicleCount() {
         return vehicles.size();
     }

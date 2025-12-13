@@ -11,6 +11,7 @@ import { OrdersFilters } from './components/UI Components/orders-filters.js';
 
 import { DepotForm } from './components/Form Components/depot-form.js';
 import { VehicleCard } from './components/Form Components/vehicle-card.js';
+import { VehicleTypeForm } from './components/Form Components/vehicle-type-form.js';
 import { FleetForm } from './components/Form Components/fleet-form.js';
 import { ImportModal } from './components/Form Components/import-modal.js';
 import { EditOrderModal } from './components/Form Components/edit-order-modal.js';
@@ -31,9 +32,16 @@ Router.onScreenActivated(Router.SCREENS.DEPOT_SETUP, () => {
     setTimeout(() => DepotMap.init(), 100);
 });
 
+Router.onScreenActivated(Router.SCREENS.VEHICLE_TYPE_SETUP, () => {
+    setTimeout(() => {
+        VehicleTypeForm.init();
+        VehicleTypeForm.loadVehicleTypes();
+    }, 100);
+});
+
 // Fleet Setup screen
 Router.onScreenActivated(Router.SCREENS.FLEET_SETUP, async () => {
-    await FleetForm.loadDepots();
+    await FleetForm.loadDepotsAndVehicleType();
 });
 
 // Main screen
@@ -117,6 +125,8 @@ async function initializeApp() {
         // Setup incomplete - go to setup screens
         if (!setupStatus.hasDepots) {
             Router.goTo(Router.SCREENS.DEPOT_SETUP);
+        } else if (!setupStatus.hasVehicleTypes) {
+            Router.goTo(Router.SCREENS.VEHICLE_TYPE_SETUP);
         } else if (!setupStatus.hasFleet) {
             Router.goTo(Router.SCREENS.FLEET_SETUP);
         }
@@ -131,20 +141,26 @@ async function initializeApp() {
  */
 async function checkSetupStatus() {
     try {
-        const [depots, fleet] = await Promise.all([
+        const [depots, vehicleTypes, fleet] = await Promise.all([
             getDepots(),
+            getVehicleTypes(),
             getFleet()
         ]);
 
-        const totalVehicleCount = fleet ? fleet.reduce((sum, currentFleet) => sum + currentFleet.vehicle_count, 0) : 0;
+        const totalVehicleCount = fleet ?
+            fleet.reduce((sum, f) => sum + f.vehicle_count, 0) : 0;
+
         const hasDepots = depots && depots.length > 0;
+        const hasVehicleTypes = vehicleTypes && vehicleTypes.length > 0;
         const hasFleet = totalVehicleCount > 0;
 
         return {
-            complete: hasDepots && hasFleet,
+            complete: hasDepots && hasVehicleTypes && hasFleet,
             hasDepots,
+            hasVehicleTypes,
             hasFleet,
             depots,
+            vehicleTypes,
             fleet
         };
     } catch (error) {
@@ -152,6 +168,7 @@ async function checkSetupStatus() {
         return {
             complete: false,
             hasDepots: false,
+            hasVehicleTypes: false,
             hasFleet: false
         };
     }
@@ -182,6 +199,7 @@ function restoreLastScreen() {
  */
 function initEventListeners() {
     DepotForm.init();
+    VehicleTypeForm.init();
     FleetForm.init();
     ImportModal.init();
     EditOrderModal.init();

@@ -593,3 +593,85 @@ SELECT 'Removed automatic CURRENT_TIMESTAMP from all audit columns successfully!
 ALTER TABLE orders
 ADD COLUMN service_time INT DEFAULT 0 COMMENT 'Service time in minutes' AFTER demand,
 ADD COLUMN delivery_date DATE DEFAULT (CURRENT_DATE) AFTER delivery_notes;
+
+
+UPDATE vehicles
+SET vehicle_feature = '{}'
+WHERE vehicle_feature = '';
+ALTER TABLE vehicles
+CHANGE COLUMN vehicle_feature vehicle_features JSON COMMENT 'Additional vehicle features/description';
+
+UPDATE vehicles
+SET vehicle_features = JSON_OBJECT(
+        'vehicle_type', CASE
+                           WHEN capacity <= 50 THEN 'PETROL_MOTORCYCLE'
+                           WHEN capacity <= 500 THEN 'PETROL_CAR'
+                           WHEN capacity <= 1000 THEN 'PETROL_VAN'
+                           ELSE 'DIESEL_TRUCK'
+            END,
+        'emission_factor', CASE
+                              WHEN capacity <= 50 THEN 120.0
+                              WHEN capacity <= 500 THEN 180.0
+                              WHEN capacity <= 1000 THEN 220.0
+                              ELSE 280.0
+            END
+        );
+
+SET FOREIGN_KEY_CHECKS = 0;
+
+USE gvrp_db;
+
+-- ============================================
+-- 1. VEHICLE_TYPES TABLE (NEW)
+-- ============================================
+CREATE TABLE IF NOT EXISTS vehicle_types (
+     id BIGINT AUTO_INCREMENT PRIMARY KEY,
+     branch_id BIGINT NOT NULL,
+     type_name VARCHAR(100) NOT NULL,
+     description VARCHAR(255) COMMENT 'Mô tả chi tiết loại xe (e.g., Tải lạnh, Xe điện)',
+     capacity INT NOT NULL COMMENT 'Capacity in kg or units (Tải trọng chuẩn)',
+     fixed_cost DECIMAL(10,2) DEFAULT 0.00 COMMENT 'Fixed cost per trip in VND',
+     cost_per_km DECIMAL(10,2) DEFAULT 0.00 COMMENT 'Variable cost per km in VND',
+     cost_per_hour DECIMAL(10,2) DEFAULT 0.00 COMMENT 'Variable cost per hour in VND',
+     max_distance DECIMAL(10,2) COMMENT 'Maximum distance in km',
+     max_duration DECIMAL(10,2) COMMENT 'Maximum duration in hours',
+     created_at TIMESTAMP NULL DEFAULT NULL,
+     updated_at TIMESTAMP NULL DEFAULT NULL,
+
+     FOREIGN KEY (branch_id) REFERENCES branches(id) ON DELETE CASCADE,
+
+     UNIQUE KEY uk_branch_type_name (branch_id, type_name),
+     INDEX idx_branch_id (branch_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    COMMENT='Chuẩn hóa thông số kỹ thuật và chi phí của các loại xe';
+
+ALTER TABLE vehicles
+    ADD COLUMN vehicle_type_id BIGINT COMMENT 'Foreign key to vehicle_types' AFTER fleet_id;
+
+ALTER TABLE vehicles
+    ADD CONSTRAINT fk_vehicle_type
+        FOREIGN KEY (vehicle_type_id) REFERENCES vehicle_types(id) ON DELETE RESTRICT; -- Đổi tên constraint
+
+ALTER TABLE vehicles
+    ADD INDEX idx_vehicle_type_id (vehicle_type_id);
+
+
+alter table vehicles
+    drop constraint chk_capacity;
+
+alter table vehicles
+    drop constraint chk_costs;
+ALTER TABLE vehicles DROP COLUMN capacity, DROP COLUMN vehicle_features, DROP COLUMN fixed_cost, DROP COLUMN cost_per_km, DROP COLUMN cost_per_hour, DROP COLUMN max_distance, DROP COLUMN max_duration;
+
+ALTER TABLE vehicle_types
+    ADD CONSTRAINT chk_vehicle_capacity CHECK (capacity > 0),
+    ADD CONSTRAINT chk_vehicle_costs CHECK (
+        fixed_cost >= 0 AND
+        cost_per_km >= 0 AND
+        cost_per_hour >= 0
+        ),
+    ADD COLUMN vehicle_features JSON COMMENT 'Additional vehicle features/description' AFTER type_name;
+
+
+SET FOREIGN_KEY_CHECKS = 1;
+SELECT 'VRP Database Migration 1.0.1 (Vehicle Types Refactor) Completed Successfully!' as status;

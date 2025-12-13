@@ -35,6 +35,47 @@ export class Validator {
     }
 
     /**
+     * Validate form data
+     * @param {Object} data - Vehicle type form data
+     */
+    static validateVehicleType(data) {
+        const errors = [];
+
+        if (!data.typeName) {
+            errors.push('Vui lòng nhập tên loại xe');
+        }
+
+        if (!data.capacity || parseInt(data.capacity) <= 0) {
+            errors.push('Tải trọng phải lớn hơn 0');
+        }
+
+        if (!data.fixedCost || parseFloat(data.fixedCost) < 0) {
+            errors.push('Chi phí cố định không được âm');
+        }
+
+        if (!data.costPerKm || parseFloat(data.costPerKm) < 0) {
+            errors.push('Chi phí/km không được âm');
+        }
+
+        if (!data.costPerHour || parseFloat(data.costPerHour) < 0) {
+            errors.push('Chi phí/giờ không được âm');
+        }
+
+        if (data.maxDistance && parseFloat(data.maxDistance) <= 0) {
+            errors.push('Quãng đường tối đa phải lớn hơn 0');
+        }
+
+        if (data.maxDuration && parseFloat(data.maxDuration) <= 0) {
+            errors.push('Thời gian tối đa phải lớn hơn 0');
+        }
+
+        return {
+            isValid: errors.length === 0,
+            errors
+        };
+    }
+
+    /**
      * Validate fleet form data
      * @param {Object} data - Fleet form data
      * @returns {Object} { isValid: boolean, errors: string[] }
@@ -70,30 +111,21 @@ export class Validator {
      */
     static validateVehicle(vehicle, index) {
         const errors = [];
-        const prefix = `Xe #${index}:`;
 
-        if (!vehicle.vehicle_license_plate || vehicle.vehicle_license_plate.trim() === '') {
-            errors.push(`${prefix} Vui lòng nhập biển số`);
+        if (!vehicle.vehicle_license_plate) {
+            errors.push(`Xe #${index}: Vui lòng nhập biển số xe`);
         }
 
-        if (!vehicle.capacity || vehicle.capacity <= 0) {
-            errors.push(`${prefix} Tải trọng phải lớn hơn 0`);
+        if (!vehicle.vehicle_type_id) {
+            errors.push(`Xe #${index}: Vui lòng chọn loại xe`);
         }
 
         if (!vehicle.start_depot_id) {
-            errors.push(`${prefix} Vui lòng chọn điểm xuất phát`);
+            errors.push(`Xe #${index}: Vui lòng chọn điểm xuất phát`);
         }
 
         if (!vehicle.end_depot_id) {
-            errors.push(`${prefix} Vui lòng chọn điểm kết thúc`);
-        }
-
-        if (vehicle.max_distance && vehicle.max_distance < 0) {
-            errors.push(`${prefix} Quãng đường tối đa không được âm`);
-        }
-
-        if (vehicle.max_duration && vehicle.max_duration < 0) {
-            errors.push(`${prefix} Thời gian tối đa không được âm`);
+            errors.push(`Xe #${index}: Vui lòng chọn điểm kết thúc`);
         }
 
         return errors;
@@ -207,6 +239,7 @@ export class Validator {
 // Export individual validation functions for convenience
 export const {
     validateDepot,
+    validateVehicleType,
     validateFleet,
     validateVehicle,
     validateImport,

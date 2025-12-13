@@ -1,5 +1,7 @@
 package org.truong.gvrp_entry_api.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
@@ -50,6 +52,7 @@ public class Order extends BaseEntity{
     @Column(columnDefinition = "POINT SRID 4326", nullable = false)
     private Point location;
 
+    @JsonIgnore
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal demand;
 
@@ -103,10 +106,14 @@ public class Order extends BaseEntity{
         return status == OrderStatus.SCHEDULED;
     }
 
+    @JsonProperty("latitude")
+    @Transient
     public double getLatitude() {
         return location != null ? location.getY() : 0.0;
     }
 
+    @JsonProperty("longitude")
+    @Transient
     public double getLongitude() {
         return location != null ? location.getX() : 0.0;
     }

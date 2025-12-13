@@ -4,6 +4,7 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 import org.truong.gvrp_entry_api.dto.request.VehicleInputDTO;
+import org.truong.gvrp_entry_api.dto.request.VehicleUpdateDTO;
 import org.truong.gvrp_entry_api.dto.response.VehicleDTO;
 import org.truong.gvrp_entry_api.entity.Vehicle;
 
@@ -17,21 +18,17 @@ public interface VehicleMapper {
     @Mapping(source = "startDepot.name", target = "startDepotName")
     @Mapping(source = "endDepot.id", target = "endDepotId")
     @Mapping(source = "endDepot.name", target = "endDepotName")
+    @Mapping(source = "vehicleType.id", target = "vehicleTypeId")
+    @Mapping(source = "vehicleType.typeName", target = "vehicleTypeName")
     VehicleDTO toDTO(Vehicle entity);
 
     List<VehicleDTO> toDTOList(List<Vehicle> entities);
 
-    /**
-     * Chuyển đổi VehicleInputDTO sang Vehicle (Entity).
-     *
-     * - Bỏ qua các trường quan hệ (fleet, depots) và các trường tự động (id, status, timestamps).
-     * - 'fleet' sẽ được gán bởi 'FleetMapper' (@AfterMapping).
-     * - 'startDepot' và 'endDepot' PHẢI được set thủ công bởi Service sau đó.
-     */
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "fleet", ignore = true)
     @Mapping(target = "startDepot", ignore = true)
     @Mapping(target = "endDepot", ignore = true)
+    @Mapping(target = "vehicleType", ignore = true)
     @Mapping(target = "status", ignore = true)
     @Mapping(target = "routes", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
@@ -45,9 +42,21 @@ public interface VehicleMapper {
     @Mapping(target = "fleet", ignore = true)
     @Mapping(target = "startDepot", ignore = true)
     @Mapping(target = "endDepot", ignore = true)
+    @Mapping(target = "vehicleType", ignore = true)
     @Mapping(target = "status", ignore = true)
     @Mapping(target = "routes", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     void updateEntityFromDTO(VehicleInputDTO dto, @MappingTarget Vehicle entity);
+
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "fleet", ignore = true)
+    @Mapping(target = "startDepot", ignore = true)
+    @Mapping(target = "endDepot", ignore = true)
+    @Mapping(target = "vehicleType", ignore = true)
+    @Mapping(target = "status", ignore = true)
+    @Mapping(target = "routes", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    void updateEntityFromDTO(VehicleUpdateDTO dto, @MappingTarget Vehicle entity);
 }

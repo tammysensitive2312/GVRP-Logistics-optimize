@@ -1,10 +1,85 @@
 <!DOCTYPE html>
-<html lang="en">
+<html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <style>
+        .success-icon { font-size: 48px; text-align: center; margin: 20px 0; }
+        .metrics-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin: 20px 0; }
+        .metric-card { background-color: #f8f9fa; padding: 15px; border-radius: 6px; text-align: center; }
+        .metric-value { font-size: 24px; font-weight: 700; color: #27AE60; margin-bottom: 5px; }
+        .metric-label { font-size: 14px; color: #666; }
+        .info-box { background-color: #f8f9fa; border-left: 4px solid #27AE60; padding: 15px; margin: 20px 0; border-radius: 4px; }
+        .btn { display: inline-block; padding: 12px 30px; background-color: #27AE60; color: white !important; text-decoration: none; border-radius: 6px; font-weight: 600; margin: 20px 0; }
+    </style>
 </head>
 <body>
+<div class="success-icon">✅</div>
 
+<p class="greeting" th:text="'Hello ' + ${userName} + ','">Hello User,</p>
+
+<p>Great news! Your route optimization has been completed successfully.</p>
+
+<div class="info-box">
+    <div class="info-row">
+        <span class="info-label">Job ID:</span>
+        <span class="info-value" th:text="'#' + ${jobId}">#123</span>
+    </div>
+    <div class="info-row">
+        <span class="info-label">Started:</span>
+        <span class="info-value" th:text="${createdAt}">2024-01-01 10:00:00</span>
+    </div>
+    <div class="info-row">
+        <span class="info-label">Completed:</span>
+        <span class="info-value" th:text="${completedAt}">2024-01-01 10:05:00</span>
+    </div>
+    <div class="info-row">
+        <span class="info-label">Duration:</span>
+        <span class="info-value" th:text="${duration}">5 min 30 sec</span>
+    </div>
+</div>
+
+<h3 style="color: #333; margin-top: 30px;">📊 Solution Summary</h3>
+
+<div class="metrics-grid">
+    <div class="metric-card">
+        <div class="metric-value" th:text="${totalDistance}">125.5 km</div>
+        <div class="metric-label">Total Distance</div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-value" th:text="${totalCO2}">45.2 kg</div>
+        <div class="metric-label">CO₂ Emissions</div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-value" th:text="${vehiclesUsed}">5</div>
+        <div class="metric-label">Vehicles Used</div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-value" th:text="${routeCount}">5</div>
+        <div class="metric-label">Routes Created</div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-value" th:text="${servedOrders}">48</div>
+        <div class="metric-label">Orders Served</div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-value" th:text="${totalServiceTime}">240 min</div>
+        <div class="metric-label">Service Time</div>
+    </div>
+</div>
+
+<div th:if="${unservedOrders > 0}" class="warning-box">
+    <strong>⚠️ Warning:</strong>
+    <span th:text="${unservedOrders}">2</span> orders could not be served.
+    Please review the solution for details.
+</div>
+
+<div style="text-align: center; margin-top: 30px;">
+    <a th:href="${solutionUrl}" class="btn">View Solution Details</a>
+</div>
+
+<p style="margin-top: 30px; color: #666; font-size: 14px;">
+    You can now view the complete solution with interactive maps, detailed routes,
+    and timeline visualization in your dashboard.
+</p>
 </body>
 </html>

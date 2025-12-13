@@ -183,7 +183,7 @@ export class Sidebar {
                 <span class="vehicle-plate">${vehicle.vehicle_license_plate}</span>
             </div>
             <div style="font-size: 11px; color: #666">
-                ${vehicle.capacity}kg
+                ${vehicle.vehicle_type_name}
             </div>
             `;
             container.appendChild(div);

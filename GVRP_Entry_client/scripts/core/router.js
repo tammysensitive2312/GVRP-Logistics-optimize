@@ -9,6 +9,7 @@ export class Router {
     // Available screens
     static SCREENS = {
         DEPOT_SETUP: 'screen-depot-setup',
+        VEHICLE_TYPE_SETUP: 'screen-vehicle-type-setup',
         FLEET_SETUP: 'screen-fleet-setup',
         MAIN: 'screen-main'
     };

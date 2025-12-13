@@ -21,6 +21,7 @@
 
 /* 4. Screens */
 @import 'screens/depot-setup.css';
+@import 'screens/vehicle-type-setup.css';
 @import 'screens/fleet-setup.css';
 @import 'screens/main-screen.css';
 

@@ -25,6 +25,11 @@ let QueryKeys = {
         detail: (depotId) => ['depot', depotId]
     },
 
+    vehicleTypes: {
+        all: (branchId) => ['vehicle-types', branchId],
+        detail: (typeId) => ['vehicle-type', typeId]
+    },
+
     // Fleets
     fleets: {
         all: (branchId) => ['fleets', branchId],

@@ -13,9 +13,11 @@ export class AppState {
         currentUser: null,
         currentBranch: null,
 
-        // Depot & Fleet
+        // Depot & Fleet Vehicle Types
         availableDepots: [],
+        availableVehicleTypes: [],
         fleetInfo: null,
+
 
         // Vehicles
         allVehicles: [],
@@ -85,6 +87,15 @@ export class AppState {
 
     static get vehicleCount() {
         return this.#state.vehicleCount;
+    }
+
+    static get availableVehicleTypes() {
+        return [...this.#state.availableVehicleTypes];
+    }
+
+    static setAvailableVehicleTypes(types) {
+        this.#state.availableVehicleTypes = types || [];
+        this.#notify('availableVehicleTypes', this.#state.availableVehicleTypes);
     }
 
     static get allOrders() {

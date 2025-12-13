@@ -18,16 +18,33 @@ ref over UI, BE: **Xem file: VRP_01_Sub_Create_Depot**\n(Validate, Geo-mapping, 
 
 BE --> UI: 201 Created (DepotDTO)
 UI -> User: Hiển thị thông báo thành công & Chuyển bước
+
+|||
+
+== Phase 1.5: Thiết lập Loại xe (Vehicle Type Setup) ==
+
+note right of User: Điều kiện: Hệ thống chưa có VehicleType
+
+User -> UI: Nhập thông tin Loại xe (Tải trọng, Chi phí/km, v.v.)
+
+UI -> BE: POST /api/v1/branches/{id}/vehicle-models
+
+ref over UI, BE: **Xem file: VRP_01_5_Sub_Create_VehicleType** \n(Validate specs, Save)
+
+BE --> UI: 201 Created (VehicleTypeDTO)
+
+UI -> User: Hiển thị thông báo thành công
+
 |||
 
 == Phase 2: Thiết lập Đội xe (Fleet Setup) ==
-note right of User: Điều kiện: Đã có Depot
+note right of User: Điều kiện: Đã có Depot & Loại xe (Model)
 
-User -> UI: Nhập tên Đội xe & Danh sách xe
+User -> UI: Nhập tên Đội xe & Danh sách xe (chọn Loại xe đã thiết lập)
+
 UI -> BE: POST /api/v1/branches/{id}/fleets
 
-' Sử dụng REF để tham chiếu đến diagram chi tiết
-ref over UI, BE: **Xem file: VRP_02_Sub_Create_Fleet**\n(Check Depot, Validate Vehicles, Cascade Save)
+ref over UI, BE: **Xem file: VRP_02_Sub_Create_Fleet_Updated** \n(Check Depot & **VehicleModel** existence, Validate Vehicles, Save)
 
 BE --> UI: 201 Created (FleetDTO)
 UI -> User: Hiển thị thông báo & Mở màn hình Dashboard

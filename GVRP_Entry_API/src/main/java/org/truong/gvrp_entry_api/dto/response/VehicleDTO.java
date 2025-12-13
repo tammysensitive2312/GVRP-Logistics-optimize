@@ -9,18 +9,14 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@ToString
 public class VehicleDTO {
 
     private Long id;
     private Long fleetId;
     private String vehicleLicensePlate;
-    private String vehicleFeature;
-    private Integer capacity;
-    private Double fixedCost;
-    private Double costPerKm;
-    private Double costPerHour;
-    private Double maxDistance;
-    private Double maxDuration;
+    private Long vehicleTypeId;
+    private String vehicleTypeName;
     private VehicleStatus status;
     private Long startDepotId;
     private String startDepotName;

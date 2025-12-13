@@ -43,23 +43,36 @@ export class FleetForm {
     /**
      * Load available depots and display
      */
-    static async loadDepots() {
-        Loading.show('Đang tải depots...');
+    static async loadDepotsAndVehicleType() {
+        Loading.show('Loading data...');
 
         try {
-            const depots = await getDepots();
+            const [depots, vehicleTypes] = await Promise.all([
+                getDepots(),
+                getVehicleTypes()
+            ]);
 
             if (!depots || depots.length === 0) {
-                Toast.error('Không tìm thấy depot nào. Vui lòng tạo depot trước.');
+                Toast.error('No depots found. Please create a depot first.');
                 Router.goTo(Router.SCREENS.DEPOT_SETUP);
+                return;
+            }
+
+            if (!vehicleTypes || vehicleTypes.length === 0) {
+                Toast.error('No vehicle types found. Please create a vehicle type first.');
+                Router.goTo(Router.SCREENS.VEHICLE_TYPE_SETUP);
                 return;
             }
 
             // Store in state
             AppState.setAvailableDepots(depots);
+            AppState.setAvailableVehicleTypes(vehicleTypes);
 
             // Display depot info
             this.#displayDepotInfo(depots);
+
+            // Display vehicle type info
+            this.#displayVehicleTypeInfo(vehicleTypes);
 
             // Add first vehicle by default if none exists
             if (AppState.vehicleCount === 0) {
@@ -67,8 +80,8 @@ export class FleetForm {
             }
 
         } catch (error) {
-            console.error('Failed to load depots:', error);
-            Toast.error('Không thể tải danh sách depot');
+            console.error('Failed to load data:', error);
+            Toast.error('Failed to load data');
         } finally {
             Loading.hide();
         }
@@ -98,6 +111,30 @@ export class FleetForm {
     }
 
     /**
+     * Display vehicle type info - NEW
+     * @private
+     */
+    static #displayVehicleTypeInfo(vehicleTypes) {
+        const infoBox = document.getElementById('vehicle-types-info');
+        if (!infoBox) return;
+
+        const listContainer = document.getElementById('vehicle-types-list-info');
+        if (!listContainer) return;
+
+        infoBox.style.display = 'block';
+        listContainer.innerHTML = '';
+
+        vehicleTypes.forEach(type => {
+            const item = document.createElement('div');
+            item.className = 'vehicle-type-info-item';
+            item.innerHTML = `
+            <strong>🚚 ${type.name}</strong> - ${type.capacity}kg
+        `;
+            listContainer.appendChild(item);
+        });
+    }
+
+    /**
      * Add a new vehicle card
      */
     static addVehicle() {
@@ -105,13 +142,13 @@ export class FleetForm {
 
         const vehicleNumber = AppState.vehicleCount;
         const depots = AppState.availableDepots;
+        const vehicleTypes = AppState.availableVehicleTypes || [];
 
-        const vehicleCard = VehicleCard.create(vehicleNumber, depots);
+        const vehicleCard = VehicleCard.create(vehicleNumber, depots, vehicleTypes);
         this.#vehiclesContainer.appendChild(vehicleCard);
 
         this.updateSummary();
 
-        // Scroll to new card
         vehicleCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 
@@ -120,17 +157,10 @@ export class FleetForm {
      */
     static updateSummary() {
         const vehicles = VehicleCard.getAll();
-        let totalCapacity = 0;
-
-        vehicles.forEach(vehicle => {
-            const capacityInput = vehicle.querySelector('input[name="capacity"]');
-            if (capacityInput && capacityInput.value) {
-                totalCapacity += parseInt(capacityInput.value) || 0;
-            }
-        });
-
         DOMHelpers.setText('total-vehicles', vehicles.length);
-        DOMHelpers.setText('total-capacity', totalCapacity + ' kg');
+
+        const infoText = `${vehicles.length} xe được chọn`;
+        DOMHelpers.setText('total-capacity', infoText);
     }
 
     /**

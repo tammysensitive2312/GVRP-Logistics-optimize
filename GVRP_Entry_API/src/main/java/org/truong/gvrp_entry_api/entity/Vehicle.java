@@ -1,5 +1,6 @@
 package org.truong.gvrp_entry_api.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
@@ -29,37 +30,22 @@ public class Vehicle extends BaseEntity{
     @JoinColumn(name = "fleet_id", nullable = false)
     private Fleet fleet;
 
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "vehicle_type_id", nullable = false)
+    private VehicleType vehicleType;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "start_depot_id")
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private Depot startDepot;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "end_depot_id")
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private Depot endDepot;
 
     @Column(name = "vehicle_license_plate", nullable = false, unique = true, length = 20)
     private String vehicleLicensePlate;
-
-    @Column(name = "vehicle_feature")
-    private String vehicleFeature;
-
-    @Column(nullable = false)
-    private Integer capacity;
-
-    @Column(name = "fixed_cost", precision = 10, scale = 2)
-    private BigDecimal fixedCost;
-
-    @Column(name = "cost_per_km", precision = 10, scale = 2)
-    private BigDecimal costPerKm;
-
-    @Column(name = "cost_per_hour", precision = 10, scale = 2)
-    private BigDecimal costPerHour;
-
-    @Column(name = "max_distance", precision = 10, scale = 2)
-    private BigDecimal maxDistance;
-
-    @Column(name = "max_duration", precision = 10, scale = 2)
-    private BigDecimal maxDuration;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
@@ -73,9 +59,5 @@ public class Vehicle extends BaseEntity{
     // Business methods
     public boolean isAvailable() {
         return status == VehicleStatus.AVAILABLE;
-    }
-
-    public boolean canFulfill(Double demand) {
-        return demand != null && capacity >= demand;
     }
 }

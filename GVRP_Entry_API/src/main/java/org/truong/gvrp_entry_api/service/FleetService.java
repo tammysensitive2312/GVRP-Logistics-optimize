@@ -13,6 +13,7 @@ import org.truong.gvrp_entry_api.mapper.VehicleMapper;
 import org.truong.gvrp_entry_api.repository.BranchRepository;
 import org.truong.gvrp_entry_api.repository.DepotRepository;
 import org.truong.gvrp_entry_api.repository.FleetRepository;
+import org.truong.gvrp_entry_api.repository.VehicleTypeRepository;
 
 import java.util.Collections;
 import java.util.List;
@@ -24,6 +25,7 @@ public class FleetService {
     private final FleetMapper fleetMapper;
     private final BranchRepository branchRepository;
     private final DepotRepository depotRepository;
+    private final VehicleTypeRepository typeRepository;
 
     @Transactional
     public FleetDTO createFleet(FleetInputDTO fleetInputDTO, Long branchId) {
@@ -45,6 +47,11 @@ public class FleetService {
             var startDepotId = vehicleInputDTO.getStartDepotId();
             var endDepotId = vehicleInputDTO.getEndDepotId();
 
+            var vehicleTypeId = vehicleInputDTO.getVehicleTypeId();
+
+            var vehicleType = typeRepository.findById(vehicleTypeId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Resources not found.", "vehicle type"));
+
             var startDepot = depotRepository.findById(startDepotId)
                     .orElseThrow(() -> new ResourceNotFoundException("Resources not found.", "depot"));
             var endDepot = depotRepository.findById(endDepotId)
@@ -52,6 +59,7 @@ public class FleetService {
 
             vehicleEntity.setStartDepot(startDepot);
             vehicleEntity.setEndDepot(endDepot);
+            vehicleEntity.setVehicleType(vehicleType);
         }
 
         fleet = fleetRepository.save(fleet);

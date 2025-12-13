@@ -15,7 +15,6 @@ public class FleetDTO {
     private Long branchId;
     private String fleetName;
     private List<VehicleDTO> vehicles;
-    private Integer totalCapacity;
     private Integer vehicleCount;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

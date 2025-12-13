@@ -1,0 +1,53 @@
+@startuml VRP_01_5_Sub_Create_Vehicle_Type
+title Sub-process: Create Vehicle Type
+
+participant "Frontend (UI)" as UI
+participant "VehicleTypeController" as VTC
+participant "VehicleTypeService" as VTS
+participant "VehicleTypeMapper" as VTM
+participant "DepotRepository" as DR
+participant "VehicleTypeRepository" as VTR
+database "Database" as DB
+
+autonumber 20
+
+activate UI
+UI -> VTC: POST /api/vehicle-type (VehicleTypeInputDTO)
+activate VTC
+
+VTC -> VTS: createVehicleType(dto, branchId)
+activate VTS
+
+' Logic check Depot tồn tại (Bắt buộc phải có Depot mới tạo được xe)
+VTS -> DR: existsByBranchId(branchId)
+activate DR
+DR -> DB: SELECT count(1)...
+DB --> DR: boolean
+deactivate DR
+
+alt No Depot Found
+    VTS --> FC: throw BusinessException("Create depot first")
+    VTC --> UI: 400 Bad Request
+else Depot Exists
+    ' Map & Link
+    VTS -> VTM: toEntity(dto, branch)
+    activate VTM
+    VTM --> VTS: VehicleType
+    deactivate VTM
+
+    VTS -> VTR: save(vehicleType)
+    activate VTR
+    VTR -> DB: INSERT vehicle_types;
+    DB --> VTR: Saved VehicleType
+    deactivate VTR
+
+    VTS -> VTM: toDTO(vehicleType)
+    VTM --> VTS: VehicleTypeDTO
+    VTS --> VTC: VehicleTypeDTO
+end
+
+deactivate VTS
+VTC --> UI: 201 Created
+deactivate VTC
+deactivate UI
+@enduml

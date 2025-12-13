@@ -43,3 +43,63 @@
     padding: var(--space-lg);
     margin-bottom: var(--space-lg);
 }
+
+.vehicle-types-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.vehicle-type-card {
+    background: white;
+    border: 1px solid #E5E5E5;
+    border-radius: 8px;
+    padding: 16px;
+    transition: all 0.2s;
+}
+
+.vehicle-type-card:hover {
+    border-color: var(--primary-blue);
+    box-shadow: 0 2px 8px rgba(74, 144, 226, 0.1);
+}
+
+.type-header h4 {
+    margin: 0 0 12px 0;
+    color: var(--text-dark);
+    font-size: 16px;
+}
+
+.type-details {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.detail-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+}
+
+.detail-row .label {
+    color: #666;
+}
+
+.detail-row .value {
+    font-weight: 500;
+    color: var(--text-dark);
+}
+
+.vehicle-types-info-box {
+    background: #F8F9FA;
+    border: 1px solid #E5E5E5;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 16px;
+}
+
+.vehicle-type-info-item {
+    padding: 6px 0;
+    font-size: 13px;
+}

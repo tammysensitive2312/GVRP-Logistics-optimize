@@ -1,6 +1,5 @@
 package org.truong.gvrp_entry_api.controller;
 
-import jakarta.servlet.annotation.HttpConstraint;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
