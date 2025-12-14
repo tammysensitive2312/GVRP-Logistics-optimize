@@ -2,17 +2,23 @@ package org.truong.gvrp_entry_api.mapper;
 
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.truong.gvrp_entry_api.dto.request.EngineVehicleTypeDTO;
 import org.truong.gvrp_entry_api.dto.request.VehicleTypeInputDTO;
 import org.truong.gvrp_entry_api.dto.response.VehicleTypeDTO;
 import org.truong.gvrp_entry_api.entity.VehicleType;
+import org.truong.gvrp_entry_api.service.VehicleFeaturesService;
 
 import java.util.List;
 
-@Mapper(config = BaseMapperConfig.class)
+@Mapper(config = BaseMapperConfig.class, uses = {VehicleFeaturesService.class})
 public interface VehicleTypeMapper {
 
     @Mapping(target = "name", source = "typeName")
     VehicleTypeDTO toDTO(VehicleType entity);
+
+
+    @Mapping(target = "emissionFactor", source = "entity", qualifiedByName = "getEmissionFactor")
+    EngineVehicleTypeDTO toEngineDTO(VehicleType entity);
 
     List<VehicleTypeDTO> toDTOList(List<VehicleType> entities);
 

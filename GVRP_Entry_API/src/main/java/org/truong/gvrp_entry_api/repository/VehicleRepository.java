@@ -42,7 +42,7 @@ public interface VehicleRepository extends JpaRepository<Vehicle, Long> {
      */
     boolean existsByVehicleLicensePlate(String vehicleLicensePlate);
 
-    @EntityGraph(attributePaths = {"startDepot", "endDepot", "fleet"})
+    @EntityGraph(attributePaths = {"startDepot", "endDepot", "fleet", "vehicleType"})
     @Query("""
         SELECT v FROM Vehicle v 
         WHERE v.id IN :ids 

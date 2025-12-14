@@ -2,6 +2,7 @@ package org.truong.gvrp_entry_api.mapper;
 
 import org.mapstruct.*;
 import org.truong.gvrp_entry_api.dto.request.DepotInputDTO;
+import org.truong.gvrp_entry_api.dto.request.EngineDepotDTO;
 import org.truong.gvrp_entry_api.dto.response.DepotDTO;
 import org.truong.gvrp_entry_api.entity.Branch;
 import org.truong.gvrp_entry_api.entity.Depot;
@@ -29,6 +30,10 @@ public interface DepotMapper {
     @Mapping(target = "vehiclesStartingHere", ignore = true)
     @Mapping(target = "vehiclesEndingHere", ignore = true)
     Depot toEntity(DepotInputDTO dto, Branch branch);
+
+    @Mapping(source = "location", target = "latitude", qualifiedByName = "pointToLatitude")
+    @Mapping(source = "location", target = "longitude", qualifiedByName = "pointToLongitude")
+    EngineDepotDTO toEngineDTO(Depot entity);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "branch", ignore = true)

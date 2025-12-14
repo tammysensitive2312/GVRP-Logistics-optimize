@@ -61,6 +61,9 @@ public class OptimizationJob {
     @Column(name = "cancelled_at")
     private LocalDateTime cancelledAt;
 
+    @Column(name = "started_at")
+    private LocalDateTime startedAt;
+
     // Business methods
     public boolean canBeCancelled() {
         return status == OptimizationJobStatus.PROCESSING;

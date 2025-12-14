@@ -1,4 +1,4 @@
-package org.truong.gvrp_entry_api.dto.response;
+package org.truong.gvrp_entry_api.dto.request;
 
 import lombok.*;
 import java.util.ArrayList;

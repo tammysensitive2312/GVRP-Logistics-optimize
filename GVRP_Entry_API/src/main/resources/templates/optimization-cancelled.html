@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        .cancel-icon { font-size: 48px; text-align: center; margin: 20px 0; }
+        .info-box { background-color: #f8f9fa; border-left: 4px solid #95A5A6; padding: 15px; margin: 20px 0; border-radius: 4px; }
+        .btn { display: inline-block; padding: 12px 30px; background-color: #4A90E2; color: white !important; text-decoration: none; border-radius: 6px; font-weight: 600; margin: 20px 0; }
+    </style>
+</head>
+<body>
+<div class="cancel-icon">🚫</div>
+
+<p class="greeting" th:text="'Hello ' + ${userName} + ','">Hello User,</p>
+
+<p>Your route optimization job has been cancelled as requested.</p>
+
+<div class="info-box">
+    <div class="info-row">
+        <span class="info-label">Job ID:</span>
+        <span class="info-value" th:text="'#' + ${jobId}">#123</span>
+    </div>
+    <div class="info-row">
+        <span class="info-label">Started:</span>
+        <span class="info-value" th:text="${createdAt}">2024-01-01 10:00:00</span>
+    </div>
+    <div class="info-row">
+        <span class="info-label">Cancelled:</span>
+        <span class="info-value" th:text="${cancelledAt}">2024-01-01 10:05:00</span>
+    </div>
+    <div class="info-row">
+        <span class="info-label">Duration:</span>
+        <span class="info-value" th:text="${duration}">5 min 30 sec</span>
+    </div>
+</div>
+
+<p>The optimization process has been stopped and no solution was generated.
+    You can start a new optimization job whenever you're ready.</p>
+
+<div style="text-align: center; margin-top: 30px;">
+    <a th:href="${planningUrl}" class="btn">Start New Optimization</a>
+</div>
+
+<p style="margin-top: 30px; color: #666; font-size: 14px;">
+    If you cancelled this job by mistake, you can submit a new optimization request
+    with the same orders and vehicles.
+</p>
+</body>
+</html>

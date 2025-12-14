@@ -4,9 +4,9 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.mapstruct.Named;
 import org.springframework.stereotype.Service;
-import org.truong.gvrp_entry_api.dto.response.VehicleFeaturesDTO;
-import org.truong.gvrp_entry_api.entity.Vehicle;
+import org.truong.gvrp_entry_api.dto.request.VehicleFeaturesDTO;
 import org.truong.gvrp_entry_api.entity.VehicleType;
 
 /**
@@ -60,5 +60,15 @@ public class VehicleFeaturesService {
      */
     public void updateVehicleFeatures(VehicleType type, VehicleFeaturesDTO features) {
         type.setVehicleFeatures(toJson(features));
+    }
+
+    @Named("getEmissionFactor")
+    public Double getEmissionFactor(VehicleType type) {
+        VehicleFeaturesDTO features = parseFeatures(type);
+
+        if (features != null && features.getEmissionFactor() != null) {
+            return features.getEmissionFactor();
+        }
+        return 0.0;
     }
 }

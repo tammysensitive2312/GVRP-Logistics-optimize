@@ -3,6 +3,7 @@ package org.truong.gvrp_entry_api.mapper;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
+import org.truong.gvrp_entry_api.dto.request.EngineVehicleDTO;
 import org.truong.gvrp_entry_api.dto.request.VehicleInputDTO;
 import org.truong.gvrp_entry_api.dto.request.VehicleUpdateDTO;
 import org.truong.gvrp_entry_api.dto.response.VehicleDTO;
@@ -21,6 +22,11 @@ public interface VehicleMapper {
     @Mapping(source = "vehicleType.id", target = "vehicleTypeId")
     @Mapping(source = "vehicleType.typeName", target = "vehicleTypeName")
     VehicleDTO toDTO(Vehicle entity);
+
+    @Mapping(source = "startDepot.id", target = "startDepotId")
+    @Mapping(source = "endDepot.id", target = "endDepotId")
+    @Mapping(source = "vehicleType.id", target = "vehicleTypeId")
+    EngineVehicleDTO toEngineDTO(Vehicle entity);
 
     List<VehicleDTO> toDTOList(List<Vehicle> entities);
 

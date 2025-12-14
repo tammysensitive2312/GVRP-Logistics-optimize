@@ -3,6 +3,7 @@ package org.truong.gvrp_entry_api.mapper;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
+import org.truong.gvrp_entry_api.dto.request.EngineOrderDTO;
 import org.truong.gvrp_entry_api.dto.request.OrderInputDTO;
 import org.truong.gvrp_entry_api.dto.response.OrderDTO;
 import org.truong.gvrp_entry_api.entity.Branch;
@@ -40,6 +41,10 @@ public interface OrderMapper {
     @Mapping(source = "location", target = "latitude", qualifiedByName = "pointToLatitude")
     @Mapping(source = "location", target = "longitude", qualifiedByName = "pointToLongitude")
     OrderDTO toDTO(Order entity);
+
+    @Mapping(source = "location", target = "latitude", qualifiedByName = "pointToLatitude")
+    @Mapping(source = "location", target = "longitude", qualifiedByName = "pointToLongitude")
+    EngineOrderDTO toEngineDTO(Order entity);
 
     List<OrderDTO> toDTOList(List<Order> entities);
 

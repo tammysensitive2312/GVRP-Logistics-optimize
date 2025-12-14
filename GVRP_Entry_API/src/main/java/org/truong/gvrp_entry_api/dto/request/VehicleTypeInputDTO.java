@@ -4,7 +4,6 @@ import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
-import org.truong.gvrp_entry_api.dto.response.VehicleFeaturesDTO;
 
 import java.math.BigDecimal;
 
