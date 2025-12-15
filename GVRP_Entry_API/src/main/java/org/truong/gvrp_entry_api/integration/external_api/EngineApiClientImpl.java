@@ -37,7 +37,7 @@ public class EngineApiClientImpl implements EngineApiClient{
         engineRequest.setJobId(jobId);
 
         if (engineRequest.getConfig() != null) {
-            log.info("Engine config: iterations={}, timeout={}s, costWeight={}, co2Weight={}",
+            log.info("Engine config: iterations={}, timeout={}s, goal={}",
                     engineRequest.getConfig().getMaxIterations(),
                     engineRequest.getConfig().getTimeoutSeconds(),
                     determineGoal(engineRequest.getConfig()));
@@ -47,9 +47,9 @@ public class EngineApiClientImpl implements EngineApiClient{
             String payload = objectMapper.writerWithDefaultPrettyPrinter()
                     .writeValueAsString(engineRequest);
 
-            log.info("📤 ===== ENGINE PAYLOAD =====");
-            log.info("\n{}", payload);
-            log.info("============================");
+            log.debug("📤 ===== ENGINE PAYLOAD =====");
+            log.debug("\n{}", payload);
+            log.debug("============================");
 
         } catch (Exception e) {
             log.warn("Cannot log payload", e);
@@ -73,7 +73,6 @@ public class EngineApiClientImpl implements EngineApiClient{
 
             // Handle response
             if (response.getStatusCode() == HttpStatus.ACCEPTED) {
-                log.info("✓ Engine accepted request: jobId={}", jobId);
                 updateJobStatus(jobId, OptimizationJobStatus.PROCESSING, null);
             } else {
                 log.warn("Unexpected response status: {}", response.getStatusCode());

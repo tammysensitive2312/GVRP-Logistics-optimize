@@ -32,6 +32,7 @@ import org.truong.gvrp_engine_api.distance_matrix.OptCoordinates;
 import org.truong.gvrp_engine_api.model.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -54,9 +55,13 @@ public class OptimizationService {
         try {
             log.info("🚀 Starting optimization for job #{}", request.getJobId());
 
+            LocalDateTime startTime = LocalDateTime.now();
             OptimizationResult result = optimize(request);
+            LocalDateTime endTime = LocalDateTime.now();
 
-            log.info("✅ Optimization completed for job #{}", request.getJobId());
+
+            log.info("✅ Optimization completed for job #{} in {}", request.getJobId(),
+                    java.time.Duration.between(startTime, endTime));
 
             callbackService.sendCompletionCallback(request.getJobId(), result);
 
@@ -71,12 +76,6 @@ public class OptimizationService {
      * Main optimization method
      */
     public OptimizationResult optimize(EngineOptimizationRequest request) {
-        log.info("Starting Green VRP Optimization");
-        log.info("Job ID: {}", request.getJobId());
-        log.info("Orders: {}, Vehicles: {}, Depots: {}",
-                request.getOrders().size(),
-                request.getVehicles().size(),
-                request.getDepots().size());
 
         // STEP 1: Prepare Context
         OptimizationContext context = prepareContext(request);
@@ -151,10 +150,6 @@ public class OptimizationService {
                     .build();
             allLocations.add(loc);
         }
-
-        log.info("Context prepared: {} locations ({} depots + {} orders)",
-                allLocations.size(), request.getDepots().size(), request.getOrders().size());
-
 
         return new OptimizationContext(
                 allLocations,
@@ -355,12 +350,12 @@ public class OptimizationService {
 
         com.graphhopper.jsprit.core.problem.job.Service service = serviceBuilder.build();
 
-        log.info("Service created: {} (Demand: {}kg, Service: {}min, Priority: {})",
-                orderDTO.getOrderCode(),
-                orderDTO.getDemand(),
-                orderDTO.getServiceTime(),
-                orderDTO.getPriority()
-        );
+//        log.info("Service created: {} (Demand: {}kg, Service: {}min, Priority: {})",
+//                orderDTO.getOrderCode(),
+//                orderDTO.getDemand(),
+//                orderDTO.getServiceTime(),
+//                orderDTO.getPriority()
+//        );
 
         return service;
     }
@@ -399,8 +394,8 @@ public class OptimizationService {
         double costWeight = config.getCostWeight() != null ? config.getCostWeight() : 0.7;
         double co2Weight = config.getCo2Weight() != null ? config.getCo2Weight() : 0.1;
 
-        log.info("Objective weights: Distance={}, Cost={}, CO2={}",
-                distanceWeight, costWeight, co2Weight);
+//        log.debug("Objective weights: Distance={}, Cost={}, CO2={}",
+//                distanceWeight, costWeight, co2Weight);
 
         for (int i = 0; i < locations.size(); i++) {
             for (int j = 0; j < locations.size(); j++) {
@@ -429,8 +424,6 @@ public class OptimizationService {
                 matrixBuilder.addTransportTime(from.getId(), to.getId(), timeSeconds);
             }
         }
-
-        log.info("Green transport costs matrix built with multi-objective function");
 
         return matrixBuilder.build();
     }

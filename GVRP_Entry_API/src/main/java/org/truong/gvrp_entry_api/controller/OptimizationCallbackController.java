@@ -27,13 +27,7 @@ public class OptimizationCallbackController {
     public ResponseEntity<Void> onOptimizationComplete(
             @Valid @RequestBody EngineCallbackRequest.CompletionCallback request) {
 
-        log.info("=== Optimization Completion Callback ===");
-        log.info("Job ID: {}", request.getJobId());
-        log.info("Routes: {}", request.getSolution().getRoutes().size());
-
         callbackService.handleCompletion(request);
-
-        log.info("✓ Callback processed successfully");
 
         return ResponseEntity.ok().build();
     }

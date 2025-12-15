@@ -47,8 +47,6 @@ public class OptimizationCallbackService {
     @Transactional
     public void handleCompletion(EngineCallbackRequest.CompletionCallback callback) {
 
-        log.info("📥 Processing completion callback for job #{}", callback.getJobId());
-
         try {
             // 1. Load job
             OptimizationJob job = jobRepository.findById(callback.getJobId())
@@ -76,9 +74,6 @@ public class OptimizationCallbackService {
 
             job.setSolution(solution);
             jobRepository.save(job);
-
-            log.info("✅ Job #{} completed. Solution #{} saved with {} routes",
-                    job.getId(), solution.getId(), solution.getRoutes().size());
 
             // 5. Send success email
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {

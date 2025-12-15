@@ -68,7 +68,7 @@ public class OptimizationJobService {
             Long branchId,
             Long userId) {
 
-        log.info("Submitting optimization job for branch {} by user {}", branchId, userId);
+//        log.info("Submitting optimization job for branch {} by user {}", branchId, userId);
 
         // Step 1: Check concurrent job limit
         if (jobRepository.existsByBranchIdAndStatus(branchId, OptimizationJobStatus.PROCESSING)) {
@@ -121,8 +121,6 @@ public class OptimizationJobService {
 
         final Long jobId = job.getId();
         engineApiClient.submitOptimizationAsync(jobId, engineRequest);
-
-        log.info("Submitted job #{} to optimization engine", jobId);
 
         return jobMapper.toDTO(job);
     }

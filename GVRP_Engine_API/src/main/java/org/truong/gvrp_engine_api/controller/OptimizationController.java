@@ -24,15 +24,6 @@ public class OptimizationController {
     public ResponseEntity<EngineOptimizationResponse> optimize(
             @Valid @RequestBody EngineOptimizationRequest request) {
 
-        log.info("========================================");
-        log.info("📥 Received Optimization Request");
-        log.info("Job ID: {}", request.getJobId());
-        log.info("Orders: {}, Vehicles: {}, Depots: {}",
-                request.getOrders().size(),
-                request.getVehicles().size(),
-                request.getDepots().size());
-        log.info("========================================");
-
         try {
             // Validate request
             validateRequest(request);

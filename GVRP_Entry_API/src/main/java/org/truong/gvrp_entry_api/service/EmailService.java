@@ -225,7 +225,7 @@ public class EmailService {
 
     private String formatTime(BigDecimal time) {
         if (time == null) return "0 min";
-        return String.format("%.0f min", time);
+        return String.format("%.0f hours", time);
     }
 
     private String calculateDuration(LocalDateTime start, LocalDateTime end) {
