@@ -9,13 +9,19 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 import org.truong.gvrp_entry_api.entity.OptimizationJob;
 import org.truong.gvrp_entry_api.entity.Solution;
 import org.truong.gvrp_entry_api.entity.User;
+import org.truong.gvrp_entry_api.exception.ResourceNotFoundException;
+import org.truong.gvrp_entry_api.repository.OptimizationJobRepository;
+import org.truong.gvrp_entry_api.repository.SolutionRepository;
 import org.truong.gvrp_entry_api.repository.UserRepository;
 
+import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -29,6 +35,8 @@ public class EmailService {
 
     private final JavaMailSender mailSender;
     private final UserRepository userRepository;
+    private final OptimizationJobRepository jobRepository;
+    private final SolutionRepository solutionRepository;
     private final TemplateEngine templateEngine;
 
     @Value("${spring.app.frontend.url}")
@@ -41,12 +49,24 @@ public class EmailService {
 
     /**
      * Send optimization success email
-     * @param user User who submitted the job
-     * @param job Optimization job
-     * @param solution Solution result
+     * @param userId User who submitted the job
+     * @param jobId Optimization job
+     * @param solutionId Solution result
      */
     @Async
-    public void sendOptimizationSuccessEmail(User user, OptimizationJob job, Solution solution) {
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void sendOptimizationSuccessEmail(Long userId, Long jobId, Long solutionId) {
+        User user = userRepository.findById(userId).orElseThrow(
+                () -> new ResourceNotFoundException("User with ID " + userId + " not found.", "user")
+        );
+        OptimizationJob job = jobRepository.findById(jobId).orElseThrow(
+                () -> new ResourceNotFoundException("Resource not found.", "job")
+        );
+        Solution solution = solutionRepository.findById(solutionId).orElseThrow(
+                () -> new ResourceNotFoundException("Resource not found.", "solution")
+        );
+
+
         log.info("Sending success email to {} for job #{}", user.getEmail(), job.getId());
 
         try {
@@ -60,7 +80,7 @@ public class EmailService {
             // Solution metrics
             variables.put("totalDistance", formatDistance(solution.getTotalDistance()));
             variables.put("totalCO2", formatCO2(solution.getTotalCO2()));
-            variables.put("totalServiceTime", formatTime(solution.getTotalServiceTime()));
+            variables.put("totalServiceTime", formatTime(solution.getTotalTime()));
             variables.put("vehiclesUsed", solution.getTotalVehiclesUsed());
             variables.put("servedOrders", solution.getServedOrders());
             variables.put("unservedOrders", solution.getUnservedOrders());
@@ -193,17 +213,17 @@ public class EmailService {
         return dateTime.format(FORMATTER);
     }
 
-    private String formatDistance(java.math.BigDecimal distance) {
+    private String formatDistance(BigDecimal distance) {
         if (distance == null) return "0 km";
         return String.format("%.2f km", distance);
     }
 
-    private String formatCO2(java.math.BigDecimal co2) {
+    private String formatCO2(BigDecimal co2) {
         if (co2 == null) return "0 kg";
         return String.format("%.2f kg", co2);
     }
 
-    private String formatTime(java.math.BigDecimal time) {
+    private String formatTime(BigDecimal time) {
         if (time == null) return "0 min";
         return String.format("%.0f min", time);
     }

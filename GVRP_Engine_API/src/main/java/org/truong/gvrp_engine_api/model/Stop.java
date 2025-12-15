@@ -2,8 +2,6 @@ package org.truong.gvrp_engine_api.model;
 
 import lombok.*;
 
-import java.math.BigDecimal;
-
 @Getter
 @Setter
 @AllArgsConstructor

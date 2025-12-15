@@ -4,8 +4,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+
+import java.time.Duration;
 
 @Configuration
 public class WebConfig {
@@ -34,6 +38,21 @@ public class WebConfig {
         mapper.setPropertyNamingStrategy(com.fasterxml.jackson.databind.PropertyNamingStrategies.SNAKE_CASE);
 
         return mapper;
+    }
+
+    @Bean
+    public RestTemplate restTemplate(ObjectMapper objectMapper) {
+        RestTemplate restTemplate = new RestTemplate();
+
+        SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
+
+        requestFactory.setConnectTimeout(5000);
+
+        requestFactory.setReadTimeout(10000);
+
+        restTemplate.setRequestFactory(requestFactory);
+
+        return restTemplate;
     }
 
 }

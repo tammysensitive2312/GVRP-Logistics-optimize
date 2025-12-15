@@ -675,3 +675,5 @@ ALTER TABLE vehicle_types
 
 SET FOREIGN_KEY_CHECKS = 1;
 SELECT 'VRP Database Migration 1.0.1 (Vehicle Types Refactor) Completed Successfully!' as status;
+
+ALTER TABLE solutions ADD COLUMN total_cost DECIMAL(15,2) COMMENT 'Tổng chi phí tối ưu hóa trong VND' AFTER type;

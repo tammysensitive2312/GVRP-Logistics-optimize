@@ -82,7 +82,7 @@ public class Order extends BaseEntity{
     // Relationships
     @OneToMany(mappedBy = "order")
     @Builder.Default
-    private List<RouteSegment> routeSegments = new ArrayList<>();
+    private List<RouteStop> routeSegments = new ArrayList<>();
 
     // Business methods
     public boolean hasTimeWindow() {

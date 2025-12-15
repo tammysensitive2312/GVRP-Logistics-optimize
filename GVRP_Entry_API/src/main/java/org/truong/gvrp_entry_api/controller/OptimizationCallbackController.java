@@ -13,7 +13,7 @@ import org.truong.gvrp_entry_api.service.OptimizationCallbackService;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/solutions/callbacks")
+@RequestMapping("/api/v1/solutions/callbacks")
 @RequiredArgsConstructor
 public class OptimizationCallbackController {
 

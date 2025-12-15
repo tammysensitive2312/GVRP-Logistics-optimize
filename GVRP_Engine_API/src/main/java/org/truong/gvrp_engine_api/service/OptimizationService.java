@@ -44,6 +44,7 @@ public class OptimizationService {
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm:ss");
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final DistanceMatrixService distanceMatrixService;
+    private final CallbackService callbackService;
 
     /**
      * Async optimization entry point
@@ -57,14 +58,12 @@ public class OptimizationService {
 
             log.info("✅ Optimization completed for job #{}", request.getJobId());
 
-            // TODO: Send callback to Entry API with result
-            sendResultCallback(request.getJobId(), result);
+            callbackService.sendCompletionCallback(request.getJobId(), result);
 
         } catch (Exception e) {
             log.error("❌ Optimization failed for job #{}", request.getJobId(), e);
 
-            // TODO: Send error callback to Entry API
-            sendErrorCallback(request.getJobId(), e.getMessage());
+            callbackService.sendFailureCallback(request.getJobId(), e.getMessage());
         }
     }
 
@@ -755,16 +754,6 @@ public class OptimizationService {
         log.info("╚════════════════════════════════════════════════════════════════════════════╝");
 
         return result;
-    }
-
-    private void sendResultCallback(Long jobId, OptimizationResult result) {
-        // TODO: Implement HTTP callback to Entry API
-        log.info("TODO: Send result callback for job #{}", jobId);
-    }
-
-    private void sendErrorCallback(Long jobId, String errorMessage) {
-        // TODO: Implement HTTP callback to Entry API
-        log.error("TODO: Send error callback for job #{}: {}", jobId, errorMessage);
     }
 
     private double getTransportDistance(Location from, Location to, DistanceTimeMatrix matrix, OptimizationContext context) {

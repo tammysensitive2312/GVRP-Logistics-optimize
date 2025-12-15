@@ -43,14 +43,17 @@ public class Solution {
     @Column(nullable = false, length = 20)
     private SolutionType type;
 
+    @Column(name = "total_cost", precision = 10, scale = 2)
+    private BigDecimal totalCost;
+
     @Column(name = "total_distance", precision = 10, scale = 2)
     private BigDecimal totalDistance;
 
     @Column(name = "total_co2", precision = 10, scale = 2)
     private BigDecimal totalCO2;
 
-    @Column(name = "total_service_time", precision = 10, scale = 2)
-    private BigDecimal totalServiceTime;
+    @Column(name = "total_time", precision = 10, scale = 2)
+    private BigDecimal totalTime;
 
     @Column(name = "total_vehicles_used")
     private Integer totalVehiclesUsed;
@@ -77,11 +80,7 @@ public class Solution {
     }
 
     public boolean isFeasible() {
-        return status == SolutionStatus.COMPLETED;
-    }
-
-    public boolean isOptimized() {
-        return status == SolutionStatus.COMPLETED;
+        return status == SolutionStatus.SUCCESS;
     }
 
     public boolean isEngineGenerated() {

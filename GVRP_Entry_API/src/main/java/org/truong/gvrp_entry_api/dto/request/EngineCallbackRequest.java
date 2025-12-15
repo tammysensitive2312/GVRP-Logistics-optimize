@@ -116,9 +116,10 @@ public class EngineCallbackRequest {
 
         // Order info (if type = ORDER)
         private Long orderId;
+        private String orderCode;
 
         // Location info
-        private Long locationId;  // depot_id or order_id
+        private String locationId;  // depot_id or order_id
         private String locationName;
         private String address;
         private Double longitude;
