@@ -34,6 +34,7 @@ public class EngineApiClientImpl implements EngineApiClient{
     public void submitOptimizationAsync(Long jobId, EngineOptimizationRequest engineRequest) {
         log.info("Submitting Engine API: jobId={}", jobId);
 
+        updateJobStatus(jobId, OptimizationJobStatus.PROCESSING, null);
         engineRequest.setJobId(jobId);
 
         if (engineRequest.getConfig() != null) {
@@ -63,7 +64,7 @@ public class EngineApiClientImpl implements EngineApiClient{
             HttpEntity<EngineOptimizationRequest> httpRequest =
                     new HttpEntity<>(engineRequest, headers);
 
-            String url = engineBaseUrl + "/api/engine/optimize";
+            String url = engineBaseUrl + "/optimization";
 
             ResponseEntity<EngineOptimizationResponse> response = restTemplate.postForEntity(
                     url,
@@ -71,13 +72,12 @@ public class EngineApiClientImpl implements EngineApiClient{
                     EngineOptimizationResponse.class
             );
 
-            // Handle response
-            if (response.getStatusCode() == HttpStatus.ACCEPTED) {
-                updateJobStatus(jobId, OptimizationJobStatus.PROCESSING, null);
-            } else {
+            if (response.getStatusCode() != HttpStatus.ACCEPTED) {
                 log.warn("Unexpected response status: {}", response.getStatusCode());
                 updateJobStatus(jobId, OptimizationJobStatus.FAILED,
                         "Engine returned unexpected status: " + response.getStatusCode());
+            } else {
+                log.info("Engine accepted job successfully");
             }
 
         } catch (ResourceAccessException e) {

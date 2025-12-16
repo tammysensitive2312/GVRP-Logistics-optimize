@@ -11,7 +11,7 @@ participant "Optimization\nJobService" as JS
 participant "Optimization\nEngine" as OE
 participant "Solution\nRepository" as SR
 participant "Route\nRepository" as RR
-participant "RouteSegment\nRepository" as RSR
+participant "RouteStop\nRepository" as RSR
 participant "Job\nRepository" as JR
 participant "Order\nRepository" as OR
 participant "Vehicle\nRepository" as VR
@@ -28,7 +28,7 @@ UI -> UI: selectedOrders.add(orderId)
 
 User -> UI: Click "Plan Routes"
 
-UI -> VC: GET /api/vehicles?branchId={id}&status=AVAILABLE
+UI -> VC: GET /api/vehicles?status=AVAILABLE
 activate VC
 VC -> VS: getAvailableVehicles(branchId)
 activate VS
