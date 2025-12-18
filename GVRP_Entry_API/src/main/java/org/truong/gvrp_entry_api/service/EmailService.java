@@ -104,12 +104,20 @@ public class EmailService {
 
     /**
      * Send optimization failure email
-     * @param user User who submitted the job
-     * @param job Optimization job
+     * @param userId User who submitted the job
+     * @param jobId Optimization job
      * @param error Exception that caused the failure
      */
     @Async
-    public void sendOptimizationFailureEmail(User user, OptimizationJob job, Exception error) {
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void sendOptimizationFailureEmail(Long userId, Long jobId, Exception error) {
+        User user = userRepository.findById(userId).orElseThrow(
+                () -> new ResourceNotFoundException("User with ID " + userId + " not found.", "user")
+        );
+        OptimizationJob job = jobRepository.findById(jobId).orElseThrow(
+                () -> new ResourceNotFoundException("Resource not found.", "job")
+        );
+
         log.info("Sending failure email to {} for job #{}", user.getEmail(), job.getId());
 
         try {

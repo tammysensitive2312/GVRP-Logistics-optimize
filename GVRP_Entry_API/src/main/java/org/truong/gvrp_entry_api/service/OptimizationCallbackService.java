@@ -139,7 +139,7 @@ public class OptimizationCallbackService {
             // 🔧 CHANGE: Made optional
             try {
                 Exception error = new RuntimeException(callback.getErrorMessage());
-                emailService.sendOptimizationFailureEmail(job.getCreatedBy(), job, error);
+                emailService.sendOptimizationFailureEmail(job.getCreatedBy().getId(), job.getId(), error);
             } catch (Exception e) {
                 log.warn("⚠️  Failed to send failure email: {}", e.getMessage());
             }

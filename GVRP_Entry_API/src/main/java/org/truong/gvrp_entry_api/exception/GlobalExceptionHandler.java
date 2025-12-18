@@ -181,6 +181,22 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
     }
 
+    @ExceptionHandler(JobLimitException.class)
+    public ResponseEntity<ErrorResponse> handleJobLimitException(
+            JobLimitException ex,
+            HttpServletRequest request) {
+
+        ErrorResponse response = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .errorCode("0040901")
+                .message(ex.getMessage())
+                .path(request.getRequestURI())
+                .method(request.getMethod())
+                .build();
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+    }
+
     /**
      * Handle generic exceptions
      */

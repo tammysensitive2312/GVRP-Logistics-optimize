@@ -59,9 +59,11 @@ public class OptimizationService {
             OptimizationResult result = optimize(request);
             LocalDateTime endTime = LocalDateTime.now();
 
-
-            log.info("✅ Optimization completed for job #{} in {}", request.getJobId(),
-                    java.time.Duration.between(startTime, endTime));
+            java.time.Duration d = java.time.Duration.between(startTime, endTime);
+            log.info("✅ Optimization completed for job #{} in {}m {}s",
+                    request.getJobId(),
+                    d.toMinutesPart(),
+                    d.toSecondsPart());
 
             callbackService.sendCompletionCallback(request.getJobId(), result);
 
