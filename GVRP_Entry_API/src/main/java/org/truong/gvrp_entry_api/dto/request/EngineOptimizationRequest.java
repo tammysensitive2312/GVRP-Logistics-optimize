@@ -2,10 +2,6 @@ package org.truong.gvrp_entry_api.dto.request;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
-import org.truong.gvrp_entry_api.entity.Depot;
-import org.truong.gvrp_entry_api.entity.Order;
-import org.truong.gvrp_entry_api.entity.Vehicle;
-import org.truong.gvrp_entry_api.entity.VehicleType;
 
 import java.util.List;
 
@@ -34,16 +30,19 @@ public class EngineOptimizationRequest {
         // Algorithm parameters
         private Integer maxIterations;      // e.g., 500, 2000, 5000
         private Integer timeoutSeconds;     // e.g., 180, 480, 900
+        private Integer numThreads = 1;         // Parallel processing threads
 
+
+        @Deprecated
+        private Double distanceWeight;
         // Objective function weights (sum = 1.0)
         private Double costWeight;          // e.g., 0.7
-        private Double distanceWeight;      // e.g., 0.2
         private Double co2Weight;           // e.g., 0.1
 
         // Constraints
         private Boolean strictTimeWindows;  // true = hard, false = soft
         private Double unassignedJobPenalty; // e.g., 10000 or 100
 
-        private Integer numThreads = 1;         // Parallel processing threads
+        private Boolean enableParetoAnalysis;
     }
 }

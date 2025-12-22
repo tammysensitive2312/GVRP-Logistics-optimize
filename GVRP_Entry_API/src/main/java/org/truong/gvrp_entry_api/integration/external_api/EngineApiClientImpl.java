@@ -122,7 +122,7 @@ public class EngineApiClientImpl implements EngineApiClient{
 
     private String determineGoal(EngineOptimizationRequest.OptimizationConfig config) {
         if (config.getCo2Weight() > 0.5) return "MINIMIZE_CO2";
-        if (config.getDistanceWeight() > 0.5) return "MINIMIZE_DISTANCE";
+        if (config.getCo2Weight() == 0.5) return "MINIMIZE_DISTANCE";
         if (config.getCostWeight() > 0.5) return "MINIMIZE_COST";
         return "BALANCED";
     }

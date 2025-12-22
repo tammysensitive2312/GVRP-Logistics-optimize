@@ -6,7 +6,7 @@ public class PasswordEncoderUtil {
 
     public static void main(String[] args) {
         // Mật khẩu bạn muốn mã hóa
-        String rawPassword = "truong";
+        String rawPassword = "khoa";
 
         // Hoặc bạn có thể lấy mật khẩu từ đối số dòng lệnh nếu thích:
         // if (args.length == 0) {
