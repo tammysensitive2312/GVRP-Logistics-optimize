@@ -8,17 +8,18 @@ import org.truong.gvrp_engine_api.model.VehicleType;
 
 import java.util.List;
 
+import static org.truong.gvrp_engine_api.utils.AppConstant.CARBON_PRICE_PER_KG;
 import static org.truong.gvrp_engine_api.utils.AppConstant.DEMAND_SCALE;
 
 /**
  * GREEN VRP Cost Calculator
- *
+ * <p>
  * CRITICAL PRINCIPLES:
  * 1. Cost matrix contains ONLY physical distance/time (meters, seconds)
  * 2. CO2 cost is embedded in VehicleType.costPerDistance (VND/meter)
  * 3. All monetary costs in same unit (VND)
  * 4. CO2 cost is vehicle-dependent (diesel vs EV)
- *
+ * <p>
  * WHY THIS DESIGN:
  * - Jsprit solver only understands single scalar cost
  * - We map multi-objective (cost + CO2) → single objective via weighted sum
@@ -29,14 +30,6 @@ import static org.truong.gvrp_engine_api.utils.AppConstant.DEMAND_SCALE;
  */
 @Slf4j
 public class GreenVRPCostCalculator {
-    /**
-     * Carbon pricing (VND per kg CO2)
-     * Can be adjusted based on:
-     * - Government carbon tax
-     * - Company ESG policy
-     * - International carbon market price
-     */
-    private static final double CARBON_PRICE_PER_KG = 10000.0; // Example: 10,000 VND/kg CO2
 
     /**
      * Build physical cost matrix - ONLY distance and time
@@ -141,7 +134,7 @@ public class GreenVRPCostCalculator {
 
         // ========== STEP 4: Build Jsprit vehicle type ==========
 
-        int scaledCapacity = (int) Math.round(vehicleTypeDTO.getCapacity() * DEMAND_SCALE);
+        int scaledCapacity = Math.round(vehicleTypeDTO.getCapacity() * DEMAND_SCALE);
 
         VehicleTypeImpl.Builder typeBuilder = VehicleTypeImpl.Builder
                 .newInstance("type-" + vehicleTypeDTO.getId())
@@ -193,7 +186,7 @@ public class GreenVRPCostCalculator {
 
     /**
      * Calculate real monetary cost for a route (for reporting)
-     *
+     * <p>
      * Used after optimization to report actual costs
      * Separate from Jsprit's optimization cost
      *
@@ -216,7 +209,7 @@ public class GreenVRPCostCalculator {
 
     /**
      * Validate and normalize optimization weights
-     *
+     * <p>
      * Ensures weights are positive and sum to 1.0
      *
      * @param costWeight Original cost weight
@@ -243,7 +236,7 @@ public class GreenVRPCostCalculator {
 
     /**
      * Calculate carbon price impact comparison
-     *
+     * <p>
      * Shows how carbon pricing affects vehicle selection
      * Useful for policy analysis and reporting
      */

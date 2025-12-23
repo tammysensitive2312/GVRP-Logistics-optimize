@@ -34,6 +34,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 
 import static org.truong.gvrp_engine_api.service.OptimizationResultExtractor.extractRouteDetails;
 import static org.truong.gvrp_engine_api.service.OptimizationResultExtractor.extractUnassignedOrders;
@@ -73,7 +74,7 @@ public class OptimizationService {
      * Async optimization entry point (for background processing)
      */
     @Async
-    public void optimizeAsync(EngineOptimizationRequest request) {
+    public CompletableFuture<Void> optimizeAsync(EngineOptimizationRequest request) {
         try {
             log.info("🚀 Starting optimization for job #{}", request.getJobId());
 
@@ -89,9 +90,13 @@ public class OptimizationService {
 
             callbackService.sendCompletionCallback(request.getJobId(), result);
 
+            return CompletableFuture.completedFuture(null);
+
         } catch (Exception e) {
             log.error("❌ Optimization failed for job #{}", request.getJobId(), e);
             callbackService.sendFailureCallback(request.getJobId(), e.getMessage());
+
+            return CompletableFuture.failedFuture(e);
         }
     }
 
@@ -154,7 +159,7 @@ public class OptimizationService {
 
         // Create and run algorithm
         VehicleRoutingAlgorithm algorithm = createAlgorithm(vrp, context, config);
-        addProgressListener(algorithm, request.getJobId());
+        addProgressListener(algorithm, request.getJobId(), config);
 
         Collection<VehicleRoutingProblemSolution> solutions = algorithm.searchSolutions();
         VehicleRoutingProblemSolution bestSolution = Solutions.bestOf(solutions);
@@ -478,11 +483,22 @@ public class OptimizationService {
         VehicleRoutingAlgorithm algorithm = builder.buildAlgorithm();
 
         // Set timeout
-        if (config.getTimeoutSeconds() != null && config.getTimeoutSeconds() > 0) {
-            algorithm.setPrematureAlgorithmTermination(
-                    new TimeTermination(config.getTimeoutSeconds() * 1000)
-            );
-        }
+//        if (config.getTimeoutSeconds() != null && config.getTimeoutSeconds() > 0) {
+//            long timeoutMs = config.getTimeoutSeconds() * 1000L;
+//            log.info("Setting algorithm timeout to: {} ms", timeoutMs);
+//
+//            TimeTermination timeoutTermination = new TimeTermination(timeoutMs);
+//            algorithm.setPrematureAlgorithmTermination(timeoutTermination);
+//        } else {
+//            log.info("No timeout configured, algorithm will run until max iterations: {}", maxIterations);
+//        }
+
+        log.info("=== Jsprit Algorithm Configured ===");
+        log.info("Max Iterations: {}", maxIterations);
+        log.info("Threads: {}", numThreads);
+        log.info("Timeout: {}s", config.getTimeoutSeconds());
+        log.info("Constraints applied: MaxDistance");
+        log.info("====================================");
 
         return algorithm;
     }
@@ -648,17 +664,24 @@ public class OptimizationService {
                 co2Weight);
     }
 
-    private void addProgressListener(VehicleRoutingAlgorithm algorithm, Long jobId) {
+    private void addProgressListener(VehicleRoutingAlgorithm algorithm, Long jobId, OptimizationConfig config) {
         algorithm.addListener(new IterationStartsListener() {
+            private final long algorithmStartTime = System.currentTimeMillis();
+
             @Override
             public void informIterationStarts(int i, VehicleRoutingProblem problem,
                                               Collection<VehicleRoutingProblemSolution> solutions) {
-                if (i % 100 == 0) {
+                if (i % 500 == 0 || i == 1) {
                     VehicleRoutingProblemSolution best = Solutions.bestOf(solutions);
-                    log.info("Job #{} - Iteration {}: Cost = {}, Unassigned = {}",
-                            jobId, i,
-                            String.format("%.2f", best.getCost()),
-                            best.getUnassignedJobs().size());
+                    long elapsed = (System.currentTimeMillis() - algorithmStartTime) / 1000;
+
+                    log.info("--- Job #{} Progress ---", jobId);
+                    log.info("Iteration: {} / {}", i, config.getMaxIterations());
+                    log.info("Elapsed Time: {}s / {}s (Timeout)", elapsed, config.getTimeoutSeconds());
+                    log.info("Current Best Cost: {}", String.format("%.2f", best.getCost()));
+                    log.info("Routes: {}", best.getRoutes().size());
+                    log.info("Unassigned: {}", best.getUnassignedJobs().size());
+                    log.info("-----------------------");
                 }
             }
         });
