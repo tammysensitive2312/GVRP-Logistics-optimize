@@ -4,7 +4,7 @@ import lombok.Data;
 
 @Data
 public class EngineOptimizationResponse {
-    private Long jobId;
+    private String externalJobId;
     private String status;
     private String message;
 }

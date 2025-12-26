@@ -56,6 +56,12 @@ public class RoutePlanningRequest {
          * - FLEXIBLE: Cho phép vi phạm time window nhưng có penalty (soft constraint)
          */
         private TimeWindowMode timeWindowMode = TimeWindowMode.STRICT;
+
+        /**
+         * Enable pareto analysis
+         * - Chức năng phục vụ cho mục đích nghiên cứu
+         */
+        private Boolean enableParetoAnalysis;
     }
 
     /**

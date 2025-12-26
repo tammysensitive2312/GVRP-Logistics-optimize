@@ -21,9 +21,6 @@ public class EngineCallbackRequest {
         private Long jobId;
 
         @NotNull
-        private String externalJobId;  // Engine's internal job ID
-
-        @NotNull
         private SolutionData solution;
 
         private Long processingTimeSeconds;
@@ -37,8 +34,6 @@ public class EngineCallbackRequest {
 
         @NotNull
         private Long jobId;
-
-        private String externalJobId;
 
         @NotNull
         private String errorMessage;

@@ -79,6 +79,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/fleets/**").authenticated()
                         .requestMatchers("/api/v1/vehicles/**").authenticated()
                         .requestMatchers("/api/v1/orders/**").authenticated()
+                        .requestMatchers("/api/v1/jobs/**").authenticated()
                         .requestMatchers("/api/v1/solutions/**").authenticated()
 
                         // All other requests require authentication

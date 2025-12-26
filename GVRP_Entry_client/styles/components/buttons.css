@@ -84,3 +84,26 @@
 .btn-menu:hover {
     background: var(--bg-light);
 }
+
+.btn .badge {
+    display: inline-block;
+    min-width: 20px;
+    padding: 2px 6px;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: baseline;
+    border-radius: 10px;
+    background-color: rgba(255, 255, 255, 0.3);
+    margin-left: 4px;
+}
+
+.btn-success .badge {
+    background-color: rgba(255, 255, 255, 0.4);
+}
+
+.btn:disabled .badge {
+    opacity: 0.5;
+}

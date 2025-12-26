@@ -158,9 +158,6 @@ export class FleetForm {
     static updateSummary() {
         const vehicles = VehicleCard.getAll();
         DOMHelpers.setText('total-vehicles', vehicles.length);
-
-        const infoText = `${vehicles.length} xe được chọn`;
-        DOMHelpers.setText('total-capacity', infoText);
     }
 
     /**

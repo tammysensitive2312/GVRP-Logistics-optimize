@@ -1,4 +1,5 @@
-/* styles/components/tables.css */
+/* styles/components/tables.css - Optimized for 20-70-10 ratio */
+
 .table-container {
     flex: 1;
     background: var(--white);
@@ -10,7 +11,7 @@
     height: 100%;
 }
 
-/* Tab Switcher Style */
+/* Tab Switcher - More Compact */
 .tab-switcher {
     display: flex;
     border-bottom: 2px solid var(--border-color);
@@ -19,14 +20,17 @@
     background: var(--bg-light);
     gap: 0;
     flex-shrink: 0;
+    /* Reduce height */
+    min-height: 42px;
 }
 
 .tab-btn {
-    padding: var(--space-md) var(--space-lg);
+    /* Reduce padding */
+    padding: 0.5rem 1rem; /* was: var(--space-md) var(--space-lg) */
     border: none;
     background: transparent;
     cursor: pointer;
-    font-size: 14px;
+    font-size: 13px; /* was: 14px */
     font-weight: 500;
     color: var(--text-gray);
     border-bottom: 2px solid transparent;
@@ -59,12 +63,8 @@
 }
 
 @keyframes slideIn {
-    from {
-        transform: scaleX(0);
-    }
-    to {
-        transform: scaleX(1);
-    }
+    from { transform: scaleX(0); }
+    to { transform: scaleX(1); }
 }
 
 .tab-content-item {
@@ -74,7 +74,7 @@
     flex-direction: column;
     flex: 1;
     min-height: 0;
-    animation: fadeIn 0.3s ease
+    animation: fadeIn 0.3s ease;
 }
 
 .tab-content-item.active {
@@ -93,22 +93,62 @@
     }
 }
 
-.table-header, .table-actions-row, .table-filters-row {
-    border-bottom: 1px solid var(--border-color);
-}
-
+/* Table Header - More Compact (20%) */
 .table-header {
     flex-shrink: 0;
     background: var(--white);
+    border-bottom: 1px solid var(--border-color);
 }
 
-.table-actions-row, .table-filters-row {
+.table-actions-row,
+.table-filters-row {
     display: flex;
-    padding: var(--space-md) var(--space-lg);
-    gap: var(--space-md);
+    /* Reduce padding significantly */
+    padding: 0.5rem 1rem; /* was: var(--space-md) var(--space-lg) */
+    gap: 0.5rem; /* was: var(--space-md) */
     flex-shrink: 0;
+    align-items: center;
+    min-height: 48px; /* Limit height */
 }
 
+.table-filters-row {
+    border-top: 1px solid var(--border-color);
+}
+
+/* Make buttons more compact */
+.table-actions-row .btn,
+.table-filters-row .btn {
+    padding: 0.4rem 0.75rem; /* Smaller buttons */
+    font-size: 13px;
+    height: 36px; /* Fixed height */
+}
+
+.table-actions-row .btn-icon,
+.table-filters-row .btn-icon {
+    width: 36px;
+    height: 36px;
+}
+
+/* Compact form controls */
+.table-filters-row input,
+.table-filters-row select {
+    padding: 0.4rem 0.6rem;
+    font-size: 13px;
+    height: 36px;
+}
+
+.filter-group {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.filter-group label {
+    font-size: 13px;
+    margin: 0;
+}
+
+/* Table Content - Maximize (70%) */
 .table-content {
     flex: 1;
     overflow-y: scroll !important;
@@ -116,12 +156,11 @@
     min-height: 0;
     max-height: 100%;
     position: relative;
-
     scroll-behavior: smooth;
-
     scrollbar-width: thin;
     scrollbar-color: rgba(0, 0, 0, 0.3) transparent;
 }
+
 .table-content::-webkit-scrollbar {
     width: 8px;
     height: 8px;
@@ -164,6 +203,7 @@
     opacity: 1;
 }
 
+/* Dropdown */
 .dropdown {
     position: relative;
 }
@@ -197,6 +237,7 @@
     background: var(--bg-light);
 }
 
+/* Data Table - Compact cells */
 .data-table {
     width: 100%;
     min-width: 1000px;
@@ -212,61 +253,234 @@
 
 .data-table th {
     text-align: left;
-    padding: var(--space-md) var(--space-lg);
+    /* Reduce padding */
+    padding: 0.6rem 1rem; /* was: var(--space-md) var(--space-lg) */
     font-weight: 600;
     color: var(--text-gray);
-    font-size: var(--font-size-sm);
+    font-size: 12px; /* was: var(--font-size-sm) */
     border-bottom: 2px solid var(--border-color);
     background: var(--bg-light);
+    white-space: nowrap;
 }
 
 .data-table td {
-    padding: var(--space-md) var(--space-lg);
+    /* Reduce padding */
+    padding: 0.6rem 1rem; /* was: var(--space-md) var(--space-lg) */
     border-bottom: 1px solid var(--border-color);
-    font-size: var(--font-size-sm);
+    font-size: 13px; /* was: var(--font-size-sm) */
+    vertical-align: middle;
 }
 
-.data-table tbody tr:hover { background: var(--bg-light); }
-.data-table tbody tr.selected { background: rgba(74, 144, 226, 0.1); }
+.data-table tbody tr {
+    transition: background 0.15s;
+}
+
+.data-table tbody tr:hover {
+    background: var(--bg-light);
+}
+
+.data-table tbody tr.selected {
+    background: rgba(74, 144, 226, 0.1);
+}
 
 /* Empty State */
 .empty-content {
     text-align: center;
-    padding: var(--space-2xl);
+    padding: 2rem; /* Reduce from var(--space-2xl) */
 }
 
 .empty-icon {
-    font-size: 64px;
-    margin-bottom: var(--space-lg);
+    font-size: 48px; /* Reduce from 64px */
+    margin-bottom: 1rem; /* Reduce from var(--space-lg) */
 }
 
-/* Table Footer & Pagination */
+.empty-text {
+    font-size: 14px;
+    color: var(--text-gray);
+    margin-bottom: 1rem;
+}
+
+/* Table Footer - More Compact (10%) */
 .table-footer {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: var(--space-lg);
+    /* Reduce padding */
+    padding: 0.5rem 1rem; /* was: 1rem 1.5rem */
     background: var(--white);
     border-top: 1px solid var(--border-color);
     flex-shrink: 0;
+    gap: 0.75rem; /* was: 1rem */
+    flex-wrap: wrap;
+    min-height: 52px; /* Limit height */
 }
 
-.pagination { display: flex; gap: var(--space-sm); }
+/* Footer Info - Compact */
+.footer-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem; /* was: 0.75rem */
+    font-size: 12px; /* was: 0.9rem */
+    color: #666;
+}
+
+.footer-info .separator {
+    color: #ccc;
+}
+
+.footer-info strong {
+    color: #333;
+    font-weight: 600;
+}
+
+/* Page Size Selector - Compact */
+.footer-controls {
+    display: flex;
+    align-items: center;
+}
+
+.page-size-label {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem; /* was: 0.5rem */
+    font-size: 12px; /* was: 0.9rem */
+    color: #666;
+    margin: 0;
+}
+
+.page-size-select {
+    padding: 0.25rem 0.4rem; /* More compact */
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 12px; /* was: 0.9rem */
+    cursor: pointer;
+    background: white;
+    height: 30px; /* Fixed height */
+}
+
+.page-size-select:hover {
+    border-color: #4A90E2;
+}
+
+.page-size-select:focus {
+    outline: none;
+    border-color: #4A90E2;
+    box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.1);
+}
+
+/* Pagination - Compact */
+.pagination {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem; /* was: var(--space-sm) */
+}
+
+.page-numbers {
+    display: flex;
+    gap: 0.2rem; /* was: 0.25rem */
+}
+
 .btn-page {
-    padding: 6px 12px;
+    min-width: 32px; /* was: 36px */
+    height: 32px; /* was: 36px */
+    padding: 0.4rem; /* was: 0.5rem */
     border: 1px solid var(--border-color);
     background: var(--white);
+    color: #333;
     border-radius: var(--radius-sm);
     cursor: pointer;
+    font-size: 12px; /* was: 0.9rem */
+    font-weight: 500;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
+
+.btn-page:hover:not(:disabled) {
+    background: #f0f0f0;
+    border-color: #4A90E2;
+    color: #4A90E2;
+}
+
 .btn-page.active {
     background: var(--primary-blue);
     color: var(--white);
     border-color: var(--primary-blue);
+    font-weight: var(--font-weight-semibold);
+}
+
+.btn-page:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    background: #f5f5f5;
+}
+
+.page-dots {
+    padding: 0 0.4rem; /* was: 0 0.5rem */
+    color: #999;
+    font-weight: var(--font-weight-medium);
+    display: flex;
+    align-items: center;
+    font-size: 12px;
+}
+
+.page-info {
+    margin-left: 0.4rem; /* was: 0.5rem */
+    font-size: 12px; /* was: 0.9rem */
+    color: #666;
+    white-space: nowrap;
+}
+
+.page-info strong {
+    color: #333;
+    font-weight: 600;
 }
 
 /* Responsive */
+@media (max-width: 1024px) {
+    .table-footer {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 0.75rem 1rem;
+    }
+
+    .pagination {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .footer-info,
+    .footer-controls {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
 @media (max-width: 768px) {
-    .table-container { height: auto; flex: 1; }
-    .table-filters-row { flex-direction: column; align-items: stretch; }
+    .btn-page {
+        min-width: 28px;
+        height: 28px;
+        font-size: 11px;
+    }
+
+    .page-info {
+        font-size: 11px;
+    }
+
+    .footer-info {
+        font-size: 11px;
+    }
+
+    .table-actions-row,
+    .table-filters-row {
+        padding: 0.4rem 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    .data-table th,
+    .data-table td {
+        padding: 0.5rem 0.75rem;
+        font-size: 12px;
+    }
 }

@@ -15,13 +15,13 @@ import java.util.List;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/v1/solutions")
+@RequestMapping("/api/v1/jobs")
 @RequiredArgsConstructor
-public class SolutionPlanningController {
+public class OptimizationJobController {
     private final OptimizationJobService jobService;
     /**
      * Submit optimization job
-     * POST /api/solutions/plan
+     * POST /api/jobs/plan
      */
     @PostMapping("/plan")
     public ResponseEntity<OptimizationJobDTO> submitRoutePlanning(
@@ -45,9 +45,9 @@ public class SolutionPlanningController {
 
     /**
      * Get current running job
-     * GET /api/solutions/jobs/current
+     * GET /api/jobs/current
      */
-    @GetMapping("/jobs/current")
+    @GetMapping("/current")
     public ResponseEntity<OptimizationJobDTO> getCurrentJob() {
 
         Long branchId = CurrentUserUtil.getCurrentBranchId();
@@ -61,7 +61,7 @@ public class SolutionPlanningController {
      * Get job history
      * GET /api/solutions/jobs/history?limit=10
      */
-    @GetMapping("/jobs/history")
+    @GetMapping
     public ResponseEntity<List<OptimizationJobDTO>> getJobHistory(
             @RequestParam(defaultValue = "10") int limit) {
 
@@ -72,9 +72,9 @@ public class SolutionPlanningController {
 
     /**
      * Get job by ID
-     * GET /api/solutions/jobs/{id}
+     * GET /api/jobs/{id}
      */
-    @GetMapping("/jobs/{id}")
+    @GetMapping("/{id}")
     public ResponseEntity<OptimizationJobDTO> getJobById(
             @PathVariable Long id,
             Authentication authentication) {
@@ -88,9 +88,9 @@ public class SolutionPlanningController {
 
     /**
      * Cancel running job
-     * DELETE /api/solutions/jobs/{id}
+     * DELETE /api/jobs/{id}
      */
-    @DeleteMapping("/jobs/{id}")
+    @DeleteMapping("/{id}")
     public ResponseEntity<Void> cancelJob(
             @PathVariable Long id) {
 

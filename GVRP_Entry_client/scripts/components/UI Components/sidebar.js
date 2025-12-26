@@ -139,7 +139,53 @@ export class Sidebar {
             AppState.deselectVehicle(id);
         }
 
-        // Router.updatePlanRoutesButton();
+        if (typeof updatePlanRoutesButton === 'function') {
+            updatePlanRoutesButton();
+        }
+        this.#updateSelectedVehiclesDisplay();
+    }
+
+    /**
+     * Update selected vehicles display
+     * @private
+     */
+    static #updateSelectedVehiclesDisplay() {
+        const selectedCount = AppState.selectedVehicles.size;
+        const vehicleCountLabel = document.getElementById('vehicle-count');
+        if (vehicleCountLabel) {
+            const totalCount = AppState.allVehicles.length;
+            vehicleCountLabel.textContent = totalCount;
+        }
+    }
+    /**
+     * Deselect all vehicles
+     */
+    static deselectAllVehicles() {
+        AppState.deselectAllVehicles();
+        document.querySelectorAll('.vehicle-item-compact input[type="checkbox"]')
+            .forEach(checkbox => {
+                checkbox.checked = false;
+            });
+        if (typeof updatePlanRoutesButton === 'function') {
+            updatePlanRoutesButton();
+        }
+        this.#updateSelectedVehiclesDisplay();
+    }
+    /**
+     * Select all vehicles
+     */
+    static selectAllVehicles() {
+        AppState.allVehicles.forEach(vehicle => {
+            AppState.selectVehicle(vehicle.id);
+        });
+        document.querySelectorAll('.vehicle-item-compact input[type="checkbox"]')
+            .forEach(checkbox => {
+                checkbox.checked = true;
+            });
+        if (typeof updatePlanRoutesButton === 'function') {
+            updatePlanRoutesButton();
+        }
+        this.#updateSelectedVehiclesDisplay();
     }
 
     /**
@@ -265,3 +311,5 @@ if (typeof window !== 'undefined') {
 }
 
 window.toggleSidebar = () => Sidebar.toggle();
+window.selectAllVehicles = () => Sidebar.selectAllVehicles();
+window.deselectAllVehicles = () => Sidebar.deselectAllVehicles();

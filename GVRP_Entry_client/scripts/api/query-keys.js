@@ -8,7 +8,7 @@ let QueryKeys = {
     orders: {
         all: (branchId) => ['orders', branchId],
         byStatus: (branchId, status) => ['orders', branchId, status],
-        byDate: (branchId, date) => ['orders', branchId, date],
+        byDate: (branchId, date, page, size) => ['orders', branchId, date, page, size],
         detail: (orderId) => ['order', orderId]
     },
 

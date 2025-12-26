@@ -34,7 +34,10 @@ public class EngineApiClientImpl implements EngineApiClient{
     public void submitOptimizationAsync(Long jobId, EngineOptimizationRequest engineRequest) {
         log.info("Submitting Engine API: jobId={}", jobId);
 
-        updateJobStatus(jobId, OptimizationJobStatus.PROCESSING, null);
+        OptimizationJobStatus finalStatus = OptimizationJobStatus.PROCESSING;
+        String externalJobId = null;
+        String errorMessage = null;
+
         engineRequest.setJobId(jobId);
 
         if (engineRequest.getConfig() != null) {
@@ -72,32 +75,38 @@ public class EngineApiClientImpl implements EngineApiClient{
                     EngineOptimizationResponse.class
             );
 
-            if (response.getStatusCode() != HttpStatus.ACCEPTED) {
-                log.warn("Unexpected response status: {}", response.getStatusCode());
-                updateJobStatus(jobId, OptimizationJobStatus.FAILED,
-                        "Engine returned unexpected status: " + response.getStatusCode());
-            } else {
+            if (response.getStatusCode() == HttpStatus.ACCEPTED) {
                 log.info("Engine accepted job successfully");
+                // Lấy external_job_id từ body trả về của Engine
+                if (response.getBody() != null) {
+                    externalJobId = response.getBody().getExternalJobId();
+                }
+                finalStatus = OptimizationJobStatus.PROCESSING;
+            } else {
+                finalStatus = OptimizationJobStatus.FAILED;
+                errorMessage = "Engine returned: " + response.getStatusCode();
             }
 
         } catch (ResourceAccessException e) {
             log.error("Failed to connect to Engine API: jobId={}", jobId, e);
-            updateJobStatus(jobId, OptimizationJobStatus.FAILED,
-                    "Cannot connect to optimization engine. Please check if engine is running.");
+            errorMessage = "Cannot connect to optimization engine. Please check if engine is running.";
+            finalStatus = OptimizationJobStatus.FAILED;
         } catch (HttpClientErrorException | HttpServerErrorException e) {
             // HTTP error (4xx, 5xx)
             log.error("Engine API error: jobId={}, status={}", jobId, e.getStatusCode(), e);
-            updateJobStatus(jobId, OptimizationJobStatus.FAILED,
-                    "Engine API error: " + e.getMessage());
+            errorMessage = "Engine API error: " + e.getMessage();
+            finalStatus = OptimizationJobStatus.FAILED;
         }
         catch (Exception e) {
-            log.error("Failed to submit to Engine API: jobId={}", jobId, e);
-            updateJobStatus(jobId, OptimizationJobStatus.FAILED,
-                    "Failed to communicate with optimization engine: " + e.getMessage());
+            log.error("Error communicating with Engine", e);
+            finalStatus = OptimizationJobStatus.FAILED;
+            errorMessage = e.getMessage();
+        } finally {
+            updateJobStatus(jobId, finalStatus, errorMessage, externalJobId);
         }
     }
 
-    private void updateJobStatus(Long jobId, OptimizationJobStatus status, String errorMessage) {
+    private void updateJobStatus(Long jobId, OptimizationJobStatus status, String errorMessage, String externalJobId) {
         try {
             OptimizationJob job = jobRepository.findById(jobId)
                     .orElseThrow(() -> new IllegalArgumentException("Job not found: " + jobId));
@@ -109,6 +118,10 @@ public class EngineApiClientImpl implements EngineApiClient{
             } else if (status == OptimizationJobStatus.FAILED) {
                 job.setCompletedAt(java.time.LocalDateTime.now());
                 job.setErrorMessage(errorMessage);
+            }
+
+            if (externalJobId != null) {
+                job.setExternalJobId(externalJobId);
             }
 
             jobRepository.save(job);

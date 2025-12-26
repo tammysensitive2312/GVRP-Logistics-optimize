@@ -38,7 +38,7 @@ public class OptimizationConfigMapper {
                 userPrefs.getAllowUnassignedOrders() ? 100.0 : 10000.0
         );
 
-        engineConfig.setNumThreads(4);
+        engineConfig.setEnableParetoAnalysis(userPrefs.getEnableParetoAnalysis());
 
         return engineConfig;
     }
@@ -54,18 +54,22 @@ public class OptimizationConfigMapper {
             case FAST:
                 config.setMaxIterations(500);
                 config.setTimeoutSeconds(180);  // 3 minutes
+                config.setNumThreads(1);
                 break;
             case NORMAL:
                 config.setMaxIterations(2000);
                 config.setTimeoutSeconds(480);  // 8 minutes
+                config.setNumThreads(2);
                 break;
             case HIGH_QUALITY:
                 config.setMaxIterations(5000);
                 config.setTimeoutSeconds(900);  // 15 minutes
+                config.setNumThreads(4);
                 break;
             default:
                 config.setMaxIterations(2000);
                 config.setTimeoutSeconds(480);
+                config.setNumThreads(2);
         }
     }
 

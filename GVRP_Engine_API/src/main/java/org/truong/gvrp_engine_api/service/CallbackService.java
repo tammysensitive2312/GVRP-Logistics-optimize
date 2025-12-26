@@ -40,7 +40,6 @@ public class CallbackService {
 
             Map<String, Object> payload = new HashMap<>();
             payload.put("job_id", jobId);
-            payload.put("external_job_id", "engine-" + jobId); // Optional
             payload.put("solution", convertToSolutionData(result));
 
             HttpEntity<Map<String, Object>> request = new HttpEntity<>(payload, headers);

@@ -33,7 +33,7 @@ public class OptimizationController {
 
             // Return accepted response
             EngineOptimizationResponse response = new EngineOptimizationResponse();
-            response.setJobId(request.getJobId());
+            response.setExternalJobId("engine-" + request.getJobId());
             response.setStatus("ACCEPTED");
             response.setMessage("Optimization job accepted and processing");
 
@@ -43,7 +43,7 @@ public class OptimizationController {
             log.error("❌ Validation error: {}", e.getMessage());
 
             EngineOptimizationResponse errorResponse = new EngineOptimizationResponse();
-            errorResponse.setJobId(request.getJobId());
+            errorResponse.setExternalJobId("engine-" + request.getJobId());
             errorResponse.setStatus("REJECTED");
             errorResponse.setMessage(e.getMessage());
 
@@ -53,7 +53,7 @@ public class OptimizationController {
             log.error("❌ Unexpected error processing job #{}", request.getJobId(), e);
 
             EngineOptimizationResponse errorResponse = new EngineOptimizationResponse();
-            errorResponse.setJobId(request.getJobId());
+            errorResponse.setExternalJobId("engine-" + request.getJobId());
             errorResponse.setStatus("ERROR");
             errorResponse.setMessage("Internal server error: " + e.getMessage());
 

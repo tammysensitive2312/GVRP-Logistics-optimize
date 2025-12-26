@@ -1,14 +1,22 @@
 /**
- * Orders Table Component
- * Renders and manages the orders data table
+ * Orders Table with Pagination
+ * Complete pagination implementation
  */
 
 import { AppState } from '../../core/state.js';
 import { DOMHelpers } from '../../utils/dom-helpers.js';
+import { Toast } from '../../utils/toast.js';
+import {Loading} from "../../utils/loading.js";
 
 export class OrdersTable {
     static #tbody = null;
     static #onRowClick = null;
+
+    // Pagination state
+    static #currentPage = 0;
+    static #pageSize = 10;
+    static #totalPages = 0;
+    static #totalElements = 0;
 
     /**
      * Initialize orders table
@@ -38,6 +46,229 @@ export class OrdersTable {
         AppState.subscribe('selectedOrders', () => {
             this.updateCheckboxes();
         });
+
+        // Initialize page size selector
+        this.#initPageSizeSelector();
+    }
+
+    /**
+     * Initialize page size selector
+     * @private
+     */
+    static #initPageSizeSelector() {
+        const selector = document.getElementById('page-size-selector');
+        if (selector) {
+            selector.addEventListener('change', (e) => {
+                this.#pageSize = parseInt(e.target.value);
+                this.#currentPage = 0; // Reset to first page
+                this.loadOrders();
+            });
+        }
+    }
+
+    /**
+     * Load orders from API with pagination
+     * @param {number} page - Page number (0-indexed)
+     * @param {number} size - Page size
+     */
+    static async loadOrders(page = null, size = null) {
+        const pageToLoad = page !== null ? page : this.#currentPage;
+        const sizeToLoad = size !== null ? size : this.#pageSize;
+
+        const date = AppState.filters.date;
+
+        if (!date) {
+            Toast.error('Please select a date');
+            return;
+        }
+
+        Loading.show('Loading orders...');
+
+        try {
+            // Call API with pagination
+            const response = await getOrders(date, pageToLoad, sizeToLoad);
+
+            // Update pagination state
+            this.#pageSize = response.page_size;
+            this.#totalPages = response.total_pages;
+            this.#totalElements = response.total_elements;
+            this.#currentPage = response.page_no;
+
+            // Update app state with orders
+            AppState.setOrders(response.content || []);
+
+            // Render table
+            this.render(AppState.filteredOrders);
+
+            // Update pagination UI
+            this.#updatePaginationUI();
+
+            // Update map
+            if (typeof MainMap !== 'undefined') {
+                MainMap.loadOrders(AppState.filteredOrders);
+            }
+
+            // Update sidebar stats
+            if (typeof Sidebar !== 'undefined') {
+                Sidebar.updateStatsCards();
+            }
+
+        } catch (error) {
+            console.error('Failed to load orders:', error);
+            Toast.error('Failed to load orders');
+            AppState.setOrders([]);
+            this.render([]);
+        } finally {
+            Loading.hide();
+        }
+    }
+
+    /**
+     * Go to specific page
+     * @param {number} page - Page number (0-indexed)
+     */
+    static goToPage(page) {
+        if (page < 0 || page >= this.#totalPages) {
+            return;
+        }
+
+        this.#currentPage = page;
+        this.loadOrders(page);
+    }
+
+    /**
+     * Go to previous page
+     */
+    static previousPage() {
+        if (this.#currentPage > 0) {
+            this.goToPage(this.#currentPage - 1);
+        }
+    }
+
+    /**
+     * Go to next page
+     */
+    static nextPage() {
+        if (this.#currentPage < this.#totalPages - 1) {
+            this.goToPage(this.#currentPage + 1);
+        }
+    }
+
+    /**
+     * Go to first page
+     */
+    static firstPage() {
+        this.goToPage(0);
+    }
+
+    /**
+     * Go to last page
+     */
+    static lastPage() {
+        this.goToPage(this.#totalPages - 1);
+    }
+
+    /**
+     * Update pagination UI
+     * @private
+     */
+    static #updatePaginationUI() {
+        // Update page info
+        DOMHelpers.setText('current-page', this.#currentPage + 1);
+        DOMHelpers.setText('total-pages', this.#totalPages);
+        DOMHelpers.setText('footer-showing', AppState.filteredOrders.length);
+        DOMHelpers.setText('footer-total', this.#totalElements);
+        DOMHelpers.setText('footer-selected', AppState.selectedOrdersCount);
+
+        // Update buttons state
+        const btnFirst = document.getElementById('btn-first-page');
+        const btnPrev = document.getElementById('btn-prev-page');
+        const btnNext = document.getElementById('btn-next-page');
+        const btnLast = document.getElementById('btn-last-page');
+
+        const isFirstPage = this.#currentPage === 0;
+        const isLastPage = this.#currentPage >= this.#totalPages - 1;
+
+        if (btnFirst) btnFirst.disabled = isFirstPage;
+        if (btnPrev) btnPrev.disabled = isFirstPage;
+        if (btnNext) btnNext.disabled = isLastPage;
+        if (btnLast) btnLast.disabled = isLastPage;
+
+        // Render page numbers
+        this.#renderPageNumbers();
+    }
+
+    /**
+     * Render page number buttons
+     * @private
+     */
+    static #renderPageNumbers() {
+        const container = document.getElementById('page-numbers');
+        if (!container) return;
+
+        container.innerHTML = '';
+
+        // Calculate page range to show (max 5 pages)
+        const maxButtons = 5;
+        let startPage = Math.max(0, this.#currentPage - Math.floor(maxButtons / 2));
+        let endPage = Math.min(this.#totalPages - 1, startPage + maxButtons - 1);
+
+        // Adjust if we're near the end
+        if (endPage - startPage < maxButtons - 1) {
+            startPage = Math.max(0, endPage - maxButtons + 1);
+        }
+
+        // Add "..." before if needed
+        if (startPage > 0) {
+            const btn = this.#createPageButton(1);
+            container.appendChild(btn);
+
+            if (startPage > 1) {
+                const dots = document.createElement('span');
+                dots.className = 'page-dots';
+                dots.textContent = '...';
+                container.appendChild(dots);
+            }
+        }
+
+        // Add page buttons
+        for (let i = startPage; i <= endPage; i++) {
+            const btn = this.#createPageButton(i + 1);
+            container.appendChild(btn);
+        }
+
+        // Add "..." after if needed
+        if (endPage < this.#totalPages - 1) {
+            if (endPage < this.#totalPages - 2) {
+                const dots = document.createElement('span');
+                dots.className = 'page-dots';
+                dots.textContent = '...';
+                container.appendChild(dots);
+            }
+
+            const btn = this.#createPageButton(this.#totalPages);
+            container.appendChild(btn);
+        }
+    }
+
+    /**
+     * Create page button
+     * @private
+     */
+    static #createPageButton(pageNumber) {
+        const btn = document.createElement('button');
+        btn.className = 'btn-page';
+        btn.textContent = pageNumber;
+
+        const pageIndex = pageNumber - 1;
+
+        if (pageIndex === this.#currentPage) {
+            btn.classList.add('active');
+        }
+
+        btn.onclick = () => this.goToPage(pageIndex);
+
+        return btn;
     }
 
     /**
@@ -64,7 +295,7 @@ export class OrdersTable {
             this.#tbody.appendChild(row);
         });
 
-        this.#updateFooter(ordersToRender.length);
+        this.#updateFooter();
     }
 
     /**
@@ -75,7 +306,6 @@ export class OrdersTable {
         const row = DOMHelpers.createElement('tr');
         row.id = `order-row-${order.id}`;
 
-        // Row click handler
         row.onclick = () => {
             if (this.#onRowClick) {
                 this.#onRowClick(order.id);
@@ -96,32 +326,31 @@ export class OrdersTable {
 
         const priorityDisplay = order.priority !== null ? order.priority : '—';
 
-
         row.innerHTML = `
-      <td>
-        <input 
-          type="checkbox" 
-          onclick="event.stopPropagation(); OrdersTable.toggleSelection(${order.id}, this.checked)" 
-          ${isChecked ? 'checked' : ''} 
-        />
-      </td>
-      <td>${this.#escapeHtml(order.order_code)}</td>
-      <td>${this.#escapeHtml(order.customer_name)}</td>
-      <td>${this.#escapeHtml(order.address)}</td>
-      <td>${priorityDisplay}</td>
-      <td>${timeWindow}</td>
-      <td>${order.demand} kg</td>
-      <td>${this.#escapeHtml(order.service_time)} minutes</td>
-      <td class="notes-col">${notes}</td>
-      <td>${statusIcon} ${order.status}</td>
-      <td>
-      <button class="btn-icon-sm" 
-              onclick="event.stopPropagation(); EditOrderModal.open(${order.id})" 
-              title="Edit order">
-        ✏️
-      </button>
-    </td>
-    `;
+            <td>
+                <input 
+                    type="checkbox" 
+                    onclick="event.stopPropagation(); OrdersTable.toggleSelection(${order.id}, this.checked)" 
+                    ${isChecked ? 'checked' : ''} 
+                />
+            </td>
+            <td>${this.#escapeHtml(order.order_code)}</td>
+            <td>${this.#escapeHtml(order.customer_name)}</td>
+            <td>${this.#escapeHtml(order.address)}</td>
+            <td>${priorityDisplay}</td>
+            <td>${timeWindow}</td>
+            <td>${order.demand} kg</td>
+            <td>${this.#escapeHtml(order.service_time)} minutes</td>
+            <td class="notes-col">${notes}</td>
+            <td>${statusIcon} ${order.status}</td>
+            <td>
+                <button class="btn-icon-sm" 
+                        onclick="event.stopPropagation(); EditOrderModal.open(${order.id})" 
+                        title="Edit order">
+                    ✏️
+                </button>
+            </td>
+        `;
 
         return row;
     }
@@ -132,18 +361,18 @@ export class OrdersTable {
      */
     static #renderEmptyState() {
         this.#tbody.innerHTML = `
-      <tr class="empty-state">
-        <td colspan="10">
-          <div class="empty-content">
-            <div class="empty-icon">📦</div>
-            <div class="empty-text">There are no orders on the selected date</div>
-            <button class="btn btn-primary" onclick="openImportModal()">
-              📥 Import Orders
-            </button>
-          </div>
-        </td>
-      </tr>
-    `;
+            <tr class="empty-state">
+                <td colspan="11">
+                    <div class="empty-content">
+                        <div class="empty-icon">📦</div>
+                        <div class="empty-text">No orders found on the selected date</div>
+                        <button class="btn btn-primary" onclick="openImportModal()">
+                            📥 Import Orders
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
     }
 
     /**
@@ -174,9 +403,9 @@ export class OrdersTable {
      * Update footer info
      * @private
      */
-    static #updateFooter(showing) {
-        DOMHelpers.setText('footer-showing', showing);
-        DOMHelpers.setText('footer-total', AppState.allOrders.length);
+    static #updateFooter() {
+        DOMHelpers.setText('footer-showing', AppState.filteredOrders.length);
+        DOMHelpers.setText('footer-total', this.#totalElements);
         DOMHelpers.setText('footer-selected', AppState.selectedOrdersCount);
     }
 
@@ -185,12 +414,10 @@ export class OrdersTable {
      * @param {number} orderId
      */
     static highlightRow(orderId) {
-        // Remove previous highlights
         document.querySelectorAll('.data-table tbody tr').forEach(row => {
             row.classList.remove('selected');
         });
 
-        // Add highlight to target row
         const row = document.getElementById(`order-row-${orderId}`);
         if (row) {
             row.classList.add('selected');
@@ -247,15 +474,16 @@ export class OrdersTable {
             selectedCount.textContent = AppState.selectedOrdersCount;
         }
 
-        // Update footer
         DOMHelpers.setText('footer-selected', AppState.selectedOrdersCount);
     }
 
     /**
-     * Select all visible orders
+     * Select all visible orders (current page only)
      */
-    static selectAll() {
-        AppState.selectAllOrders();
+    static selectAllVisible() {
+        AppState.filteredOrders.forEach(order => {
+            AppState.selectOrder(order.id);
+        });
         this.render();
     }
 
@@ -274,7 +502,7 @@ export class OrdersTable {
         const selectAllCheckbox = document.getElementById('select-all');
 
         if (selectAllCheckbox?.checked) {
-            this.selectAll();
+            this.selectAllVisible();
         } else {
             this.deselectAll();
         }
@@ -290,19 +518,15 @@ export class OrdersTable {
     }
 
     /**
-     * Get selected order IDs
-     * @returns {Array<number>}
+     * Get pagination info
      */
-    static getSelectedOrderIds() {
-        return Array.from(AppState.selectedOrders);
-    }
-
-    /**
-     * Get all visible order IDs
-     * @returns {Array<number>}
-     */
-    static getVisibleOrderIds() {
-        return AppState.filteredOrders.map(o => o.id);
+    static getPaginationInfo() {
+        return {
+            currentPage: this.#currentPage,
+            pageSize: this.#pageSize,
+            totalPages: this.#totalPages,
+            totalElements: this.#totalElements
+        };
     }
 }
 
@@ -322,4 +546,20 @@ window.toggleSelectAll = () => {
 
 window.highlightTableRow = (orderId) => {
     OrdersTable.highlightRow(orderId);
+};
+
+window.previousPage = () => {
+    OrdersTable.previousPage();
+};
+
+window.nextPage = () => {
+    OrdersTable.nextPage();
+};
+
+window.firstPage = () => {
+    OrdersTable.firstPage();
+};
+
+window.lastPage = () => {
+    OrdersTable.lastPage();
 };

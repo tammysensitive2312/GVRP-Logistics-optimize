@@ -9,6 +9,9 @@ import { ResizableDivider } from './components/UI Components/resizable-divider.j
 import { OrdersTable } from './components/UI Components/orders-table.js';
 import { OrdersFilters } from './components/UI Components/orders-filters.js';
 
+import { BackgroundJobModal } from "./components/Form Components/background-job-modal.js";
+import { JobMonitoringModal } from "./components/Form Components/job-monitoring-modal.js";
+import { RoutePlanningModal } from "./components/Form Components/route-planning-modal.js";
 import { DepotForm } from './components/Form Components/depot-form.js';
 import { VehicleCard } from './components/Form Components/vehicle-card.js';
 import { VehicleTypeForm } from './components/Form Components/vehicle-type-form.js';
@@ -46,14 +49,21 @@ Router.onScreenActivated(Router.SCREENS.FLEET_SETUP, async () => {
 
 // Main screen
 Router.onScreenActivated(Router.SCREENS.MAIN, async () => {
-    setTimeout(() => {
+    setTimeout(async () => {
         MainMap.init();
-        loadMainScreenData();
+        await loadMainScreenData();
     }, 100);
 });
 
 AppState.subscribe('vehicleCount', (newCount) => {
     updateFleetSummary();
+});
+
+AppState.subscribe('selectedOrders', () => {
+    updatePlanRoutesButton();
+});
+AppState.subscribe('selectedVehicles', () => {
+    updatePlanRoutesButton();
 });
 
 document.addEventListener('DOMContentLoaded', async function() {
@@ -70,11 +80,84 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Initialize app with screen restoration
     await initializeApp();
 
+    await checkForRunningJobs();
+
     // Initialize event listeners
     initEventListeners();
 
     console.log('VRP System ready!');
 });
+
+/**
+ * Check for running jobs on startup
+ */
+async function checkForRunningJobs() {
+    try {
+        const runningJob = await getCurrentRunningJob();
+        if (runningJob) {
+            console.log('Found running job:', runningJob);
+            Toast.info(`You have a running job #${runningJob.id}`);
+            // Optionally auto-open monitoring modal
+            // JobMonitoringModal.open(runningJob, { enablePolling: true });
+        }
+    } catch (error) {
+        console.error('Failed to check running jobs:', error);
+    }
+}
+
+/**
+ * Open Route Planning Modal
+ */
+function openRoutePlanningModal() {
+    const selectedOrders = AppState.selectedOrdersCount;
+    const selectedVehicles = AppState.selectedVehicles.size;
+    if (selectedOrders === 0) {
+        Toast.error('Please select at least 1 order');
+        return;
+    }
+    if (selectedVehicles === 0) {
+        Toast.error('Please select at least 1 vehicle');
+        return;
+    }
+
+    RoutePlanningModal.open();
+}
+
+/**
+ * View job history
+ */
+async function viewJobHistory() {
+    Loading.show('Loading job history...');
+    try {
+        const jobs = await getJobHistory(20);
+        if (jobs.length === 0) {
+            Toast.info('No job history found');
+            return;
+        }
+// TODO: Open job history modal/screen
+        console.log('Job history:', jobs);
+        Toast.info('Job history view - Coming soon!');
+    } catch (error) {
+        console.error('Failed to load job history:', error);
+        Toast.error('Failed to load job history');
+    } finally {
+        Loading.hide();
+    }
+}
+
+function updatePlanRoutesButton() {
+    const planButton = document.getElementById('btn-plan-routes');
+    const selectedCount = document.getElementById('selected-count');
+    if (planButton) {
+        const hasOrders = AppState.selectedOrdersCount > 0;
+        const hasVehicles = AppState.selectedVehicles.size > 0;
+
+        planButton.disabled = !(hasOrders && hasVehicles);
+    }
+    if (selectedCount) {
+        selectedCount.textContent = AppState.selectedOrdersCount;
+    }
+}
 
 /**
  * Display user info in navbar
@@ -203,6 +286,9 @@ function initEventListeners() {
     FleetForm.init();
     ImportModal.init();
     EditOrderModal.init();
+    RoutePlanningModal.init();
+    JobMonitoringModal.init();
+    BackgroundJobModal.init();
 
     Sidebar.init();
     Navbar.init();
@@ -232,7 +318,7 @@ async function loadMainScreenData() {
 
         const today = new Date().toISOString().split('T')[0];
         AppState.setFilterDate(today);
-        await loadOrders();
+        await OrdersTable.loadOrders();
 
     } catch (error) {
         console.error('Failed to load main screen data:', error);
@@ -245,27 +331,7 @@ async function loadMainScreenData() {
  * Load orders from API
  */
 async function loadOrders() {
-    const date = AppState.filters.date;
-    Loading.show();
-
-    try {
-        const apiResponse = await getOrders(date);
-        const orders = apiResponse.content || [];
-        AppState.setOrders(orders);
-
-        MainMap.loadOrders(AppState.filteredOrders);
-
-        OrdersTable.render();
-
-        Sidebar.updateStatsCards();
-
-    } catch (error) {
-        console.error('Failed to load orders:', error);
-        AppState.setOrders([]);
-        OrdersTable.render();
-    } finally {
-        Loading.hide();
-    }
+    await OrdersTable.loadOrders();
 }
 
 /**
@@ -309,19 +375,12 @@ function exportOrders() {
     Toast.success('Export feature - Coming soon!');
 }
 
-function previousPage() {
-    Toast.success('Pagination - Coming soon!');
-}
-
-function nextPage() {
-    Toast.success('Pagination - Coming soon!');
-}
-
 window.exportOrders = exportOrders;
-window.previousPage = previousPage;
-window.nextPage = nextPage;
 window.loadOrders = loadOrders;
 window.openAddOrderModal = openAddOrderModal;
 window.refreshAllData = refreshAllData;
+window.openRoutePlanningModal = openRoutePlanningModal;
+window.viewJobHistory = viewJobHistory;
+window.updatePlanRoutesButton = updatePlanRoutesButton;
 
 console.log('App.js loaded successfully!');

@@ -67,11 +67,6 @@ public class OptimizationCallbackService {
             job.setStatus(OptimizationJobStatus.COMPLETED);
             job.setCompletedAt(LocalDateTime.now());
 
-            // 🔧 CHANGE: Add null check for externalJobId
-            if (callback.getExternalJobId() != null) {
-                job.setExternalJobId(callback.getExternalJobId());
-            }
-
             job.setSolution(solution);
             jobRepository.save(job);
 
@@ -124,11 +119,6 @@ public class OptimizationCallbackService {
             // 3. Update job
             job.setStatus(OptimizationJobStatus.FAILED);
             job.setCompletedAt(LocalDateTime.now());
-
-            // 🔧 CHANGE: Add null check
-            if (callback.getExternalJobId() != null) {
-                job.setExternalJobId(callback.getExternalJobId());
-            }
 
             job.setErrorMessage(callback.getErrorMessage());
             jobRepository.save(job);

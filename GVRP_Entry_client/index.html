@@ -15,6 +15,7 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="scripts/auth.js"></script>
   <script src="scripts/api/api.js"></script>
+  <script src="scripts/api/solution-api.js"></script>
   <script src="scripts/api/query-keys.js"></script>
 
   <script type="module" src="scripts/components/UI%20Components/sidebar.js"></script>
@@ -29,6 +30,9 @@
   <script type="module" src="scripts/components/Form%20Components/vehicle-card.js"></script>
   <script type="module" src="scripts/components/Form%20Components/import-modal.js"></script>
   <script type="module" src="scripts/components/Form%20Components/edit-order-modal.js"></script>
+  <script type="module" src="scripts/components/Form%20Components/route-planning-modal.js"></script>
+  <script type="module" src="scripts/components/Form%20Components/job-monitoring-modal.js"></script>
+  <script type="module" src="scripts/components/Form%20Components/background-job-modal.js"></script>
 
   <script type="module" src="scripts/components/Map%20Components/depot-map.js"></script>
   <script type="module" src="scripts/components/Map%20Components/main-map.js"></script>
@@ -271,10 +275,6 @@
           <span class="summary-label">📊 Tổng số xe:</span>
           <span class="summary-value" id="total-vehicles">0</span>
         </div>
-        <div class="summary-item">
-          <span class="summary-label">📦 Tổng tải trọng:</span>
-          <span class="summary-value" id="total-capacity">0 kg</span>
-        </div>
       </div>
 
       <!-- Form Actions -->
@@ -306,7 +306,6 @@
 
     <div class="navbar-center">
       <button class="nav-menu-item active">Dashboard</button>
-      <button class="nav-menu-item" onclick="alert('Planning screen - VRP-002')">Planning</button>
       <button class="nav-menu-item" onclick="alert('Analysis screen - VRP-006')">Analysis</button>
       <button class="nav-menu-item" onclick="alert('History screen - VRP-005')">History</button>
     </div>
@@ -413,11 +412,13 @@
 
       <!-- Orders Table -->
       <div class="table-container" id="table-section">
+
         <div class="tab-switcher">
           <button class="tab-btn active" data-tab="orders-tab" onclick="switchContentTab('orders-tab')">Orders</button>
           <button class="tab-btn" data-tab="route-tab" onclick="switchContentTab('route-tab')">Route</button>
           <button class="tab-btn" data-tab="timeline-tab" onclick="switchContentTab('timeline-tab')">Timeline</button>
         </div>
+
         <div class="tab-content-item active" id="orders-tab">
 
           <div class="table-header">
@@ -428,7 +429,7 @@
               <button class="btn btn-secondary" onclick="openImportModal()">
                 <span>📥</span> Import Orders
               </button>
-              <button class="btn btn-success" id="btn-plan-routes" disabled>
+              <button class="btn btn-success" id="btn-plan-routes"  onclick="openRoutePlanningModal()" disabled>
                 <span>📊</span> Plan Routes
                 <span class="badge" id="selected-count">0</span>
               </button>
@@ -491,17 +492,73 @@
           </div>
 
           <div class="table-footer">
+            <!-- Left side: Info -->
             <div class="footer-info">
               <span>✅ Selected: <strong id="footer-selected">0</strong> orders</span>
               <span class="separator">|</span>
               <span>Showing <strong id="footer-showing">0</strong> of <strong id="footer-total">0</strong> orders</span>
             </div>
+
+            <!-- Center: Page size selector -->
+            <div class="footer-controls">
+              <label for="page-size-selector" class="page-size-label">
+                Show:
+                <select id="page-size-selector" class="page-size-select">
+                  <option value="10" selected>10</option>
+                  <option value="20">20</option>
+                  <option value="50">50</option>
+                  <option value="100">100</option>
+                </select>
+                per page
+              </label>
+            </div>
+
+            <!-- Right side: Pagination -->
             <div class="pagination">
-              <button class="btn-page" onclick="previousPage()" disabled>« Previous</button>
-              <button class="btn-page active">1</button>
-              <button class="btn-page" onclick="nextPage()" disabled>Next »</button>
+              <!-- First & Previous buttons -->
+              <button
+                      id="btn-first-page"
+                      class="btn-page"
+                      onclick="firstPage()"
+                      title="First page">
+                «
+              </button>
+              <button
+                      id="btn-prev-page"
+                      class="btn-page"
+                      onclick="previousPage()"
+                      title="Previous page">
+                ‹
+              </button>
+
+              <!-- Page numbers container -->
+              <div id="page-numbers" class="page-numbers">
+                <!-- Page buttons will be inserted here by JavaScript -->
+              </div>
+
+              <!-- Next & Last buttons -->
+              <button
+                      id="btn-next-page"
+                      class="btn-page"
+                      onclick="nextPage()"
+                      title="Next page">
+                ›
+              </button>
+              <button
+                      id="btn-last-page"
+                      class="btn-page"
+                      onclick="lastPage()"
+                      title="Last page">
+                »
+              </button>
+
+              <!-- Page info -->
+              <span class="page-info">
+                Page <strong id="current-page">1</strong> of <strong id="total-pages">1</strong>
+              </span>
             </div>
           </div>
+
         </div>
 
         <div class="tab-content-item" id="route-tab">
@@ -517,9 +574,347 @@
             <p>Nội dung hiển thị biểu đồ Gantt, trực quan hóa lịch trình xe chạy và thời gian phục vụ.</p>
           </div>
         </div>
+
       </div>
+
     </main>
   </div>
+</div>
+
+
+<!-- ============================================ -->
+<!-- ROUTE PLANNING MODAL -->
+<!-- ============================================ -->
+<div id="modal-route-planning" class="modal">
+  <div class="modal-content modal-large">
+    <div class="modal-header">
+      <h2>🚀 Route Planning & Optimization</h2>
+      <button class="btn-close" onclick="RoutePlanningModal.close()">✕</button>
+    </div>
+
+    <form id="route-planning-form" class="modal-body">
+      <!-- Selection Summary -->
+      <div class="form-section">
+        <h3 class="form-section-title">📊 Selection Summary</h3>
+
+        <div class="summary-grid">
+          <div class="summary-card">
+            <div class="summary-icon">📦</div>
+            <div class="summary-content">
+              <div class="summary-label">Orders Selected</div>
+              <div class="summary-value" id="selected-orders-count">0</div>
+            </div>
+          </div>
+
+          <div class="summary-card">
+            <div class="summary-icon">🚚</div>
+            <div class="summary-content">
+              <div class="summary-label">Vehicles Selected</div>
+              <div class="summary-value" id="selected-vehicles-count">0</div>
+            </div>
+          </div>
+
+          <div class="summary-card">
+            <div class="summary-icon">📦</div>
+            <div class="summary-content">
+              <div class="summary-label">Total Demand</div>
+              <div class="summary-value"><span id="total-demand">0</span> kg</div>
+            </div>
+          </div>
+
+<!--          <div class="summary-card">-->
+<!--            <div class="summary-icon">🏋️</div>-->
+<!--            <div class="summary-content">-->
+<!--              <div class="summary-label">Total Capacity</div>-->
+<!--              <div class="summary-value"><span id="total-capacity">0</span> kg</div>-->
+<!--            </div>-->
+<!--          </div>-->
+        </div>
+
+<!--        <div class="capacity-bar">-->
+<!--          <div class="capacity-bar-label">-->
+<!--            <span>Capacity Utilization</span>-->
+<!--            <span><strong id="capacity-utilization">0</strong>%</span>-->
+<!--          </div>-->
+<!--          <div class="capacity-bar-track">-->
+<!--            <div class="capacity-bar-fill" id="capacity-bar-fill"></div>-->
+<!--          </div>-->
+<!--        </div>-->
+
+<!--        <div id="capacity-warning" class="alert alert-warning" style="display: none;">-->
+<!--          ⚠️ Total demand exceeds capacity!-->
+<!--        </div>-->
+      </div>
+
+      <!-- Optimization Preferences -->
+      <div class="form-section">
+        <h3 class="form-section-title">⚙️ Optimization Preferences</h3>
+
+        <!-- Optimization Goal -->
+        <div class="form-group">
+          <label for="optimization-goal">
+            Optimization Goal <span class="required">*</span>
+            <span class="tooltip-icon" title="Choose what to optimize">ℹ️</span>
+          </label>
+          <select id="optimization-goal" required>
+            <option value="MINIMIZE_COST">💰 Minimize Cost (Default)</option>
+            <option value="MINIMIZE_DISTANCE">🛣️ Minimize Distance</option>
+            <option value="MINIMIZE_CO2">🌱 Minimize CO2 Emissions (Green)</option>
+            <option value="BALANCED">⚖️ Balanced (Cost + Distance + CO2)</option>
+          </select>
+          <div class="form-hint" id="goal-description">
+            <!-- Will be populated by JS -->
+          </div>
+        </div>
+
+        <!-- Optimization Speed -->
+        <div class="form-group">
+          <label for="optimization-speed">
+            Optimization Speed <span class="required">*</span>
+            <span class="tooltip-icon" title="Trade-off between speed and quality">ℹ️</span>
+          </label>
+          <select id="optimization-speed" required>
+            <option value="FAST">⚡ Fast (2-3 minutes, acceptable quality)</option>
+            <option value="NORMAL" selected>🎯 Normal (5-8 minutes, good quality) - Recommended</option>
+            <option value="HIGH_QUALITY">💎 High Quality (10-15 minutes, best quality)</option>
+          </select>
+          <div class="form-hint">
+            Longer optimization time generally produces better routes
+          </div>
+        </div>
+
+        <!-- Time Window Mode -->
+        <div class="form-group">
+          <label for="time-window-mode">
+            Time Window Mode
+            <span class="tooltip-icon" title="How strictly to enforce time windows">ℹ️</span>
+          </label>
+          <select id="time-window-mode">
+            <option value="STRICT" selected>🔒 Strict (Must follow time windows exactly)</option>
+            <option value="FLEXIBLE">🔓 Flexible (Allow violations with penalty)</option>
+          </select>
+        </div>
+
+        <!-- Advanced Options -->
+        <div class="form-group">
+          <label>Advanced Options</label>
+
+          <div class="checkbox-group">
+            <label class="checkbox-label">
+              <div class="checkbox-row">
+                <input type="checkbox" id="allow-unassigned" />
+                <span>Allow Unassigned Orders</span>
+              </div>
+              <span class="form-hint">Allow some orders to be unassigned if they cannot be served efficiently</span>
+            </label>
+
+            <label class="checkbox-label">
+              <div class="checkbox-row">
+                <input type="checkbox" id="enable-pareto" />
+                <span>Enable Pareto Analysis</span>
+              </div>
+              <span class="form-hint">Generate multiple solutions for trade-off analysis (for research)</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Estimated Time -->
+      <div class="info-box">
+        <div class="info-icon">⏱️</div>
+        <div class="info-content">
+          <strong>Estimated Processing Time:</strong>
+          <span id="estimated-time">5-8 minutes</span>
+          <p>You can monitor progress in real-time and cancel anytime.</p>
+        </div>
+      </div>
+    </form>
+
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" onclick="RoutePlanningModal.close()">
+        Cancel
+      </button>
+      <button type="submit" form="route-planning-form" class="btn btn-primary">
+        🚀 Start Optimization
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================ -->
+<!-- JOB MONITORING MODAL -->
+<!-- ============================================ -->
+<div id="modal-job-monitoring" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>🔄 Optimization Job <span id="job-id">#1</span></h2>
+      <button class="btn-close" onclick="closeJobMonitoringModal()">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <!-- Job Status -->
+      <div class="job-status-section">
+        <div class="status-row">
+          <span class="status-label">Status:</span>
+          <span class="status-badge" id="job-status-badge">RUNNING</span>
+          <span id="job-status">🔄 Running</span>
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="progress-container">
+          <div class="progress-label">
+            <span>Progress</span>
+            <span id="job-progress-text">0%</span>
+          </div>
+          <div class="progress-bar-track">
+            <div class="progress-bar-fill" id="job-progress-bar" style="width: 0%"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Result Section (shown when completed) -->
+      <div id="job-result-section" style="display: none;">
+        <h3>📊 Optimization Result</h3>
+
+        <div class="result-grid">
+          <div class="result-card">
+            <div class="result-label">💰 Total Cost</div>
+            <div class="result-value" id="result-total-cost">—</div>
+          </div>
+
+          <div class="result-card">
+            <div class="result-label">🛣️ Total Distance</div>
+            <div class="result-value"><span id="result-total-distance">—</span> km</div>
+          </div>
+
+          <div class="result-card">
+            <div class="result-label">⏱️ Total Time</div>
+            <div class="result-value"><span id="result-total-time">—</span> hours</div>
+          </div>
+
+          <div class="result-card">
+            <div class="result-label">🌱 Total CO2</div>
+            <div class="result-value" id="result-total-co2">—</div>
+          </div>
+
+          <div class="result-card">
+            <div class="result-label">✅ Assigned Orders</div>
+            <div class="result-value" id="result-assigned-orders">—</div>
+          </div>
+
+          <div class="result-card">
+            <div class="result-label">❌ Unassigned</div>
+            <div class="result-value" id="result-unassigned-orders">—</div>
+          </div>
+        </div>
+
+        <div id="unassigned-warning" class="alert alert-warning" style="display: none;">
+          ⚠️ Some orders could not be assigned. Review the solution for details.
+        </div>
+      </div>
+
+      <!-- Error Section (shown when failed) -->
+      <div id="job-error-section" class="alert alert-danger" style="display: none;">
+        <strong>❌ Error:</strong>
+        <p id="job-error-message"></p>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button
+              type="button"
+              class="btn btn-danger"
+              id="btn-cancel-job"
+              onclick="cancelCurrentJob()">
+        🚫 Cancel Job
+      </button>
+      <button
+              type="button"
+              class="btn btn-secondary"
+              onclick="closeJobMonitoringModal()">
+        Close
+      </button>
+      <button
+              type="button"
+              class="btn btn-primary"
+              id="btn-view-result">
+        View Result
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================ -->
+<!-- BACKGROUND JOB CONFIRMATION MODAL -->
+<!-- For NORMAL & HIGH_QUALITY modes -->
+<!-- ============================================ -->
+<div id="modal-background-job" class="modal">
+  <div class="modal-content modal-medium">
+    <div class="modal-header">
+      <h2>📧 Job Running in Background</h2>
+      <button class="btn-close" onclick="closeBackgroundJobModal()">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <div class="success-icon-large">✅</div>
+
+      <div class="text-center" style="margin: 2rem 0;">
+        <h3>Optimization Job <span id="bg-job-id">#123</span> Created Successfully!</h3>
+        <p style="color: #666; margin-top: 0.5rem;">
+          Your optimization job is now running in the background.
+        </p>
+      </div>
+
+      <div class="info-box info-box-blue">
+        <div class="info-icon">📧</div>
+        <div class="info-content">
+          <strong>Email Notification</strong>
+          <p>You will receive an email at <strong id="bg-job-email">your@email.com</strong> when the optimization is complete.</p>
+          <p>The email will contain:</p>
+          <ul style="margin: 0.5rem 0; padding-left: 1.5rem;">
+            <li>Optimization results summary</li>
+            <li>Direct link to view detailed solution</li>
+            <li>Download links for route data</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="text-center">
+        <p style="color: #666; font-size: 0.95rem;">
+          ⏱️ Estimated completion time: <strong>5-15 minutes</strong>
+        </p>
+        <p style="color: #666; font-size: 0.9rem; margin-top: 0.5rem;">
+          You can safely close this tab and continue working.
+          Check <strong>Job History</strong> to monitor all your jobs.
+        </p>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button
+              type="button"
+              class="btn btn-secondary"
+              onclick="closeBackgroundJobModal()">
+        Close
+      </button>
+      <button
+              type="button"
+              class="btn btn-primary"
+              onclick="viewJobHistoryFromBg()">
+        📜 View Job History
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Update Route Planning Modal to show warning mode info -->
+<!-- Add this inside the route-planning-form, after estimated time -->
+<div id="waiting-mode-info" style="display: none;">
+  <!-- Will be populated by JavaScript based on speed selection -->
 </div>
 
 <!-- ============================================ -->

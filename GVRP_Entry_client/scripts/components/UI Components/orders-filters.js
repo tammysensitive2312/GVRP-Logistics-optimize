@@ -139,8 +139,8 @@ export class OrdersFilters {
             AppState.setFilterDate(date);
 
             // Trigger orders reload
-            if (typeof window.loadOrders === 'function') {
-                window.loadOrders();
+            if (typeof OrdersTable !== 'undefined') {
+                OrdersTable.loadOrders(0); // Reset to first page
             }
         }
     }

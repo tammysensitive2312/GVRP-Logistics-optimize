@@ -268,35 +268,52 @@ async function importOrders(formData) {
 /**
  * Get orders by branch and date
  * @param {string} deliveryDate - Date in YYYY-MM-DD format
+ * @param page
+ * @param size
  * @returns {Promise<Array>} List of order DTOs
  */
-async function getOrders(deliveryDate) {
+async function getOrders(deliveryDate, page = 0, size = 10) {
     const branchId = BRANCH_ID;
 
-    // Define query key
-    const queryKey = QueryKeys.orders.byDate(branchId, deliveryDate);
-
-    // Use fetchQuery with cache
-    return await fetchQuery(
-        queryKey,
-        async () => {
-            const url = `${API_BASE_URL}/orders?order=desc`;
-            const response = await fetch(url, {
-                headers: getHeaders()
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to fetch orders');
-            }
-
-            return await response.json();
-        },
-        {
-            staleTime: 2 * 60 * 1000,  // Fresh for 2 minutes
-            cacheTime: 5 * 60 * 1000   // Cache for 5 minutes
-        }
+    const queryKey = QueryKeys.orders.byDate(
+        branchId,
+        deliveryDate,
+        page,
+        size
     );
+
+    try {
+        return await fetchQuery(
+            queryKey,
+            async () => {
+                const url = `${API_BASE_URL}/orders`
+                    + `?branchId=${branchId}`
+                    + `&deliveryDate=${deliveryDate}`
+                    + `&page=${page}`
+                    + `&size=${size}`
+                    + `&order=desc`;
+
+                const response = await fetch(url, {
+                    headers: getHeaders()
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch orders');
+                }
+
+                return response.json();
+            },
+            {
+                staleTime: 2 * 60 * 1000,
+                cacheTime: 5 * 60 * 1000
+            }
+        );
+    } catch (error) {
+        console.error('Get orders error:', error);
+        throw error;
+    }
 }
+
 
 /**
  * Get single order by ID
