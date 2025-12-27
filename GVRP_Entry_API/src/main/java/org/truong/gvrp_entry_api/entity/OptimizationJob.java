@@ -48,7 +48,7 @@ public class OptimizationJob {
     @Column(name = "error_message", columnDefinition = "TEXT")
     private String errorMessage;
 
-    @OneToOne(mappedBy = "job")
+    @OneToOne(mappedBy = "job", cascade = CascadeType.ALL)
     private Solution solution;
 
     @CreationTimestamp

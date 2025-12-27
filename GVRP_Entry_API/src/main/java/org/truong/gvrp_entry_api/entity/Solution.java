@@ -2,6 +2,7 @@ package org.truong.gvrp_entry_api.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.BatchSize;
 import org.truong.gvrp_entry_api.entity.enums.SolutionStatus;
 import org.truong.gvrp_entry_api.entity.enums.SolutionType;
 
@@ -72,6 +73,7 @@ public class Solution {
 
     @OneToMany(mappedBy = "solution", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
+    @BatchSize(size = 20)
     private List<Route> routes = new ArrayList<>();
 
     // Business methods

@@ -2,6 +2,7 @@ package org.truong.gvrp_entry_api.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.math.BigDecimal;
@@ -60,6 +61,7 @@ public class Route {
     @OneToMany(mappedBy = "route", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("sequenceNumber ASC")
     @Builder.Default
+    @BatchSize(size = 50)
     private List<RouteStop> segments = new ArrayList<>();
 
     // Business methods

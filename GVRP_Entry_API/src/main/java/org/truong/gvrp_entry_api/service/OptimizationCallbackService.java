@@ -13,9 +13,9 @@ import org.truong.gvrp_entry_api.entity.enums.OptimizationJobStatus;
 import org.truong.gvrp_entry_api.entity.enums.SolutionStatus;
 import org.truong.gvrp_entry_api.entity.enums.SolutionType;
 import org.truong.gvrp_entry_api.exception.ResourceNotFoundException;
+import org.truong.gvrp_entry_api.mapper.GeometryMapper;
 import org.truong.gvrp_entry_api.repository.*;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
@@ -34,6 +34,7 @@ public class OptimizationCallbackService {
     private final OrderRepository orderRepository;
     private final VehicleRepository vehicleRepository;
     private final EmailService emailService;
+    private final GeometryMapper geometryMapper;
 
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm:ss");
 
@@ -94,7 +95,7 @@ public class OptimizationCallbackService {
 
     /**
      * Handle optimization failure callback
-     *
+     * <p>
      * 🔧 CHANGES:
      * - Added error handling
      * - Made email sending optional
@@ -143,7 +144,7 @@ public class OptimizationCallbackService {
 
     /**
      * Handle progress update callback (optional)
-     *
+     * <p>
      * 🔧 CHANGES:
      * - Added error handling
      */
@@ -177,7 +178,7 @@ public class OptimizationCallbackService {
 
     /**
      * Save solution with routes and segments
-     *
+     * <p>
      * 🔧 CHANGES:
      * - Uncommented entire method
      * - Added null checks
@@ -189,34 +190,45 @@ public class OptimizationCallbackService {
 
         log.debug("💾 Saving solution for job #{}...", job.getId());
 
+        Long jobId = job.getId();
+
+        Solution solution = solutionRepository.findByJobId(jobId)
+                .orElseGet(() -> Solution.builder()
+                        .job(job)
+                        .branch(job.getBranch())
+                        .createdAt(LocalDateTime.now())
+                        .build());
+
         // 1. Create solution entity
-        Solution solution = Solution.builder()
-                .job(job)
-                .branch(job.getBranch())
-                .type(SolutionType.ENGINE_GENERATED)
-                .totalDistance(solutionData.getTotalDistance())
-                .totalCost(solutionData.getTotalCost())
-                .totalCO2(solutionData.getTotalCO2())
-                .totalTime(solutionData.getTotalTime())
-                .totalVehiclesUsed(solutionData.getTotalVehiclesUsed())
-                .servedOrders(solutionData.getServedOrders())
-                .unservedOrders(solutionData.getUnservedOrders())
-                .status(calculateSolutionStatus(callback))
-                .build();
+        solution.setType(SolutionType.ENGINE_GENERATED);
+        solution.setStatus(calculateSolutionStatus(callback));
+        solution.setTotalDistance(solutionData.getTotalDistance());
+        solution.setTotalCost(solutionData.getTotalCost());
+        solution.setTotalCO2(solutionData.getTotalCO2());
+        solution.setTotalTime(solutionData.getTotalTime());
+        solution.setTotalVehiclesUsed(solutionData.getTotalVehiclesUsed());
+        solution.setServedOrders(solutionData.getServedOrders());
+        solution.setUnservedOrders(solutionData.getUnservedOrders());
+        solution.setErrorMessage(null);
 
-        solution = solutionRepository.save(solution);
+        if (solution.getRoutes() == null) {
+            solution.setRoutes(new ArrayList<>());
+        } else {
+            solution.getRoutes().clear();
+        }
 
-        log.debug("✓ Created solution #{}", solution.getId());
+        solution = solutionRepository.saveAndFlush(solution);
 
         // 2. Save routes
         List<Route> routes = new ArrayList<>();
 
         // 🔧 CHANGE: Add null check
         if (solutionData.getRoutes() != null) {
+
             for (EngineCallbackRequest.RouteData routeData : solutionData.getRoutes()) {
                 try {
                     Route route = saveRoute(solution, routeData);
-                    routes.add(route);
+                    solution.getRoutes().add(route);
                 } catch (Exception e) {
                     log.error("❌ Failed to save route for vehicle {}: {}",
                             routeData.getVehicleId(), e.getMessage(), e);
@@ -225,7 +237,7 @@ public class OptimizationCallbackService {
             }
         }
 
-        solution.setRoutes(routes);
+        solution = solutionRepository.save(solution);
 
         log.debug("✓ Saved {} routes for solution #{}", routes.size(), solution.getId());
 
@@ -264,7 +276,7 @@ public class OptimizationCallbackService {
 
     /**
      * Save route with segments
-     *
+     * <p>
      * 🔧 CHANGES:
      * - Uncommented entire method
      * - Added null checks
@@ -294,21 +306,19 @@ public class OptimizationCallbackService {
                 .co2Emission(routeData.getCo2Emission())
                 .orderCount(routeData.getOrderCount())
                 .loadUtilization(routeData.getLoadUtilization())
+                .segments(new ArrayList<>())
                 .build();
 
         route = routeRepository.save(route);
 
         log.debug("✓ Created route #{}", route.getId());
 
-        // 3. Save segments
-        List<RouteStop> segments = new ArrayList<>();
-
         // 🔧 CHANGE: Add null check
         if (routeData.getStops() != null) {
             for (EngineCallbackRequest.StopData stopData : routeData.getStops()) {
                 try {
                     RouteStop stop = saveStop(route, stopData);
-                    segments.add(stop);
+                    route.getSegments().add(stop);
                 } catch (Exception e) {
                     log.error("❌ Failed to save segment #{}: {}",
                             stopData.getSequenceNumber(), e.getMessage(), e);
@@ -317,9 +327,7 @@ public class OptimizationCallbackService {
             }
         }
 
-        route.setSegments(segments);
-
-        log.debug("✓ Saved {} segments for route #{}", segments.size(), route.getId());
+        log.debug("✓ Saved {} segments for route #{}", route.getSegments().size(), route.getId());
 
         return route;
     }
@@ -349,14 +357,15 @@ public class OptimizationCallbackService {
                 .order(order)
                 .locationId(stopData.getLocationId())
                 .locationName(stopData.getLocationName())
-                .address(stopData.getAddress())
-                // .location(createPoint(stopData.getLongitude(), stopData.getLatitude()))
+                .location(geometryMapper.createPoint(stopData.getLongitude(), stopData.getLatitude()))
                 .arrivalTime(arrivalTime)
                 .departureTime(departureTime)
                 .serviceTime(stopData.getWaitTime())
                 .waitTime(stopData.getWaitTime())
                 .demand(stopData.getDemand())
                 .loadAfter(stopData.getLoadAfter())
+                .distanceToNext(stopData.getDistanceToNext())
+                .timeToNext(stopData.getTimeToNext())
                 .build();
 
         return routeStopRepository.save(stop);
@@ -374,14 +383,10 @@ public class OptimizationCallbackService {
         }
     }
 
-    private BigDecimal toBigDecimal(Double value) {
-        return value != null ? BigDecimal.valueOf(value) : null;
-    }
-
 
     /**
      * Parse time string (HH:mm:ss) to LocalTime
-     *
+     * <p>
      * 🔧 CHANGES:
      * - Added more flexible parsing (handles HH:mm format too)
      */

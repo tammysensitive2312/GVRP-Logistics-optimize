@@ -20,49 +20,6 @@ import java.util.List;
 public class OptimizationResultExtractor {
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm:ss");
 
-    /**
-     * Extract complete optimization result
-     *
-     * This is the main entry point that orchestrates:
-     * 1. Extract unassigned orders
-     * 2. Extract route details (with detailed logging)
-     * 3. Calculate summary metrics
-     * 4. Build final result object
-     *
-     * UNCHANGED from original - just calls extracted methods
-     */
-    public static OptimizationResult extractResult(
-            VehicleRoutingProblemSolution solution,
-            OptimizationContext context,
-            DistanceTimeMatrix matrix,
-            EngineOptimizationRequest request) {
-
-        OptimizationResult result = new OptimizationResult();
-        result.setJobId(request.getJobId());
-
-        // Step 1: Extract unassigned orders
-        List<UnassignedOrder> unassignedOrders = extractUnassignedOrders(solution, context);
-        result.setUnassignedOrders(unassignedOrders);
-
-        // Step 2: Extract routes (with all your detailed logging)
-        RouteExtractionResult routeResult = extractRouteDetails(solution, context, matrix);
-        result.setRoutes(routeResult.routes);
-
-        // Step 3: Set summary metrics
-        result.setTotalCost(solution.getCost());
-        result.setTotalDistance(routeResult.totalDistance);
-        result.setTotalTime(routeResult.totalTime);
-        result.setTotalCO2(routeResult.totalCO2);
-        result.setTotalVehiclesUsed(routeResult.routes.size());
-        result.setTotalOrdersServed(routeResult.totalOrdersServed);
-        result.setTotalOrdersUnassigned(unassignedOrders.size());
-
-        // Step 4: Log overall summary
-        logOverallSummary(result, context);
-
-        return result;
-    }
-
     // ==================== EXTRACT UNASSIGNED ORDERS ====================
 
     /**
@@ -335,6 +292,8 @@ public class OptimizationResultExtractor {
         stop.setArrivalTime(arrivalTime);
         stop.setDepartureTime(departureTime);
         stop.setLoadAfter(loadAfter);
+        stop.setLatitude(depot.getLatitude());
+        stop.setLongitude(depot.getLongitude());
         return stop;
     }
 
@@ -361,6 +320,8 @@ public class OptimizationResultExtractor {
         stop.setServiceTime(activity.getOperationTime() / 60.0); // minutes
         stop.setWaitTime(waitTime);
         stop.setLoadAfter(loadAfter);
+        stop.setLatitude(orderDTO.getLatitude());
+        stop.setLongitude(orderDTO.getLongitude());
 
         return stop;
     }

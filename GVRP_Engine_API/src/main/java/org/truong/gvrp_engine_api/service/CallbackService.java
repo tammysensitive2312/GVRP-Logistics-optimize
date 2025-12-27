@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import org.truong.gvrp_engine_api.distance_matrix.DistanceMatrix;
 import org.truong.gvrp_engine_api.model.OptimizationResult;
 import org.truong.gvrp_engine_api.model.Stop;
 
@@ -22,6 +23,7 @@ public class CallbackService {
 
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
+    private final SolutionConverter solutionConverter;
 
     @Value("${spring.optimization.entry.url}")
     private String entryApiBaseUrl;
@@ -40,7 +42,7 @@ public class CallbackService {
 
             Map<String, Object> payload = new HashMap<>();
             payload.put("job_id", jobId);
-            payload.put("solution", convertToSolutionData(result));
+            payload.put("solution", solutionConverter.convertToSolutionData(result));
 
             HttpEntity<Map<String, Object>> request = new HttpEntity<>(payload, headers);
 
@@ -105,71 +107,6 @@ public class CallbackService {
             log.error("❌ Failed to send failure callback for job #{}: {}",
                     jobId, e.getMessage(), e);
         }
-    }
-
-    private Map<String, Object> convertToSolutionData(OptimizationResult result) {
-        Map<String, Object> solutionData = new HashMap<>();
-
-        solutionData.put("total_distance", result.getTotalDistance());
-        solutionData.put("total_cost", result.getTotalCost());
-        solutionData.put("total_co2", result.getTotalCO2());
-        solutionData.put("total_time", result.getTotalTime());
-        solutionData.put("total_vehicles_used", result.getTotalVehiclesUsed());
-        solutionData.put("served_orders", result.getTotalOrdersServed());
-        solutionData.put("unserved_orders", result.getTotalOrdersUnassigned());
-        solutionData.put("routes", convertRoutes(result));
-
-        return solutionData;
-    }
-
-    private List<Map<String, Object>> convertRoutes(OptimizationResult result) {
-        List<Map<String, Object>> routes = new ArrayList<>();
-
-        int routeOrder = 0;
-        for (var routeDetail : result.getRoutes()) {
-            routeOrder++;
-
-            Map<String, Object> route = new HashMap<>();
-            route.put("vehicle_id", routeDetail.getVehicleId());
-            route.put("route_order", routeOrder);
-            route.put("distance", routeDetail.getTotalDistance());
-            route.put("duration", routeDetail.getTotalTime());
-            route.put("co2_emission", routeDetail.getTotalCO2());
-            route.put("order_count", routeDetail.getOrderCount());
-            route.put("load_utilization", routeDetail.getLoadUtilization());
-            route.put("stops", convertStops(routeDetail.getStops()));
-
-            routes.add(route);
-        }
-
-        return routes;
-    }
-
-    private List<Map<String, Object>> convertStops(List<Stop> stops) {
-        List<Map<String, Object>> result = new ArrayList<>();
-
-        for (var stop : stops) {
-            Map<String, Object> stopData = new HashMap<>();
-
-            stopData.put("sequence_number", stop.getSequenceNumber());
-            stopData.put("type", stop.getType());
-            stopData.put("order_id", stop.getOrderId());
-            stopData.put("order_code", stop.getOrderCode());
-//            stopData.put("customerName", stop.getCustomerName());
-//            stopData.put("address", stop.getAddress());
-            stopData.put("location_id", stop.getLocationId());
-            stopData.put("location_name", stop.getLocationName());
-            stopData.put("arrival_time", stop.getArrivalTime());
-            stopData.put("departure_time", stop.getDepartureTime());
-            stopData.put("service_time", stop.getServiceTime());
-            stopData.put("wait_time", stop.getWaitTime());
-            stopData.put("demand", stop.getDemand());
-            stopData.put("load_after", stop.getLoadAfter());
-
-            result.add(stopData);
-        }
-
-        return result;
     }
 
     private HttpHeaders createHeaders() {

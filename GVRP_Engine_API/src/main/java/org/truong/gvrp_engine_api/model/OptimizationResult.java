@@ -5,74 +5,104 @@ import lombok.*;
 
 import java.util.List;
 
-@Builder
 @Getter
-@Setter
-@AllArgsConstructor
-@NoArgsConstructor
+@Builder
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class OptimizationResult {
-    private Long jobId;
-    private String optimizationMode;
 
-    // Selected solution
-    private SolutionCandidate selected;
+    private final Long jobId;
+    private final OptimizationMode optimizationMode;
 
-    // Alternative solutions (Pareto frontier)
+    // ===== Execution context =====
+    private final DistanceTimeMatrix distanceTimeMatrix;
+
+    // ===== Selected solution =====
+    private final SolutionCandidate selected;
+
+    // ===== Pareto frontier (optional) =====
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    private List<SolutionCandidate> paretoFrontier;
+    private final List<SolutionCandidate> paretoFrontier;
 
-    // Summary
-    private Double totalCost;
-    private Double totalDistance;  // km
-    private Double totalTime;      // hours
-    private Double totalCO2;       // kg
-    private Integer totalVehiclesUsed;
-    private Integer totalOrdersServed;
-    private Integer totalOrdersUnassigned;
+    // ===== Details =====
+    private final List<RouteDetail> routes;
+    private final List<UnassignedOrder> unassignedOrders;
 
-    // Details
-    private List<RouteDetail> routes;
-    private List<UnassignedOrder> unassignedOrders;
+    // =========================================================
+    // =============== Derived summary metrics =================
+    // =========================================================
+
+    public Double getTotalCost() {
+        return selected.getMetrics().getTotalCostVnd();
+    }
+
+    public Double getTotalDistance() {
+        return selected.getMetrics().getTotalDistance();
+    }
+
+    public Double getTotalTime() {
+        return selected.getMetrics().getTotalTime();
+    }
+
+    public Double getTotalCO2() {
+        return selected.getMetrics().getTotalCo2Kg();
+    }
+
+    public Integer getTotalVehiclesUsed() {
+        return selected.getMetrics().getVehiclesUsed();
+    }
+
+    public Integer getTotalOrdersServed() {
+        return selected.getMetrics().getOrdersServed();
+    }
+
+    public Integer getTotalOrdersUnassigned() {
+        return selected.getMetrics().getOrdersUnserved();
+    }
+
+    // =========================================================
+    // ================= Factory methods =======================
+    // =========================================================
 
     /**
-     * Create result from single solution (backward compatible)
+     * Single-objective optimization result
      */
-    public static OptimizationResult fromSingleSolution(
+    public static OptimizationResult single(
             Long jobId,
             SolutionCandidate candidate,
+            DistanceTimeMatrix matrix,
             List<RouteDetail> routes,
-            List<UnassignedOrder> unassigned) {
-
+            List<UnassignedOrder> unassigned
+    ) {
         return OptimizationResult.builder()
                 .jobId(jobId)
-                .optimizationMode("SINGLE_WEIGHTED")
+                .optimizationMode(OptimizationMode.SINGLE_WEIGHTED)
                 .selected(candidate)
                 .paretoFrontier(null)
+                .distanceTimeMatrix(matrix)
                 .routes(routes)
                 .unassignedOrders(unassigned)
-                .totalCost(candidate.getMetrics().getTotalCostVnd())
-                .totalDistance(candidate.getMetrics().getTotalDistance())
-                .totalTime(candidate.getMetrics().getTotalTime())
-                .totalCO2(candidate.getMetrics().getTotalCo2Kg())
-                .totalVehiclesUsed(candidate.getMetrics().getVehiclesUsed())
-                .totalOrdersServed(candidate.getMetrics().getOrdersServed())
-                .totalOrdersUnassigned(candidate.getMetrics().getOrdersUnserved())
                 .build();
     }
 
     /**
-     * Create result with Pareto frontier
+     * Multi-objective (Pareto) optimization result
      */
-    public static OptimizationResult fromPareto(
+    public static OptimizationResult pareto(
             Long jobId,
             SolutionCandidate selected,
-            List<SolutionCandidate> pareto,
+            List<SolutionCandidate> paretoFrontier,
+            DistanceTimeMatrix matrix,
             List<RouteDetail> routes,
-            List<UnassignedOrder> unassigned) {
-
-        OptimizationResult result = fromSingleSolution(jobId, selected, routes, unassigned);
-        result.setOptimizationMode("MULTI_PARETO");
-        result.setParetoFrontier(pareto);
-        return result;
+            List<UnassignedOrder> unassigned
+    ) {
+        return OptimizationResult.builder()
+                .jobId(jobId)
+                .optimizationMode(OptimizationMode.MULTI_PARETO)
+                .selected(selected)
+                .paretoFrontier(paretoFrontier)
+                .distanceTimeMatrix(matrix)
+                .routes(routes)
+                .unassignedOrders(unassigned)
+                .build();
     }
 }

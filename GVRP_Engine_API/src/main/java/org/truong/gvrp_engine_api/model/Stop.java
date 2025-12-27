@@ -19,4 +19,8 @@ public class Stop {
     private Double serviceTime;  // minutes
     private Double waitTime;     // minutes
     private Double loadAfter;    // kg
+    private Double distanceToNext;
+    private Double timeToNext;
+    private Double latitude;
+    private Double longitude;
 }

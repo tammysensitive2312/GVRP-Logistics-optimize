@@ -38,10 +38,8 @@ import java.util.stream.Stream;
 public class OptimizationJobService {
 
     private final OptimizationJobRepository jobRepository;
-    private final SolutionRepository solutionRepository;
     private final OrderRepository orderRepository;
     private final VehicleRepository vehicleRepository;
-    private final DepotRepository depotRepository;
     private final BranchRepository branchRepository;
     private final UserRepository userRepository;
 

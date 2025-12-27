@@ -5,6 +5,8 @@ import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.Point;
 import org.locationtech.jts.geom.PrecisionModel;
 import org.mapstruct.Named;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.truong.gvrp_entry_api.dto.request.DepotInputDTO;
 
@@ -15,6 +17,7 @@ import org.truong.gvrp_entry_api.dto.request.DepotInputDTO;
 @Component
 public class GeometryMapper {
 
+    private static final Logger log = LoggerFactory.getLogger(GeometryMapper.class);
     private final GeometryFactory geometryFactory;
 
     public GeometryMapper() {
@@ -57,10 +60,11 @@ public class GeometryMapper {
      */
     public Point createPoint(Double latitude, Double longitude) {
         if (latitude == null || longitude == null) {
+            log.info("Đeo on roi");
             return null;
         }
 
-        validateCoordinates(latitude, longitude);
+//        validateCoordinates(latitude, longitude);
 
         Coordinate coordinate = new Coordinate(longitude, latitude);
         return geometryFactory.createPoint(coordinate);

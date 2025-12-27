@@ -193,9 +193,10 @@ public class OptimizationService {
                 metrics.getOrdersServed(),
                 metrics.getOrdersServed() + metrics.getOrdersUnserved());
 
-        return OptimizationResult.fromSingleSolution(
+        return OptimizationResult.single(
                 request.getJobId(),
                 selected,
+                matrix,
                 routeResult.routes(),
                 unassigned
         );
@@ -282,10 +283,11 @@ public class OptimizationService {
                 context
         );
 
-        return OptimizationResult.fromPareto(
+        return OptimizationResult.pareto(
                 request.getJobId(),
                 selected,
                 paretoFrontier,
+                matrix,
                 result.routes(),
                 unassigned
         );

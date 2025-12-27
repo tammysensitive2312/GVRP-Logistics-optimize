@@ -116,7 +116,6 @@ public class EngineCallbackRequest {
         // Location info
         private String locationId;  // depot_id or order_id
         private String locationName;
-        private String address;
         private Double longitude;
         private Double latitude;
 
@@ -129,6 +128,9 @@ public class EngineCallbackRequest {
         // Load
         private BigDecimal demand;
         private BigDecimal loadAfter;
+
+        private BigDecimal distanceToNext;
+        private BigDecimal timeToNext;
     }
 
     /**
