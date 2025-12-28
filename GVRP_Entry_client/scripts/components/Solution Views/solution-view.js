@@ -348,19 +348,34 @@ export class TimelineView {
     static display(solution) {
         console.log('📅 Displaying timeline view');
 
+        // Validate data
+        this.#validateTimeline(solution);
+
         const container = document.getElementById('timeline-tab');
         if (!container) return;
 
         container.innerHTML = this.#buildTimelineHTML(solution);
-
-        // Render Gantt chart
         this.#renderGanttChart(solution);
     }
 
-    /**
-     * Build timeline HTML
-     * @private
-     */
+    static #validateTimeline(solution) {
+        if (!solution || !solution.routes || solution.routes.length === 0) {
+            console.error('Invalid solution data');
+            return false;
+        }
+
+        solution.routes.forEach((route, idx) => {
+            if (!route.start_time || !route.end_time) {
+                console.error(`Route ${idx} missing start/end time`);
+            }
+            if (!route.stops || route.stops.length === 0) {
+                console.error(`Route ${idx} has no stops`);
+            }
+        });
+
+        return true;
+    }
+
     static #buildTimelineHTML(solution) {
         return `
             <div class="timeline-view-container">
@@ -397,10 +412,6 @@ export class TimelineView {
         `;
     }
 
-    /**
-     * Render Gantt chart
-     * @private
-     */
     static #renderGanttChart(solution) {
         const container = document.getElementById('gantt-chart');
         if (!container) return;
@@ -408,10 +419,8 @@ export class TimelineView {
         const routes = solution.routes;
         if (!routes || routes.length === 0) return;
 
-        // Find time bounds
         const { startTime, endTime } = this.#calculateTimeBounds(routes);
 
-        // Build chart
         const chartHTML = routes.map((route, idx) => {
             return this.#buildRouteTimeline(route, idx, startTime, endTime);
         }).join('');
@@ -420,7 +429,7 @@ export class TimelineView {
             <div class="gantt-grid">
                 <div class="gantt-sidebar">
                     ${routes.map((route, idx) => `
-                        <div class="gantt-row-label" style="height: 80px;">
+                        <div class="gantt-row-label">
                             <strong>🚚 ${route.vehicle_license_plate}</strong>
                             <small>${route.order_count} orders</small>
                         </div>
@@ -439,47 +448,64 @@ export class TimelineView {
         `;
     }
 
-    /**
-     * Calculate time bounds
-     * @private
-     */
     static #calculateTimeBounds(routes) {
-        let earliest = '23:59:59';
-        let latest = '00:00:00';
+        let earliest = null;
+        let latest = null;
 
         routes.forEach(route => {
-            if (route.start_time < earliest) earliest = route.start_time;
-            if (route.end_time > latest) latest = route.end_time;
+            if (!route.start_time || !route.end_time) return;
+
+            if (earliest === null || route.start_time < earliest) {
+                earliest = route.start_time;
+            }
+            if (latest === null || route.end_time > latest) {
+                latest = route.end_time;
+            }
         });
+
+        if (!earliest || !latest) {
+            earliest = '08:00:00';
+            latest = '18:00:00';
+        }
+
+        const startMinutes = this.#timeToMinutes(earliest);
+        const endMinutes = this.#timeToMinutes(latest);
+        const duration = endMinutes - startMinutes;
+
+        if (duration < 60) {
+            latest = this.#minutesToTime(startMinutes + 60);
+        }
 
         return { startTime: earliest, endTime: latest };
     }
 
-    /**
-     * Build time header
-     * @private
-     */
     static #buildTimeHeader(startTime, endTime) {
         const start = this.#timeToMinutes(startTime);
         const end = this.#timeToMinutes(endTime);
         const duration = end - start;
 
         const hours = Math.ceil(duration / 60);
+        const interval = 60;
 
         let headerHTML = '';
+
         for (let i = 0; i <= hours; i++) {
-            const time = start + (i * 60);
-            const timeStr = this.#minutesToTime(time);
-            headerHTML += `<div class="time-marker">${timeStr}</div>`;
+            const timeInMinutes = start + (i * interval);
+            if (timeInMinutes > end) break;
+
+            const timeStr = this.#minutesToTime(timeInMinutes);
+            const position = ((timeInMinutes - start) / duration) * 100;
+
+            headerHTML += `
+                <div class="time-marker" style="left: ${position.toFixed(2)}%;">
+                    ${timeStr}
+                </div>
+            `;
         }
 
         return headerHTML;
     }
 
-    /**
-     * Build route timeline
-     * @private
-     */
     static #buildRouteTimeline(route, index, dayStartTime, dayEndTime) {
         const colors = ['#3498db', '#e74c3c', '#2ecc71', '#f1c40f', '#9b59b6', '#34495e'];
         const routeColor = colors[index % colors.length];
@@ -488,7 +514,11 @@ export class TimelineView {
         const dayEnd = this.#timeToMinutes(dayEndTime);
         const dayDuration = dayEnd - dayStart;
 
-        // Get sorted stops
+        if (dayDuration <= 0) {
+            console.error('Invalid day duration');
+            return '<div class="gantt-row"></div>';
+        }
+
         let stops = [...route.stops];
         const endDepotIndex = stops.findIndex(s =>
             s.type === 'DEPOT' && s.departure_time === null
@@ -508,43 +538,44 @@ export class TimelineView {
             const departureTime = this.#timeToMinutes(currentStop.departure_time || currentStop.arrival_time);
             const nextArrivalTime = this.#timeToMinutes(nextStop.arrival_time);
 
-            // Service time bar
-            if (currentStop.type === 'ORDER') {
-                const serviceStart = ((arrivalTime - dayStart) / dayDuration) * 100;
-                const serviceWidth = ((departureTime - arrivalTime) / dayDuration) * 100;
+            if (isNaN(arrivalTime) || isNaN(departureTime) || isNaN(nextArrivalTime)) {
+                continue;
+            }
 
+            // Service bar
+            if (currentStop.type === 'ORDER') {
+                const serviceStart = Math.max(0, Math.min(100, ((arrivalTime - dayStart) / dayDuration) * 100));
+                const serviceWidth = Math.max(0, Math.min(100 - serviceStart, ((departureTime - arrivalTime) / dayDuration) * 100));
+
+                if (serviceWidth > 0.1) {
+                    barsHTML += `
+                        <div class="gantt-bar service-bar" 
+                             style="left: ${serviceStart.toFixed(2)}%; width: ${serviceWidth.toFixed(2)}%; background: #e74c3c;"
+                             title="Service at ${currentStop.location_name}">
+                        </div>
+                    `;
+                }
+            }
+
+            // Driving bar
+            const drivingStart = Math.max(0, Math.min(100, ((departureTime - dayStart) / dayDuration) * 100));
+            const drivingWidth = Math.max(0, Math.min(100 - drivingStart, ((nextArrivalTime - departureTime) / dayDuration) * 100));
+
+            if (drivingWidth > 0.1) {
                 barsHTML += `
-                    <div class="gantt-bar service-bar" 
-                         style="left: ${serviceStart}%; width: ${serviceWidth}%; background: #e74c3c;"
-                         title="Service at ${currentStop.location_name}">
+                    <div class="gantt-bar driving-bar" 
+                         style="left: ${drivingStart.toFixed(2)}%; width: ${drivingWidth.toFixed(2)}%; background: ${routeColor};"
+                         title="Driving to ${nextStop.location_name}">
                     </div>
                 `;
             }
-
-            // Driving time bar
-            const drivingStart = ((departureTime - dayStart) / dayDuration) * 100;
-            const drivingWidth = ((nextArrivalTime - departureTime) / dayDuration) * 100;
-
-            barsHTML += `
-                <div class="gantt-bar driving-bar" 
-                     style="left: ${drivingStart}%; width: ${drivingWidth}%; background: ${routeColor};"
-                     title="Driving to ${nextStop.location_name}">
-                </div>
-            `;
         }
 
-        return `
-            <div class="gantt-row" style="height: 80px;">
-                ${barsHTML}
-            </div>
-        `;
+        return `<div class="gantt-row">${barsHTML}</div>`;
     }
 
-    /**
-     * Convert time to minutes
-     * @private
-     */
     static #timeToMinutes(timeStr) {
+        if (!timeStr) return 0;
         const [hours, minutes, seconds] = timeStr.split(':').map(Number);
         return hours * 60 + minutes + (seconds / 60);
     }
@@ -559,9 +590,12 @@ export class TimelineView {
         return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
     }
 
-    /**
-     * Zoom controls
-     */
+    static #formatDuration(minutes) {
+        const h = Math.floor(minutes / 60);
+        const m = Math.round(minutes % 60);
+        return h > 0 ? `${h}h ${m}m` : `${m}m`;
+    }
+
     static zoomIn() {
         Toast.info('Zoom in - Coming soon!');
     }
@@ -577,9 +611,6 @@ export class TimelineView {
         }
     }
 
-    /**
-     * Clear view
-     */
     static clear() {
         const container = document.getElementById('timeline-tab');
         if (container) {
