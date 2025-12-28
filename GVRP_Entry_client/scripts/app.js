@@ -29,6 +29,7 @@ import { Toast } from './utils/toast.js';
 import { Loading } from './utils/loading.js';
 import { Validator } from './utils/validation.js';
 import { DOMHelpers } from './utils/dom-helpers.js';
+import {PersistenceManager} from "./persistence-manager.js";
 
 // Depot Setup screen
 Router.onScreenActivated(Router.SCREENS.DEPOT_SETUP, () => {
@@ -52,6 +53,8 @@ Router.onScreenActivated(Router.SCREENS.MAIN, async () => {
     setTimeout(async () => {
         MainMap.init();
         await loadMainScreenData();
+
+        setTimeout(() => PersistenceManager.restore(), 100);
     }, 100);
 });
 
@@ -61,9 +64,19 @@ AppState.subscribe('vehicleCount', (newCount) => {
 
 AppState.subscribe('selectedOrders', () => {
     updatePlanRoutesButton();
+    AppState.saveToLocalStorage();
 });
 AppState.subscribe('selectedVehicles', () => {
     updatePlanRoutesButton();
+    AppState.saveToLocalStorage();
+});
+
+AppState.subscribe('activeSolutionId', () => {
+    AppState.saveToLocalStorage();
+});
+
+AppState.subscribe('activeJobId', () => {
+    AppState.saveToLocalStorage();
 });
 
 document.addEventListener('DOMContentLoaded', async function() {
@@ -337,6 +350,7 @@ async function loadMainScreenData() {
         const today = new Date().toISOString().split('T')[0];
         AppState.setFilterDate(today);
         await OrdersTable.loadOrders();
+        await PersistenceManager.restore();
 
     } catch (error) {
         console.error('Failed to load main screen data:', error);

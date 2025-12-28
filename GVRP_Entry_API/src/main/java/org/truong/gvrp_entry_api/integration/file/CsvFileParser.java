@@ -124,8 +124,6 @@ public class CsvFileParser implements FileParser<OrderInputDTO>{
                     .customerName(parseRequiredString(record, "customerName", lineNumber))
                     .customerPhone(parseOptionalString(record, "customerPhone"))
                     .address(parseRequiredString(record, "address", lineNumber))
-                    .latitude(parseRequiredDouble(record, "latitude", lineNumber))
-                    .longitude(parseRequiredDouble(record, "longitude", lineNumber))
                     .demand(parseRequiredBigDecimal(record, "demand", lineNumber))
                     .serviceTime(parseOptionalInteger(record, "serviceTime"))
                     .timeWindowStart(parseOptionalTime(record, "timeWindowStart"))
@@ -155,23 +153,6 @@ public class CsvFileParser implements FileParser<OrderInputDTO>{
         }
 
         return value.trim();
-    }
-
-    private Double parseRequiredDouble(CSVRecord record, String columnName, int lineNumber)
-            throws ParseException {
-        String value = safeGet(record, columnName);
-
-        if (value == null || value.trim().isEmpty()) {
-            throw new ParseException(columnName, lineNumber,
-                    String.format("Field '%s' is required", columnName));
-        }
-
-        try {
-            return Double.parseDouble(value.trim());
-        } catch (NumberFormatException e) {
-            throw new ParseException(columnName, lineNumber,
-                    String.format("Invalid number format for '%s': %s", columnName, value));
-        }
     }
 
     private BigDecimal parseRequiredBigDecimal(CSVRecord record, String columnName, int lineNumber)

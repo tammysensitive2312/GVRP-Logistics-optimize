@@ -29,12 +29,12 @@ public class OrderInputDTO {
     @Size(max = 255, message = "Address must not exceed 255 characters")
     private String address;
 
-    @NotNull(message = "Latitude is required")
+//    @NotNull(message = "Latitude is required")
     @Min(value = -90, message = "Latitude must be between -90 and 90")
     @Max(value = 90, message = "Latitude must be between -90 and 90")
     private Double latitude;
 
-    @NotNull(message = "Longitude is required")
+//    @NotNull(message = "Longitude is required")
     @Min(value = -180, message = "Longitude must be between -180 and 180")
     @Max(value = 180, message = "Longitude must be between -180 and 180")
     private Double longitude;

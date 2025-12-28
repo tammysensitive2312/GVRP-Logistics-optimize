@@ -108,66 +108,59 @@ export class MainMap {
      * @private
      */
     static async #displaySingleRoute(route, routeColor) {
-        // Prepare stops in correct order
-        let stops = [...route.stops];
 
-        // Move end depot to end
-        const endDepotIndex = stops.findIndex(stop =>
-            stop.type === 'DEPOT' && stop.departure_time === null
-        );
+        const stops = [...route.stops].sort((a, b) => {
+            // Fallback về "00:00:00" để tránh crash nếu null
+            const timeA = a.arrival_time || a.departure_time || "00:00:00";
+            const timeB = b.arrival_time || b.departure_time || "00:00:00";
+            return timeA.localeCompare(timeB);
+        });
 
-        if (endDepotIndex !== -1 && endDepotIndex !== stops.length - 1) {
-            const endDepot = stops.splice(endDepotIndex, 1)[0];
-            stops.push(endDepot);
-        }
 
-        // Create markers for all stops
         stops.forEach((stop, idx) => {
+
+            let type = 'stop';
+            if (idx === 0) type = 'start';
+            else if (idx === stops.length - 1) type = 'end';
+
             const marker = this.#createRouteStopMarker(
                 stop,
                 routeColor,
                 route.vehicle_license_plate,
-                idx === 0 ? 'start' : (idx === stops.length - 1 ? 'end' : 'stop')
+                type
             );
             marker.addTo(this.#routeLayers);
         });
 
-        // Get coordinates for routing
         const coordinates = stops.map(stop => [stop.longitude, stop.latitude]);
 
-        // Fetch real route from OSRM
         try {
             const geometry = await this.#fetchRouteGeometry(coordinates);
 
             if (geometry && geometry.length > 0) {
-                // Draw the real route
+                // Vẽ đường đi thực tế
                 const polyline = L.polyline(geometry, {
                     color: routeColor,
                     weight: 5,
-                    opacity: 0.7,
+                    opacity: 0.8,
                     smoothFactor: 1
                 }).addTo(this.#routeLayers);
 
-                // Add route info tooltip
+                // Tooltip thông tin xe
                 polyline.bindTooltip(
-                    `🚚 ${route.vehicle_license_plate}<br>` +
-                    `📦 ${route.order_count} orders<br>` +
-                    `📏 ${route.distance.toFixed(1)} km<br>` +
-                    `⏱️ ${this.#formatDuration(route.service_time)}`,
-                    { sticky: true }
+                    `<div style="font-weight: bold;">🚚 ${route.vehicle_license_plate}</div>` +
+                    `📦 ${route.order_count} đơn - 📏 ${route.distance.toFixed(1)} km`,
+                    { sticky: true, direction: 'top' }
                 );
-
-                // Add arrows to show direction
+                
                 this.#addDirectionArrows(polyline, routeColor);
             } else {
-                // Fallback to straight lines if routing fails
-                console.warn('Routing failed, using straight lines');
+                console.warn('OSRM không trả về đường đi, dùng đường thẳng.');
                 this.#drawStraightLine(coordinates, routeColor, route);
             }
 
         } catch (error) {
-            console.error('Routing error:', error);
-            // Fallback to straight lines
+            console.error('Lỗi khi gọi routing:', error);
             this.#drawStraightLine(coordinates, routeColor, route);
         }
     }
@@ -238,19 +231,24 @@ export class MainMap {
             const decorator = L.polylineDecorator(polyline, {
                 patterns: [
                     {
-                        offset: '10%',
-                        repeat: 100,
+                        offset: 50,
+                        repeat: 120,
                         symbol: L.Symbol.arrowHead({
-                            pixelSize: 12,
+                            pixelSize: 14,
+                            polygon: true,
                             pathOptions: {
                                 fillOpacity: 1,
-                                weight: 0,
-                                color: color
+                                fillColor: color,
+                                stroke: true,
+                                color: '#ffffff',
+                                weight: 1
                             }
                         })
                     }
                 ]
             }).addTo(this.#routeLayers);
+        } else {
+            console.warn('PolylineDecorator plugin not found. Please include the script in HTML.');
         }
     }
 

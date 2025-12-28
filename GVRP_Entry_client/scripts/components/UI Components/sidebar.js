@@ -162,10 +162,14 @@ export class Sidebar {
      */
     static deselectAllVehicles() {
         AppState.deselectAllVehicles();
-        document.querySelectorAll('.vehicle-item-compact input[type="checkbox"]')
-            .forEach(checkbox => {
+
+        AppState.allVehicles.forEach(vehicle => {
+            const checkbox = document.getElementById(`vehicle-${vehicle.id}`);
+            if (checkbox) {
                 checkbox.checked = false;
-            });
+            }
+        });
+
         if (typeof updatePlanRoutesButton === 'function') {
             updatePlanRoutesButton();
         }
@@ -178,10 +182,14 @@ export class Sidebar {
         AppState.allVehicles.forEach(vehicle => {
             AppState.selectVehicle(vehicle.id);
         });
-        document.querySelectorAll('.vehicle-item-compact input[type="checkbox"]')
-            .forEach(checkbox => {
+
+        AppState.allVehicles.forEach(vehicle => {
+            const checkbox = document.getElementById(`vehicle-${vehicle.id}`);
+            if (checkbox) {
                 checkbox.checked = true;
-            });
+            }
+        });
+
         if (typeof updatePlanRoutesButton === 'function') {
             updatePlanRoutesButton();
         }

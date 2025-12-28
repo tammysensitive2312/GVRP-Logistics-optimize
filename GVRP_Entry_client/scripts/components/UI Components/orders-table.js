@@ -61,6 +61,7 @@ export class OrdersTable {
             selector.addEventListener('change', (e) => {
                 this.#pageSize = parseInt(e.target.value);
                 this.#currentPage = 0; // Reset to first page
+                this.#clearActiveSolution();
                 this.loadOrders();
             });
         }
@@ -133,6 +134,7 @@ export class OrdersTable {
         }
 
         this.#currentPage = page;
+        this.#clearActiveSolution();
         this.loadOrders(page);
     }
 
@@ -141,6 +143,7 @@ export class OrdersTable {
      */
     static previousPage() {
         if (this.#currentPage > 0) {
+            this.#clearActiveSolution();
             this.goToPage(this.#currentPage - 1);
         }
     }
@@ -150,6 +153,7 @@ export class OrdersTable {
      */
     static nextPage() {
         if (this.#currentPage < this.#totalPages - 1) {
+            this.#clearActiveSolution();
             this.goToPage(this.#currentPage + 1);
         }
     }
@@ -296,6 +300,7 @@ export class OrdersTable {
         });
 
         this.#updateFooter();
+        this.updateSelectAllCheckbox();
     }
 
     /**
@@ -456,6 +461,7 @@ export class OrdersTable {
             }
         });
 
+        this.updateSelectAllCheckbox();
         this.updatePlanButton();
     }
 
@@ -527,6 +533,52 @@ export class OrdersTable {
             totalPages: this.#totalPages,
             totalElements: this.#totalElements
         };
+    }
+
+    static #clearActiveSolution() {
+        AppState.activeSolutionId = null;
+
+        if (typeof MainMap !== 'undefined') {
+            if (MainMap.getRouteLayerCount() > 0) {
+                const routeLayers = MainMap.getRouteLayers();
+                if (routeLayers) {
+                    routeLayers.clearLayers();
+                }
+            }
+        }
+
+        if (typeof SolutionDisplay !== 'undefined') {
+            SolutionDisplay.clearSolution();
+        }
+
+        const routeBtn = document.querySelector('.tab-btn[data-tab="route-tab"]');
+        const timelineBtn = document.querySelector('.tab-btn[data-tab="timeline-tab"]');
+
+        if (routeBtn) {
+            routeBtn.disabled = true;
+            routeBtn.style.opacity = '0.5';
+        }
+        if (timelineBtn) {
+            timelineBtn.disabled = true;
+            timelineBtn.style.opacity = '0.5';
+        }
+
+        switchContentTab('orders-tab');
+    }
+
+    static updateSelectAllCheckbox() {
+        const selectAllCheckbox = document.getElementById('select-all');
+        if (!selectAllCheckbox) return;
+
+        const visibleOrderIds = this.#tbody?.querySelectorAll('tr').length || 0;
+        const selectedVisibleOrders = Array.from(this.#tbody?.querySelectorAll('tr') || [])
+            .filter(row => {
+                const orderId = parseInt(row.id.replace('order-row-', ''));
+                return AppState.isOrderSelected(orderId);
+            }).length;
+
+        selectAllCheckbox.checked = visibleOrderIds > 0 && selectedVisibleOrders === visibleOrderIds;
+        selectAllCheckbox.indeterminate = selectedVisibleOrders > 0 && selectedVisibleOrders < visibleOrderIds;
     }
 }
 

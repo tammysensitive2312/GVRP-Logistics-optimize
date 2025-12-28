@@ -156,8 +156,20 @@ public class OptimizationResultExtractor {
         List<Stop> stops = new ArrayList<>();
         double routeDistance = 0;
         double routeTime = 0;
-        double routeLoad = 0;
         int orderCount = 0;
+        double totalRouteLoad = 0;
+
+        for (TourActivity activity : route.getActivities()) {
+            if (activity instanceof TourActivity.JobActivity jobActivity) {
+                String orderId = ((com.graphhopper.jsprit.core.problem.job.Service) jobActivity.getJob()).getId().replace("order-", "");
+                var orderDTO = context.orderDTOs().get(Long.parseLong(orderId));
+                if (orderDTO != null) {
+                    totalRouteLoad += orderDTO.getDemand();
+                }
+            }
+        }
+
+        double currentLoad = totalRouteLoad;
 
         // ========== START DEPOT ==========
         var startDepot = context.depotDTOs().get(vehicleDTO.getStartDepotId());
@@ -165,7 +177,7 @@ public class OptimizationResultExtractor {
                 startDepot,
                 formatTime(route.getStart().getEndTime()),
                 formatTime(route.getStart().getEndTime()),
-                0.0
+                currentLoad
         );
         stops.add(startStop);
 
@@ -203,14 +215,14 @@ public class OptimizationResultExtractor {
                     double waitTime = Math.max(0,
                             (activity.getArrTime() - prevActivity.getEndTime() - segmentTime) / 60.0);
 
-                    routeLoad += orderDTO.getDemand();
+                    currentLoad -= orderDTO.getDemand();
 
                     // Create stop
                     Stop stop = createCustomerStop(
                             orderDTO,
                             orderCount,
                             activity,
-                            routeLoad,
+                            currentLoad,
                             waitTime
                     );
                     stops.add(stop);
@@ -224,7 +236,7 @@ public class OptimizationResultExtractor {
                             segmentDistance,
                             segmentTime,
                             waitTime,
-                            routeLoad,
+                            currentLoad,
                             vehicleTypeDTO
                     );
 
@@ -271,7 +283,7 @@ public class OptimizationResultExtractor {
                 stops,
                 routeDistance,
                 routeTime,
-                routeLoad,
+                currentLoad,
                 orderCount
         );
     }

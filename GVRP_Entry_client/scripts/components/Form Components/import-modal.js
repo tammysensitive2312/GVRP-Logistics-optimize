@@ -93,6 +93,7 @@ export class ImportModal {
      */
     static open() {
         if (!this.#modal) return;
+        AppState.activeModal = 'import';
 
         this.#modal.classList.add('active');
 
@@ -116,6 +117,7 @@ export class ImportModal {
         if (!this.#modal) return;
 
         this.#modal.classList.remove('active');
+        AppState.activeModal = null;
 
         // Reset form
         this.reset();

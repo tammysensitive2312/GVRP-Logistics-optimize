@@ -13,6 +13,8 @@
 
   <!-- Scripts -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet-polylinedecorator@1.6.0/dist/leaflet.polylineDecorator.js"></script>
+
   <script src="scripts/auth.js"></script>
   <script src="scripts/api/api.js"></script>
   <script src="scripts/api/solution-api.js"></script>
@@ -49,6 +51,7 @@
   <script type="module" src="scripts/lib/query-cache.js"></script>
   <script type="module" src="scripts/lib/query-helpers.js"></script>
 
+  <script type="module" src="scripts/persistence-manager.js"></script>
   <script type="module" src="scripts/app.js"></script>
 </head>
 <body>
@@ -1015,12 +1018,12 @@
         <div class="form-group">
           <label>Order data</label>
           <div class="format-hint">
-            <strong>Format:</strong> OrderCode|Name|Phone|Address|Lat|Lng|Demand|TWStart|TWEnd|Priority|Notes
+            <strong>Format:</strong> OrderCode|Name|Phone|Address|Demand|TWStart|TWEnd|Priority|Notes
           </div>
           <textarea
                   id="import-text"
                   rows="10"
-                  placeholder="ORD001|John|0901234567|123 Main St|21.028511|105.804817|50.5|08:00|12:00|1|Handle with care&#10;ORD002|Jane|0912345678|456 Second Ave|21.030000|105.810000|30.0||||2|"
+                  placeholder="ORD001|John|0901234567|123 Main St|50.5|08:00|12:00|1|Handle with care&#10;ORD002|Jane|0912345678|456 Second Ave|30.0||||2|"
           ></textarea>
         </div>
       </div>

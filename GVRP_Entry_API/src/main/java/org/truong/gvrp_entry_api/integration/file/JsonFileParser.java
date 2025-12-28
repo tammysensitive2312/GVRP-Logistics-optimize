@@ -66,7 +66,7 @@ public class JsonFileParser implements FileParser<OrderInputDTO> {
                     errors.add(ImportError.builder()
                             .lineNumber(currentLine)
                             .errorMessage(simplifyErrorMessage(e))
-                            .rawData("JSON Object at line " + currentLine) // JSON raw khó lấy chuẩn khi stream, ta chỉ định vị trí
+                            .rawData("JSON Object at line " + currentLine)
                             .build());
                 }
             }

@@ -18,7 +18,6 @@ export class AppState {
         availableVehicleTypes: [],
         fleetInfo: null,
 
-
         // Vehicles
         allVehicles: [],
         vehicleCount: 0,
@@ -39,7 +38,11 @@ export class AppState {
 
         // UI State
         sidebarCollapsed: false,
-        loading: false
+        loading: false,
+
+        activeSolutionId: null,
+        activeJobId: null,
+        activeModal: null
     };
 
     // State change listeners
@@ -51,6 +54,27 @@ export class AppState {
      */
     static getState() {
         return { ...this.#state };
+    }
+
+    static get activeSolutionId() { return this.#state.activeSolutionId; }
+    static set activeSolutionId(id) {
+        this.#state.activeSolutionId = id;
+        this.#notify('activeSolutionId', id);
+        this.saveToLocalStorage();
+    }
+
+    static get activeJobId() { return this.#state.activeJobId; }
+    static set activeJobId(id) {
+        this.#state.activeJobId = id;
+        this.#notify('activeJobId', id);
+        this.saveToLocalStorage();
+    }
+
+    static get activeModal() { return this.#state.activeModal; }
+    static set activeModal(modalId) {
+        this.#state.activeModal = modalId;
+        this.#notify('activeModal', modalId);
+        this.saveToLocalStorage();
     }
 
     // ============================================
@@ -389,7 +413,14 @@ export class AppState {
             const stateToSave = {
                 currentScreen: this.#state.currentScreen,
                 filters: this.#state.filters,
-                sidebarCollapsed: this.#state.sidebarCollapsed
+                sidebarCollapsed: this.#state.sidebarCollapsed,
+
+                activeSolutionId: this.#state.activeSolutionId,
+                activeJobId: this.#state.activeJobId,
+                activeModal: this.#state.activeModal,
+
+                selectedOrders: Array.from(this.#state.selectedOrders),
+                selectedVehicles: Array.from(this.#state.selectedVehicles)
             };
             localStorage.setItem('vrp_app_state', JSON.stringify(stateToSave));
         } catch (error) {
@@ -413,6 +444,25 @@ export class AppState {
                 }
                 if (parsed.sidebarCollapsed !== undefined) {
                     this.#state.sidebarCollapsed = parsed.sidebarCollapsed;
+                }
+
+                if (parsed.activeSolutionId) {
+                    this.#state.activeSolutionId = parsed.activeSolutionId;
+                }
+
+                if (parsed.activeJobId) {
+                    this.#state.activeJobId = parsed.activeJobId;
+                }
+
+                if (parsed.activeModal) {
+                    this.#state.activeModal = parsed.activeModal;
+                }
+
+                if (parsed.selectedOrders && Array.isArray(parsed.selectedOrders)) {
+                    this.#state.selectedOrders = new Set(parsed.selectedOrders);
+                }
+                if (parsed.selectedVehicles && Array.isArray(parsed.selectedVehicles)) {
+                    this.#state.selectedVehicles = new Set(parsed.selectedVehicles);
                 }
             }
         } catch (error) {

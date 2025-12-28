@@ -41,6 +41,7 @@ import java.util.Optional;
 public class OrderImportService {
 
     private final ObjectMapper objectMapper;
+    private final GeocodingService geocodingService;
 
     private final BranchRepository branchRepository;
     private final OrderRepository orderRepository;
@@ -136,6 +137,26 @@ public class OrderImportService {
 
             if (dto.getServiceTime()== null) {
                 dto.setServiceTime(request.getServiceTime());
+            }
+
+            if ((dto.getLatitude() == null || dto.getLongitude() == null)
+                    && dto.getAddress() != null && !dto.getAddress().trim().isEmpty()) {
+
+                GeocodingService.GeocodeResult result = geocodingService.geocode(dto.getAddress());
+
+                if (result != null) {
+                    dto.setLatitude(result.lat);
+                    dto.setLongitude(result.lng);
+                } else {
+                    validationErrors.add(buildError(
+                            i + 1,
+                            dto.getOrderCode(),
+                            "address",
+                            "The coordinates cannot be obtained from the address: " + dto.getAddress(),
+                            dto.getAddress()
+                    ));
+                    // Không bỏ qua dòng này, nhưng đánh dấu lỗi → user sẽ thấy
+                }
             }
 
             // Business Validation (Check logic, tọa độ, demand...)
@@ -241,34 +262,43 @@ public class OrderImportService {
 
     public String validate(OrderInputDTO dto) {
         // 1. Validate Coordinates
-        if (dto.getLatitude() == null || dto.getLongitude() == null) {
-            return "Tọa độ (Latitude/Longitude) là bắt buộc.";
+        boolean hasCoordinates = dto.getLatitude() != null && dto.getLongitude() != null;
+        boolean hasAddress = dto.getAddress() != null && !dto.getAddress().trim().isEmpty();
+
+        if (!hasCoordinates && !hasAddress) {
+            return "You must provide coordinates (latitude/longitude) OR a detailed address to automatically retrieve coordinates.";
         }
-        if (dto.getLatitude() < -90 || dto.getLatitude() > 90 || dto.getLongitude() < -180 || dto.getLongitude() > 180) {
-            return "Tọa độ không hợp lệ (Lat: -90~90, Lng: -180~180)";
+
+        // If coordinates are provided → validate range
+        if (hasCoordinates) {
+            if (dto.getLatitude() < -90 || dto.getLatitude() > 90 ||
+                    dto.getLongitude() < -180 || dto.getLongitude() > 180) {
+                return "Invalid coordinates (Lat: -90 to 90, Lng: -180 to 180).";
+            }
         }
 
         // 2. Validate Demand
         if (dto.getDemand() == null || dto.getDemand().compareTo(BigDecimal.ZERO) <= 0) {
-            return "Demand phải là số dương (> 0).";
+            return "Demand must be a positive number (> 0).";
         }
 
         // 3. Validate Time Window
         if (dto.getTimeWindowStart() != null && dto.getTimeWindowEnd() != null) {
             if (dto.getTimeWindowStart().isAfter(dto.getTimeWindowEnd())) {
-                return "Thời gian bắt đầu Time Window không được sau thời gian kết thúc.";
+                return "Time Window start time cannot be after the end time.";
             }
         } else if (dto.getTimeWindowStart() != null || dto.getTimeWindowEnd() != null) {
-            return "Time Window phải có đủ thời gian bắt đầu và kết thúc hoặc không có cả hai.";
+            return "Time Window must have both start and end times, or neither.";
         }
 
-        // 4. Validate Service Time (đã được enrich default nếu null)
+        // 4. Validate Service Time (already enriched with default if null)
         if (dto.getServiceTime() == null || dto.getServiceTime() < 0) {
-            return "Service time không hợp lệ (phải >= 0).";
+            return "Invalid service time (must be >= 0).";
         }
 
         return null; // Valid
     }
+
 
     @Transactional(readOnly = true)
     public PageResponse<OrderDTO> getAllOrdersPaginated(Long branchId, int pageNo, int pageSize) {

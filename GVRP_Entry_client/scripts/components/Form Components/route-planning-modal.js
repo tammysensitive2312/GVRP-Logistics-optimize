@@ -38,30 +38,29 @@ export class RoutePlanningModal {
         }
     }
 
-    static open() {
+    static open({ restore = false } = {}) {
         if (!this.#modal) return;
 
         const selectedOrders = AppState.selectedOrdersCount;
         const selectedVehicles = AppState.selectedVehicles.size;
 
-        if (selectedOrders === 0) {
-            Toast.error('Vui lòng chọn ít nhất 1 đơn hàng');
-            return;
-        }
-
-        if (selectedVehicles === 0) {
-            Toast.error('Vui lòng chọn ít nhất 1 xe');
-            return;
-        }
-
         this.#updateSelectionSummary(selectedOrders, selectedVehicles);
         this.#modal.classList.add('active');
         this.#setDefaults();
         this.#updateEstimatedTime();
+
+        AppState.activeModal = 'route-planning';
+
+        const submitBtn = this.#form?.querySelector('button[type="submit"]');
+        if (submitBtn) {
+            submitBtn.disabled = selectedOrders === 0 || selectedVehicles === 0;
+        }
     }
+
 
     static close() {
         if (!this.#modal) return;
+        AppState.activeModal = null
         this.#modal.classList.remove('active');
         this.#reset();
     }
@@ -231,6 +230,5 @@ if (typeof window !== 'undefined') {
     window.RoutePlanningModal = RoutePlanningModal;
 }
 
-window.openRoutePlanningModal = () => RoutePlanningModal.open();
 window.closeRoutePlanningModal = () => RoutePlanningModal.close();
 

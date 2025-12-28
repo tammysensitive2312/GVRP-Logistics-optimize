@@ -39,7 +39,7 @@ public class TextDataParser { // If there is a DataParser interface, implement i
             String[] fields = line.split(SEPARATOR, -1);
 
             // Check minimum number of fields
-            if (fields.length < 12) {
+            if (fields.length < 10) {
                 log.warn("Line {}: Missing fields. Found {}, required 12.", lineNumber, fields.length);
                 errors.add(ImportError.builder()
                         .lineNumber(lineNumber)
@@ -54,8 +54,8 @@ public class TextDataParser { // If there is a DataParser interface, implement i
 
             try {
                 // Mapping order:
-                // 0:Code | 1:Name | 2:Phone | 3:Address | 4:Lat | 5:Lng
-                // 6:Demand | 7:TWS | 8:TWE | 9:Prio | 10:Notes | 11:STime
+                // 0:Code | 1:Name | 2:Phone | 3:Address |
+                // 4:Demand | 5:TWS | 6:TWE | 7:Prio | 8:Notes | 9:STime
 
                 OrderInputDTO dto = OrderInputDTO.builder()
                         .orderCode(parseRequiredString(fields[0], "Order Code"))
@@ -63,16 +63,14 @@ public class TextDataParser { // If there is a DataParser interface, implement i
                         .customerPhone(parseOptionalString(fields[2]))
                         .address(parseRequiredString(fields[3], "Address"))
 
-                        .latitude(parseDouble(fields[4], "Latitude"))
-                        .longitude(parseDouble(fields[5], "Longitude"))
-                        .demand(parseBigDecimal(fields[6], "Demand"))
+                        .demand(parseBigDecimal(fields[4], "Demand"))
 
-                        .timeWindowStart(parseTime(fields[7], "Time Window Start"))
-                        .timeWindowEnd(parseTime(fields[8], "Time Window End"))
+                        .timeWindowStart(parseTime(fields[5], "Time Window Start"))
+                        .timeWindowEnd(parseTime(fields[6], "Time Window End"))
 
-                        .priority(parseInteger(fields[9], "Priority"))
-                        .deliveryNotes(parseOptionalString(fields[10]))
-                        .serviceTime(parseInteger(fields[11], "Service Time"))
+                        .priority(parseInteger(fields[7], "Priority"))
+                        .deliveryNotes(parseOptionalString(fields[8]))
+                        .serviceTime(parseInteger(fields[9], "Service Time"))
                         .build();
 
                 validOrders.add(dto);
@@ -118,17 +116,6 @@ public class TextDataParser { // If there is a DataParser interface, implement i
             return null;
         }
         return value.trim();
-    }
-
-    private Double parseDouble(String value, String fieldName) {
-        if (value == null || value.trim().isEmpty()) {
-            throw new IllegalArgumentException("Field '" + fieldName + "' is required.");
-        }
-        try {
-            return Double.parseDouble(value.trim());
-        } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("Invalid decimal number format in field '" + fieldName + "': " + value);
-        }
     }
 
     private BigDecimal parseBigDecimal(String value, String fieldName) {

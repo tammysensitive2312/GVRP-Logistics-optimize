@@ -332,6 +332,7 @@ export class JobMonitoringModal {
         }
 
         const solution = this.#currentSolution;
+        AppState.activeSolutionId = solution.id;
 
         // 1. Close modal
         this.close();

@@ -26,6 +26,9 @@ export class SolutionDisplay {
 
         // Display in current view
         this.displayInView(this.#currentView);
+
+        RouteView.display(solution);
+        TimelineView.display(solution);
     }
 
     /**
