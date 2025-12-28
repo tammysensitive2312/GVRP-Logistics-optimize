@@ -357,7 +357,7 @@ public class OptimizationCallbackService {
                 .order(order)
                 .locationId(stopData.getLocationId())
                 .locationName(stopData.getLocationName())
-                .location(geometryMapper.createPoint(stopData.getLongitude(), stopData.getLatitude()))
+                .location(geometryMapper.createPoint(stopData.getLatitude(), stopData.getLongitude()))
                 .arrivalTime(arrivalTime)
                 .departureTime(departureTime)
                 .serviceTime(stopData.getWaitTime())

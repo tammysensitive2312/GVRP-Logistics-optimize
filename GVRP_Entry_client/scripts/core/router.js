@@ -208,8 +208,14 @@ export class Router {
             }
         });
 
-        // Cần gọi hàm refresh map ở đây nếu map được đặt trong tab khác orders.
-        // Ví dụ: map.invalidateSize();
+        const viewName = targetTabId.replace('-tab', '');
+        console.log('📍 Switching to view:', viewName);
+
+        if (typeof SolutionDisplay !== 'undefined') {
+            SolutionDisplay.displayInView(viewName);
+        } else {
+            console.error('❌ SolutionDisplay not loaded!');
+        }
     }
 
     /**

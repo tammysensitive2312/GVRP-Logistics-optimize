@@ -33,6 +33,7 @@
   <script type="module" src="scripts/components/Form%20Components/route-planning-modal.js"></script>
   <script type="module" src="scripts/components/Form%20Components/job-monitoring-modal.js"></script>
   <script type="module" src="scripts/components/Form%20Components/background-job-modal.js"></script>
+  <script type="module" src="scripts/components/Solution%20Views/solution-view.js"></script>
 
   <script type="module" src="scripts/components/Map%20Components/depot-map.js"></script>
   <script type="module" src="scripts/components/Map%20Components/main-map.js"></script>
@@ -779,39 +780,64 @@
         <h3>📊 Optimization Result</h3>
 
         <div class="result-grid">
+          <!-- Row 1: Primary Metrics -->
           <div class="result-card">
             <div class="result-label">💰 Total Cost</div>
-            <div class="result-value" id="result-total-cost">—</div>
+            <div class="result-value">
+              <span id="result-total-cost">—</span> VND
+            </div>
           </div>
 
           <div class="result-card">
             <div class="result-label">🛣️ Total Distance</div>
-            <div class="result-value"><span id="result-total-distance">—</span> km</div>
+            <div class="result-value">
+              <span id="result-total-distance">—</span> km
+            </div>
           </div>
 
           <div class="result-card">
             <div class="result-label">⏱️ Total Time</div>
-            <div class="result-value"><span id="result-total-time">—</span> hours</div>
+            <div class="result-value">
+              <span id="result-total-time">—</span> hours
+            </div>
           </div>
 
           <div class="result-card">
             <div class="result-label">🌱 Total CO2</div>
-            <div class="result-value" id="result-total-co2">—</div>
+            <div class="result-value">
+              <span id="result-total-co2">—</span> kg
+            </div>
           </div>
 
+          <!-- Row 2: Secondary Metrics -->
           <div class="result-card">
-            <div class="result-label">✅ Assigned Orders</div>
+            <div class="result-label">🚚 Routes</div>
+            <div class="result-value" id="result-routes-count">—</div>
+          </div>
+
+          <div class="result-card result-card-success">
+            <div class="result-label">✅ Served Orders</div>
             <div class="result-value" id="result-assigned-orders">—</div>
           </div>
 
-          <div class="result-card">
-            <div class="result-label">❌ Unassigned</div>
+          <div class="result-card result-card-warning">
+            <div class="result-label">❌ Unserved Orders</div>
             <div class="result-value" id="result-unassigned-orders">—</div>
           </div>
         </div>
 
+        <!-- Unassigned Warning -->
         <div id="unassigned-warning" class="alert alert-warning" style="display: none;">
-          ⚠️ Some orders could not be assigned. Review the solution for details.
+          <strong>⚠️ Warning:</strong> Some orders could not be assigned to any route.
+          This may be due to capacity constraints, time window conflicts, or vehicle limitations.
+          <br>
+          <small>Review the solution details to see which orders were not served.</small>
+        </div>
+
+        <!-- Loading State (shown while fetching solution) -->
+        <div id="solution-loading" class="loading-state" style="display: none;">
+          <div class="loading-spinner-small"></div>
+          <span>Loading solution details...</span>
         </div>
       </div>
 

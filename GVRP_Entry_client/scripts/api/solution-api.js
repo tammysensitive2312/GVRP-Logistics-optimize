@@ -110,10 +110,37 @@ async function cancelJob(jobId) {
         throw error;
     }
 }
+
+/**
+ * Get solution by ID
+ * GET /api/v1/solutions/{id}
+ * @param {number} solutionId
+ * @returns {Promise<Object>} Solution DTO with routes
+ */
+async function getSolutionById(solutionId) {
+    try {
+        const response = await fetch(
+            `${API_BASE_URL}/solutions/${solutionId}`,
+            { headers: getHeaders() }
+        );
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.message || 'Failed to fetch solution');
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('Get solution error:', error);
+        throw error;
+    }
+}
+
 // Export to window
 window.submitRoutePlanningJob = submitRoutePlanningJob;
 window.getCurrentRunningJob = getCurrentRunningJob;
 window.getJobHistory = getJobHistory;
 window.getJobById = getJobById;
 window.cancelJob = cancelJob;
+window.getSolutionById = getSolutionById;
 console.log('Jobs API Client loaded.');

@@ -85,6 +85,24 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Initialize event listeners
     initEventListeners();
 
+    if (typeof SolutionDisplay !== 'undefined') {
+        // Disable Route and Timeline tabs initially
+        const routeBtn = document.querySelector('.tab-btn[data-tab="route-tab"]');
+        const timelineBtn = document.querySelector('.tab-btn[data-tab="timeline-tab"]');
+
+        if (routeBtn) {
+            routeBtn.disabled = true;
+            routeBtn.style.opacity = '0.5';
+            routeBtn.title = 'Run optimization first';
+        }
+
+        if (timelineBtn) {
+            timelineBtn.disabled = true;
+            timelineBtn.style.opacity = '0.5';
+            timelineBtn.title = 'Run optimization first';
+        }
+    }
+
     console.log('VRP System ready!');
 });
 
