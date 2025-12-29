@@ -6,8 +6,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 @Service
@@ -16,14 +14,14 @@ public class GeocodingService {
 
     private final RestTemplate restTemplate;
 
-    @Value("${geocoding.opencage.api-key}")
+    @Value("${geocoding.goong.api-key}")
     private String apiKey;
 
     @Value("${geocoding.enabled:true}")
     private boolean enabled;
 
-    @Value("${geocoding.opencage.uri}")
-    private String opencageURI;
+    @Value("${geocoding.goong.uri}")
+    private String goongURI;
 
     public GeocodingService(RestTemplate restTemplate) {
         this.restTemplate = restTemplate;
@@ -45,36 +43,40 @@ public class GeocodingService {
         }
 
         try {
-
-            String url = UriComponentsBuilder.fromUriString(opencageURI)
-                    .queryParam("q", address)
-                    .queryParam("key", apiKey)
-                    .queryParam("limit", 1)
-                    .queryParam("countrycode", "vn")   // Ưu tiên Việt Nam
-                    .queryParam("language", "vi")       // Trả về tiếng Việt
-                    .queryParam("no_annotations", 1)   // Tối ưu response nhanh hơn
+            // Goong sử dụng param 'address' và 'api_key'
+            // Sử dụng {address} placeholder để RestTemplate tự động encode tiếng Việt đúng cách
+            String url = UriComponentsBuilder.fromUriString(goongURI)
+                    .queryParam("address", "{address}")
+                    .queryParam("api_key", apiKey)
+                    .encode()
                     .toUriString();
 
-            log.debug("OpenCage Geocoding URL: {}", url);
+            log.debug("Calling Goong API for address: {}", address.trim());
 
-            Map<String, Object> response = restTemplate.getForObject(url, Map.class);
+            // Goong trả về một Object (không phải List như LocationIQ)
+            Map<String, Object> response = restTemplate.getForObject(url, Map.class, address.trim());
 
-            if (response != null && response.containsKey("results")) {
+            if (response != null && "OK".equals(response.get("status"))) {
                 var results = (java.util.List<Map<String, Object>>) response.get("results");
+
                 if (!results.isEmpty()) {
-                    Map<String, Object> geometry = (Map<String, Object>) results.get(0).get("geometry");
-                    double lat = (double) geometry.get("lat");
-                    double lng = (double) geometry.get("lng");
-                    log.info("OpenCage Geocoded success: '{}' → ({}, {})", address.trim(), lat, lng);
+                    Map<String, Object> firstResult = results.get(0);
+                    Map<String, Object> geometry = (Map<String, Object>) firstResult.get("geometry");
+                    Map<String, Object> location = (Map<String, Object>) geometry.get("location");
+
+                    double lat = Double.parseDouble(location.get("lat").toString());
+                    double lng = Double.parseDouble(location.get("lng").toString());
+
+                    log.info("Goong success: '{}' -> ({}, {})", address.trim(), lat, lng);
                     return new GeocodeResult(lat, lng);
                 }
             }
 
-            log.warn("No result from OpenCage for address: '{}'", address.trim());
+            log.warn("Goong could not find address: {}", address.trim());
             return null;
 
         } catch (Exception e) {
-            log.warn("OpenCage Geocoding failed for address '{}': {}", address.trim(), e.getMessage());
+            log.error("Goong API error: {}", e.getMessage());
             return null;
         }
     }

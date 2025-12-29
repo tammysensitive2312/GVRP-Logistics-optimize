@@ -1,0 +1,22 @@
+@startuml
+left to right direction
+
+Planning_Officer as User
+
+(Schedule route for drivers) as (schedule)
+(visualize result) as (visualize)
+(Export results in .csv/.txt format) as (export)
+(Input problem data) as (input)
+(Import problem data using file in json/csv format) as (import data)
+(Import solution file in json/csv format) as (import solution)
+(evaluate solution) as (evaluate)
+
+User --> (input)
+User --> (schedule)
+User --> (visualize)
+User --> (export)
+User --> (import solution)
+User --> (evaluate)
+
+(import data) .> (input) : <<extend>>
+@enduml
