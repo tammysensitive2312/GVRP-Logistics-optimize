@@ -1,0 +1,9 @@
+div[leaflet] {
+  height: 100%;
+  width: 100%;
+}
+
+::ng-deep .custom-div-icon {
+  background: none !important;
+  border: none !important;
+}

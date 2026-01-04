@@ -1,0 +1,23 @@
+@import 'assets/styles/variables';
+@import "leaflet/dist/leaflet.css";
+@import '@angular/material/prebuilt-themes/indigo-pink.css';
+
+// Reset & base styles
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: $font-family;
+  font-size: $font-size-base;
+  color: $text-dark;
+  background: $bg-light;
+  line-height: $line-height-normal;
+  overflow-x: hidden;
+}
+
+.text-center { text-align: center; }
+.mt-1 { margin-top: $space-sm; }
+.mt-2 { margin-top: $space-md; }
