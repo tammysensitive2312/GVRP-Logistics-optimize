@@ -2,102 +2,100 @@
 !include 00_Styling.puml
 !include 02_Repository_Layer.puml
 !include 03_Service_Layer.puml
+skinparam shadowing false
+skinparam classAttributeIconSize 0
 
 package "Mapper Layer" {
-    class DepotMapper <<Mapper>> {
-        + toEntity(dto: DepotInputDTO, branchId: Long): Depot
+
+    interface DepotMapper {
         + toDTO(entity: Depot): DepotDTO
         + toDTOList(entities: List<Depot>): List<DepotDTO>
+        + toEntity(dto: DepotInputDTO, branch: Branch): Depot
+        + toEngineDTO(entity: Depot): EngineDepotDTO
     }
-    class FleetMapper <<Mapper>> {
-        - vehicleMapper: VehicleMapper
-        + toEntity(dto: FleetInputDTO, branchId: Long): Fleet
-        + toDTO(entity: Fleet): FleetDTO
+
+    interface VehicleTypeMapper {
+        + toDTO(entity: VehicleType): VehicleTypeDTO
+        + toDTOList(entities: List<VehicleType>): List<VehicleTypeDTO>
+        + toEntity(dto: VehicleTypeInputDTO): VehicleType
+        + toEngineDTO(entity: VehicleType): EngineVehicleTypeDTO
     }
-    class VehicleMapper <<Mapper>> {
-        + toEntity(dto: VehicleInputDTO, fleet: Fleet, depot: Depot): Vehicle
+
+    interface VehicleMapper {
         + toDTO(entity: Vehicle): VehicleDTO
         + toDTOList(entities: List<Vehicle>): List<VehicleDTO>
+        + toEntity(dto: VehicleInputDTO): Vehicle
+        + toEngineDTO(entity: Vehicle): EngineVehicleDTO
+        + updateEntityFromDTO(dto, entity)
     }
-    class OrderMapper <<Mapper>> {
-        + toEntity(dto: OrderInputDTO, branchId: Long): Order
+
+    interface FleetMapper {
+        + toDTO(entity: Fleet): FleetDTO
+        + toDTOList(entities: List<Fleet>): List<FleetDTO>
+        + toEntity(dto: FleetInputDTO, branch: Branch): Fleet
+    }
+
+    interface OrderMapper {
         + toDTO(entity: Order): OrderDTO
         + toDTOList(entities: List<Order>): List<OrderDTO>
+        + toEntity(dto: OrderInputDTO, b: Branch, date: LocalDate): Order
+        + toEngineDTO(entity: Order): EngineOrderDTO
     }
-    class SolutionMapper <<Mapper>> {
-        - routeMapper: RouteMapper
-        + toDTO(entity: Solution): SolutionDTO
-        + toDetailedDTO(entity: Solution): SolutionDetailedDTO
-        + toExportDTO(entity: Solution): SolutionExportDTO
-        + toDTOList(entities: List<Solution>): List<SolutionDTO>
+
+    interface RouteStopMapper {
+        + toDTO(entity: RouteStop): StopDetailResponseDTO
+        + toDTOList(entities: List<RouteStop>): List<StopDetailResponseDTO>
     }
-    class RouteMapper <<Mapper>> {
-        - routeSegmentMapper: RouteSegmentMapper
-        + toDTO(entity: Route): RouteDTO
-        + toDetailedDTO(entity: Route): RouteDetailedDTO
+
+    interface RouteMapper {
+        + toDTO(entity: Route): RouteDetailResponseDTO
+        + toDTOList(entities: List<Route>): List<RouteDetailResponseDTO>
     }
-    class RouteSegmentMapper <<Mapper>> {
-        + toDTO(entity: RouteSegment): RouteSegmentDTO
-        + toDTOList(entities: List<RouteSegment>): List<RouteSegmentDTO>
+
+    interface SolutionMapper {
+        + toDTO(entity: Solution): SolutionDetailResponseDTO
+    }
+
+    class OptimizationJobMapper {
+        + toDTO(job: OptimizationJob): OptimizationJobDTO
+        + toEntity(dto: OptimizationJobDTO): OptimizationJob
+        - calculateElapsedSeconds(job): Long
+        - calculateRemainingSeconds(job): Integer
+    }
+
+    class GeometryMapper {
+        + pointToLatitude(point: Point): Double
+        + pointToLongitude(point: Point): Double
+        + createPoint(lat, lng): Point
+    }
+
+    class OptimizationConfigMapper {
+        + toEngineConfig(userPrefs): OptimizationConfig
+        - mapSpeed(speed, engineConfig)
+        - mapGoal(goal, engineConfig)
     }
 }
-FleetMapper --> VehicleMapper
-SolutionMapper --> RouteMapper
-RouteMapper --> RouteSegmentMapper
 
-package "Parser & Generator Layer" {
-    class FileParser <<Parser>> {
-        - objectMapper: ObjectMapper
-        + parseOrders(file: MultipartFile): List<OrderInputDTO>
-        - parseOrdersFromCSV(file: MultipartFile): List<OrderInputDTO>
-        - parseOrdersFromJSON(file: MultipartFile): List<OrderInputDTO>
-        + parseSolution(file: MultipartFile): SolutionImportDTO
-        - parseSolutionFromCSV(file: MultipartFile): SolutionImportDTO
-        - parseSolutionFromJSON(file: MultipartFile): SolutionImportDTO
-        - parseSolutionFromTXT(file: MultipartFile): SolutionImportDTO
-        - getFileExtension(filename: String): String
-    }
-    class TextParser <<Parser>> {
-        + parseOrdersFromText(text: String): List<OrderInputDTO>
-        - parseOrderLine(line: String): OrderInputDTO
-    }
-    class FileGenerator <<Parser>> {
-        + generateCSV(data: SolutionExportDTO): byte[]
-        + generateTXT(data: SolutionExportDTO): byte[]
-        + generateReportCSV(data: ComparisonResult): byte[]
-    }
-}
-note top of FileParser
-    Pragmatic approach:
-    Single class for simplicity.
-    Can be refactored to Strategy Pattern when needed.
-end note
+' ============================================
+' USAGE RELATIONSHIPS
+' ============================================
 
-package "Validator Layer" {
-    class SolutionValidator <<Validator>> {
-        - orderRepository: OrderRepository
-        - vehicleRepository: VehicleRepository
-        - depotRepository: DepotRepository
-        + validateImportedSolution(dto: SolutionImportDTO, branchId: Long): ValidationResult
-        - validateRouteConsistency(route: RouteImportDTO): ValidationResult
-        - checkOrderExists(orderId: Long, branchId: Long): boolean
-        - checkVehicleExists(vehicleId: Long, branchId: Long): boolean
-    }
-}
-SolutionValidator --> OrderRepository
-SolutionValidator --> VehicleRepository
-SolutionValidator --> DepotRepository
+' GeometryMapper is used by almost everything with locations
+DepotMapper ..> GeometryMapper : uses
+OrderMapper ..> GeometryMapper : uses
+RouteStopMapper ..> GeometryMapper : uses
 
-note right of SolutionValidator
-    Only validator needed due to complex import logic:
-    • Check order/vehicle exists in same branch
-    • Validate route consistency
-    • Check capacity, time windows
-end note
+' Fleet depends on Vehicle
+FleetMapper ..> VehicleMapper : uses
 
-'note left of Mapper Layer
-'    All mappers now use **branchId** instead of userId
-'    Validation for simple DTOs: use @Valid + Bean Validation
-'end note
+' Solution hierarchy
+SolutionMapper ..> RouteMapper : uses
+RouteMapper ..> RouteStopMapper : uses
+
+' Vehicle context
+VehicleMapper ..> VehicleTypeMapper : references
+
+' Optimization Job components
+OptimizationJobMapper ..> SolutionMapper : references
 
 @enduml

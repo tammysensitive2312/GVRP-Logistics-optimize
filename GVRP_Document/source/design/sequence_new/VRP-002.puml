@@ -1,0 +1,136 @@
+@startuml VRP-002_Revised_Callback_Pattern
+
+title VRP-002: Lập lịch tuyến đường (Revised: Async + Callback Pattern)
+
+actor User
+participant "Frontend" as UI
+
+box "Application Server (Entry API)" #LightYellow
+    participant "OptJob\nController" as JC
+    participant "OptCallback\nController" as CC
+    participant "OptJob\nService" as JS
+    participant "OptCallback\nService" as CBS
+    participant "Email\nService" as ES
+    participant "Job\nRepository" as JR
+    participant "Solution\nRepository" as SR
+end box
+
+box "External System" #LightBlue
+    participant "Optimization\nEngine API" as OE
+end box
+
+database "Database" as DB
+
+autonumber
+
+== Phase 1: Submit Job (User Action) ==
+
+User -> UI: Chọn orders & vehicles -> "Plan Routes"
+UI -> JC: POST /api/v1/jobs/plan\n{orderIds: [...], vehicleIds: [...]}
+activate JC
+
+JC -> JS: submitRoutePlanning(request)
+activate JS
+
+note right of JS
+  1. Validate Order/Vehicle/Depot (Fail fast)
+  2. Check concurrent job limit
+end note
+
+' Validation & Save Job
+JS -> JS: validateAndPrepare()
+JS -> JR: save(job status=PROCESSING)
+activate JR
+JR -> DB: INSERT optimization_jobs
+DB --> JR: Job (ID=100)
+deactivate JR
+
+' Call Engine (Fire & Forget)
+JS -> OE: POST /api/engine/optimize\n{callbackUrl: ".../callbacks/complete"}
+activate OE
+OE --> JS: 202 Accepted (EngineJobId: "abc-xyz")
+deactivate OE
+
+JS -> JR: updateExternalId("abc-xyz")
+JS --> JC: OptimizationJobDTO (PROCESSING)
+deactivate JS
+
+JC --> UI: 202 Accepted\n{jobId: 100, status: "PROCESSING"}
+deactivate JC
+
+UI -> User: Toast: "Job started! Waiting for result..."
+deactivate UI
+
+== Phase 2: Async Processing & Callback (Engine Action) ==
+
+note over OE
+  Engine tính toán độc lập
+  (Mất 5-15 phút)
+end note
+
+... Time passes ...
+
+OE -> CC: POST /api/v1/solutions/callbacks/complete\n{jobId: 100, result: JSON}
+activate CC
+
+CC -> CBS: handleCompletion(callbackRequest)
+activate CBS
+
+CBS -> JR: findById(100)
+activate JR
+JR --> CBS: Job Entity
+deactivate JR
+
+CBS -> CBS: Parse JSON result to Entities\n(Solution -> Routes -> Stops)
+
+' JPA Cascade Save - Chỉ cần save Solution
+CBS -> SR: save(solution)
+activate SR
+SR -> DB: INSERT solution, routes, stops...
+DB --> SR: Saved Solution
+deactivate SR
+
+CBS -> JR: updateStatus(COMPLETED)
+
+' Gửi Email thông báo
+CBS -> ES: sendOptimizationSuccessEmail(user, job, solution)
+activate ES
+ES -> User: 📧 Email: "Your route plan is ready!"
+deactivate ES
+
+CBS --> CC: void
+deactivate CBS
+
+CC --> OE: 200 OK
+deactivate CC
+
+== Phase 3: Cancel Job (User Action) ==
+
+User -> UI: Click "Cancel Job #100"
+
+UI -> JC: DELETE /api/v1/jobs/100
+activate JC
+
+JC -> JS: cancelJob(100)
+activate JS
+
+JS -> JR: findById(100)
+JR --> JS: Job (PROCESSING, extId="abc-xyz")
+
+' Gọi Engine để hủy tiến trình bên đó
+JS -> OE: DELETE /api/engine/jobs/abc-xyz
+activate OE
+OE --> JS: 200 OK (Cancelled)
+deactivate OE
+
+' Cập nhật DB
+JS -> JR: updateStatus(CANCELLED)
+JS --> JC: void
+deactivate JS
+
+JC --> UI: 204 No Content
+deactivate JC
+
+UI -> User: Toast: "Job cancelled successfully"
+
+@enduml

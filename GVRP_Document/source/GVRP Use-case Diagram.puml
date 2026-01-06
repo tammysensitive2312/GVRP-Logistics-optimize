@@ -1,22 +1,110 @@
-@startuml
+@startuml Abstraction
 left to right direction
 
-Planning_Officer as User
+actor "Planning Officer" as User
 
-(Schedule route for drivers) as (schedule)
-(visualize result) as (visualize)
-(Export results in .csv/.txt format) as (export)
-(Input problem data) as (input)
-(Import problem data using file in json/csv format) as (import data)
-(Import solution file in json/csv format) as (import solution)
-(evaluate solution) as (evaluate)
+rectangle "Resource Management" {
+    (Vehicle Management) as VM
+    (Depot Management) as DM
+    (Order Management) as OM
+}
 
-User --> (input)
-User --> (schedule)
-User --> (visualize)
-User --> (export)
-User --> (import solution)
-User --> (evaluate)
+rectangle "Planning" {
+    (Plan routes) as Plan
+    (Export solution) as Export
+}
 
-(import data) .> (input) : <<extend>>
+' Định nghĩa quan hệ
+User --> VM
+User --> DM
+User --> OM
+User --> Plan
+User --> Export
+
+' Chi tiết hóa (Optional - nếu bạn muốn hiện rõ ở đây)
+(VM) ..> (Add Vehicle Type) : <<include>>
+@enduml
+
+@startuml "Order Management"
+left to right direction
+skinparam packageStyle rectangle
+
+actor "Planning Officer" as User
+
+rectangle "Order Management" {
+
+    usecase "Create Order" as Create
+    usecase "Update Order" as Update
+    usecase "Delete Order" as Delete
+    usecase "Search & View" as View
+    usecase "Import Orders (Json/CSV/Text)" as Import
+
+    usecase "Validate & Geocode" as Geo
+    usecase "Validate Capacity/TimeWindow" as Validate
+}
+
+User --> Create
+User --> Update
+User --> Delete
+User --> View
+User --> Import
+
+' Quan hệ Include (Bắt buộc phải làm)
+' Khi tạo hoặc sửa, hoặc import, hệ thống BẮT BUỘC phải đổi địa chỉ thành tọa độ
+Create ..> Geo : <<include>>
+Update ..> Geo : <<include>>
+Import ..> Geo : <<include>>
+
+Create ..> Validate : <<include>>
+Update ..> Validate : <<include>>
+Import ..> Validate : <<include>>
+
+@enduml
+
+@startuml "Vehicle Management"
+left to right direction
+skinparam packageStyle rectangle
+
+actor "Planning Officer" as User
+
+rectangle "Fleet Management" {
+
+    ' Physical Vehicles'
+    usecase "Add Vehicle" as AddVehicle
+    usecase "Update Vehicle" as UpdateVehicle
+    usecase "Disable Vehicle" as DeleteVehicle
+    usecase "List Vehicles" as ListVehicle
+
+    ' Vehicle Profiles'
+    usecase "Manage Vehicle Types" as ManageTypes
+    note bottom of ManageTypes
+      Define:
+      - Weight/Volume/Capacity
+      - Cost per km/h
+      - ...
+    end note
+
+    ' Các chức năng kiểm tra/hỗ trợ
+    usecase "Assign Skills/Tags" as AssignSkills
+    usecase "Validate Profile" as ValidateVehicle
+}
+
+User --> AddVehicle
+User --> UpdateVehicle
+User --> DeleteVehicle
+User --> ListVehicle
+User --> ManageTypes
+
+' Quan hệ Include (Bắt buộc)
+' Khi thêm/sửa xe, bắt buộc phải chọn loại xe và validate thông tin
+AddVehicle ..> ManageTypes : <<include>>
+UpdateVehicle ..> ManageTypes : <<include>>
+AddVehicle ..> ValidateVehicle : <<include>>
+UpdateVehicle ..> ValidateVehicle : <<include>>
+
+' Quan hệ Extend (Mở rộng - Tùy chọn)
+' Việc gán kỹ năng (ví dụ: xe có bửng nâng, xe lạnh) là tùy chọn khi thêm/sửa
+AssignSkills .> AddVehicle : <<extend>>
+AssignSkills .> UpdateVehicle : <<extend>>
+
 @enduml

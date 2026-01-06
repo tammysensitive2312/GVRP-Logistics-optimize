@@ -52,7 +52,7 @@ public class OptimizationConfigMapper {
 
         switch (speed) {
             case FAST:
-                config.setMaxIterations(500);
+                config.setMaxIterations(1000);
                 config.setTimeoutSeconds(180);  // 3 minutes
                 config.setNumThreads(1);
                 break;

@@ -1,154 +1,111 @@
-@startuml 02_Repository_Layer
+@startuml Repository_Layer_V2
 !include 00_Styling.puml
 !include 01_Entity_Layer.puml
+skinparam shadowing false
+skinparam classAttributeIconSize 0
 
 package "Repository Layer" {
 
-    ' ==================== BRANCH & USER REPO ====================
-    interface BranchRepository <<Repository>> {
-        + save(branch: Branch): Branch
-        + findById(id: Long): Optional<Branch>
+    ' ==================== CORE & AUTH ====================
+    interface BranchRepository {
         + findByName(name: String): Optional<Branch>
-        + findAll(): List<Branch>
         + existsByName(name: String): boolean
-        + deleteById(id: Long): void
     }
 
-    interface UserRepository <<Repository>> {
-        + save(user: User): User
-        + findById(id: Long): Optional<User>
-        + findByUsername(username: String): Optional<User>
+    interface UserRepository {
+        + findByUsername(name: String): Optional<User>
         + findByEmail(email: String): Optional<User>
         + findByBranchId(branchId: Long): List<User>
-        + existsByUsername(username: String): boolean
+        + findByBranchIdAndRole(id: Long, role: UserRole): List<User>
+        + existsByUsername(name: String): boolean
         + existsByEmail(email: String): boolean
-        + deleteById(id: Long): void
+        + findByUsernameAndBranchId(u: String, b: Long): Optional<User>
     }
 
-    ' ==================== DEPOT, FLEET, VEHICLE REPO ====================
-
-    interface DepotRepository <<Repository>> {
-        + save(entity: Depot): Depot
-        + findById(id: Long): Optional<Depot>
+    ' ==================== RESOURCE MANAGEMENT ====================
+    interface DepotRepository {
         + findByBranchId(branchId: Long): List<Depot>
-        + findByBranchIdAndName(branchId: Long, name: String): Optional<Depot>
+        + findByBranchIdAndName(id: Long, n: String): Optional<Depot>
         + existsByBranchId(branchId: Long): boolean
-        + deleteById(id: Long): void
+        --
+        {method} // Native Spatial Query
+        + findDepotsWithinRadius(bId, lng, lat, radius): List<Depot>
     }
 
-    interface FleetRepository <<Repository>> {
-        + save(entity: Fleet): Fleet
-        + findById(id: Long): Optional<Fleet>
-        + findByBranchId(branchId: Long): Optional<Fleet>
-        + existsByBranchId(branchId: Long): boolean
-        + deleteById(id: Long): void
+    interface VehicleTypeRepository {
+        + findAllByBranchId(branchId: Long): List<VehicleType>
     }
 
-    interface VehicleRepository <<Repository>> {
-        + save(entity: Vehicle): Vehicle
-        + findById(id: Long): Optional<Vehicle>
-        + findByFleetId(fleetId: Long): List<Vehicle>
+    interface FleetRepository {
+        + findByIdAndBranchId(fId: Long, bId: Long): Optional<Fleet>
+        + existsByBranchId(branchId: Long): boolean
+        + findAllByBranchId(branchId: Long): List<Fleet>
+    }
+
+    interface VehicleRepository {
+        + findByFleetBranchId(bId: Long, p: Pageable): Page<Vehicle>
         + findByStatus(status: VehicleStatus): List<Vehicle>
         + findByVehicleLicensePlate(plate: String): Optional<Vehicle>
         + existsByVehicleLicensePlate(plate: String): boolean
-        + deleteById(id: Long): void
+        --
+        {method} // EntityGraph: startDepot, endDepot...
+        + findAllByIdWithDepots(ids: List<Long>): List<Vehicle>
     }
 
-    ' ==================== ORDER REPO ====================
-
-    interface OrderRepository <<Repository>> {
-        + save(entity: Order): Order
-        + findById(id: Long): Optional<Order>
-        + findByBranchId(branchId: Long): List<Order>
-        + findByBranchIdAndStatus(branchId: Long, status: OrderStatus): List<Order>
-        + findByBranchIdAndOrderCode(branchId: Long, code: String): Optional<Order>
-        + existsByBranchIdAndOrderCode(branchId: Long, code: String): boolean
-        + findOrdersWithinRadius(branchId: Long, point: String, radius: double): List<Order>
-        + deleteById(id: Long): void
+    ' ==================== OPERATION ====================
+    interface OrderRepository {
+        + findByIdAndBranchId(oId: Long, bId: Long): Optional<Order>
+        + findByStatus(ids: List<Long>, s: OrderStatus): List<Order>
+        + findByBranchIdAndOrderCode(bId: Long, c: String): Optional<Order>
+        + existsByBranchIdAndOrderCode(bId: Long, c: String): boolean
+        + findByBranchIdOrderByCreatedAtDesc(bId: Long, p: Pageable): Page<Order>
     }
 
-    ' ==================== NEW: OPTIMIZATION JOB REPO ====================
-
-    interface OptimizationJobRepository <<Repository>> {
-        + save(entity: OptimizationJob): OptimizationJob
-        + findById(id: Long): Optional<OptimizationJob>
-        + findByBranchId(branchId: Long): List<OptimizationJob>
-        + findByBranchIdOrderByCreatedAtDesc(branchId: Long, pageable: Pageable): List<OptimizationJob>
-        + findByUserId(userId: Long): List<OptimizationJob>
-        + findByUserIdOrderByCreatedAtDesc(userId: Long): List<OptimizationJob>
+    ' ==================== OPTIMIZATION ====================
+    interface OptimizationJobRepository {
+        + findFirstByBranchIdAndStatusOrderByCreatedAtDesc(bId: Long, s: JobStatus): Optional<Job>
+        + existsByBranchIdAndStatus(bId: Long, s: JobStatus): boolean
+        + findByBranchIdAndStatus(bId: Long, s: JobStatus): List<Job>
+        + countByBranchIdAndStatus(bId: Long, s: JobStatus): Long
         --
-        + existsByBranchIdAndStatus(branchId: Long, status: JobStatus): boolean
-        + countByBranchIdAndStatus(branchId: Long, status: JobStatus): int
-        + findFirstByBranchIdAndStatusOrderByCreatedAtDesc(branchId: Long, status: JobStatus): Optional<OptimizationJob>
-        + findByBranchIdAndStatusIn(branchId: Long, statuses: List<JobStatus>): List<OptimizationJob>
-        --
-        + findByStatusAndCreatedAtBefore(status: JobStatus, cutoffDate: LocalDateTime): List<OptimizationJob>
-        + findByCreatedAtBeforeAndStatusIn(cutoffDate: LocalDateTime, statuses: List<JobStatus>): List<OptimizationJob>
-        --
-        + deleteById(id: Long): void
+        {method} // Custom Query
+        + findJobHistory(bId: Long, p: Pageable): List<Job>
     }
 
-    ' ==================== UPDATED: SOLUTION REPO ====================
-
-    interface SolutionRepository <<Repository>> {
-        + save(entity: Solution): Solution
-        + findById(id: Long): Optional<Solution>
+    interface SolutionRepository {
+        + hasCompletedSolutions(branchId: Long): boolean
         + findByJobId(jobId: Long): Optional<Solution>
-        + findByBranchId(branchId: Long): List<Solution>
-        + findByBranchIdAndType(branchId: Long, type: SolutionType): List<Solution>
-        + findFirstByBranchIdOrderByCreatedAtDesc(branchId: Long): Optional<Solution>
-        + countByBranchId(branchId: Long): long
-        + deleteById(id: Long): void
+        + deleteByJobId(jobId: Long): Boolean
+        --
+        {method} // EntityGraph: routes, vehicles...
+        + findWithDetailsById(id: Long): Optional<Solution>
     }
 
-    interface RouteRepository <<Repository>> {
-        + save(entity: Route): Route
-        + findById(id: Long): Optional<Route>
-        + findBySolutionId(solutionId: Long): List<Route>
-        + findByVehicleId(vehicleId: Long): List<Route>
-        + deleteById(id: Long): void
+    interface RouteRepository {
+        + findBySolutionIdOrderByRouteOrderAsc(sId: Long): List<Route>
+        + findByVehicleId(vId: Long): List<Route>
+        + findBySolutionIdAndVehicleId(sId: Long, vId: Long): List<Route>
+        + countBySolutionId(sId: Long): Long
+        --
+        + calculateTotalDistance(sId: Long): Double
+        + findUnderUtilizedRoutes(sId: Long, threshold: Double): List<Route>
     }
 
-    interface RouteSegmentRepository <<Repository>> {
-        + save(entity: RouteSegment): RouteSegment
-        + findById(id: Long): Optional<RouteSegment>
-        + findByRouteIdOrderBySequenceNumberAsc(routeId: Long): List<RouteSegment>
-        + findByOrderId(orderId: Long): List<RouteSegment>
-        + deleteById(id: Long): void
+    interface RouteStopRepository {
+        + findByRouteIdOrderBySequenceNumberAsc(rId: Long): List<RouteStop>
     }
 }
 
-' ============================================
-' RELATIONSHIP: REPOSITORY MANAGES ENTITY
-' ============================================
+' Relationships
 BranchRepository ..> Branch : manages
 UserRepository ..> User : manages
 DepotRepository ..> Depot : manages
-FleetRepository ..> Fleet : manages
+VehicleTypeRepository ..> VehicleType : manages
 VehicleRepository ..> Vehicle : manages
 OrderRepository ..> Order : manages
-
 OptimizationJobRepository ..> OptimizationJob : manages
-
 SolutionRepository ..> Solution : manages
 RouteRepository ..> Route : manages
-RouteSegmentRepository ..> RouteSegment : manages
-
-' ============================================
-' NOTES
-' ============================================
-
-legend right
-    **Repository naming conventions:**
-    • findBy* - Query methods
-    • existsBy* - Boolean checks
-    • countBy* - Count queries
-    • deleteBy* - Bulk deletes
-
-    **NEW in this version:**
-    • OptimizationJobRepository
-    • Job-specific query methods
-    • Solution.findByJobId()
-endlegend
+RouteStopRepository ..> RouteStop : manages
 
 @enduml

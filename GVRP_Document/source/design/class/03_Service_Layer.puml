@@ -1,306 +1,127 @@
-@startuml 03_Service_Layer
+@startuml Service_Layer_V3
 !include 00_Styling.puml
 !include 02_Repository_Layer.puml
+skinparam shadowing false
+skinparam classAttributeIconSize 0
 
-' ============================================
-' SERVICE LAYER (UPDATED WITH JOB SERVICE)
-' ============================================
 package "Service Layer" {
 
-    class BranchService <<Service>> {
-        - branchRepository: BranchRepository
-        - branchMapper: BranchMapper
-        --
-        + createBranch(dto: BranchInputDTO): BranchDTO
-        + getAllBranches(): List<BranchDTO>
-        + getBranchById(id: Long): BranchDTO
-        + updateBranch(id: Long, dto: BranchInputDTO): BranchDTO
-        + deleteBranch(id: Long): void
-        + existsByName(name: String): boolean
+    class OptimizationJobService {
+        + submitRoutePlanningJob(RoutePlanningRequest): OptimizationJobDTO
+        + cancelJob(id, branchId): void
+        + getCurrentRunningJob(branchId): Optional<OptimizationJobDTO>
+        + getJobHistory(branchId, limit): List<OptimizationJobDTO>
+        - prepareEngineRequest(job, request): EngineOptimizationRequest
+        - estimateDuration(orderCount, vehicleCount): Integer
     }
 
-    class UserService <<Service>> {
-        - userRepository: UserRepository
-        - branchRepository: BranchRepository
-        - userMapper: UserMapper
-        - passwordEncoder: PasswordEncoder
-        --
-        + createUser(dto: UserInputDTO, branchId: Long): UserDTO
-        + getUsersByBranchId(branchId: Long): List<UserDTO>
-        + getUserById(id: Long): UserDTO
-        + updateUser(id: Long, dto: UserInputDTO): UserDTO
-        + deleteUser(id: Long): void
-        + changePassword(id: Long, request: ChangePasswordRequest): void
-        + authenticate(username: String, password: String): JwtResponse
+    class OptimizationCallbackService {
+        + handleCompletion(CompletionCallback): void
+        + handleFailure(FailureCallback): void
+        + handleProgressUpdate(ProgressCallback): void
+        - saveSolutionAndRoutes(job, result): Solution
+        - createRouteStop(route, stopData): RouteStop
     }
 
-    class DepotService <<Service>> {
-        - depotRepository: DepotRepository
-        - branchRepository: BranchRepository
-        - depotMapper: DepotMapper
-        --
-        + createDepot(dto: DepotInputDTO, branchId: Long): DepotDTO
-        + getDepotsByBranchId(branchId: Long): List<DepotDTO>
-        + getDepotById(id: Long): DepotDTO
-        + updateDepot(id: Long, dto: DepotInputDTO): DepotDTO
-        + deleteDepot(id: Long): void
-        + hasExistingDepot(branchId: Long): boolean
+    class OrderImportService {
+        + createOrdersByImportRequest(OrderImportRequest, branchId): ImportResultDTO
+        + getAllOrdersPaginated(branchId, page, size): PageResponse<OrderDTO>
+        + updateOrdersById(id, branchId, date, dto): OrderDTO
+        - processManualEntries(text, branch, date): List<Order>
+        - processFileEntries(file, branch, date): List<Order>
     }
 
-    class FleetService <<Service>> {
-        - fleetRepository: FleetRepository
-        - vehicleRepository: VehicleRepository
-        - depotRepository: DepotRepository
-        - branchRepository: BranchRepository
-        - fleetMapper: FleetMapper
-        - vehicleMapper: VehicleMapper
-        --
-        + createFleet(dto: FleetInputDTO, branchId: Long): FleetDTO
-        + getFleetByBranchId(branchId: Long): FleetDTO
-        + updateFleet(id: Long, dto: FleetInputDTO): FleetDTO
-        + deleteFleet(id: Long): void
-        + addVehicles(fleetId: Long, vehicles: List<VehicleInputDTO>): List<VehicleDTO>
-        + removeVehicle(vehicleId: Long): void
-        + getAvailableVehicles(branchId: Long): List<VehicleDTO>
+    class VehicleService {
+        + createVehicle(VehicleInputDTO, fleetId): VehicleDTO
+        + updateVehicle(id, VehicleUpdateDTO): VehicleDTO
+        + getAllVehiclesPaginated(branchId, page, size): PageResponse<VehicleDTO>
     }
 
-    class OrderImportService <<Service>> {
-        - orderRepository: OrderRepository
-        - branchRepository: BranchRepository
-        - fileParser: FileParser
-        - textParser: TextParser
-        - orderMapper: OrderMapper
-        --
-        + processImportRequest(request: OrderImportRequest, branchId: Long): ImportResult
-        - validateInputType(request: OrderImportRequest): void
-        - parseInput(request: OrderImportRequest): List<OrderInputDTO>
-        - saveOrders(branchId: Long, orders: List<OrderInputDTO>, overwrite: boolean): SaveResult
+    class VehicleTypeService {
+        + createVehicleType(VehicleTypeInputDTO, branchId): VehicleTypeDTO
+        + getVehicleTypesByBranchId(branchId): List<VehicleTypeDTO>
     }
 
-    class OrderService <<Service>> {
-        - orderRepository: OrderRepository
-        - branchRepository: BranchRepository
-        - orderMapper: OrderMapper
-        --
-        + getOrdersByBranchId(branchId: Long): List<OrderDTO>
-        + getOrderById(id: Long): OrderDTO
-        + getOrdersByStatus(branchId: Long, status: OrderStatus): List<OrderDTO>
-        + updateOrderStatus(orderId: Long, status: OrderStatus): OrderDTO
-        + deleteOrder(id: Long): void
+    class DepotService {
+        + createDepot(DepotInputDTO, branchId): DepotDTO
+        + getAllDepotsByBranchId(branchId): List<DepotDTO>
     }
 
-    ' ============================================
-    ' OPTIMIZATION JOB SERVICE (CORE BUSINESS LOGIC)
-    ' ============================================
-    class OptimizationJobService <<Service>> {
-        - jobRepository: OptimizationJobRepository
-        - solutionRepository: SolutionRepository
-        - routeRepository: RouteRepository
-        - routeSegmentRepository: RouteSegmentRepository
-        - orderRepository: OrderRepository
-        - vehicleRepository: VehicleRepository
-        - depotRepository: DepotRepository
-        - userRepository: UserRepository
-        - optimizationEngine: OptimizationEngine
-        - emailService: EmailService
-        - jobMapper: OptimizationJobMapper
-        - solutionMapper: SolutionMapper
-        - objectMapper: ObjectMapper
-        --
-        + submitJob(request: RoutePlanningRequest, branchId: Long, userId: Long): OptimizationJobDTO
-        + cancelJob(jobId: Long, branchId: Long): void
-        + getJobById(jobId: Long, branchId: Long): OptimizationJobDTO
-        + getCurrentRunningJob(branchId: Long): OptimizationJobDTO
-        + getJobHistory(branchId: Long, limit: int): List<OptimizationJobDTO>
-        + retryJob(jobId: Long, branchId: Long): OptimizationJobDTO
-        --
-        - processOptimization(job: OptimizationJob): void
-        - validateJobInput(request: RoutePlanningRequest, branchId: Long): void
-        - handleJobCompletion(job: OptimizationJob, result: OptimizationResult): void
-        - handleJobFailure(job: OptimizationJob, error: Exception): void
-        - saveSolution(job: OptimizationJob, result: OptimizationResult): Solution
-        - estimateDuration(request: RoutePlanningRequest): Integer
+    class SolutionService {
+        + getSolutionDetail(id): SolutionDetailResponseDTO
     }
 
-    class SolutionImportService <<Service>> {
-        - solutionRepository: SolutionRepository
-        - routeRepository: RouteRepository
-        - routeSegmentRepository: RouteSegmentRepository
-        - branchRepository: BranchRepository
-        - fileParser: FileParser
-        - solutionValidator: SolutionValidator
-        - solutionMapper: SolutionMapper
-        --
-        + importSolution(file: MultipartFile, branchId: Long): SolutionDTO
-        - validateSolutionData(dto: SolutionImportDTO, branchId: Long): ValidationResult
-        - buildSolutionFromImport(dto: SolutionImportDTO, branchId: Long): Solution
+    ' --- Helper/Infrastructure Services ---
+
+    class GeocodingService {
+        + geocode(address): GeocodeResult
     }
 
-    class SolutionExportService <<Service>> {
-        - solutionRepository: SolutionRepository
-        - fileGenerator: FileGenerator
-        --
-        + exportSolution(solutionId: Long, format: ExportFormat): byte[]
-        + getSolutionForExport(solutionId: Long): SolutionExportDTO
-        + generateFileName(solution: Solution, format: ExportFormat): String
+    class VehicleFeaturesService {
+        + parseFeatures(json): VehicleFeaturesDTO
+        + toJson(dto): String
+        + getEmissionFactor(VehicleType): Double
     }
 
-    class SolutionHistoryService <<Service>> {
-        - solutionRepository: SolutionRepository
-        - solutionMapper: SolutionMapper
-        --
-        + getRecentSolutions(branchId: Long, count: int): List<SolutionDTO>
-        + getLatestSolution(branchId: Long): SolutionDTO
-        + getSolutionsByType(branchId: Long, type: SolutionType): List<SolutionDTO>
-        + hasHistory(branchId: Long): boolean
-        + getSolutionCount(branchId: Long): long
-        + calculateStatistics(branchId: Long, sampleSize: int): SolutionStatistics
-    }
-
-    class SolutionAnalysisService <<Service>> {
-        - solutionHistoryService: SolutionHistoryService
-        - metricsCalculator: MetricsCalculator
-        - statisticsEngine: StatisticsEngine
-        --
-        + analyzeSolution(solutionId: Long, comparisonCount: int): ComparisonResult
-        + compareWithHistory(current: SolutionDTO, historical: List<SolutionDTO>): ComparisonResult
-        + calculateDeviations(current: SolutionDTO, stats: SolutionStatistics): List<DeviationMetric>
-    }
-
-    class EmailService <<Service>> {
-        - mailSender: JavaMailSender
-        - frontendUrl: String
-        - templateEngine: TemplateEngine
-        --
-        + sendOptimizationSuccessEmail(user: User, job: OptimizationJob, solution: Solution): void
-        + sendOptimizationFailureEmail(user: User, job: OptimizationJob, error: Exception): void
-        - buildSuccessEmailBody(user: User, job: OptimizationJob, solution: Solution): String
-        - buildFailureEmailBody(user: User, job: OptimizationJob, error: Exception): String
-        - sendEmail(to: String, subject: String, body: String): void
+    class EmailService {
+        + sendOptimizationSuccessEmail(user, job, solution): void
+        + sendOptimizationFailureEmail(user, job, error): void
     }
 }
 
 ' ============================================
-' SERVICE → REPOSITORY / MAPPER / ENGINE
+' INTERNAL class DEPENDENCIES
 ' ============================================
 
-BranchService --> BranchRepository
-BranchService --> BranchMapper
+' Job Service gọi API Client bên ngoài
+OptimizationJobService --> "Integration" EngineApiClient
 
-UserService --> UserRepository
-UserService --> BranchRepository
-UserService --> UserMapper
-UserService --> PasswordEncoder
+' Callback xong thì gửi Email
+OptimizationCallbackService --> EmailService
 
-DepotService --> DepotRepository
-DepotService --> BranchRepository
-DepotService --> DepotMapper
+' Import đơn hàng cần Geocoding để lấy tọa độ
+OrderImportService --> GeocodingService
 
-FleetService --> FleetRepository
-FleetService --> VehicleRepository
-FleetService --> DepotRepository
-FleetService --> BranchRepository
-FleetService --> FleetMapper
-FleetService --> VehicleMapper
+' Quản lý loại xe cần xử lý JSON features
+VehicleTypeService --> VehicleFeaturesService
+VehicleService --> VehicleTypeService
 
-OrderImportService --> OrderRepository
-OrderImportService --> BranchRepository
-OrderImportService --> FileParser
-OrderImportService --> TextParser
-OrderImportService --> OrderMapper
-
-OrderService --> OrderRepository
-OrderService --> BranchRepository
-OrderService --> OrderMapper
-
-' NEW: OptimizationJobService dependencies
-OptimizationJobService --> OptimizationJobRepository
-OptimizationJobService --> SolutionRepository
-OptimizationJobService --> RouteRepository
-OptimizationJobService --> RouteSegmentRepository
-OptimizationJobService --> OrderRepository
-OptimizationJobService --> VehicleRepository
-OptimizationJobService --> DepotRepository
-OptimizationJobService --> UserRepository
-OptimizationJobService --> OptimizationEngine
-OptimizationJobService --> EmailService
-OptimizationJobService --> OptimizationJobMapper
-OptimizationJobService --> SolutionMapper
-OptimizationJobService --> ObjectMapper
-
-SolutionImportService --> SolutionRepository
-SolutionImportService --> RouteRepository
-SolutionImportService --> RouteSegmentRepository
-SolutionImportService --> BranchRepository
-SolutionImportService --> FileParser
-SolutionImportService --> SolutionValidator
-SolutionImportService --> SolutionMapper
-
-SolutionExportService --> SolutionRepository
-SolutionExportService --> FileGenerator
-
-SolutionHistoryService --> SolutionRepository
-SolutionHistoryService --> SolutionMapper
-
-SolutionAnalysisService --> SolutionHistoryService
-SolutionAnalysisService --> MetricsCalculator
-SolutionAnalysisService --> StatisticsEngine
+' OptimizationJob cần mapper config
+OptimizationJobService --> OptimizationConfigMapper
 
 ' ============================================
 ' NOTES
 ' ============================================
 
 note top of OptimizationJobService
-    **NEW: OptimizationJobService**
-
-    Core service for job management.
-    Responsibilities:
-    • Submit new optimization jobs
-    • Cancel running jobs
-    • Track job status and progress
-    • Handle async optimization process
-    • Save solutions when completed
-    • Send email notifications
-
-    Key methods:
-    • submitJob(): Create job, start async processing
-    • cancelJob(): Cancel job in engine + update status
-    • processOptimization(): Background async method
-
-    Business rules:
-    • Max 1 PROCESSING job per branch
-    • Only PROCESSING jobs can be cancelled
-    • inputData stored for retry capability
+  **Logic đặc trưng:**
+  - Chuyển đổi Request người dùng 
+    thành Request cho Engine.
+  - Serialize dữ liệu input vào DB 
+    để hỗ trợ tính năng Retry.
 end note
 
-note bottom of EmailService
-    **UPDATED: EmailService**
+note top of OptimizationCallbackService
+  **Xử lý bất đồng bộ:**
+  - Được gọi bởi CallbackController.
+  - Phân tích JSON kết quả từ Engine 
+    để map vào Solution/Route/RouteStop.
+  - Sử dụng @Transactional để đảm bảo 
+    tính toàn vẹn dữ liệu kết quả.
+end note
 
-    Now receives OptimizationJob + Solution.
-    Can access job metadata:
-    • Job ID, timestamps
-    • User who submitted
-    • Input parameters
-
-    Email content includes:
-    • Job details
-    • Solution metrics
-    • Direct link to solution
+note right of OrderImportService
+  **Cơ chế Import:**
+  - Hỗ trợ cả File (Excel/CSV) và Text Area.
+  - Gọi GeocodingService cho từng dòng 
+    để xác định vị trí trên bản đồ.
 end note
 
 legend right
-    **Service Architecture:**
-
-    **NEW Services:**
-    • OptimizationJobService (job lifecycle management)
-
-    **UPDATED Services:**
-    • EmailService (now job-aware)
-
-    **Async Processing:**
-    • submitJob() returns immediately
-    • processOptimization() runs in background
-    • Email sent when completed/failed
+    **Nguyên tắc thiết kế:**
+    • **Stateless:** Các Service không lưu trạng thái.
+    • **Transaction:** Xử lý @Transactional tại tầng Service.
+    • **DTO Separation:** Controller nhận DTO -> Service xử lý Entity -> Mapper trả về DTO.
 endlegend
 
 @enduml

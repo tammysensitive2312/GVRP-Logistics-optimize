@@ -1,108 +1,65 @@
-@startuml 01_Entity_Layer
+@startuml Entity_Layer_V2
 !include 00_Styling.puml
+skinparam shadowing false
+skinparam classAttributeIconSize 0
 
 package "Entity Layer" {
 
-    class Branch <<Entity>> {
+    class  Branch {
         - id: Long
         - name: String
-        --
-        + getDepots(): List<Depot>
-        + getUsers(): List<User>
-        + getOrders(): List<Order>
-        + getSolutions(): List<Solution>
-        + getJobs(): List<OptimizationJob>
     }
 
-    class User <<Entity>> {
+    class  VehicleType {
         - id: Long
-        - username: String
-        - password: String
-        - email: String
-        - fullName: String
-        - role: UserRole
-        - enabled: boolean
-        --
-        + hasRole(role: UserRole): boolean
-        + isPlanner(): boolean
-        + isCustomer(): boolean
+        - typeName: String
+        - vehicleFeatures: JSON/String
+        - description: String
+        - capacity: Integer
+        - fixedCost: BigDecimal
+        - costPerKm: BigDecimal
+        - costPerHour: BigDecimal
+        - maxDistance: BigDecimal
+        - maxDuration: BigDecimal
     }
 
-    enum UserRole {
-        PLANNER
-        CUSTOMER
-    }
-
-    class Depot <<Entity>> {
+    class  Vehicle {
         - id: Long
-        - branchId: Long
-        - name: String
-        - address: String
-        - location: Point
+        - vehicleLicensePlate: String
+        - status: VehicleStatus
         --
-        + isValidLocation(): boolean
-        + getLatitude(): double
-        + getLongitude(): double
-        + toGHPoint(): GHPoint
+        + isAvailable(): boolean
     }
 
-    class Fleet <<Entity>> {
+    class  Fleet {
         - id: Long
-        - branchId: Long
         - fleetName: String
         --
-        + getTotalCapacity(): int
         + getVehicleCount(): int
         + getAvailableVehicles(): List<Vehicle>
     }
 
-    class Vehicle <<Entity>> {
+    class  Depot {
         - id: Long
-        - vehicleLicensePlate: String
-        - vehicleFeature: String
-        - capacity: Integer
-        - fixedCost: Double
-        - costPerKm: Double
-        - costPerHour: Double
-        - maxDistance: Double
-        - startDepotId: Long
-        - endDepotId: Long
-        - maxDuration: Double
-        - status: VehicleStatus
-        --
-        + isAvailable(): boolean
-        + canFulfill(demand: Double): boolean
+        - name: String
+        - address: String
+        - location: Point
     }
 
-    class Order <<Entity>> {
+    class  Order {
         - id: Long
-        - branchId: Long
         - orderCode: String
         - customerName: String
-        - customerPhone: String
         - address: String
         - location: Point
         - demand: Double
         - timeWindowStart: LocalTime
         - timeWindowEnd: LocalTime
         - status: OrderStatus
-        - priority: Integer
-        - deliveryNotes: String
-        --
-        + hasTimeWindow(): boolean
-        + isWithinTimeWindow(time: LocalTime): boolean
-        + isUrgent(): boolean
-        + isHighPriority(): boolean
-        + canBeScheduled(): boolean
-        + getLatitude(): double
-        + getLongitude(): double
-        + toGHPoint(): GHPoint
     }
 
-    class OptimizationJob <<Entity>> {
+    class  OptimizationJob {
         - id: Long
-        - branchId: Long
-        - userId: Long
         - status: JobStatus
         - createdAt: LocalDateTime
         - startedAt: LocalDateTime
@@ -111,93 +68,65 @@ package "Entity Layer" {
         - inputData: String
         - errorMessage: String
         - externalJobId: String
-        --
-        + isRunning(): boolean
-        + isPending(): boolean
-        + isCompleted(): boolean
-        + isFailed(): boolean
-        + isCancelled(): boolean
-        + canBeCancelled(): boolean
-        + getRemainingSeconds(): Integer
-        + getElapsedSeconds(): Long
     }
 
-    enum JobStatus {
-        PENDING
-        PROCESSING
-        COMPLETED
-        FAILED
-        CANCELLED
-    }
-
-    class Solution <<Entity>> {
+    class  Solution {
         - id: Long
-        - jobId: Long
-        - branchId: Long
         - status: SolutionStatus
         - type: SolutionType
-        - createdBy: String
-        - totalDistance: Double
-        - totalCO2: Double
-        - totalServiceTime: Double
+        - totalCost: BigDecimal
+        - totalDistance: BigDecimal
+        - totalCO2: BigDecimal
+        - totalTime: BigDecimal
         - totalVehiclesUsed: Integer
         - servedOrders: Integer
         - unservedOrders: Integer
-        - createdAt: LocalDateTime
-        --
-        + getNumberOfRoutes(): int
-        + isFeasible(): boolean
-        + isOptimized(): boolean
-        + isEngineGenerated(): boolean
-        + isFileImported(): boolean
+        - errorMessage: String
     }
 
-    class Route <<Entity>> {
+    class  Route {
         - id: Long
         - routeOrder: Integer
-        - distance: Double
-        - co2Emission: Double
-        - serviceTime: Double
+        - distance: BigDecimal
+        - co2Emission: BigDecimal
+        - serviceTime: BigDecimal
         - orderCount: Integer
-        - loadUtilization: Double
+        - loadUtilization: BigDecimal
         --
         + getEstimatedStartTime(): LocalTime
         + getEstimatedEndTime(): LocalTime
         + isOverloaded(): boolean
-        + getFirstSegment(): RouteSegment
-        + getLastSegment(): RouteSegment
     }
 
-    class RouteSegment <<Entity>> {
+    class  RouteStop {
         - id: Long
         - sequenceNumber: Integer
-        - fromType: LocationType
-        - fromLocationId: Long
-        - fromAddress: String
-        - fromLocation: Point
-        - toType: LocationType
-        - toLocationId: Long
-        - toAddress: String
-        - toLocation: Point
-        - distance: Double
-        - duration: Double
+        - type: LocationType
+        - locationId: String
+        - locationName: String
+        - location: Point
         - arrivalTime: LocalTime
         - departureTime: LocalTime
-        - serviceTime: Double
-        - loadBefore: Double
-        - loadAfter: Double
+        - serviceTime: BigDecimal
+        - waitTime: BigDecimal
+        - demand: BigDecimal
+        - loadAfter: BigDecimal
+        - distanceToNext: BigDecimal
+        - timeToNext: BigDecimal
         --
-        + isDepotToDepot(): boolean
-        + isDepotToOrder(): boolean
-        + isOrderToOrder(): boolean
-        + getLoadDelivered(): Double
+        + isDepot(): boolean
+        + isCustomer(): boolean
+        + getLoadBefore(): BigDecimal
     }
 
-    enum VehicleStatus {
-        AVAILABLE
-        IN_USE
-        MAINTENANCE
-        RETIRED
+    class  User {
+        - id: Long
+        - username: String
+        - password: String
+        - email: String
+        - full_name: String
+        - role: UserRole
+        - enabled: boolean
     }
 
     enum OrderStatus {
@@ -224,124 +153,40 @@ package "Entity Layer" {
         DEPOT
         ORDER
     }
+
+    enum UserRole {
+        PLANNER
+        CUSTOMER
+    }
 }
 
 ' ============================================
 ' RELATIONSHIPS
 ' ============================================
-
-' Branch relationships
-Branch "1" *-- "*" Depot : owns
-Branch "1" *-- "*" Fleet : owns
 Branch "1" *-- "*" User : owns
-Branch "1" *-- "*" Order : owns
-Branch "1" *-- "*" Solution : owns
-Branch "1" *-- "*" OptimizationJob : owns
+Branch "1" *-- "*" VehicleType
+Branch "1" *-- "*" Fleet
+Branch "1" *-- "*" Depot
+Branch "1" *-- "*" Order
+Branch "1" *-- "*" Solution
+Branch "1" *-- "*" OptimizationJob
 
-User --> "1" Branch : belongs to
-Depot --> "1" Branch : belongs to
-Fleet --> "1" Branch : belongs to
-Order --> "1" Branch : belongs to
+' Fleet & Vehicle
+Fleet "1" *-- "*" Vehicle : "fleet_id"
+VehicleType "1" <-- "*" Vehicle : "vehicle_type_id"
+Vehicle "*" --> "1" Depot : "start_depot_id"
+Vehicle "*" --> "1" Depot : "end_depot_id"
 
-' Fleet and Vehicle relationships
-Depot "1" *-- "*" Vehicle : contains
-Fleet "1" *-- "*" Vehicle : contains
-Vehicle "*" --> "1" Depot : stored at
-Vehicle "*" --> "1" Fleet : belongs to
-
-' NEW: Job and Solution relationship
-OptimizationJob "1" -- "0..1" Solution : produces
-Solution "*" --> "1" OptimizationJob : created by
-OptimizationJob "*" --> "1" Branch : belongs to
+' Solution & Job (One-to-One)
+OptimizationJob "1" -- "1" Solution : "job_id"
 OptimizationJob "*" --> "1" User : submitted by
 
-' Solution and Route relationships
-Solution "1" *-- "*" Route : contains
-Route "*" --> "1" Solution : part of
-Route "*" --> "1" Vehicle : uses
-Route "1" *-- "*" RouteSegment : contains
-RouteSegment "*" --> "1" Route : part of
-RouteSegment "*" --> "0..1" Order : references
+' Solution -> Route -> RouteStop
+Solution "1" *-- "*" Route : "solution_id"
+Route "1" *-- "*" RouteStop : "segments"
+Route "*" --> "1" Vehicle : "vehicle_id"
 
-' Enum associations
-Vehicle ..> VehicleStatus
-Order ..> OrderStatus
-Solution ..> SolutionStatus
-Solution ..> SolutionType
-RouteSegment ..> LocationType
-User ..> UserRole
-OptimizationJob ..> JobStatus
-OptimizationJob ..> JobType
-
-' ============================================
-' NOTES
-' ============================================
-
-note top of OptimizationJob
-    **NEW ENTITY: Optimization Job**
-
-    Represents the process/task of optimization.
-    Separates concern: Job = process, Solution = result.
-
-    Key fields:
-    • status: Track job lifecycle (PENDING → PROCESSING → COMPLETED/FAILED/CANCELLED)
-    • inputData: JSON of RoutePlanningRequest (for retry/audit)
-    • externalJobId: ID from optimization engine (for cancellation)
-'    • progress: 0-100 (if engine supports progress tracking)
-
-    Business logic:
-    • canBeCancelled(): Only PENDING or PROCESSING jobs
-    • Job can exist without Solution (if FAILED or CANCELLED)
-end note
-
-note top of Solution
-    **UPDATED: Solution Entity**
-
-    Now references OptimizationJob via jobId.
-    Solution = result of successful job.
-
-    Changes:
-    • Added: jobId (FK to OptimizationJob)
-    • Removed: Job-related status (now in Job entity)
-
-    SolutionStatus now only about quality:
-    • FEASIBLE: Valid solution found
-    • INFEASIBLE: No valid solution
-    • OPTIMIZED: Near-optimal solution
-end note
-
-note top of Depot
-    Uses JTS Point for
-    geospatial data storage.
-    Hibernate Spatial handles
-    conversion to MySQL POINT.
-end note
-
-note top of RouteSegment
-    Stores detailed step-by-step
-    information for each route.
-    Tracks load, time, and distance
-    for each segment.
-end note
-
-note top of Branch
-    Root entity for multi-tenant.
-    All data belongs to a Branch.
-    Simple: only id + name.
-    Expandable: add polygon, config later.
-end note
-
-legend right
-    **NEW in this version:**
-    • OptimizationJob entity (job management)
-    • JobStatus enums
-    • 1:0..1 relationship Job → Solution
-    • Solution.jobId foreign key
-
-    **Key changes:**
-    • Solution no longer tracks job status
-    • Clear separation: Job = process, Solution = result
-    • Support for failed/cancelled jobs (no solution)
-endlegend
+' Stop -> Order
+RouteStop "*" --> "0..1" Order : "order_id"
 
 @enduml

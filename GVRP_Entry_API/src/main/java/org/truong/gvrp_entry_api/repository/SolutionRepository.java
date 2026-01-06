@@ -1,16 +1,11 @@
 package org.truong.gvrp_entry_api.repository;
 
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.truong.gvrp_entry_api.entity.Solution;
-import org.truong.gvrp_entry_api.entity.enums.SolutionStatus;
-import org.truong.gvrp_entry_api.entity.enums.SolutionType;
 
-import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Optional;
 
 public interface SolutionRepository extends JpaRepository<Solution, Long> {

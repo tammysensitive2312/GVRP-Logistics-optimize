@@ -27,9 +27,4 @@ package "Engine & Calculator Layer" {
 }
 VehicleAvailabilityChecker --> VehicleRepository
 
-note top of SolutionOptimizationEngine
-    Interface to external
-    optimization engine
-    (Graphhopper, OR-Tools, etc.)
-end note
 @enduml
