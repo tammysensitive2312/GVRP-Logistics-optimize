@@ -42,7 +42,7 @@ export class AuthService {
    * Login with credentials
    */
   login(credentials: LoginRequest, rememberMe: boolean = false): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${environment.apiUrl}/login`, credentials)
+    return this.http.post<AuthResponse>(`${environment.apiUrl}/auth/login`, credentials)
       .pipe(
         tap(response => this.handleLoginSuccess(response, rememberMe)),
         catchError(error => this.handleError(error))
@@ -60,7 +60,7 @@ export class AuthService {
       return throwError(() => new Error('No active session'));
     }
 
-    return this.http.post<void>(`${environment.apiUrl}/logout`, {})
+    return this.http.post<void>(`${environment.apiUrl}/auth/logout`, {})
       .pipe(
         tap(() => this.clearSession()),
         catchError(error => {

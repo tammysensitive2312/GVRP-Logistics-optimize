@@ -1,68 +1,49 @@
-import { Injectable } from '@angular/core';
-import {
-  HttpRequest,
-  HttpHandler,
-  HttpEvent,
-  HttpInterceptor,
-  HttpErrorResponse
-} from '@angular/common/http';
-import {StorageService} from '@core/services/storage.service';
-import {Router} from '@angular/router';
-import {Observable, throwError} from 'rxjs';
-import {catchError} from 'rxjs/operators';
-import {environment} from '@environments/environment';
+import { HttpInterceptorFn, HttpErrorResponse } from '@angular/common/http';
+import { inject } from '@angular/core';
+import { Router } from '@angular/router';
+import { throwError } from 'rxjs';
+import { catchError } from 'rxjs/operators';
+import { StorageService } from '@core/services/storage.service';
+import { environment } from '@environments/environment';
 
-@Injectable()
-export class AuthInterceptor implements HttpInterceptor {
-  constructor(
-    private storage: StorageService,
-    private router: Router
-  ) {
+export const authInterceptor: HttpInterceptorFn = (req, next) => {
+  const storage = inject(StorageService);
+  const router = inject(Router);
+
+  const token = storage.getToken();
+
+  const isApiUrl = req.url.startsWith(environment.apiUrl);
+  const isAuthEndpoint = req.url.includes('/auth/login') || req.url.includes('/auth/register');
+
+  const shouldAddToken = token && isApiUrl && !isAuthEndpoint;
+
+  let authReq = req;
+
+  if (shouldAddToken) {
+    authReq = req.clone({
+      setHeaders: {
+        Authorization: `Bearer ${token}`
+      }
+    });
   }
 
-  intercept(req: HttpRequest<unknown>, next: HttpHandler): Observable<HttpEvent<unknown>> {
-    const token = this.storage.getToken();
+  return next(authReq).pipe(
+    catchError((error: HttpErrorResponse) => {
+      if (error.status === 401) {
+        // Logic xử lý Unauthorized (handleUnauthorized cũ)
+        console.warn('Unauthorized - redirecting to login');
 
-    let authRequest = req;
+        storage.clearAuthSession();
+        const currentUrl = router.url;
 
-    if (token && this.shouldAddToken(req)) {
-      authRequest = req.clone({
-        setHeaders: {
-          Authorization: `Bearer ${token}`
+        if (currentUrl && !currentUrl.includes('login')) {
+          storage.updateAppState({ lastUrl: currentUrl });
         }
-      })
-    }
 
-    return next.handle(authRequest).pipe(
-      catchError((error: HttpErrorResponse) => {
-        if (error.status === 401) {
-          this.handleUnauthorized();
-        }
-        return throwError(() => error)
-      })
-    );
-  }
+        router.navigate(['/login']);
+      }
 
-  private shouldAddToken(request: HttpRequest<any>): boolean {
-    const isApiUrl = request.url.startsWith(environment.apiUrl);
-
-    const isAuthEndpoint = request.url.includes('/auth/login') ||
-      request.url.includes('/auth/register');
-
-    return isApiUrl && !isAuthEndpoint;
-  }
-
-
-  private handleUnauthorized() {
-    console.warn('Unauthorized - redirecting to login');
-
-    this.storage.clearAuthSession();
-    const currentUrl = this.router.url;
-    if (currentUrl && !currentUrl.includes('login')) {
-      this.storage.updateAppState({lastUrl: currentUrl});
-    }
-
-    this.router.navigate(['/login'])
-  }
-}
-
+      return throwError(() => error);
+    })
+  );
+};

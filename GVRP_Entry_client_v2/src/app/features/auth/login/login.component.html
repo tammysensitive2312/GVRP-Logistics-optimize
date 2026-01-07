@@ -1,0 +1,105 @@
+<div class="login-container">
+  <div class="login-left">
+    <div class="branding">
+      <div class="brand-icon">🚚</div>
+      <h1 class="brand-title">VRP System</h1>
+      <p class="brand-subtitle">Vehicle Route Planning & Optimization</p>
+    </div>
+
+    <div class="features-list">
+      <div class="feature-item">
+        <span class="feature-icon">📍</span>
+        <div class="feature-text">
+          <strong>Multi-Depot Management</strong>
+          <p>Manage multiple warehouses on a map</p>
+        </div>
+      </div>
+      <div class="feature-item">
+        <span class="feature-icon">🗺️</span>
+        <div class="feature-text">
+          <strong>Route Optimization</strong>
+          <p>Optimize delivery routes</p>
+        </div>
+      </div>
+      <div class="feature-item">
+        <span class="feature-icon">📊</span>
+        <div class="feature-text">
+          <strong>Analytics & Reports</strong>
+          <p>Detailed analysis and reporting</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-text">
+      <p>© 2025 VRP System. All rights reserved.</p>
+    </div>
+  </div>
+
+  <div class="login-right">
+    <div class="login-form-container">
+      <div class="form-header">
+        <h2>Log in to the system</h2>
+        <p>Enter your account information</p>
+      </div>
+
+      <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form">
+
+        <div class="form-group">
+          <label>Branch</label>
+          <input type="text"
+                 formControlName="branch_name"
+                 placeholder="Enter branch name"
+                 [class.error-border]="loginForm.get('branch_name')?.invalid && loginForm.get('branch_name')?.touched">
+          <div class="error-text" *ngIf="loginForm.get('branch_name')?.invalid && loginForm.get('branch_name')?.touched">
+            Please enter the branch name
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Username</label>
+          <input type="text"
+                 formControlName="username"
+                 placeholder="Username">
+        </div>
+
+        <div class="form-group">
+          <label>Password</label>
+          <div class="password-field">
+            <input [type]="showPassword ? 'text' : 'password'"
+                   formControlName="password"
+                   >
+            <button type="button" class="toggle-password" (click)="showPassword = !showPassword">
+              {{ showPassword ? '🙈' : '👁️' }}
+            </button>
+          </div>
+        </div>
+
+        <div class="form-options">
+          <label class="checkbox-label">
+            <input type="checkbox" formControlName="rememberMe">
+            <span>Remember me</span>
+          </label>
+          <a href="#" class="forgot-password">Forgot password?</a>
+        </div>
+
+        <button type="submit" class="btn-login" [disabled]="loginForm.invalid || loading">
+          <span *ngIf="!loading">Log in</span>
+
+          <div *ngIf="loading" class="btn-loader">
+            <span class="spinner"></span> Processing...
+          </div>
+        </button>
+
+      </form>
+
+      <div class="divider"><span>or</span></div>
+
+      <div class="register-section">
+        <p>Don't have an account yet?</p>
+        <a href="#" class="btn-register">Register</a>
+      </div>
+
+    </div>
+  </div>
+</div>
+

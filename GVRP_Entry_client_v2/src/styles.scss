@@ -1,8 +1,248 @@
-@import 'assets/styles/variables';
+@import 'assets/styles/variables'; // Nạp các biến $ trước
 @import "leaflet/dist/leaflet.css";
 @import '@angular/material/prebuilt-themes/indigo-pink.css';
 
-// Reset & base styles
+app-root {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+// Colors
+$primary-blue: #4A90E2;
+$primary-blue-hover: #3a7bc8;
+$primary-blue-light: rgba(74, 144, 226, 0.1);
+
+$white: #FFFFFF;
+$bg-white: #FFFFFF;
+
+// Status Colors
+$success-green: #7ED321;
+$success-green-hover: #6cbd1c;
+$warning-orange: #F5A623;
+$danger-red: #D0021B;
+$neutral-gray: #9B9B9B;
+
+// UI Colors
+$bg-light: #F8F9FA;
+$border-color: #E5E5E5;
+$border-color-dark: #CCCCCC;
+
+// Text Colors
+$text-dark: #333333;
+$text-gray: #666666;
+$text-light: #999999;
+$text-white: #FFFFFF;
+
+// Overlay
+$overlay-bg: rgba(0, 0, 0, 0.5);
+$overlay-dark: rgba(0, 0, 0, 0.7);
+
+// Layout Dimensions
+$navbar-height: 60px;
+$sidebar-width: 30%;
+$sidebar-collapsed-width: 50px;
+$main-content-width: 70%;
+$map-height: 60vh;
+$table-height: 40vh;
+
+// Spacing Scale
+$space-xs: 4px;
+$space-sm: 8px;
+$space-md: 12px;
+$space-lg: 16px;
+$space-xl: 24px;
+$space-2xl: 32px;
+$space-3xl: 48px;
+
+// Typography
+$font-family: 'Inter', 'Segoe UI', 'Arial', sans-serif;
+$font-family-mono: 'Consolas', 'Courier New', monospace;
+
+// Font Sizes
+$font-size-xs: 11px;
+$font-size-sm: 12px;
+$font-size-base: 14px;
+$font-size-lg: 16px;
+$font-size-xl: 20px;
+$font-size-2xl: 24px;
+$font-size-3xl: 32px;
+
+// Font Weights
+$font-weight-normal: 400;
+$font-weight-medium: 500;
+$font-weight-semibold: 600;
+$font-weight-bold: 700;
+
+// Line Heights
+$line-height-tight: 1.2;
+$line-height-normal: 1.5;
+$line-height-relaxed: 1.6;
+$line-height-loose: 2;
+
+// Shadows
+$shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
+$shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+$shadow-md: 0 2px 8px rgba(0, 0, 0, 0.1);
+$shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.15);
+$shadow-xl: 0 8px 24px rgba(0, 0, 0, 0.2);
+
+// Border Radius
+$radius-sm: 4px;
+$radius-md: 6px;
+$radius-lg: 8px;
+$radius-xl: 12px;
+$radius-2xl: 16px;
+$radius-full: 9999px;
+
+// Transitions
+$transition-fast: 150ms ease;
+$transition-base: 200ms ease;
+$transition-slow: 300ms ease;
+
+// Z-Index Scale
+$z-base: 1;
+$z-dropdown: 1000;
+$z-sticky: 1020;
+$z-navbar: 1030;
+$z-sidebar: 1040;
+$z-modal-backdrop: 1050;
+$z-modal: 1060;
+$z-popover: 1070;
+$z-tooltip: 1080;
+$z-notification: 1090;
+$z-loading: 1100;
+
+// Breakpoints
+$breakpoint-sm: 480px;
+$breakpoint-md: 768px;
+$breakpoint-lg: 1024px;
+$breakpoint-xl: 1280px;
+$breakpoint-2xl: 1536px;
+
+// Mixins (Không map sang CSS Var vì CSS không hỗ trợ mixin)
+@mixin respond-to($breakpoint) {
+  @if $breakpoint == sm {
+    @media (max-width: $breakpoint-sm) { @content; }
+  }
+  @else if $breakpoint == md {
+    @media (max-width: $breakpoint-md) { @content; }
+  }
+  @else if $breakpoint == lg {
+    @media (max-width: $breakpoint-lg) { @content; }
+  }
+  @else if $breakpoint == xl {
+    @media (max-width: $breakpoint-xl) { @content; }
+  }
+}
+
+:root {
+  // Colors
+  --primary-blue: #{$primary-blue};
+  --primary-blue-hover: #{$primary-blue-hover};
+  --primary-blue-light: #{$primary-blue-light};
+
+  --white: #{$white};
+  --bg-white: #{$bg-white};
+
+  --success-green: #{$success-green};
+  --success-green-hover: #{$success-green-hover};
+  --warning-orange: #{$warning-orange};
+  --danger-red: #{$danger-red};
+  --neutral-gray: #{$neutral-gray};
+
+  --bg-light: #{$bg-light};
+  --border-color: #{$border-color};
+  --border-color-dark: #{$border-color-dark};
+
+  --text-dark: #{$text-dark};
+  --text-gray: #{$text-gray};
+  --text-light: #{$text-light};
+  --text-white: #{$text-white};
+
+  --overlay-bg: #{$overlay-bg};
+  --overlay-dark: #{$overlay-dark};
+
+  // Layout Dimensions (Quan trọng cho CSS calc)
+  --navbar-height: #{$navbar-height};
+  --sidebar-width: #{$sidebar-width};
+  --sidebar-collapsed-width: #{$sidebar-collapsed-width};
+  --main-content-width: #{$main-content-width};
+  --map-height: #{$map-height};
+  --table-height: #{$table-height};
+
+  // Spacing
+  --space-xs: #{$space-xs};
+  --space-sm: #{$space-sm};
+  --space-md: #{$space-md};
+  --space-lg: #{$space-lg};
+  --space-xl: #{$space-xl};
+  --space-2xl: #{$space-2xl};
+  --space-3xl: #{$space-3xl};
+
+  // Typography
+  --font-family: #{$font-family};
+  --font-family-mono: #{$font-family-mono};
+
+  --font-size-xs: #{$font-size-xs};
+  --font-size-sm: #{$font-size-sm};
+  --font-size-base: #{$font-size-base};
+  --font-size-lg: #{$font-size-lg};
+  --font-size-xl: #{$font-size-xl};
+  --font-size-2xl: #{$font-size-2xl};
+  --font-size-3xl: #{$font-size-3xl};
+
+  --font-weight-normal: #{$font-weight-normal};
+  --font-weight-medium: #{$font-weight-medium};
+  --font-weight-semibold: #{$font-weight-semibold};
+  --font-weight-bold: #{$font-weight-bold};
+
+  --line-height-tight: #{$line-height-tight};
+  --line-height-normal: #{$line-height-normal};
+  --line-height-relaxed: #{$line-height-relaxed};
+  --line-height-loose: #{$line-height-loose};
+
+  // Shadows
+  --shadow-xs: #{$shadow-xs};
+  --shadow-sm: #{$shadow-sm};
+  --shadow-md: #{$shadow-md};
+  --shadow-lg: #{$shadow-lg};
+  --shadow-xl: #{$shadow-xl};
+
+  // Radius
+  --radius-sm: #{$radius-sm};
+  --radius-md: #{$radius-md};
+  --radius-lg: #{$radius-lg};
+  --radius-xl: #{$radius-xl};
+  --radius-2xl: #{$radius-2xl};
+  --radius-full: #{$radius-full};
+
+  // Transitions
+  --transition-fast: #{$transition-fast};
+  --transition-base: #{$transition-base};
+  --transition-slow: #{$transition-slow};
+
+  // Z-Index
+  --z-base: #{$z-base};
+  --z-dropdown: #{$z-dropdown};
+  --z-sticky: #{$z-sticky};
+  --z-navbar: #{$z-navbar};
+  --z-sidebar: #{$z-sidebar};
+  --z-modal-backdrop: #{$z-modal-backdrop};
+  --z-modal: #{$z-modal};
+  --z-popover: #{$z-popover};
+  --z-tooltip: #{$z-tooltip};
+  --z-notification: #{$z-notification};
+  --z-loading: #{$z-loading};
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -15,9 +255,61 @@ body {
   color: $text-dark;
   background: $bg-light;
   line-height: $line-height-normal;
-  overflow-x: hidden;
+  min-height: 100vh;
 }
 
 .text-center { text-align: center; }
 .mt-1 { margin-top: $space-sm; }
 .mt-2 { margin-top: $space-md; }
+
+.loading-overlay {
+  position: fixed;
+  inset: 0;
+  background: $overlay-dark;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: $z-loading;
+  color: $white;
+
+  .spinner {
+    width: 50px;
+    height: 50px;
+    border: 4px solid rgba(255, 255, 255, 0.3);
+    border-top-color: $white;
+    border-radius: $radius-full;
+    animation: spin 1s linear infinite;
+  }
+}
+
+
+.mat-mdc-snack-bar-container {
+  min-width: auto !important;
+
+  max-width: 400px !important;
+
+  .mdc-snackbar__surface {
+    min-width: auto !important;
+    padding: 0 8px !important;
+  }
+
+  .mdc-snackbar__label {
+    flex-grow: 0 !important;
+    padding: 12px 16px !important;
+  }
+}
+
+.toast-success {
+  --mdc-snackbar-container-color: #{$success-green};
+  --mdc-snackbar-label-text-color: #{$white};
+}
+
+.toast-error {
+  --mdc-snackbar-container-color: #{$danger-red};
+  --mdc-snackbar-label-text-color: #{$white};
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

@@ -58,7 +58,7 @@ export class ToastService {
       panelClass: [`toast-${type}`]
     };
 
-    this.snackBar.open(message, 'Close', config);
+    this.snackBar.open(message, undefined, config);
   }
 
   /**

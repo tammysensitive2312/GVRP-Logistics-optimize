@@ -178,31 +178,6 @@ end note
 ' RELATIONSHIPS - ENTRY ↔ ENGINE SERVICE
 ' ============================================
 IntegrationLayer --> EngineAPI : HTTP/gRPC\n(Async)
-
-note on link
-    Service Communication:
-
-    Protocol: HTTP REST / gRPC
-    Pattern: Request-Response
-    Timeout: 15 minutes
-
-    Request:
-    {
-      "depots": [...],
-      "vehicles": [...],
-      "orders": [...],
-      "constraints": {...}
-    }
-
-    Response:
-    {
-      "routes": [...],
-      "totalDistance": X,
-      "totalCO2": Y,
-      "status": "OPTIMAL"
-    }
-end note
-
 ' ============================================
 ' RELATIONSHIPS - ENGINE SERVICE INTERNAL
 ' ============================================
@@ -215,33 +190,6 @@ OptEngine --> Algorithms : "Select & Execute"
 IntegrationLayer --> EmailServer : SMTP\n(TLS)
 WebUI --> MapProvider : HTTPS\n(Map Tiles)
 IntegrationLayer --> Geocoding : HTTPS\n(Optional)
-
-' ============================================
-' USE CASE MAPPING
-' ============================================
-note top of BusinessLayer
-    Use Case Mapping:
-
-    VRP-001: Nhập dữ liệu
-    → Depot/Fleet/Order Services
-    → File Parser
-
-    VRP-002: Optimization
-    → Solution Planning Service
-    → Engine Client → Engine Service
-    → Email Service
-
-    VRP-003: Export Solution
-    → Solution Export Service
-    → File Generator
-
-    VRP-004: Import Solution
-    → Solution Import Service
-    → File Parser
-
-    VRP-005: Analyze & Compare
-    → Solution Analysis Service
-end note
 
 ' ============================================
 ' DEPLOYMENT NOTES

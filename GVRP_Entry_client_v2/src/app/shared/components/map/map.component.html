@@ -1,0 +1,17 @@
+<div class="map-wrapper">
+  <div class="map-container"
+       leaflet
+       [leafletOptions]="mapOptions"
+       (leafletMapReady)="onMapReady($event)">
+  </div>
+
+  <!-- Map Controls -->
+  <div class="map-controls">
+    <button class="map-control-btn" (click)="recenter()" title="Recenter">
+      🎯
+    </button>
+    <button class="map-control-btn" (click)="toggleFullscreen()" title="Fullscreen">
+      🔲
+    </button>
+  </div>
+</div>
