@@ -32,6 +32,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static org.truong.gvrp_entry_api.util.AppConstant.maxConcurrentJobs;
+
 @Service
 @Slf4j
 @RequiredArgsConstructor
@@ -71,9 +73,11 @@ public class OptimizationJobService {
 //        log.info("Submitting optimization job for branch {} by user {}", branchId, userId);
 
         // Step 1: Check concurrent job limit
-        if (jobRepository.existsByBranchIdAndStatus(branchId, OptimizationJobStatus.PROCESSING)) {
-            log.warn("Branch {} already has a running job", branchId);
-            throw new JobLimitException("Already have 1 job running. Please wait for completion or cancel it.");
+        long runningJobsCount = jobRepository.countByBranchIdAndStatus(branchId, OptimizationJobStatus.PROCESSING);
+
+        if (runningJobsCount >= maxConcurrentJobs) {
+            log.warn("Branch {} has reached the limit of running jobs {}", branchId, maxConcurrentJobs);
+            throw new JobLimitException("The limit for " + maxConcurrentJobs + " jobs has been reached.");
         }
 
         // Step 2: Validate orders BEFORE creating job

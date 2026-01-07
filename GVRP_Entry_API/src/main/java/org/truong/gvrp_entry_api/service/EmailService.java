@@ -78,6 +78,7 @@ public class EmailService {
             variables.put("duration", calculateDuration(job.getCreatedAt(), job.getCompletedAt()));
 
             // Solution metrics
+            variables.put("totalCost", formatCost(solution.getTotalCost()));
             variables.put("totalDistance", formatDistance(solution.getTotalDistance()));
             variables.put("totalCO2", formatCO2(solution.getTotalCO2()));
             variables.put("totalServiceTime", formatTime(solution.getTotalTime()));
@@ -219,6 +220,11 @@ public class EmailService {
     private String formatDateTime(LocalDateTime dateTime) {
         if (dateTime == null) return "N/A";
         return dateTime.format(FORMATTER);
+    }
+
+    private String formatCost(BigDecimal cost) {
+        if (cost == null) return "0 VND";
+        return String.format("%.2f VND", cost);
     }
 
     private String formatDistance(BigDecimal distance) {

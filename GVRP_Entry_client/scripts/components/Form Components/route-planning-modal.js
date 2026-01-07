@@ -188,7 +188,8 @@ export class RoutePlanningModal {
 
         } catch (error) {
             console.error('Failed to submit job:', error);
-            Toast.error('Không thể tạo job. Vui lòng thử lại.');
+            const toastMessage = error.message || 'Unable to create job. Please try again.';
+            Toast.error(toastMessage);
         } finally {
             Loading.hide();
         }

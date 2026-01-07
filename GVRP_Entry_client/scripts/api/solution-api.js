@@ -16,10 +16,17 @@ async function submitRoutePlanningJob(request) {
             headers: getHeaders(),
             body: JSON.stringify(request)
         });
+
         if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.message || 'Failed to submit job');
+            let errorMessage = 'Failed to submit job';
+            try {
+                const errorData = await response.json();
+                errorMessage = errorData.message || errorMessage;
+            } catch (e) {
+            }
+            throw new Error(errorMessage);
         }
+
         return await response.json();
     } catch (error) {
         console.error('Submit job error:', error);

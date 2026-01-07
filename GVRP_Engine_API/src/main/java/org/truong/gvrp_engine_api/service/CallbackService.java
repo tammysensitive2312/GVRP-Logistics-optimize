@@ -7,13 +7,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
-import org.truong.gvrp_engine_api.distance_matrix.DistanceMatrix;
 import org.truong.gvrp_engine_api.model.OptimizationResult;
-import org.truong.gvrp_engine_api.model.Stop;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 @Slf4j
@@ -45,13 +41,6 @@ public class CallbackService {
             payload.put("solution", solutionConverter.convertToSolutionData(result));
 
             HttpEntity<Map<String, Object>> request = new HttpEntity<>(payload, headers);
-
-            try {
-                String jsonPayload = objectMapper.writeValueAsString(payload);
-                log.info("Payload JSON for job #{}:\n{}", jobId, jsonPayload);
-            } catch (Exception jsonEx) {
-                log.error("Failed to serialize payload for logging: {}", jsonEx.getMessage());
-            }
 
             ResponseEntity<String> response = restTemplate.postForEntity(
                     url,

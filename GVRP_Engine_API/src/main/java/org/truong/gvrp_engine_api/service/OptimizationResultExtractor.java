@@ -95,7 +95,7 @@ public class OptimizationResultExtractor {
             routeDetail.setEmissionFactor(vehicleTypeDTO.getEmissionFactor());
 
             // ========== START DETAILED LOGGING ==========
-            logRouteHeader(routeNumber, vehicleDTO);
+//            logRouteHeader(routeNumber, vehicleDTO);
 
             // Extract stops
             StopExtractionResult stopResult = extractStops(
@@ -126,7 +126,7 @@ public class OptimizationResultExtractor {
             totalOrdersServed += stopResult.orderCount;
 
             // ========== LOG ROUTE SUMMARY ==========
-            logRouteSummary(routeDetail, stopResult);
+//            logRouteSummary(routeDetail, stopResult);
         }
 
         return new RouteExtractionResult(
@@ -181,7 +181,7 @@ public class OptimizationResultExtractor {
         );
         stops.add(startStop);
 
-        logStartDepot(startDepot, route.getStart().getEndTime());
+//        logStartDepot(startDepot, route.getStart().getEndTime());
 
         TourActivity prevActivity = route.getStart();
 
@@ -228,17 +228,17 @@ public class OptimizationResultExtractor {
                     stops.add(stop);
 
                     // Log customer stop details
-                    logCustomerStop(
-                            orderCount,
-                            orderDTO,
-                            activity,
-                            stop,
-                            segmentDistance,
-                            segmentTime,
-                            waitTime,
-                            currentLoad,
-                            vehicleTypeDTO
-                    );
+//                    logCustomerStop(
+//                            orderCount,
+//                            orderDTO,
+//                            activity,
+//                            stop,
+//                            segmentDistance,
+//                            segmentTime,
+//                            waitTime,
+//                            currentLoad,
+//                            vehicleTypeDTO
+//                    );
 
                     // Accumulate
                     routeDistance += segmentDistance;
@@ -277,7 +277,7 @@ public class OptimizationResultExtractor {
         );
         stops.add(endStop);
 
-        logEndDepot(endDepot, route.getEnd().getArrTime(), returnDistance, returnTime);
+//        logEndDepot(endDepot, route.getEnd().getArrTime(), returnDistance, returnTime);
 
         return new StopExtractionResult(
                 stops,
