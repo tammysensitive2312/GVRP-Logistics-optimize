@@ -133,10 +133,19 @@ function getCurrentUser() {
  * @returns {Object|null}
  */
 function getCurrentBranch() {
-    const branchId = sessionStorage.getItem(SESSION_KEYS.BRANCH) ||
+    const branchJson = sessionStorage.getItem(SESSION_KEYS.BRANCH) ||
         localStorage.getItem(SESSION_KEYS.BRANCH);
 
-    return branchId
+    if (!branchJson) {
+        return null;
+    }
+
+    try {
+        return JSON.parse(branchJson);
+    } catch (error) {
+        console.error("Lỗi khi giải mã dữ liệu Branch từ Storage:", error);
+        return null;
+    }
 }
 
 /**
@@ -154,8 +163,13 @@ function saveSession(authData, rememberMe = false) {
         username: authData.username,
         role: authData.role
     };
+
+    const branchObject = {
+        id: authData.branch_id,
+        name: authData.branch_name
+    }
     storage.setItem(SESSION_KEYS.USER, JSON.stringify(userObject));
-    storage.setItem(SESSION_KEYS.BRANCH, authData.branch_id);
+    storage.setItem(SESSION_KEYS.BRANCH, JSON.stringify(branchObject));
 
     if (rememberMe) {
         localStorage.setItem(SESSION_KEYS.REMEMBER, 'true');

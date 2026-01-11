@@ -5,7 +5,8 @@
 
 // Configuration
 const API_BASE_URL = 'http://localhost:8080/api/v1';
-const BRANCH_ID = getCurrentBranch();
+let branch = getCurrentBranch();
+const BRANCH_ID = branch.id;
 
 /**
  * Helper function to get auth headers
@@ -208,14 +209,14 @@ async function getFleet() {
  * Get vehicles by branch ID
  * @returns {Promise<Object>} Vehicle DTO with vehicles
  */
-async function getVehicle() {
+async function getVehicle( pageNo = 0, pageSize = 10) {
     const branchId = BRANCH_ID;
-    const queryKey = QueryKeys.vehicles.all(branchId);
+    const queryKey = QueryKeys.vehicles.all(branchId, pageNo, pageSize);
 
     return await fetchQuery(
         queryKey,
         async () => {
-            const response = await fetch(`${API_BASE_URL}/vehicles`, {
+            const response = await fetch(`${API_BASE_URL}/vehicles?page=${pageNo}&size=${pageSize}`, {
                 headers: getHeaders()
             });
 
@@ -226,7 +227,7 @@ async function getVehicle() {
             return await response.json();
         },
         {
-            staleTime: 5 * 60 * 1000,  // Fresh for 5 minutes (vehicles don't change often)
+            staleTime: 5 * 60 * 1000,
             cacheTime: 10 * 60 * 1000
         }
     );

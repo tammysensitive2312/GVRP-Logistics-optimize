@@ -487,7 +487,8 @@ async function loadOrders() {
  * Manual refresh - Invalidate cache và reload data
  */
 async function refreshAllData() {
-    const branchId = getCurrentBranch();
+    const branch = getCurrentBranch();
+    const branchId = branch.id;
 
     // Show loading
     Loading.show('Refreshing data...');

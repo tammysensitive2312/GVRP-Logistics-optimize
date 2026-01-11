@@ -5,6 +5,7 @@
 
 import { AppState } from '../../core/state.js';
 import { DOMHelpers } from '../../utils/dom-helpers.js';
+import {Toast} from "../../utils/toast.js";
 
 export class Sidebar {
     static #sidebarElement = null;
@@ -178,22 +179,52 @@ export class Sidebar {
     /**
      * Select all vehicles
      */
-    static selectAllVehicles() {
-        AppState.allVehicles.forEach(vehicle => {
-            AppState.selectVehicle(vehicle.id);
-        });
+    /**
+     * Select ALL vehicles in database (handle pagination)
+     */
+    static async selectAllVehicles() {
 
-        AppState.allVehicles.forEach(vehicle => {
-            const checkbox = document.getElementById(`vehicle-${vehicle.id}`);
-            if (checkbox) {
-                checkbox.checked = true;
-            }
-        });
-
-        if (typeof updatePlanRoutesButton === 'function') {
-            updatePlanRoutesButton();
+        const btnSelectAll = document.getElementById('btn-select-all-vehicles');
+        const originalText = btnSelectAll ? btnSelectAll.innerHTML : '';
+        if (btnSelectAll) {
+            btnSelectAll.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Selecting...';
+            btnSelectAll.disabled = true;
         }
-        this.#updateSelectedVehiclesDisplay();
+
+        try {
+
+            const data = await getVehicle(0, 1000);
+
+            const allVehiclesInDb = data.content || data;
+
+            allVehiclesInDb.forEach(vehicle => {
+                AppState.selectVehicle(vehicle.id);
+            });
+
+            AppState.allVehicles.forEach(vehicle => {
+                const checkbox = document.getElementById(`vehicle-${vehicle.id}`);
+                if (checkbox) {
+                    checkbox.checked = true;
+                }
+            });
+
+            if (typeof updatePlanRoutesButton === 'function') {
+                updatePlanRoutesButton();
+            }
+            this.#updateSelectedVehiclesDisplay();
+
+            Toast.success(`All ${allVehiclesInDb.length} vehicles in the system have been selected.`);
+
+        } catch (error) {
+            console.error('Select all error:', error);
+            Toast.error('Not all vehicles can be selected. Please try again.');
+        } finally {
+
+            if (btnSelectAll) {
+                btnSelectAll.innerHTML = originalText;
+                btnSelectAll.disabled = false;
+            }
+        }
     }
 
     /**

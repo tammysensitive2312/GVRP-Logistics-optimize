@@ -14,7 +14,7 @@ let QueryKeys = {
 
     // Vehicles
     vehicles: {
-        all: (branchId) => ['vehicles', branchId],
+        all: (branchId, page = 0, size = 10) => ['vehicles', branchId, page, size],
         available: (branchId) => ['vehicles', branchId, 'available'],
         detail: (vehicleId) => ['vehicle', vehicleId]
     },
