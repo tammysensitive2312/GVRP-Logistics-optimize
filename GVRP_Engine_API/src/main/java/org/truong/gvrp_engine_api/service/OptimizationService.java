@@ -150,11 +150,6 @@ public class OptimizationService {
             OptimizationConfig config,
             EngineOptimizationRequest request) {
 
-        log.info("🎯 Running SINGLE-OBJECTIVE optimization (weighted)");
-        log.info("   Weights: cost={}, CO2={}",
-                config.getCostWeight() != null ? config.getCostWeight() : 0.7,
-                config.getCo2Weight() != null ? config.getCo2Weight() : 0.3);
-
         // Build GREEN VRP
         VehicleRoutingProblem vrp = buildGreenVRP(context, matrix, config);
 
@@ -313,6 +308,8 @@ public class OptimizationService {
         double costWeight = weights[0];
         double co2Weight = weights[1];
 
+        log.info("Cost weight: {}, CO2 weight: {}", costWeight, co2Weight);
+
         // 1. Add Vehicles with GREEN cost
         for (var vehicleDTO : context.vehicleDTOs().values()) {
             VehicleTypeImpl greenVehicleType = GreenVRPCostCalculator.buildGreenVehicleType(
@@ -320,6 +317,10 @@ public class OptimizationService {
                     costWeight,
                     co2Weight
             );
+
+            log.info("Vehicle Type {}: Final CostPerKm configured in Jsprit = {}",
+                    greenVehicleType.getTypeId(),
+                    greenVehicleType.getVehicleCostParams().perDistanceUnit);
 
             VehicleImpl jspritVehicle = buildJspritVehicle(
                     vehicleDTO,

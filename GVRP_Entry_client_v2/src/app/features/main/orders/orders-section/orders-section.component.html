@@ -1,0 +1,26 @@
+// src/app/features/main/orders/orders-section.component.html
+<div class="orders-section">
+  <!-- Tab Switcher -->
+  <mat-tab-group [(selectedIndex)]="selectedTabIndex">
+    <mat-tab label="Orders">
+      <app-orders-table
+        [orders]="orders"
+        (selectionChange)="onOrderSelectionChange($event)">
+      </app-orders-table>
+    </mat-tab>
+
+    <mat-tab label="Routes" [disabled]="!solution">
+      <app-route-view
+        *ngIf="solution"
+        [solution]="solution">
+      </app-route-view>
+    </mat-tab>
+
+    <mat-tab label="Timeline" [disabled]="!solution">
+      <app-timeline-view
+        *ngIf="solution"
+        [solution]="solution">
+      </app-timeline-view>
+    </mat-tab>
+  </mat-tab-group>
+</div>

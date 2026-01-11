@@ -1,0 +1,100 @@
+// src/app/layouts/sidebar/sidebar.component.html
+<aside class="sidebar" [class.collapsed]="collapsed">
+  <!-- Collapse Button -->
+  <button class="btn-collapse" (click)="onToggleCollapse()">
+    {{ collapsed ? '►' : '◄ Hide Sidebar' }}
+  </button>
+
+  <!-- Stats Section (Horizontal Grid) -->
+  <div class="stats-section">
+    <h3 class="section-title">📊 TODAY'S STATS</h3>
+    <div class="stats-grid">
+      <div class="stat-card" (click)="onStatClick('scheduled')">
+        <div class="stat-number">{{ stats.scheduled }}</div>
+        <div class="stat-label">Scheduled</div>
+      </div>
+      <div class="stat-card" (click)="onStatClick('completed')">
+        <div class="stat-number">{{ stats.completed }}</div>
+        <div class="stat-label">Completed</div>
+      </div>
+      <div class="stat-card" (click)="onStatClick('total')">
+        <div class="stat-number">{{ stats.total }}</div>
+        <div class="stat-label">Total</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number">{{ stats.routes }}</div>
+        <div class="stat-label">Routes</div>
+      </div>
+    </div>
+  </div>
+
+  <mat-divider></mat-divider>
+
+  <!-- Depots Section -->
+  <div class="sidebar-section">
+    <div class="section-header" (click)="toggleSection('depots')">
+      <h3 class="section-title">
+        📍 DEPOTS ({{ depots.length }})
+      </h3>
+      <span class="toggle-icon"
+            [class.expanded]="expandedSections.has('depots')">
+        ▼
+      </span>
+    </div>
+
+    <div class="section-content"
+         *ngIf="expandedSections.has('depots')">
+      <div class="compact-list">
+        <div class="depot-item-compact"
+             *ngFor="let depot of depots"
+             (click)="onDepotClick(depot)">
+          <span>📍 {{ depot.name }}</span>
+          <span class="arrow">➜</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Vehicles Section -->
+  <div class="sidebar-section">
+    <div class="section-header" (click)="toggleSection('vehicles')">
+      <h3 class="section-title">
+        🚚 VEHICLES ({{ vehicles.length }})
+      </h3>
+      <span class="toggle-icon"
+            [class.expanded]="expandedSections.has('vehicles')">
+        ▼
+      </span>
+    </div>
+
+    <div class="section-content"
+         *ngIf="expandedSections.has('vehicles')">
+      <!-- Select All / Deselect All -->
+      <div class="vehicle-actions">
+        <button mat-button
+                class="btn-sm"
+                (click)="selectAllVehicles()">
+          Select All
+        </button>
+        <button mat-button
+                class="btn-sm"
+                (click)="deselectAllVehicles()">
+          Clear
+        </button>
+      </div>
+
+      <div class="compact-list">
+        <div class="vehicle-item-compact"
+             *ngFor="let vehicle of vehicles">
+          <mat-checkbox
+            [checked]="isVehicleSelected(vehicle.id)"
+            (change)="onVehicleToggle(vehicle.id, $event.checked)">
+          </mat-checkbox>
+          <span [class]="'status-dot ' + vehicle.status"></span>
+          <span class="vehicle-plate">{{ vehicle.vehicle_license_plate }}</span>
+          <span class="vehicle-type">{{ vehicle.vehicle_type_name }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</aside>

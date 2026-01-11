@@ -44,12 +44,22 @@ export class RoutePlanningModal {
         const selectedOrders = AppState.selectedOrdersCount;
         const selectedVehicles = AppState.selectedVehicles.size;
 
+        if (selectedOrders === 0) {
+            Toast.error('Please select at least 1 order');
+            return;
+        }
+
+        if (selectedVehicles === 0) {
+            Toast.error('Please select at least 1 vehicle');
+            return;
+        }
+
         this.#updateSelectionSummary(selectedOrders, selectedVehicles);
         this.#modal.classList.add('active');
         this.#setDefaults();
         this.#updateEstimatedTime();
 
-        AppState.activeModal = 'route-planning';
+        // AppState.activeModal = 'route-planning';
 
         const submitBtn = this.#form?.querySelector('button[type="submit"]');
         if (submitBtn) {

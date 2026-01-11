@@ -131,6 +131,18 @@ async function getSolutionById(solutionId) {
             { headers: getHeaders() }
         );
 
+        if (response.status === 401) {
+            throw new Error('401: Unauthorized - Please login again');
+        }
+
+        if (response.status === 403) {
+            throw new Error('403: Forbidden - You do not have permission to view this solution');
+        }
+
+        if (response.status === 404) {
+            throw new Error('404: Solution not found');
+        }
+
         if (!response.ok) {
             const error = await response.json();
             throw new Error(error.message || 'Failed to fetch solution');

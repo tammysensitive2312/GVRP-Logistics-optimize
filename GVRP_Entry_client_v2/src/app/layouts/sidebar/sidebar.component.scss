@@ -1,0 +1,204 @@
+@import '../../../assets/styles/variables';
+
+.sidebar {
+  width: 30%;
+  background: white;
+  border-right: 1px solid var(--border-color);
+  overflow-y: auto;
+  padding: var(--space-xl);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  transition: width 0.3s ease;
+
+  &.collapsed {
+    width: var(--sidebar-collapsed-width);
+    padding: var(--space-md) var(--space-sm);
+
+    .section-title,
+    .stat-label,
+    .section-content {
+      display: none;
+    }
+  }
+}
+
+.btn-collapse {
+  align-self: flex-start;
+  padding: var(--space-md);
+  background: var(--bg-light);
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--text-gray);
+
+  &:hover {
+    background: var(--border-color);
+  }
+}
+
+// Stats Section (Horizontal Grid)
+.stats-section {
+  .section-title {
+    font-size: var(--font-size-sm);
+    font-weight: 700;
+    color: var(--text-gray);
+    text-transform: uppercase;
+    margin-bottom: var(--space-md);
+  }
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-sm);
+}
+
+.stat-card {
+  background: white;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: var(--space-md) var(--space-sm);
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    border-color: var(--primary-blue);
+    box-shadow: 0 2px 8px rgba(74, 144, 226, 0.1);
+    transform: translateY(-2px);
+  }
+
+  .stat-number {
+    font-size: var(--font-size-xl);
+    font-weight: 700;
+    color: var(--text-dark);
+  }
+
+  .stat-label {
+    font-size: 11px;
+    color: var(--text-gray);
+    margin-top: var(--space-xs);
+  }
+}
+
+// Accordion Sections
+.sidebar-section {
+  border-bottom: 1px solid var(--border-color);
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-md) 0;
+  cursor: pointer;
+  user-select: none;
+
+  &:hover {
+    background: var(--bg-light);
+  }
+
+  .section-title {
+    font-size: var(--font-size-sm);
+    font-weight: 700;
+    color: var(--text-gray);
+    margin: 0;
+  }
+
+  .toggle-icon {
+    font-size: 10px;
+    color: var(--text-gray);
+    transition: transform 0.2s ease;
+    transform: rotate(-90deg);
+
+    &.expanded {
+      transform: rotate(0deg);
+    }
+  }
+}
+
+.section-content {
+  padding: var(--space-sm) 0 var(--space-md);
+  animation: slideDown 0.2s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Compact Lists
+.compact-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.depot-item-compact {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+
+  &:hover {
+    background: var(--bg-light);
+    color: var(--primary-blue);
+  }
+
+  .arrow {
+    font-size: 10px;
+    opacity: 0.5;
+  }
+}
+
+.vehicle-item-compact {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: white;
+  font-size: 13px;
+
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+
+    &.AVAILABLE { background: var(--success-green); }
+    &.IN_USE { background: var(--warning-orange); }
+  }
+
+  .vehicle-plate {
+    font-weight: 600;
+    flex: 1;
+  }
+
+  .vehicle-type {
+    font-size: 11px;
+    color: var(--text-gray);
+  }
+}
+
+.vehicle-actions {
+  display: flex;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-sm);
+
+  .btn-sm {
+    font-size: 11px;
+    padding: 4px 8px;
+  }
+}

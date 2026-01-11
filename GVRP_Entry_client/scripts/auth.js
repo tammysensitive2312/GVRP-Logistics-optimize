@@ -220,13 +220,22 @@ function redirectAfterLogin() {
     const redirectUrl = sessionStorage.getItem('vrp_redirect_url');
     sessionStorage.removeItem('vrp_redirect_url');
 
+    if (redirectUrl && redirectUrl.includes('solution=')) {
+        console.log('Redirecting to solution URL:', redirectUrl);
+        sessionStorage.removeItem('vrp_redirect_url');
+        window.location.href = redirectUrl;
+        return;
+    }
+
     if (redirectUrl && !redirectUrl.includes('login.html')) {
         console.log('Redirecting to:', redirectUrl);
+        sessionStorage.removeItem('vrp_redirect_url');
         window.location.href = redirectUrl;
-    } else {
-        console.log('Redirecting to:', 'index.html');
-        window.location.href = 'index.html';
+        return;
     }
+
+    console.log('Redirecting to: index.html');
+    window.location.href = 'index.html';
 }
 
 // ============================================

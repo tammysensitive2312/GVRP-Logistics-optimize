@@ -24,6 +24,7 @@ export class OrdersTable {
      */
     static init(onRowClick = null) {
         this.#tbody = DOMHelpers.getElement('orders-tbody');
+
         if (!onRowClick) {
             onRowClick = (orderId) => {
                 if (typeof MainMap !== 'undefined') {
@@ -49,6 +50,22 @@ export class OrdersTable {
 
         // Initialize page size selector
         this.#initPageSizeSelector();
+
+        // Initialize select all checkbox
+        this.#initSelectAllCheckbox();
+    }
+
+    /**
+     * Initialize select all checkbox
+     * @private
+     */
+    static #initSelectAllCheckbox() {
+        const selectAllCheckbox = document.getElementById('select-all');
+        if (selectAllCheckbox) {
+            selectAllCheckbox.addEventListener('change', (e) => {
+                this.toggleSelectAll(e.target.checked);
+            });
+        }
     }
 
     /**
@@ -504,13 +521,58 @@ export class OrdersTable {
     /**
      * Toggle select all
      */
-    static toggleSelectAll() {
-        const selectAllCheckbox = document.getElementById('select-all');
-
-        if (selectAllCheckbox?.checked) {
-            this.selectAllVisible();
+    static toggleSelectAll(checked) {
+        if (checked) {
+            // Select all VISIBLE orders on current page
+            AppState.filteredOrders.forEach(order => {
+                AppState.selectOrder(order.id);
+            });
         } else {
-            this.deselectAll();
+            // Deselect all
+            AppState.deselectAllOrders();
+        }
+
+        this.updateCheckboxes();
+        if (typeof updatePlanRoutesButton === 'function') {
+            updatePlanRoutesButton();
+        }
+    }
+
+    /**
+     * Select ALL orders in database (not just current page)
+     */
+    static async selectAllOrdersInDatabase() {
+        Loading.show('Loading all orders...');
+
+        try {
+            const date = AppState.filters.date;
+            if (!date) {
+                Toast.error('Please select a date');
+                return;
+            }
+
+            // Fetch all orders with a large page size
+            const response = await getOrders(date, 0, 10000); // Max 10k orders
+
+            if (response.content && response.content.length > 0) {
+                response.content.forEach(order => {
+                    AppState.selectOrder(order.id);
+                });
+
+                Toast.success(`Selected ${response.content.length} orders`);
+                this.updateCheckboxes();
+
+                if (typeof updatePlanRoutesButton === 'function') {
+                    updatePlanRoutesButton();
+                }
+            } else {
+                Toast.info('No orders found');
+            }
+        } catch (error) {
+            console.error('Failed to load all orders:', error);
+            Toast.error('Failed to load all orders');
+        } finally {
+            Loading.hide();
         }
     }
 

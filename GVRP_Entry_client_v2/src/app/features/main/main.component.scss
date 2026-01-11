@@ -1,167 +1,93 @@
 @import '../../../assets/styles/variables';
 
 .main-layout {
+  display: flex;
+  flex-direction: column;
   height: 100vh;
+  overflow: hidden;
+}
+
+.content-wrapper {
+  display: flex;
+  height: calc(100vh - var(--navbar-height));
+  overflow: hidden;
+}
+
+// Main content area (70%)
+.main-content {
+  flex: 1;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  height: 100%;
+  background: var(--bg-light);
+}
 
-  .navbar {
-    z-index: 1000;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+// Map Section (60vh default)
+.map-section {
+  height: 60vh;
+  min-height: 200px;
+  max-height: 95vh;
+  position: relative;
+  flex-shrink: 0;
+  background: white;
+}
 
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 18px;
-      font-weight: 600;
-    }
+// Resize Divider
+.resize-divider {
+  height: 8px;
+  background: var(--border-color);
+  cursor: row-resize;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+  flex-shrink: 0;
+  z-index: 10;
 
-    .spacer {
-      flex: 1;
-    }
-
-    .user-info {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-right: 16px;
-      font-size: 14px;
-    }
+  &:hover,
+  &.dragging {
+    background: var(--primary-blue);
   }
 
-  .content-container {
-    flex: 1;
-    overflow: hidden;
+  .resize-handle {
+    width: 60px;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: white;
+    border-radius: var(--radius-sm);
+  }
 
-    .sidebar {
-      width: 300px;
-      border-right: 1px solid #e0e0e0;
-
-      .sidebar-content {
-        padding: 24px;
-
-        h3 {
-          margin: 0 0 24px 0;
-          font-size: 20px;
-          font-weight: 600;
-        }
-
-        .stats-section {
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-          margin-bottom: 24px;
-
-          .stat-card {
-            background: #f5f5f5;
-            padding: 16px;
-            border-radius: 8px;
-            text-align: center;
-
-            .stat-number {
-              font-size: 32px;
-              font-weight: 700;
-              color: #4A90E2;
-            }
-
-            .stat-label {
-              font-size: 12px;
-              color: #666;
-              margin-top: 4px;
-            }
-          }
-        }
-
-        mat-divider {
-          margin: 24px 0;
-        }
-
-        .menu-section {
-          h4 {
-            font-size: 14px;
-            color: #666;
-            margin: 0 0 12px 0;
-            text-transform: uppercase;
-          }
-
-          .menu-item {
-            width: 100%;
-            justify-content: flex-start;
-            padding: 12px 16px;
-            margin-bottom: 4px;
-
-            mat-icon {
-              margin-right: 12px;
-            }
-
-            &:hover {
-              background: #f5f5f5;
-            }
-          }
-        }
-      }
-    }
-
-    .main-content {
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-
-      .map-section {
-        flex: 1;
-        min-height: 400px;
-        position: relative;
-      }
-
-      .table-section {
-        height: 40%;
-        min-height: 300px;
-        border-top: 2px solid #e0e0e0;
-        padding: 24px;
-        overflow-y: auto;
-
-        .table-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 24px;
-
-          h3 {
-            margin: 0;
-            font-size: 20px;
-          }
-        }
-
-        .empty-state {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          padding: 48px;
-          color: #999;
-
-          mat-icon {
-            font-size: 64px;
-            width: 64px;
-            height: 64px;
-            margin-bottom: 16px;
-            opacity: 0.5;
-          }
-
-          p {
-            font-size: 16px;
-            margin: 0 0 16px 0;
-          }
-        }
-      }
-    }
+  .resize-icon {
+    color: var(--text-gray);
   }
 }
 
+// Table Section (40vh)
+.table-section {
+  flex: 1;
+  min-height: 200px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: white;
+  border-top: 2px solid var(--border-color);
+}
+
+// Responsive
 @media (max-width: 768px) {
-  .content-container .sidebar {
-    width: 250px;
+  .content-wrapper {
+    flex-direction: column;
+  }
+
+  .map-section {
+    height: 40vh;
+  }
+
+  .resize-divider {
+    display: none;
   }
 }

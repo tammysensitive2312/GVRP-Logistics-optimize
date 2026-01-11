@@ -417,10 +417,7 @@ export class AppState {
 
                 activeSolutionId: this.#state.activeSolutionId,
                 activeJobId: this.#state.activeJobId,
-                activeModal: this.#state.activeModal,
-
-                selectedOrders: Array.from(this.#state.selectedOrders),
-                selectedVehicles: Array.from(this.#state.selectedVehicles)
+                activeModal: this.#state.activeModal
             };
             localStorage.setItem('vrp_app_state', JSON.stringify(stateToSave));
         } catch (error) {
@@ -458,12 +455,6 @@ export class AppState {
                     this.#state.activeModal = parsed.activeModal;
                 }
 
-                if (parsed.selectedOrders && Array.isArray(parsed.selectedOrders)) {
-                    this.#state.selectedOrders = new Set(parsed.selectedOrders);
-                }
-                if (parsed.selectedVehicles && Array.isArray(parsed.selectedVehicles)) {
-                    this.#state.selectedVehicles = new Set(parsed.selectedVehicles);
-                }
             }
         } catch (error) {
             console.warn('Failed to load state from localStorage:', error);

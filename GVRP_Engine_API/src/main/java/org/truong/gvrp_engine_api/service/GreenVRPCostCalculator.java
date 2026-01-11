@@ -133,15 +133,16 @@ public class GreenVRPCostCalculator {
         double totalCostPerMeter = (fuelCostPerMeter * costWeight) + (co2CostPerMeter * co2Weight);
 
         // ========== STEP 4: Build Jsprit vehicle type ==========
-
+        double weightedTimeCost = timeCostPerSecond * costWeight;
+        double weightedFixedCost = fixedCost * costWeight;
         int scaledCapacity = Math.round(vehicleTypeDTO.getCapacity() * DEMAND_SCALE);
 
         VehicleTypeImpl.Builder typeBuilder = VehicleTypeImpl.Builder
                 .newInstance("type-" + vehicleTypeDTO.getId())
                 .addCapacityDimension(0, scaledCapacity)
                 .setCostPerDistance(totalCostPerMeter)
-                .setCostPerTransportTime(timeCostPerSecond)
-                .setFixedCost(fixedCost);
+                .setCostPerTransportTime(weightedTimeCost)
+                .setFixedCost(weightedFixedCost);
 
         // ========== STEP 5: Log for debugging ==========
 

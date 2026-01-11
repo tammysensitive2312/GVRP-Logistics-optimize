@@ -10,7 +10,7 @@ export class PersistenceManager {
         const state = AppState.getState();
         console.log('🔄 PersistenceManager: Khởi động khôi phục...', state);
 
-        this.#restoreSelections(state);
+        // this.#restoreSelections(state);
 
         if (state.activeSolutionId) {
             await this.#restoreSolution(state.activeSolutionId);
@@ -30,35 +30,35 @@ export class PersistenceManager {
      * Restore selected orders & vehicles
      * @private
      */
-    static #restoreSelections(state) {
-        console.log('📋 Restoring selections...');
-
-        // Selections đã được restore trong AppState.loadFromLocalStorage()
-        // Chỉ cần update UI
-
-        // Update checkboxes trong orders table
-        if (typeof OrdersTable !== 'undefined') {
-            OrdersTable.updateCheckboxes();
-        }
-
-        // Update vehicle checkboxes trong sidebar
-        if (typeof Sidebar !== 'undefined' && AppState.selectedVehicles.size > 0) {
-            AppState.selectedVehicles.forEach(vehicleId => {
-                const checkbox = document.querySelector(`#vehicle-${vehicleId}`);
-                if (checkbox) checkbox.checked = true;
-            });
-        }
-
-        // Update Plan Routes button
-        if (typeof updatePlanRoutesButton === 'function') {
-            updatePlanRoutesButton();
-        }
-
-        console.log('✅ Selections restored:', {
-            orders: AppState.selectedOrders.size,
-            vehicles: AppState.selectedVehicles.size
-        });
-    }
+    // static #restoreSelections(state) {
+    //     console.log('📋 Restoring selections...');
+    //
+    //     // Selections đã được restore trong AppState.loadFromLocalStorage()
+    //     // Chỉ cần update UI
+    //
+    //     // Update checkboxes trong orders table
+    //     if (typeof OrdersTable !== 'undefined') {
+    //         OrdersTable.updateCheckboxes();
+    //     }
+    //
+    //     // Update vehicle checkboxes trong sidebar
+    //     if (typeof Sidebar !== 'undefined' && AppState.selectedVehicles.size > 0) {
+    //         AppState.selectedVehicles.forEach(vehicleId => {
+    //             const checkbox = document.querySelector(`#vehicle-${vehicleId}`);
+    //             if (checkbox) checkbox.checked = true;
+    //         });
+    //     }
+    //
+    //     // Update Plan Routes button
+    //     if (typeof updatePlanRoutesButton === 'function') {
+    //         updatePlanRoutesButton();
+    //     }
+    //
+    //     console.log('✅ Selections restored:', {
+    //         orders: AppState.selectedOrders.size,
+    //         vehicles: AppState.selectedVehicles.size
+    //     });
+    // }
 
     /**
      * Restore solution with caching

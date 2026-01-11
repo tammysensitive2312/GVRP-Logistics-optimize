@@ -88,7 +88,7 @@ public class EmailService {
             variables.put("routeCount", solution.getNumberOfRoutes());
 
             // Link to solution
-            variables.put("solutionUrl", frontendUrl + "/solutions/" + solution.getId());
+            variables.put("solutionUrl", frontendUrl + "?solution=" + solution.getId());
 
             String subject = "✅ Optimization Completed - Job #" + job.getId();
             String htmlContent = buildEmailContent("optimization-success", variables);

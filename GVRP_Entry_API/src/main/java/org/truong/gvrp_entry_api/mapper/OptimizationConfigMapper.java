@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.truong.gvrp_entry_api.dto.request.EngineOptimizationRequest;
 import org.truong.gvrp_entry_api.dto.request.RoutePlanningRequest;
+import org.truong.gvrp_entry_api.util.AppConstant;
 
 @Component
 @Slf4j
@@ -89,8 +90,8 @@ public class OptimizationConfigMapper {
                 // Traditional VRP: Focus on monetary cost
                 // Prefer: cheap fuel, short time, low fixed costs
                 // CO2 is secondary consideration
-                config.setCostWeight(0.9);
-                config.setCo2Weight(0.1);
+                config.setCostWeight(1.0);
+                config.setCo2Weight(0.0);
                 break;
 
             case MINIMIZE_DISTANCE:
@@ -105,8 +106,8 @@ public class OptimizationConfigMapper {
                 // GREEN VRP: Focus on environmental impact
                 // Prefer: electric vehicles, shorter routes, efficient routing
                 // Cost is secondary (within acceptable limits)
-                config.setCostWeight(0.1);
-                config.setCo2Weight(0.9);
+                config.setCostWeight(AppConstant.EPSILON);
+                config.setCo2Weight(1.0);
                 break;
 
             case BALANCED:

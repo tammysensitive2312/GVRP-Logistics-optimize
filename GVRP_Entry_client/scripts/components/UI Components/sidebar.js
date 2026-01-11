@@ -215,6 +215,18 @@ export class Sidebar {
             return;
         }
 
+        const selectAllBtn = document.createElement('div');
+        selectAllBtn.style.cssText = 'display: flex; gap: 8px; margin-bottom: 12px;';
+        selectAllBtn.innerHTML = `
+        <button class="btn btn-sm btn-secondary" onclick="Sidebar.selectAllVehicles()" style="flex: 1;">
+            ☑️ Select All
+        </button>
+        <button class="btn btn-sm btn-secondary" onclick="Sidebar.deselectAllVehicles()" style="flex: 1;">
+            ❌ Deselect All
+        </button>
+    `;
+        container.appendChild(selectAllBtn);
+
         list.forEach(vehicle => {
             const statusClass = vehicle.status === 'AVAILABLE' ? 'available' : 'in-use';
             const isSelected = AppState.isVehicleSelected(vehicle.id);

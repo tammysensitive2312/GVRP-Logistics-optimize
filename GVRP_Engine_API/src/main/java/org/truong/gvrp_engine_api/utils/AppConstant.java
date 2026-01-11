@@ -11,5 +11,5 @@ public class AppConstant {
      * - Company ESG policy
      * - International carbon market price
      */
-    public static final double CARBON_PRICE_PER_KG = 10000.0; // Example: 10,000 VND/kg CO2
+    public static final double CARBON_PRICE_PER_KG = 100000.0; // Example: 10,000 VND/kg CO2
 }

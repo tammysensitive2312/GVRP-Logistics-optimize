@@ -84,6 +84,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // Check authentication
     if (!requireAuth()) {
+        savePendingSolutionLoad();
         return;
     }
 
@@ -94,6 +95,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     await initializeApp();
 
     await checkForRunningJobs();
+
+    await checkAndLoadSolutionFromURL();
 
     // Initialize event listeners
     initEventListeners();
@@ -118,6 +121,120 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     console.log('VRP System ready!');
 });
+
+/**
+ * Save solution ID for loading after login
+ */
+function savePendingSolutionLoad() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const solutionId = urlParams.get('solution') || urlParams.get('loadSolution');
+
+    if (solutionId) {
+        console.log('💾 Saving pending solution load:', solutionId);
+
+        // Save to sessionStorage (temporary - only for this session)
+        sessionStorage.setItem('vrp_pending_solution', solutionId);
+
+        // Save current URL for redirect after login
+        sessionStorage.setItem('vrp_redirect_url', window.location.href);
+    }
+}
+
+/**
+ * Check URL for solution parameter and auto-load
+ * ⚠️ Only called AFTER authentication check passes
+ */
+async function checkAndLoadSolutionFromURL() {
+    // Check both URL params and pending session storage
+    const urlParams = new URLSearchParams(window.location.search);
+    let solutionId = urlParams.get('solution') || urlParams.get('loadSolution');
+
+    // Check if there's a pending solution from before login
+    const pendingSolution = sessionStorage.getItem('vrp_pending_solution');
+    if (pendingSolution && !solutionId) {
+        solutionId = pendingSolution;
+        console.log('📧 Found pending solution from before login:', solutionId);
+    }
+
+    if (!solutionId) {
+        return; // Nothing to load
+    }
+
+    console.log('📧 Loading solution from email link:', solutionId);
+
+    Loading.show('Loading solution from email...');
+
+    try {
+        // 1. Navigate to main screen if not already there
+        if (Router.getCurrentScreen() !== Router.SCREENS.MAIN) {
+            Router.goTo(Router.SCREENS.MAIN);
+            await new Promise(resolve => setTimeout(resolve, 500));
+        }
+
+        // 2. Load and display solution
+        const solution = await getSolutionById(parseInt(solutionId));
+
+        if (solution) {
+            // Set as active solution
+            AppState.activeSolutionId = solution.id;
+
+            // Display on map
+            if (typeof MainMap !== 'undefined') {
+                MainMap.displaySolution(solution);
+            }
+
+            // Display in solution views
+            if (typeof SolutionDisplay !== 'undefined') {
+                SolutionDisplay.setSolution(solution);
+            }
+
+            // Enable and switch to route tab
+            const routeBtn = document.querySelector('.tab-btn[data-tab="route-tab"]');
+            const timelineBtn = document.querySelector('.tab-btn[data-tab="timeline-tab"]');
+
+            if (routeBtn) {
+                routeBtn.disabled = false;
+                routeBtn.style.opacity = '1';
+            }
+            if (timelineBtn) {
+                timelineBtn.disabled = false;
+                timelineBtn.style.opacity = '1';
+            }
+
+            // Switch to route view
+            setTimeout(() => {
+                switchContentTab('route-tab');
+            }, 300);
+
+            Toast.success('Solution loaded successfully from email!');
+        }
+
+    } catch (error) {
+        console.error('Failed to load solution from URL:', error);
+
+        // Handle specific error cases
+        if (error.message && error.message.includes('401')) {
+            Toast.error('Session expired. Please login again.');
+            logout(); // Force logout
+        } else if (error.message && error.message.includes('403')) {
+            Toast.error('You do not have permission to view this solution.');
+        } else if (error.message && error.message.includes('404')) {
+            Toast.error('Solution not found. It may have been deleted.');
+        } else {
+            Toast.error('Failed to load solution.');
+        }
+
+    } finally {
+        // Clean up
+        sessionStorage.removeItem('vrp_pending_solution');
+        sessionStorage.removeItem('vrp_redirect_url');
+
+        // Clean URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+
+        Loading.hide();
+    }
+}
 
 /**
  * Check for running jobs on startup

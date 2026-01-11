@@ -1,60 +1,57 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
-import { MapComponent } from '@shared/components/map/map.component';
-
-import { MatSidenavModule } from '@angular/material/sidenav';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
-import { MatToolbarModule } from '@angular/material/toolbar';
-
-import { DepotDTO, OrderDTO, SolutionDTO } from '@core/models';
-
+import { DepotDTO, OrderDTO, VehicleDTO, SolutionDTO } from '@core/models';
 import { AuthService } from '@core/services/auth.service';
-import { StorageService } from '@core/services/storage.service';
-import { MatMenuModule, MatMenuTrigger } from '@angular/material/menu';
-import { MatDividerModule } from '@angular/material/divider';
+import { StateService } from '@core/services/state.service';
+
+interface Stats {
+  scheduled: number;
+  completed: number;
+  total: number;
+  routes: number;
+}
 
 @Component({
   selector: 'app-main',
-  standalone: true,
-  imports: [
-    CommonModule,
-    MapComponent,
-    MatSidenavModule,
-    MatButtonModule,
-    MatIconModule,
-    MatToolbarModule,
-    MatMenuModule,
-    MatDividerModule,
-    MatMenuTrigger
-  ],
   templateUrl: './main.component.html',
+  standalone: true,
   styleUrls: ['./main.component.scss']
 })
 export class MainComponent implements OnInit, OnDestroy {
-  // State
+  // Data
   depots: DepotDTO[] = [];
+  vehicles: VehicleDTO[] = [];
   orders: OrderDTO[] = [];
   solution: SolutionDTO | null = null;
-  sidebarOpened = true;
 
-  // User info
-  currentUser: any;
-  currentBranch: any;
+  // Stats
+  stats: Stats = {
+    scheduled: 0,
+    completed: 0,
+    total: 0,
+    routes: 0
+  };
+
+  // UI State
+  highlightedOrderId: number | null = null;
+
+  // Resize
+  private isResizing = false;
+  private startY = 0;
+  private startHeight = 0;
 
   private destroy$ = new Subject<void>();
 
   constructor(
     private authService: AuthService,
-    private storage: StorageService
+    private stateService: StateService
   ) {}
 
   ngOnInit(): void {
-    this.loadUserInfo();
     this.loadInitialData();
+    this.subscribeToState();
   }
 
   ngOnDestroy(): void {
@@ -62,36 +59,77 @@ export class MainComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
-  private loadUserInfo(): void {
-    const session = this.storage.getAuthSession();
-    if (session) {
-      this.currentUser = session.user;
-      this.currentBranch = session.branchId;
-    }
-  }
-
   private loadInitialData(): void {
-    // TODO: Load depots, vehicles, orders from API
+    // TODO: Load from API
     console.log('Loading initial data...');
   }
 
-  toggleSidebar(): void {
-    this.sidebarOpened = !this.sidebarOpened;
+  private subscribeToState(): void {
+    // Subscribe to highlighted order
+    this.stateService.highlightedOrder$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(orderId => {
+        this.highlightedOrderId = orderId;
+      });
   }
 
-  logout(): void {
-    this.authService.logout().subscribe({
-      next: () => {
-        console.log('Logged out successfully');
+  // Resize handlers
+  onResizeStart(event: MouseEvent): void {
+    this.isResizing = true;
+    this.startY = event.clientY;
+
+    const mapSection = document.querySelector('.map-section') as HTMLElement;
+    if (mapSection) {
+      this.startHeight = mapSection.offsetHeight;
+    }
+
+    event.preventDefault();
+  }
+
+  @HostListener('document:mousemove', ['$event'])
+  onResize(event: MouseEvent): void {
+    if (!this.isResizing) return;
+
+    const deltaY = event.clientY - this.startY;
+    const newHeight = this.startHeight + deltaY;
+
+    const mapSection = document.querySelector('.map-section') as HTMLElement;
+    const mainContent = document.querySelector('.main-content') as HTMLElement;
+
+    if (mapSection && mainContent) {
+      const mainHeight = mainContent.offsetHeight;
+      const minHeight = mainHeight * 0.05;
+      const maxHeight = mainHeight * 0.95;
+
+      if (newHeight >= minHeight && newHeight <= maxHeight) {
+        mapSection.style.height = `${newHeight}px`;
       }
-    });
+    }
+  }
+
+  @HostListener('document:mouseup')
+  onResizeEnd(): void {
+    if (this.isResizing) {
+      this.isResizing = false;
+      // Invalidate map size after resize
+      // TODO: Call map.invalidateSize()
+    }
+  }
+
+  // Event handlers
+  onSidebarToggle(): void {
+    // Handle sidebar collapse
+  }
+
+  onVehicleSelectionChange(selectedIds: number[]): void {
+    this.stateService.setSelectedVehicles(selectedIds);
+  }
+
+  onOrderSelectionChange(selectedIds: number[]): void {
+    this.stateService.setSelectedOrders(selectedIds);
   }
 
   onOrderClicked(orderId: number): void {
-    console.log('Order clicked:', orderId);
-  }
-
-  onMapReady(map: any): void {
-    console.log('Map ready:', map);
+    this.stateService.highlightOrder(orderId);
   }
 }
