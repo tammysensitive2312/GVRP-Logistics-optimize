@@ -79,6 +79,11 @@ AppState.subscribe('activeJobId', () => {
     AppState.saveToLocalStorage();
 });
 
+AppState.subscribe('orderStats', () => {
+    Sidebar.updateStatsCards();
+    AppState.saveToLocalStorage();
+});
+
 document.addEventListener('DOMContentLoaded', async function() {
     console.log('VRP System initializing...');
 
@@ -173,10 +178,19 @@ async function checkAndLoadSolutionFromURL() {
 
         // 2. Load and display solution
         const solution = await getSolutionById(parseInt(solutionId));
+        console.log('Loaded solution:', solution);
 
         if (solution) {
             // Set as active solution
             AppState.activeSolutionId = solution.id;
+            const orderStats = {
+                scheduled: solution.served_orders || 0,
+                completed: 0,
+                total: (solution.served_orders || 0) + (solution.unserved_orders || 0),
+                unassigned: solution.unserved_orders || 0
+            };
+
+            AppState.setOrderStats(orderStats);
 
             // Display on map
             if (typeof MainMap !== 'undefined') {
@@ -477,13 +491,6 @@ async function loadMainScreenData() {
 }
 
 /**
- * Load orders from API
- */
-async function loadOrders() {
-    await OrdersTable.loadOrders();
-}
-
-/**
  * Manual refresh - Invalidate cache và reload data
  */
 async function refreshAllData() {
@@ -526,7 +533,6 @@ function exportOrders() {
 }
 
 window.exportOrders = exportOrders;
-window.loadOrders = loadOrders;
 window.openAddOrderModal = openAddOrderModal;
 window.refreshAllData = refreshAllData;
 window.openRoutePlanningModal = openRoutePlanningModal;

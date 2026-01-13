@@ -1,6 +1,8 @@
 package org.truong.gvrp_entry_api.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.truong.gvrp_entry_api.entity.User;
 import org.truong.gvrp_entry_api.entity.enums.UserRole;
 
@@ -58,5 +60,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
      * @param branchId Branch ID
      * @return Optional User
      */
-    Optional<User> findByUsernameAndBranchId(String username, Long branchId);
+    @Query("SELECT u FROM User u JOIN FETCH u.branch WHERE u.username = :username AND u.branch.id = :branchId")
+    Optional<User> findByUsernameAndBranchId(@Param("username") String username, @Param("branchId") Long branchId);
 }

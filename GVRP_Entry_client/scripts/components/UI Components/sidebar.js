@@ -295,40 +295,12 @@ export class Sidebar {
         const stats = orderStats || AppState.orderStats;
 
         const statsCards = document.querySelectorAll('.stat-card');
-        if (statsCards.length >= 3) {
+        if (statsCards.length >= 4) {
             statsCards[0].querySelector('.stat-number').textContent = stats.scheduled;
             statsCards[1].querySelector('.stat-number').textContent = stats.completed;
             statsCards[2].querySelector('.stat-number').textContent = stats.total;
+            statsCards[3].querySelector('.stat-number').textContent = stats.unassigned;
         }
-
-        // Update 4th card if exists (routes)
-        if (statsCards.length >= 4) {
-            // TODO: Get active routes count
-            statsCards[3].querySelector('.stat-number').textContent = '0';
-        }
-    }
-
-    /**
-     * Create depot item element
-     * @private
-     */
-    static #createDepotItem(depot) {
-        const depotItem = document.createElement('div');
-        depotItem.className = 'depot-item';
-        depotItem.innerHTML = `
-      <div class="depot-header">
-        <span class="depot-icon">📍</span>
-        <span class="depot-name">${depot.name}</span>
-      </div>
-      <div class="depot-details">
-        <div class="depot-address">${depot.address}</div>
-        <div class="depot-coords">Lat: ${depot.latitude.toFixed(6)}, Lng: ${depot.longitude.toFixed(6)}</div>
-        <button class="btn btn-sm btn-text" onclick="Sidebar.centerMapOnDepot(${depot.latitude}, ${depot.longitude})">
-          📍 View on Map
-        </button>
-      </div>
-    `;
-        return depotItem;
     }
 
     /**

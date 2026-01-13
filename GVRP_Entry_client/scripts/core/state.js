@@ -27,6 +27,7 @@ export class AppState {
         allOrders: [],
         filteredOrders: [],
         selectedOrders: new Set(),
+        unassignedOrders: new Set(),
 
         // Filters
         filters: {
@@ -40,6 +41,12 @@ export class AppState {
         sidebarCollapsed: false,
         loading: false,
 
+        orderStats: {
+            total: 0,
+            scheduled: 0,
+            completed: 0,
+            unassigned: 0
+        },
         activeSolutionId: null,
         activeJobId: null,
         activeModal: null
@@ -132,6 +139,10 @@ export class AppState {
 
     static get selectedOrders() {
         return new Set(this.#state.selectedOrders);
+    }
+
+    static get unassignedOrders() {
+        return new Set(this.#state.unassignedOrders);
     }
 
     static get selectedOrdersCount() {
@@ -261,6 +272,12 @@ export class AppState {
     // ORDER SELECTION METHODS
     // ============================================
 
+    static setUnassignedOrders(orderIds) {
+        if (!Array.isArray(orderIds)) return;
+        this.#state.unassignedOrders = new Set(orderIds);
+        this.#notify('unassignedOrders', this.#state.unassignedOrders);
+    }
+
     static selectOrder(orderId) {
         this.#state.selectedOrders.add(orderId);
         this.#notify('selectedOrders', this.selectedOrders);
@@ -371,37 +388,22 @@ export class AppState {
     // ============================================
 
     static get orderStats() {
+        if (this.#state.orderStats) {
+            return this.#state.orderStats;
+        }
+
         return {
             total: this.#state.allOrders.length,
             scheduled: this.#state.allOrders.filter(o => o.status === 'SCHEDULED').length,
             onRoute: this.#state.allOrders.filter(o => o.status === 'ON_ROUTE').length,
             completed: this.#state.allOrders.filter(o => o.status === 'COMPLETED').length,
-            failed: this.#state.allOrders.filter(o => o.status === 'FAILED').length
+            unassigned: this.#state.allOrders.filter(o => o.status === 'UNASSIGNED').length
         };
     }
 
-    static get fleetStats() {
-        if (!this.#state.fleetInfo) {
-            return {
-                total: 0,
-                available: 0,
-                inUse: 0,
-                totalCapacity: 0,
-                availableCapacity: 0
-            };
-        }
-
-        // Calculate from fleet info
-        const vehicles = this.#state.fleetInfo.vehicles || [];
-        const totalCapacity = vehicles.reduce((sum, v) => sum + (v.capacity || 0), 0);
-
-        return {
-            total: vehicles.length,
-            available: vehicles.length, // TODO: Calculate from active routes
-            inUse: 0, // TODO: Calculate from active routes
-            totalCapacity,
-            availableCapacity: totalCapacity // TODO: Subtract used capacity
-        };
+    static setOrderStats(stats) {
+        this.#state.orderStats = stats;
+        this.#notify('orderStats', stats);
     }
 
     // ============================================

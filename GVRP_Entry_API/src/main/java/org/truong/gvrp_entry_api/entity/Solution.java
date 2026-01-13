@@ -76,6 +76,10 @@ public class Solution {
     @BatchSize(size = 20)
     private List<Route> routes = new ArrayList<>();
 
+    @OneToMany(mappedBy = "solution", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<UnassignedOrder> unassignedOrders = new ArrayList<>();
+
     // Business methods
     public int getNumberOfRoutes() {
         return routes.size();

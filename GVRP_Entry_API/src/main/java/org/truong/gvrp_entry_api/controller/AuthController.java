@@ -69,6 +69,7 @@ public class AuthController {
                 .userId(user.getId())
                 .username(user.getUsername())
                 .branchId(user.getBranch().getId())
+                .branchName(user.getBranch().getName())
                 .role(user.getRole().name())
                 .build();
 

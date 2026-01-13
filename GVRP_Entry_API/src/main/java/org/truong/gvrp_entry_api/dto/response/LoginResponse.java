@@ -14,5 +14,6 @@ public class LoginResponse {
     private Long userId;
     private String username;
     private Long branchId;
+    private String branchName;
     private String role;
 }

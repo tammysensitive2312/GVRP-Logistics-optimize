@@ -22,10 +22,12 @@ import org.truong.gvrp_entry_api.repository.SolutionRepository;
 import org.truong.gvrp_entry_api.repository.UserRepository;
 
 import java.math.BigDecimal;
+import java.text.NumberFormat;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
 @Service
@@ -223,8 +225,10 @@ public class EmailService {
     }
 
     private String formatCost(BigDecimal cost) {
-        if (cost == null) return "0 VND";
-        return String.format("%.2f VND", cost);
+        if (cost == null) return "0 ₫";
+        BigDecimal rounded = cost.setScale(0, BigDecimal.ROUND_UP);
+        NumberFormat nf = NumberFormat.getCurrencyInstance(new Locale("vi", "VN"));
+        return nf.format(rounded);
     }
 
     private String formatDistance(BigDecimal distance) {

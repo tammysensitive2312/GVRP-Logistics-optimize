@@ -9,6 +9,5 @@ import lombok.*;
 public class UnassignedOrder {
     private Long orderId;
     private String orderCode;
-    private String customerName;
     private String reason;
 }

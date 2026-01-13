@@ -27,4 +27,5 @@ public class SolutionDetailResponseDTO {
     private String errorMessage;
     private LocalDateTime createdAt;
     private List<RouteDetailResponseDTO> routes;
+    private List<Integer> unassignedOrderIds;
 }

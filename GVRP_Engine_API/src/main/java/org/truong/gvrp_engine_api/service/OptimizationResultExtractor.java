@@ -44,7 +44,7 @@ public class OptimizationResultExtractor {
                 unassigned.setReason("No suitable vehicle found or capacity exceeded");
                 unassignedOrders.add(unassigned);
 
-                log.warn("⚠️  Unassigned Order: {}", orderDTO.getOrderCode());
+                log.debug("⚠️  Unassigned Order: {}", orderDTO.getOrderCode());
             }
         }
 

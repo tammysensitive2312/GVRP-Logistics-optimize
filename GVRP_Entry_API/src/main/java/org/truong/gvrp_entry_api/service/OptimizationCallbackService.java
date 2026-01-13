@@ -8,10 +8,7 @@ import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.truong.gvrp_entry_api.dto.request.EngineCallbackRequest;
 import org.truong.gvrp_entry_api.entity.*;
-import org.truong.gvrp_entry_api.entity.enums.LocationType;
-import org.truong.gvrp_entry_api.entity.enums.OptimizationJobStatus;
-import org.truong.gvrp_entry_api.entity.enums.SolutionStatus;
-import org.truong.gvrp_entry_api.entity.enums.SolutionType;
+import org.truong.gvrp_entry_api.entity.enums.*;
 import org.truong.gvrp_entry_api.exception.ResourceNotFoundException;
 import org.truong.gvrp_entry_api.mapper.GeometryMapper;
 import org.truong.gvrp_entry_api.repository.*;
@@ -215,6 +212,27 @@ public class OptimizationCallbackService {
             solution.setRoutes(new ArrayList<>());
         } else {
             solution.getRoutes().clear();
+        }
+
+        if (solutionData.getUnassignedOrders() != null) {
+            for (EngineCallbackRequest.UnassignedOrderData uaData : solutionData.getUnassignedOrders()) {
+
+                Order order = orderRepository.findById(uaData.getOrderId()).orElse(null);
+
+                if (order != null) {
+                    UnassignedOrder unassigned = UnassignedOrder.builder()
+                            .solution(solution)
+                            .order(order)
+                            .reason(uaData.getReason())
+                            .build();
+                    solution.getUnassignedOrders().add(unassigned);
+
+                    order.setStatus(OrderStatus.UNASSIGNED);
+                    orderRepository.save(order);
+
+                    log.info("⚠️ Order #{} unassigned: {}", order.getId(), uaData.getReason());
+                }
+            }
         }
 
         solution = solutionRepository.saveAndFlush(solution);

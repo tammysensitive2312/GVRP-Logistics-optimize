@@ -39,6 +39,8 @@ public class CallbackService {
             Map<String, Object> payload = new HashMap<>();
             payload.put("job_id", jobId);
             payload.put("solution", solutionConverter.convertToSolutionData(result));
+            log.warn("Completion callback solution payload: {}",
+                    objectMapper.writeValueAsString(payload ));
 
             HttpEntity<Map<String, Object>> request = new HttpEntity<>(payload, headers);
 

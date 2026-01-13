@@ -5,6 +5,6 @@ public enum OrderStatus {
     ON_ROUTE,
     SERVICING,
     COMPLETED,
-    FAILED,
+    UNASSIGNED,
     REJECTED
 }

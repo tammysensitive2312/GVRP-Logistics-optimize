@@ -27,40 +27,6 @@ export class PersistenceManager {
     }
 
     /**
-     * Restore selected orders & vehicles
-     * @private
-     */
-    // static #restoreSelections(state) {
-    //     console.log('📋 Restoring selections...');
-    //
-    //     // Selections đã được restore trong AppState.loadFromLocalStorage()
-    //     // Chỉ cần update UI
-    //
-    //     // Update checkboxes trong orders table
-    //     if (typeof OrdersTable !== 'undefined') {
-    //         OrdersTable.updateCheckboxes();
-    //     }
-    //
-    //     // Update vehicle checkboxes trong sidebar
-    //     if (typeof Sidebar !== 'undefined' && AppState.selectedVehicles.size > 0) {
-    //         AppState.selectedVehicles.forEach(vehicleId => {
-    //             const checkbox = document.querySelector(`#vehicle-${vehicleId}`);
-    //             if (checkbox) checkbox.checked = true;
-    //         });
-    //     }
-    //
-    //     // Update Plan Routes button
-    //     if (typeof updatePlanRoutesButton === 'function') {
-    //         updatePlanRoutesButton();
-    //     }
-    //
-    //     console.log('✅ Selections restored:', {
-    //         orders: AppState.selectedOrders.size,
-    //         vehicles: AppState.selectedVehicles.size
-    //     });
-    // }
-
-    /**
      * Restore solution with caching
      * @private
      */
@@ -78,7 +44,16 @@ export class PersistenceManager {
             const solution = await window.getSolutionById(solutionId);
 
             if (solution) {
-                this.#cachedSolution = solution; // Cache it
+                const orderStats = {
+                    scheduled: solution.served_orders || 0,
+                    completed: 0,
+                    total: (solution.served_orders || 0) + (solution.unserved_orders || 0),
+                    unassigned: solution.unserved_orders || 0
+                };
+
+                AppState.setOrderStats(orderStats);
+
+                this.#cachedSolution = solution;
                 this.#displaySolution(solution);
                 console.log('✅ Solution restored:', solution.id);
             }

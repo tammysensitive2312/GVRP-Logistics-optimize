@@ -126,11 +126,6 @@ export class OrdersTable {
                 MainMap.loadOrders(AppState.filteredOrders);
             }
 
-            // Update sidebar stats
-            if (typeof Sidebar !== 'undefined') {
-                Sidebar.updateStatsCards();
-            }
-
         } catch (error) {
             console.error('Failed to load orders:', error);
             Toast.error('Failed to load orders');
