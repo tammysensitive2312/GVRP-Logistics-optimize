@@ -5,16 +5,6 @@ title VRP System - High-Level Architecture Design
 !define RECTANGLE class
 
 skinparam componentStyle rectangle
-skinparam backgroundColor #FFFFFF
-skinparam component {
-    BackgroundColor<<Frontend>> LightBlue
-    BackgroundColor<<EntryService>> LightGreen
-    BackgroundColor<<EngineService>> LightYellow
-    BackgroundColor<<External>> LightCoral
-    BackgroundColor<<Storage>> Wheat
-    BorderColor Black
-    ArrowColor Black
-}
 
 ' ============================================
 ' ACTORS
@@ -25,78 +15,49 @@ actor "Customer\nUser" as Customer
 ' ============================================
 ' FRONTEND LAYER
 ' ============================================
-package "Presentation Layer" {
-    component "Web Frontend\n(React/Vue)" as WebUI <<Frontend>> {
-        [Map Viewer]
-        [Order Manager]
-        [Route Planner]
-        [Solution History]
-        [Analytics Dashboard]
+card "Presentation Layer" {
+    component "Web Frontend" as WebUI <<Frontend>> {
     }
 }
 
 ' ============================================
 ' ENTRY SERVICE (Main Backend)
 ' ============================================
-package "Entry Service\n(Spring Boot - Port 8080)" <<EntryService>> {
+card "Entry Service\n(Spring Boot - Port 8080)" <<EntryService>> {
 
     ' API Layer
     component "API Gateway Layer" as APILayer {
         [REST Controllers]
-        [Authentication Filter]
-        [Authorization Filter]
-        [Request Validator]
     }
 
     ' Business Layer
     component "Business Logic Layer" as BusinessLayer {
-        [Depot Service]
-        [Fleet Service]
-        [Order Import Service]
-        [Solution Planning Service]
-        [Solution Import/Export Service]
-        [Solution Analysis Service]
-        [Email Service]
     }
 
     ' Integration Layer
     component "Integration Layer" as IntegrationLayer {
-        [Engine Client]
-        [Email Client]
-        [File Parser]
-        [File Generator]
     }
 
     ' Data Access Layer
     component "Data Access Layer" as DataLayer {
-        [JPA Repositories]
-        [Hibernate Spatial]
-        [Transaction Manager]
     }
 }
 
 ' ============================================
 ' ENGINE SERVICE (Optimization)
 ' ============================================
-package "Engine Service\n(Python/Java - Port 8081)" <<EngineService>> {
+card "Engine Service\n(Python/Java - Port 8081)" <<EngineService>> {
 
-    component "Engine API" as EngineAPI {
-        [Optimization Endpoint]
-        [Health Check]
-        [Status Monitor]
+    component "API Layer" as EngineAPI {
     }
 
     component "Optimization Engine" as OptEngine {
-        [VRP Solver]
-        [Route Calculator]
-        [Constraint Handler]
-        [Algorithm Selector]
     }
 
     component "Algorithm Implementations" as Algorithms {
-        [GraphHopper Jsprit]
-        [OR-Tools]
-        [Custom Genetic Algorithm]
+        [Local Neighbour Search]
+        (OR-Tools)
+        [Genetic Algorithm]
         [Tabu Search]
     }
 }
@@ -104,29 +65,19 @@ package "Engine Service\n(Python/Java - Port 8081)" <<EngineService>> {
 ' ============================================
 ' DATA STORAGE
 ' ============================================
-package "Data Storage Layer" <<Storage>> {
+card "Data Storage Layer" <<Storage>> {
     database "MySQL Database\n(with Spatial Extension)" as MySQL {
-        [Branches]
-        [Users]
-        [Depots (POINT)]
-        [Vehicles]
-        [Orders (POINT)]
-        [Solutions]
-        [Routes]
-        [RouteSegments]
+
     }
 
-    storage "File Storage\n(Optional)" as FileStorage {
-        [Uploaded CSVs]
-        [Exported Reports]
-        [Generated PDFs]
+    storage "File Storage" as FileStorage {
     }
 }
 
 ' ============================================
 ' EXTERNAL SERVICES
 ' ============================================
-package "External Services" <<External>> {
+card "External Services" <<External>> {
     component "Email Server\n(SMTP)" as EmailServer
     component "Map Provider\n(OpenStreetMap/Google)" as MapProvider
     component "Geocoding API\n(Optional)" as Geocoding
@@ -145,13 +96,7 @@ WebUI --> APILayer : REST API\n(HTTPS)
 
 note right of WebUI
     Frontend communicates với
-    Entry Service qua REST APIs:
-
-    • GET /api/orders
-    • POST /api/solutions/plan
-    • GET /api/solutions/history
-    • POST /api/solutions/export
-    • POST /api/solutions/import
+    Entry Service qua REST APIs
 end note
 
 ' ============================================
@@ -191,19 +136,6 @@ IntegrationLayer --> EmailServer : SMTP\n(TLS)
 WebUI --> MapProvider : HTTPS\n(Map Tiles)
 IntegrationLayer --> Geocoding : HTTPS\n(Optional)
 
-' ============================================
-' DEPLOYMENT NOTES
-' ============================================
-note bottom of EngineAPI
-    Engine Service có thể deploy:
-    • Cùng server (monolith)
-    • Separate container (microservice)
-    • Separate server (distributed)
-    • Cloud function (serverless)
-
-    Recommend: Docker container
-    với horizontal scaling
-end note
 
 ' ============================================
 ' LEGEND

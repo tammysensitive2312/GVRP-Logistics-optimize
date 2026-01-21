@@ -28,3 +28,5 @@
 
 /* 5. Utilities */
 @import "utils/z-index.css";
+
+@import "screens/admin-settings.css";

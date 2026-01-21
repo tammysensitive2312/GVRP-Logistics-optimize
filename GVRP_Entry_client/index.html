@@ -36,6 +36,9 @@
   <script type="module" src="scripts/components/Form%20Components/job-monitoring-modal.js"></script>
   <script type="module" src="scripts/components/Form%20Components/background-job-modal.js"></script>
   <script type="module" src="scripts/components/Solution%20Views/solution-view.js"></script>
+  <script type="module" src="scripts/components/Admin/vehicle-manager.js"></script>
+  <script type="module" src="scripts/components/Admin/vehicle-type-manager.js"></script>
+  <script type="module" src="scripts/components/screens/admin-settings.js"></script>
 
   <script type="module" src="scripts/components/Map%20Components/depot-map.js"></script>
   <script type="module" src="scripts/components/Map%20Components/main-map.js"></script>
@@ -327,8 +330,8 @@
           <a href="#" onclick="event.preventDefault(); alert('Profile - Coming soon!')">
             👤 Profile
           </a>
-          <a href="#" onclick="event.preventDefault(); alert('Settings - Coming soon!')">
-            ⚙️ Settings
+          <a href="#" onclick="event.preventDefault(); Router.goTo('screen-admin-settings')">
+            ⚙️ Administrator
           </a>
           <div class="divider"></div>
           <a href="#" onclick="event.preventDefault(); Navbar.handleLogout()" style="color: var(--danger-red);">
@@ -1212,6 +1215,136 @@
 
 <!-- Toast Notification -->
 <div id="toast" class="toast"></div>
+
+<!-- ============================================ -->
+<!-- SCREEN: ADMIN SETTINGS -->
+<!-- ============================================ -->
+<div id="screen-admin-settings" class="screen">
+  <nav class="navbar">
+    <div class="navbar-left">
+      <button class="btn-icon" onclick="AdminSettings.toggleSidebar()">☰</button>
+      <div class="brand">
+        <span class="brand-icon">⚙️</span>
+        <span class="brand-name">Administrator</span>
+      </div>
+    </div>
+
+    <div class="navbar-right">
+      <button class="btn btn-secondary" onclick="Router.goTo(Router.SCREENS.MAIN)">
+        ← Back to Dashboard
+      </button>
+    </div>
+  </nav>
+
+  <div class="admin-settings-layout">
+    <!-- Sidebar -->
+    <aside id="admin-sidebar" class="admin-sidebar">
+      <div class="admin-sidebar-header">
+        <h2>
+          <span>⚙️</span>
+          Settings
+        </h2>
+      </div>
+
+      <div class="admin-menu">
+        <div class="admin-menu-item active" data-section="vehicle-types" onclick="AdminSettings.switchSection('vehicle-types')">
+          <span class="icon">🚚</span>
+          <span class="label">Vehicle Types</span>
+          <span class="badge" id="vehicle-types-count">0</span>
+        </div>
+
+        <div class="admin-menu-item" data-section="vehicles" onclick="AdminSettings.switchSection('vehicles')">
+          <span class="icon">🚗</span>
+          <span class="label">Vehicles</span>
+          <span class="badge" id="vehicles-count">0</span>
+        </div>
+
+        <div class="admin-menu-item" data-section="depots" onclick="AdminSettings.switchSection('depots')">
+          <span class="icon">🏢</span>
+          <span class="label">Depots</span>
+          <span class="badge" id="depots-count">0</span>
+        </div>
+      </div>
+
+      <div class="admin-sidebar-footer">
+        <button class="btn btn-secondary" style="width: 100%;" onclick="Router.goTo(Router.SCREENS.MAIN)">
+          ← Back
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="admin-content">
+      <!-- Vehicle Types Section -->
+      <div id="vehicle-types-section" class="admin-section active">
+        <div class="admin-content-header">
+          <h1>Vehicle Types Management</h1>
+          <p>Manage your fleet's vehicle types and specifications</p>
+        </div>
+
+        <div class="admin-content-body">
+          <div class="section-toolbar">
+            <div class="toolbar-left">
+              <div class="search-box">
+                <span class="icon">🔍</span>
+                <input type="text" id="search-vehicle-types" placeholder="Search vehicle types..." />
+              </div>
+            </div>
+            <button class="btn btn-primary" onclick="VehicleTypeManager.openAddModal()">
+              + Add Vehicle Type
+            </button>
+          </div>
+
+          <div id="vehicle-types-list" class="items-grid">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Vehicles Section -->
+      <div id="vehicles-section" class="admin-section">
+        <div class="admin-content-header">
+          <h1>Vehicles Management</h1>
+          <p>Manage your fleet vehicles</p>
+        </div>
+
+        <div class="admin-content-body">
+          <div class="section-toolbar">
+            <div class="toolbar-left">
+              <div class="search-box">
+                <span class="icon">🔍</span>
+                <input type="text" id="search-vehicles" placeholder="Search vehicles..." />
+              </div>
+            </div>
+            <button class="btn btn-primary" onclick="VehicleManager.openAddModal()">
+              + Add Vehicle
+            </button>
+          </div>
+
+          <div id="vehicles-list" class="items-grid">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Depots Section -->
+      <div id="depots-section" class="admin-section">
+        <div class="admin-content-header">
+          <h1>Depots Management</h1>
+          <p>Manage warehouse locations</p>
+        </div>
+
+        <div class="admin-content-body">
+          <div class="empty-state">
+            <div class="empty-icon">🏢</div>
+            <div class="empty-text">Depots Management</div>
+            <div class="empty-hint">Coming soon...</div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
 
 </body>
 </html>

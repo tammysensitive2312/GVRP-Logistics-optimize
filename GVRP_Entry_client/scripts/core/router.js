@@ -11,7 +11,8 @@ export class Router {
         DEPOT_SETUP: 'screen-depot-setup',
         VEHICLE_TYPE_SETUP: 'screen-vehicle-type-setup',
         FLEET_SETUP: 'screen-fleet-setup',
-        MAIN: 'screen-main'
+        MAIN: 'screen-main',
+        ADMIN_SETTINGS: 'screen-admin-settings'
     };
 
     // Screen lifecycle hooks

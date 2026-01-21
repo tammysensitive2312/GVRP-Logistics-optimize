@@ -1,8 +1,7 @@
-@startuml VRP_Database_ER_Diagram_Updated
+@startuml VRP_Database_ER_Diagram_ActualCode
 
-title VRP System - Complete Entity-Relationship Diagram (Updated with Jobs)
+title VRP System - Entity-Relationship Diagram
 
-!define TABLE object
 !define PK <color:red><b>PK</b></color>
 !define FK <color:blue><b>FK</b></color>
 !define UK <color:green><b>UK</b></color>
@@ -47,9 +46,9 @@ object users <<TABLE>> {
 object depots <<TABLE>> {
     PK id : BIGINT
     FK branch_id : BIGINT
-    name : VARCHAR(100)
+    name : VARCHAR(255)
     address : VARCHAR(255)
-    SPATIAL location : POINT
+    SPATIAL location : POINT SRID 4326
     created_at : TIMESTAMP
     updated_at : TIMESTAMP
 }
@@ -66,21 +65,34 @@ object fleets <<TABLE>> {
 }
 
 ' ============================================
-' VEHICLE (Delivery vehicles)
+' VEHICLE TYPE
 ' ============================================
-object vehicles <<TABLE>> {
+object vehicle_types <<TABLE>> {
     PK id : BIGINT
-    FK fleet_id : BIGINT
-    FK start_depot_id : BIGINT
-    FK end_depot_id : BIGINT
-    UK vehicle_license_plate : VARCHAR(20)
-    vehicle_feature : VARCHAR(255)
+    FK branch_id : BIGINT
+    type_name : VARCHAR(100)
+    vehicle_features : JSON
+    description : TEXT
     capacity : INT
     fixed_cost : DECIMAL(10,2)
     cost_per_km : DECIMAL(10,2)
     cost_per_hour : DECIMAL(10,2)
     max_distance : DECIMAL(10,2)
     max_duration : DECIMAL(10,2)
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+}
+
+' ============================================
+' VEHICLE (Delivery vehicles)
+' ============================================
+object vehicles <<TABLE>> {
+    PK id : BIGINT
+    FK fleet_id : BIGINT
+    FK vehicle_type_id : BIGINT
+    FK start_depot_id : BIGINT
+    FK end_depot_id : BIGINT
+    UK vehicle_license_plate : VARCHAR(20)
     status : ENUM('AVAILABLE', 'IN_USE', 'MAINTENANCE', 'RETIRED')
     created_at : TIMESTAMP
     updated_at : TIMESTAMP
@@ -96,13 +108,13 @@ object orders <<TABLE>> {
     customer_name : VARCHAR(100)
     customer_phone : VARCHAR(20)
     address : VARCHAR(255)
-    SPATIAL location : POINT
+    SPATIAL location : POINT SRID 4326
     demand : DECIMAL(10,2)
+    service_time : INT
     time_window_start : TIME
     time_window_end : TIME
-    service_time : INT
     delivery_date : DATE
-    status : ENUM('SCHEDULED', 'ON_ROUTE', 'SERVICING', 'COMPLETED', 'FAILED', 'REJECTED')
+    status : ENUM('SCHEDULED', 'ON_ROUTE', 'SERVICING', 'COMPLETED', 'UNASSIGNED', 'REJECTED')
     priority : INT
     delivery_notes : TEXT
     created_at : TIMESTAMP
@@ -110,88 +122,52 @@ object orders <<TABLE>> {
 }
 
 ' ============================================
-' NEW: OPTIMIZATION JOB
+' OPTIMIZATION JOB
 ' ============================================
 object optimization_jobs <<TABLE>> {
     PK id : BIGINT
     FK branch_id : BIGINT
-    FK user_id : BIGINT
+    FK created_by_user_id : BIGINT
     status : ENUM('PENDING', 'PROCESSING', 'COMPLETED', 'FAILED', 'CANCELLED')
+    external_job_id : VARCHAR(255)
+    input_data : JSON
+    estimated_duration_minutes : INT
+    error_message : TEXT
     created_at : TIMESTAMP
     started_at : TIMESTAMP
     completed_at : TIMESTAMP
     cancelled_at : TIMESTAMP
-'    progress : INT
-'    estimated_duration_seconds : INT
-    external_job_id : VARCHAR(100)
-    input_data : JSON
-    error_message : TEXT
 }
 
-note right of optimization_jobs
-    **NEW TABLE: optimization_jobs**
-
-    Tracks optimization job lifecycle.
-
-    Key fields:
-    • status: Job state machine
-      PENDING → PROCESSING → COMPLETED/FAILED/CANCELLED
-    • input_data: JSON of RoutePlanningRequest
-      Enables retry functionality
-    • external_job_id: ID from optimization engine
-      For cancellation API calls
-'    • progress: 0-100 (if engine supports)
-
-    Business rules:
-    • Only 1 PROCESSING job per branch at a time
-    • Only PROCESSING jobs can be cancelled
-    • All jobs kept for audit trail
-
-    Indexes:
-    • (branch_id, status, created_at DESC)
-    • (user_id, created_at DESC)
-    • (status, created_at)
-    • (external_job_id) for engine callbacks
-end note
-
 ' ============================================
-' UPDATED: SOLUTION
+' SOLUTION
 ' ============================================
 object solutions <<TABLE>> {
     PK id : BIGINT
-    FK job_id : BIGINT
     FK branch_id : BIGINT
-    status : ENUM('FEASIBLE', 'INFEASIBLE', 'OPTIMIZED')
+    FK job_id : BIGINT
+    status : ENUM('SUCCESS', 'PARTIAL_SUCCESS', 'INFEASIBLE', 'INITIAL')
     type : ENUM('ENGINE_GENERATED', 'FILE_IMPORTED')
+    total_cost : DECIMAL(10,2)
     total_distance : DECIMAL(10,2)
     total_co2 : DECIMAL(10,2)
-    total_service_time : DECIMAL(10,2)
+    total_time : DECIMAL(10,2)
     total_vehicles_used : INT
     served_orders : INT
     unserved_orders : INT
+    error_message : TEXT
     created_at : TIMESTAMP
 }
 
-note right of solutions
-    **UPDATED: solutions table**
-
-    Changes:
-    • Added: job_id (FK to optimization_jobs)
-    • Removed: Job status fields (now in jobs table)
-
-    Relationship:
-    • 1 Job → 0..1 Solution
-    • Solution only exists if job completed successfully
-    • FAILED/CANCELLED jobs have no solution
-
-    SolutionStatus now quality-focused:
-    • FEASIBLE: Valid solution found
-    • INFEASIBLE: No valid solution possible
-    • OPTIMIZED: Near-optimal solution
-
-    Index:
-    • job_id (UNIQUE, for fast lookup)
-end note
+' ============================================
+' UNASSIGNED ORDER
+' ============================================
+object unassigned_orders <<TABLE>> {
+    PK id : BIGINT
+    FK solution_id : BIGINT
+    FK order_id : BIGINT
+    reason : VARCHAR(255)
+}
 
 ' ============================================
 ' ROUTE (Individual vehicle routes)
@@ -210,28 +186,25 @@ object routes <<TABLE>> {
 }
 
 ' ============================================
-' ROUTE_SEGMENT (Step-by-step route details)
+' ROUTE STOP (Step-by-step route details)
 ' ============================================
-object route_segments <<TABLE>> {
+object route_stops <<TABLE>> {
     PK id : BIGINT
     FK route_id : BIGINT
-    FK order_id : BIGINT
+    FK order_id : BIGINT (nullable)
     sequence_number : INT
-    from_type : ENUM('DEPOT', 'ORDER')
-    from_location_id : BIGINT
-    from_address : VARCHAR(255)
-    SPATIAL from_location : POINT
-    to_type : ENUM('DEPOT', 'ORDER')
-    to_location_id : BIGINT
-    to_address : VARCHAR(255)
-    SPATIAL to_location : POINT
-    distance : DECIMAL(10,2)
-    duration : DECIMAL(10,2)
+    type : ENUM('DEPOT', 'ORDER')
+    location_id : VARCHAR(255)
+    location_name : VARCHAR(255)
+    SPATIAL location : POINT SRID 4326
     arrival_time : TIME
     departure_time : TIME
     service_time : DECIMAL(10,2)
-    load_before : DECIMAL(10,2)
+    wait_time : DECIMAL(10,2)
+    demand : DECIMAL(10,2)
     load_after : DECIMAL(10,2)
+    distance_to_next : DECIMAL(10,2)
+    time_to_next : DECIMAL(10,2)
 }
 
 ' ============================================
@@ -242,158 +215,118 @@ object route_segments <<TABLE>> {
 branches "1" -- "0..*" users : owns
 branches "1" -- "0..*" depots : owns
 branches "1" -- "0..*" fleets : owns
+branches "1" -- "0..*" vehicle_types : owns
 branches "1" -- "0..*" orders : owns
 branches "1" -- "0..*" optimization_jobs : owns
+branches "1" -- "0..*" solutions : owns
 
 ' User relationships
 users "*" -- "1" branches : belongs_to
+users "1" -- "0..*" optimization_jobs : creates
 
 ' Depot relationships
 depots "*" -- "1" branches : belongs_to
+depots "1" -- "0..*" vehicles : starts_from
+depots "1" -- "0..*" vehicles : ends_at
 
 ' Fleet relationships
 fleets "*" -- "1" branches : belongs_to
 fleets "1" -- "0..*" vehicles : contains
 
+' Vehicle Type relationships
+vehicle_types "*" -- "1" branches : belongs_to
+vehicle_types "1" -- "0..*" vehicles : defines
+
 ' Vehicle relationships
 vehicles "*" -- "1" fleets : belongs_to
+vehicles "*" -- "1" vehicle_types : has_type
 vehicles "*" -- "1" depots : starts_at
 vehicles "*" -- "1" depots : ends_at
 vehicles "1" -- "0..*" routes : assigned_to
 
 ' Order relationships
 orders "*" -- "1" branches : belongs_to
-orders "0..1" -- "0..*" route_segments : referenced_in
+orders "0..1" -- "0..*" route_stops : visited_in
+orders "0..1" -- "0..*" unassigned_orders : referenced_in
 
-' NEW: Job relationships
+' Job relationships
 optimization_jobs "*" -- "1" branches : belongs_to
-optimization_jobs "*" -- "1" users : submitted_by
+optimization_jobs "*" -- "1" users : created_by
 optimization_jobs "1" -- "0..1" solutions : produces
 
-' UPDATED: Solution relationships
-solutions "*" -- "1" optimization_jobs : created_by
+' Solution relationships
+solutions "*" -- "1" optimization_jobs : generated_from
 solutions "*" -- "1" branches : belongs_to
 solutions "1" -- "0..*" routes : contains
+solutions "1" -- "0..*" unassigned_orders : has
+
+' Unassigned Order relationships
+unassigned_orders "*" -- "1" solutions : part_of
+unassigned_orders "*" -- "1" orders : references
 
 ' Route relationships
 routes "*" -- "1" solutions : part_of
 routes "*" -- "1" vehicles : uses
-routes "1" -- "1..*" route_segments : contains
+routes "1" -- "1..*" route_stops : contains
 
-' Route Segment relationships
-route_segments "*" -- "1" routes : part_of
-route_segments "*" -- "0..1" orders : delivers
+' Route Stop relationships
+route_stops "*" -- "1" routes : part_of
+route_stops "*" -- "0..1" orders : delivers
 
 ' ============================================
-' INDEXES SUMMARY
+' INDEXES
 ' ============================================
-note as IndexNote
-    **INDEXES FOR PERFORMANCE:**
-
-    **Primary Keys (Auto-indexed):**
-    • All tables: id column
-
-    **Foreign Keys (Recommended indexes):**
-    • users: branch_id
-    • depots: branch_id
-    • fleets: branch_id
-    • vehicles: fleet_id, start_depot_id, end_depot_id
-    • orders: branch_id
-    • optimization_jobs: branch_id, user_id ← NEW
-    • solutions: job_id (UNIQUE), branch_id ← UPDATED
-    • routes: solution_id, vehicle_id
-    • route_segments: route_id, order_id
-
-    **Unique Constraints:**
-    • branches: name
-    • users: username, email
-    • vehicles: vehicle_license_plate
-    • orders: (branch_id, order_code) composite
-    • solutions: job_id ← NEW
-
-    **Spatial Indexes:**
-    • depots: location
-    • orders: location
-    • route_segments: from_location, to_location
-
-    **Status Indexes (for filtering):**
-    • vehicles: status
-    • orders: status
-    • optimization_jobs: (branch_id, status, created_at DESC) ← NEW
-    • optimization_jobs: (status, created_at) ← NEW
-
-    **Composite Indexes:**
-    • orders: (branch_id, status)
-    • optimization_jobs: (user_id, created_at DESC) ← NEW
-    • route_segments: (route_id, sequence_number)
-
-    **Special Indexes:**
-    • optimization_jobs: external_job_id ← NEW
-      For engine callback lookups
+note top of users
+  **Indexes:**
+  - idx_user_branch (branch_id)
 end note
 
-' ============================================
-' DATA VOLUME ESTIMATES
-' ============================================
-note as VolumeNote
-    **ESTIMATED DATA VOLUMES (UPDATED):**
-
-    For a typical branch (per month):
-    • Branches: 1-10
-    • Users: 10-100 per branch
-    • Depots: 1-5 per branch
-    • Fleets: 1-3 per branch
-    • Vehicles: 10-50 per fleet
-    • Orders: 100-1000 active at a time
-    • **Optimization Jobs: 20-100 per month** ← NEW
-    • Solutions: 10-50 per month (only successful jobs)
-    • Routes: 3-10 per solution
-    • Route Segments: 5-20 per route
-
-    Storage estimates (1 year, 5 branches):
-    • Orders: ~600,000 rows (~100 MB)
-    • **Optimization Jobs: ~6,000 rows (~20 MB)** ← NEW
-    • Solutions: ~3,000 rows (~10 MB)
-    • Routes: ~15,000 rows (~20 MB)
-    • Route Segments: ~150,000 rows (~500 MB)
-
-    Total: ~670 MB/year (excluding indexes)
-
-    **Job Retention Policy:**
-    • Keep COMPLETED jobs: 90 days
-    • Keep FAILED jobs: 30 days
-    • Keep CANCELLED jobs: 7 days
-    • Archive old jobs to separate table
+note top of depots
+  **Indexes:**
+  - idx_depot_branch (branch_id)
+  - idx_depot_location (location)
 end note
 
-' ============================================
-' JOB STATE MACHINE
-' ============================================
-note as JobStateMachine
-    **JOB STATUS STATE MACHINE:**
+note top of vehicles
+  **Indexes:**
+  - idx_vehicle_fleet (fleet_id)
+  - idx_vehicle_status (status)
+  - idx_vehicle_license (vehicle_license_plate) UK
+end note
 
-    PENDING
-      ↓ (when picked up by worker)
-    PROCESSING
-      ↓ (success)      ↓ (error)        ↓ (user action)
-    COMPLETED        FAILED          CANCELLED
+note top of orders
+  **Indexes:**
+  - idx_order_branch (branch_id)
+  - idx_order_status (status)
+  - idx_order_code (order_code, branch_id) UK
+  - idx_order_location (location)
+end note
 
-    **Valid Transitions:**
-    • PENDING → PROCESSING (system)
-    • PENDING → CANCELLED (user)
-    • PROCESSING → COMPLETED (system)
-    • PROCESSING → FAILED (system)
-    • PROCESSING → CANCELLED (user)
+note top of optimization_jobs
+  **Indexes:**
+  - idx_job_branch (branch_id)
+  - idx_job_status (status)
+  - idx_job_created (created_at)
+end note
 
-    **Invalid Transitions:**
-    • COMPLETED → * (terminal state)
-    • FAILED → * (terminal state)
-    • CANCELLED → * (terminal state)
+note top of solutions
+  **Indexes:**
+  - idx_solution_branch (branch_id)
+  - idx_solution_status (status)
+  - idx_solution_created (created_at)
+end note
 
-    **Business Rules:**
-    • Only PENDING/PROCESSING can be cancelled
-    • Only COMPLETED jobs have solutions
-    • FAILED/CANCELLED jobs never have solutions
+note top of routes
+  **Indexes:**
+  - idx_route_solution (solution_id)
+  - idx_route_vehicle (vehicle_id)
+end note
+
+note top of route_stops
+  **Indexes:**
+  - idx_stop_route (route_id)
+  - idx_stop_order (order_id)
+  - idx_stop_sequence (route_id, sequence_number)
 end note
 
 ' ============================================
@@ -404,7 +337,7 @@ legend right
     PK = Primary Key
     FK = Foreign Key
     UK = Unique Key
-    SPATIAL = Spatial data type (POINT)
+    SPATIAL = Spatial data type (POINT SRID 4326)
 
     **CARDINALITY:**
     1 -- 0..* : One to Many
@@ -413,20 +346,126 @@ legend right
     0..1 -- 0..* : Optional One to Many
     1 -- 0..1 : One to Zero or One
 
-    **NEW in this version:**
-    • optimization_jobs table
-    • job_id in solutions table
-    • Job → Solution relationship (1:0..1)
+    **KEY FEATURES:**
+    • Multi-tenant via Branch
+    • Spatial data with PostGIS (SRID 4326)
+    • Job tracking with status transitions
+    • Solution with routes and unassigned orders
+    • Vehicle types with cost parameters
+    • Time windows for orders
+    • Route stops with detailed timing info
 
-    **KEY CHANGES:**
-    • Solution always linked to a Job
-    • Job can exist without Solution (if failed/cancelled)
-    • Clear separation: Job = process, Solution = result
+    **ENUM VALUES:**
+    • UserRole: PLANNER, CUSTOMER
+    • VehicleStatus: AVAILABLE, IN_USE, MAINTENANCE, RETIRED
+    • OrderStatus: SCHEDULED, ON_ROUTE, SERVICING, COMPLETED, UNASSIGNED, REJECTED
+    • OptimizationJobStatus: PENDING, PROCESSING, COMPLETED, FAILED, CANCELLED
+    • SolutionStatus: SUCCESS, PARTIAL_SUCCESS, INFEASIBLE, INITIAL
+    • SolutionType: ENGINE_GENERATED, FILE_IMPORTED
+    • LocationType: DEPOT, ORDER
 
-    **SRID 4326 (WGS84):**
-    Standard GPS coordinate system
-    • Longitude: -180 to 180
-    • Latitude: -90 to 90
+    **CHANGES FROM ORIGINAL:**
+    • Added vehicle_types table
+    • Added unassigned_orders table
+    • Changed route_segments → route_stops
+    • Updated ENUM values based on actual code
+    • Added more detailed indexes
+    • Fixed relationship cardinalities
 endlegend
 
+@enduml
+
+@startuml
+
+skinparam linetype ortho
+skinparam class {
+    BackgroundColor White
+    ArrowColor #263238
+    BorderColor #263238
+}
+
+entity "Branch" as branch {
+    * id : BIGINT <<PK>>
+    --
+    name : VARCHAR
+    config : JSON
+}
+
+entity "User" as user {
+    * id : BIGINT <<PK>>
+    --
+    branch_id : BIGINT <<FK>>
+    username : VARCHAR
+    role : ENUM(PLANNER, CUSTOMER)
+}
+
+entity "VehicleType" as vt {
+    * id : BIGINT <<PK>>
+    --
+    name : VARCHAR
+    capacity : DOUBLE
+    cost_per_km : DOUBLE
+    emission_factor : DOUBLE
+}
+
+entity "Vehicle" as vehicle {
+    * id : BIGINT <<PK>>
+    --
+    branch_id : BIGINT <<FK>>
+    type_id : BIGINT <<FK>>
+    name : VARCHAR
+}
+
+entity "Order" as order {
+    * id : BIGINT <<PK>>
+    --
+    branch_id : BIGINT <<FK>>
+    location : POINT
+    demand : DOUBLE
+    time_window_start : DATETIME
+    time_window_end : DATETIME
+}
+
+entity "OptimizationJob" as job {
+    * id : BIGINT <<PK>>
+    --
+    branch_id : BIGINT <<FK>>
+    user_id : BIGINT <<FK>>
+    status : ENUM(PROCESSING, COMPLETED, FAILED)
+}
+
+entity "Solution" as solution {
+    * id : BIGINT <<PK>>
+    --
+    job_id : BIGINT <<FK>>
+    total_cost : DOUBLE
+    total_co2 : DOUBLE
+}
+
+entity "Route" as route {
+    * id : BIGINT <<PK>>
+    --
+    solution_id : BIGINT <<FK>>
+    vehicle_id : BIGINT <<FK>>
+    distance : DOUBLE
+}
+
+entity "RouteStop" as stop {
+    * id : BIGINT <<PK>>
+    --
+    route_id : BIGINT <<FK>>
+    order_id : BIGINT <<FK>>
+    sequence_number : INT
+    arrival_time : DATETIME
+}
+
+branch ||--o{ user
+branch ||--o{ vehicle
+branch ||--o{ order
+branch ||--o{ job
+vt ||--o{ vehicle
+job ||--o| solution
+solution ||--o{ route
+route ||--o{ stop
+order ||--o{ stop
 @enduml

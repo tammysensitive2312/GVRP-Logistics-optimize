@@ -4,14 +4,11 @@ import com.graphhopper.jsprit.core.problem.Location;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import org.truong.gvrp_engine_api.distance_matrix.DistanceMatrix;
-import org.truong.gvrp_engine_api.distance_matrix.OptCoordinates;
 import org.truong.gvrp_engine_api.model.DistanceTimeMatrix;
 import org.truong.gvrp_engine_api.model.OptimizationResult;
 import org.truong.gvrp_engine_api.model.RouteDetail;
 import org.truong.gvrp_engine_api.model.Stop;
 
-import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;

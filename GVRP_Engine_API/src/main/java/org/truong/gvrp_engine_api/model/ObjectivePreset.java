@@ -16,7 +16,7 @@ public enum ObjectivePreset {
      * Cost-focused: Minimize monetary cost (traditional VRP)
      * Use when: Budget is tight, carbon tax is low
      */
-    COST_FOCUSED("Cost Minimization", 0.9, 0.1),
+    COST_FOCUSED("Cost Minimization", 1.0, 0),
 
     /**
      * Balanced: Equal weight to cost and emissions
@@ -28,7 +28,7 @@ public enum ObjectivePreset {
      * Eco-focused: Minimize CO2 emissions (GREEN VRP)
      * Use when: Strong ESG commitment, high carbon tax, green branding
      */
-    ECO_FOCUSED("Eco Minimization", 0.2, 0.8),
+    ECO_FOCUSED("Eco Minimization", 0.0001, 1.0),
 
     /**
      * Pure eco: Only minimize emissions

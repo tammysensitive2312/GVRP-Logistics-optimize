@@ -1,237 +1,1400 @@
-@startuml Entry_Service_Component_Simple
+@startuml
+title Entry Service - Controllers Layer
 
-title Entry Service - Component Diagram (Simplified View)
+class OptimizationJobController {
+    - jobService: OptimizationJobService
+    --
+    + submitJob(request, branchId, userId): OptimizationJobDTO
+    + cancelJob(jobId, branchId): void
+    + getCurrentRunningJob(branchId): OptimizationJobDTO
+    + getJobHistory(branchId, limit): List<OptimizationJobDTO>
+    + getJobById(jobId, branchId): OptimizationJobDTO
+}
 
-skinparam componentStyle rectangle
-skinparam packageStyle rectangle
-skinparam backgroundColor #FFFFFF
+class OptimizationCallbackController {
+    - callbackService: OptimizationCallbackService
+    --
+    + handleCompletion(callback): void
+    + handleFailure(callback): void
+    + handleProgress(callback): void
+}
 
-' ============================================
-' EXTERNAL
-' ============================================
-actor Frontend
-database "MySQL\nDatabase" as DB
-node "Engine\nService" as Engine
-node "Email\nServer" as Email
+class OptimizationJobService
+class OptimizationCallbackService
 
-' ============================================
-' ENTRY SERVICE
-' ============================================
+OptimizationJobController --> OptimizationJobService
+OptimizationCallbackController --> OptimizationCallbackService
 
-component "Entry Service" {
+note right of OptimizationJobController
+  REST API endpoints cho:
+  - Tạo job mới
+  - Hủy job
+  - Xem trạng thái
+  - Xem lịch sử
+end note
 
-    package "API Layer" {
-        component "REST\nControllers" as Controllers {
-            [Branch API]
-            [User API]
-            [Depot API]
-            [Fleet API]
-            [Order API]
-            [Solution API]
-        }
+note right of OptimizationCallbackController
+  Nhận callbacks từ Engine:
+  - Completion (thành công)
+  - Failure (thất bại)
+  - Progress (tiến độ)
+end note
+
+@enduml
+
+@startuml
+title Entry Service - Services Layer
+
+class OptimizationJobService {
+    - jobRepository: OptimizationJobRepository
+    - orderRepository: OrderRepository
+    - vehicleRepository: VehicleRepository
+    - branchRepository: BranchRepository
+    - userRepository: UserRepository
+    - engineApiClient: EngineApiClient
+    - emailService: EmailService
+    - depotMapper: DepotMapper
+    - orderMapper: OrderMapper
+    - vehicleMapper: VehicleMapper
+    - vehicleTypeMapper: VehicleTypeMapper
+    - jobMapper: OptimizationJobMapper
+    - configMapper: OptimizationConfigMapper
+    --
+    + submitJob(request, branchId, userId): OptimizationJobDTO
+    + cancelJob(jobId, branchId): void
+    + getCurrentRunningJob(branchId): OptimizationJobDTO
+    + getJobHistory(branchId, limit): List<OptimizationJobDTO>
+    - validateAndLoadOrders(): List<Order>
+    - validateAndLoadVehicles(): List<Vehicle>
+    - buildEngineRequest(): EngineOptimizationRequest
+    - estimateDuration(): Integer
+}
+
+class OptimizationCallbackService {
+    - jobRepository: OptimizationJobRepository
+    - solutionRepository: SolutionRepository
+    - routeRepository: RouteRepository
+    - routeStopRepository: RouteStopRepository
+    - orderRepository: OrderRepository
+    - vehicleRepository: VehicleRepository
+    - emailService: EmailService
+    - geometryMapper: GeometryMapper
+    --
+    + handleCompletion(callback): void
+    + handleFailure(callback): void
+    + handleProgressUpdate(callback): void
+    - saveSolution(job, callback): Solution
+    - saveRoute(solution, routeData): Route
+    - saveStop(route, stopData): RouteStop
+    - calculateSolutionStatus(): SolutionStatus
+    - mapLocationType(): LocationType
+    - parseTime(): LocalTime
+}
+
+class EmailService {
+    + sendOptimizationSuccessEmail(userId, jobId, solutionId): void
+    + sendOptimizationFailureEmail(userId, jobId, error): void
+}
+
+class EngineApiClient {
+    - restTemplate: RestTemplate
+    - engineBaseUrl: String
+    --
+    + submitOptimizationAsync(jobId, request): void
+    + cancelOptimization(jobId): void
+}
+
+OptimizationJobService *-- EngineApiClient
+OptimizationJobService *-- EmailService
+OptimizationCallbackService *-- EmailService
+
+note right of OptimizationJobService
+  Core business logic:
+  1. Validate orders & vehicles
+  2. Create OptimizationJob
+  3. Build EngineRequest
+  4. Call Engine API
+end note
+
+note right of OptimizationCallbackService
+  Xử lý kết quả từ Engine:
+  1. Lưu Solution
+  2. Lưu Routes & Stops
+  3. Update Order status
+  4. Gửi email thông báo
+end note
+
+@enduml
+
+@startuml
+title Entry Service - Data Layer
+
+' Repositories
+interface OptimizationJobRepository {
+    + countByBranchIdAndStatus(): long
+    + findFirstByBranchIdAndStatusOrderByCreatedAtDesc(): Optional
+    + findJobHistory(): List<OptimizationJob>
+}
+
+interface SolutionRepository {
+    + findByJobId(jobId): Optional<Solution>
+}
+
+interface RouteRepository
+interface RouteStopRepository
+interface OrderRepository
+interface VehicleRepository
+
+' Entities
+class OptimizationJob {
+    - id: Long
+    - branch: Branch
+    - createdBy: User
+    - status: OptimizationJobStatus
+    - inputData: String
+    - solution: Solution
+    - createdAt: LocalDateTime
+    - completedAt: LocalDateTime
+    - errorMessage: String
+    --
+    + canBeCancelled(): boolean
+}
+
+class Solution {
+    - id: Long
+    - job: OptimizationJob
+    - type: SolutionType
+    - status: SolutionStatus
+    - totalDistance: Double
+    - totalCost: Double
+    - totalCO2: Double
+    - servedOrders: Integer
+    - unservedOrders: Integer
+    - routes: List<Route>
+    - unassignedOrders: List<UnassignedOrder>
+}
+
+class Route {
+    - id: Long
+    - solution: Solution
+    - vehicle: Vehicle
+    - routeOrder: Integer
+    - distance: Double
+    - serviceTime: Double
+    - co2Emission: Double
+    - orderCount: Integer
+    - segments: List<RouteStop>
+}
+
+class RouteStop {
+    - id: Long
+    - route: Route
+    - sequenceNumber: Integer
+    - type: LocationType
+    - order: Order
+    - arrivalTime: LocalTime
+    - departureTime: LocalTime
+    - demand: Double
+    - loadAfter: Double
+}
+
+class Order {
+    - id: Long
+    - orderCode: String
+    - status: OrderStatus
+    - location: Point
+    - demand: Double
+}
+
+class Vehicle {
+    - id: Long
+    - vehicleLicensePlate: String
+    - vehicleType: VehicleType
+    - startDepot: Depot
+    - endDepot: Depot
+}
+
+class UnassignedOrder {
+    - solution: Solution
+    - order: Order
+    - reason: String
+}
+
+' Relationships
+OptimizationJobRepository --> OptimizationJob
+SolutionRepository --> Solution
+RouteRepository --> Route
+RouteStopRepository --> RouteStop
+
+OptimizationJob "1" o-- "0..1" Solution
+Solution "1" o-- "*" Route
+Route "1" o-- "*" RouteStop
+Solution "1" o-- "*" UnassignedOrder
+
+Route --> Vehicle
+RouteStop --> Order
+UnassignedOrder --> Order
+
+@enduml
+
+@startuml
+title Entry Service - Mappers Layer
+
+class DepotMapper {
+    + toEngineDTO(depot): EngineDepotDTO
+}
+
+class OrderMapper {
+    + toEngineDTO(order): EngineOrderDTO
+}
+
+class VehicleMapper {
+    + toEngineDTO(vehicle): EngineVehicleDTO
+}
+
+class VehicleTypeMapper {
+    + toEngineDTO(vehicleType): EngineVehicleTypeDTO
+}
+
+class OptimizationJobMapper {
+    + toDTO(job): OptimizationJobDTO
+    + toDTOList(jobs): List<OptimizationJobDTO>
+}
+
+class OptimizationConfigMapper {
+    + toEngineConfig(preferences): OptimizationConfig
+}
+
+class GeometryMapper {
+    + createPoint(lat, lon): Point
+}
+
+' Domain Entities
+class Depot
+class Order
+class Vehicle
+class VehicleType
+class OptimizationJob
+
+' DTOs to Engine
+class EngineDepotDTO {
+    - id: Long
+    - name: String
+    - latitude: Double
+    - longitude: Double
+}
+
+class EngineOrderDTO {
+    - id: Long
+    - orderCode: String
+    - latitude: Double
+    - longitude: Double
+    - demand: Double
+}
+
+class EngineVehicleDTO {
+    - id: Long
+    - vehicleTypeId: Long
+    - startDepotId: Long
+    - endDepotId: Long
+}
+
+class EngineVehicleTypeDTO {
+    - id: Long
+    - capacity: Double
+    - fuelConsumptionRate: Double
+    - co2EmissionFactor: Double
+}
+
+class OptimizationJobDTO {
+    - id: Long
+    - status: String
+    - createdAt: LocalDateTime
+}
+
+class OptimizationConfig {
+    - costWeight: Double
+    - co2Weight: Double
+    - maxIterations: Integer
+}
+
+' Mapping relationships
+DepotMapper ..> Depot : reads
+DepotMapper ..> EngineDepotDTO : creates
+
+OrderMapper ..> Order : reads
+OrderMapper ..> EngineOrderDTO : creates
+
+VehicleMapper ..> Vehicle : reads
+VehicleMapper ..> EngineVehicleDTO : creates
+
+VehicleTypeMapper ..> VehicleType : reads
+VehicleTypeMapper ..> EngineVehicleTypeDTO : creates
+
+OptimizationJobMapper ..> OptimizationJob : reads
+OptimizationJobMapper ..> OptimizationJobDTO : creates
+
+note right of DepotMapper
+  Convert Entity → EngineDTO
+  để gửi sang Engine Service
+end note
+
+note right of OptimizationJobMapper
+  Convert Entity → DTO
+  để trả về cho Client
+end note
+
+@enduml
+
+@startuml
+title Engine Service - Core Services
+
+class OptimizationController {
+    - optimizationService: OptimizationService
+    --
+    + optimize(request): OptimizationResult
+    + optimizeAsync(jobId, request): void
+}
+
+class OptimizationService {
+    - distanceMatrixService: DistanceMatrixService
+    - callbackService: CallbackService
+    --
+    + optimizeAsync(request): CompletableFuture<Void>
+    + optimize(request): OptimizationResult
+    - optimizeSingleObjective(): OptimizationResult
+    - optimizeMultiObjective(): OptimizationResult
+    - buildGreenVRP(): VehicleRoutingProblem
+    - createAlgorithm(): VehicleRoutingAlgorithm
+    - prepareContext(): OptimizationContext
+    - calculateDistanceMatrix(): DistanceTimeMatrix
+    - buildJspritVehicle(): VehicleImpl
+    - buildJspritService(): Service
+}
+
+class CallbackService {
+    - restTemplate: RestTemplate
+    - entryApiUrl: String
+    --
+    + sendCompletionCallback(jobId, result): void
+    + sendFailureCallback(jobId, message): void
+}
+
+class DistanceMatrixService {
+    - distanceProvider: DistanceProvider
+    --
+    + createDistanceMatrix(coordinates): DistanceMatrix
+}
+
+interface DistanceProvider {
+    + calculateMatrix(coordinates): DistanceMatrix
+}
+
+class GraphHopperDistanceProvider {
+    - apiKey: String
+    --
+    + calculateMatrix(coordinates): DistanceMatrix
+}
+
+OptimizationController --> OptimizationService
+OptimizationService *-- DistanceMatrixService
+OptimizationService *-- CallbackService
+DistanceMatrixService *-- DistanceProvider
+GraphHopperDistanceProvider ..|> DistanceProvider
+
+note right of OptimizationService
+  Orchestrator chính:
+  1. Prepare context
+  2. Calculate distance matrix
+  3. Build VRP (Jsprit)
+  4. Run optimization
+  5. Extract results
+  6. Send callback
+end note
+
+note right of CallbackService
+  Gửi kết quả về Entry Service:
+  - Completion (success)
+  - Failure (error)
+end note
+
+@enduml
+
+@startuml
+title Engine Service - Utility Classes
+
+class GreenVRPCostCalculator <<static>> {
+    + {static} buildGreenVehicleType(vehicleType, costWeight, co2Weight): VehicleTypeImpl
+    + {static} buildPhysicalCostMatrix(distMatrix, timeMatrix, locations): VehicleRoutingTransportCostsMatrix
+}
+
+class SolutionMetricsCalculator <<static>> {
+    + {static} calculate(solution, context, matrix): SolutionMetrics
+}
+
+class OptimizationResultExtractor <<static>> {
+    + {static} extractRouteDetails(solution, context, matrix): RouteExtractionResult
+    + {static} extractUnassignedOrders(solution, context): List<UnassignedOrder>
+}
+
+class SolutionConverter <<static>> {
+    + {static} toDTO(solution, metrics): SolutionData
+    + {static} convertRoute(route): RouteData
+    + {static} convertStop(stop): StopData
+}
+
+' Models they work with
+class VehicleTypeImpl
+class VehicleRoutingTransportCostsMatrix
+class SolutionMetrics {
+    - totalCostVnd: double
+    - totalCo2Kg: double
+    - vehiclesUsed: int
+    - ordersServed: int
+}
+
+class RouteExtractionResult {
+    - routes: List<RouteDetail>
+}
+
+class SolutionData {
+    - totalCost: Double
+    - totalCO2: Double
+    - routes: List<RouteData>
+}
+
+' Relationships
+GreenVRPCostCalculator ..> VehicleTypeImpl : creates
+GreenVRPCostCalculator ..> VehicleRoutingTransportCostsMatrix : creates
+
+SolutionMetricsCalculator ..> SolutionMetrics : creates
+
+OptimizationResultExtractor ..> RouteExtractionResult : creates
+
+SolutionConverter ..> SolutionData : creates
+
+note right of GreenVRPCostCalculator
+  Tính toán GREEN VRP:
+  - Vehicle cost (weighted)
+  - Physical cost matrix
+  - CO2 emissions
+end note
+
+note right of SolutionMetricsCalculator
+  Tính metrics từ solution:
+  - Total cost (VND)
+  - Total CO2 (kg)
+  - Vehicles used
+  - Orders served/unserved
+end note
+
+note right of OptimizationResultExtractor
+  Extract chi tiết routes:
+  - Route segments
+  - Stop information
+  - Times, distances
+end note
+
+note right of SolutionConverter
+  Convert Jsprit Solution
+  → DTO để gửi callback
+end note
+
+@enduml
+
+@startuml
+title Engine Service - Internal Models
+
+class EngineOptimizationRequest {
+    - jobId: Long
+    - config: OptimizationConfig
+    - depots: List<EngineDepotDTO>
+    - orders: List<EngineOrderDTO>
+    - vehicles: List<EngineVehicleDTO>
+    - vehicleTypes: List<EngineVehicleTypeDTO>
+}
+
+class OptimizationConfig {
+    - costWeight: Double
+    - co2Weight: Double
+    - maxIterations: Integer
+    - timeoutSeconds: Integer
+    - numThreads: Integer
+    - enableParetoAnalysis: Boolean
+    --
+    + getEffectiveWeights(): double[]
+}
+
+class OptimizationContext {
+    - allLocations: List<Location>
+    - depotDTOs: Map<Long, Depot>
+    - orderDTOs: Map<Long, Order>
+    - vehicleTypeDTOs: Map<Long, VehicleType>
+    - vehicleDTOs: Map<Long, Vehicle>
+}
+
+class DistanceTimeMatrix {
+    - distanceMatrix: double[][]
+    - timeMatrix: double[][]
+    - locations: List<Location>
+}
+
+class OptimizationResult {
+    - jobId: Long
+    - selectedSolution: SolutionCandidate
+    - paretoFrontier: List<SolutionCandidate>
+    - distanceMatrix: DistanceTimeMatrix
+    - routes: List<RouteDetail>
+    - unassignedOrders: List<UnassignedOrderData>
+    --
+    + {static} single(): OptimizationResult
+    + {static} pareto(): OptimizationResult
+}
+
+class SolutionCandidate {
+    - presetName: String
+    - solution: VehicleRoutingProblemSolution
+    - metrics: SolutionMetrics
+    - costWeight: double
+    - co2Weight: double
+    --
+    + dominates(other): boolean
+}
+
+class SolutionMetrics {
+    - totalCostVnd: double
+    - totalCo2Kg: double
+    - totalDistanceKm: double
+    - totalTimeHours: double
+    - vehiclesUsed: int
+    - ordersServed: int
+    - ordersUnserved: int
+}
+
+class RouteExtractionResult {
+    - routes: List<RouteDetail>
+}
+
+class DistanceMatrix {
+    - distances: List<List<DistanceMatrixEntry>>
+    --
+    + get(from, to): DistanceMatrixEntry
+}
+
+class DistanceMatrixEntry {
+    - distanceMeters: double
+    - timeSeconds: double
+}
+
+' Relationships
+EngineOptimizationRequest o-- OptimizationConfig
+
+OptimizationResult o-- SolutionCandidate
+OptimizationResult o-- DistanceTimeMatrix
+OptimizationResult o-- RouteExtractionResult
+
+SolutionCandidate o-- SolutionMetrics
+
+DistanceMatrix o-- DistanceMatrixEntry
+
+note right of OptimizationContext
+  Internal context cho optimization:
+  - Tất cả locations (depots + orders)
+  - Maps để lookup nhanh
+end note
+
+note right of SolutionCandidate
+  Một giải pháp từ optimization:
+  - Jsprit solution
+  - Calculated metrics
+  - Weights used
+
+  Dùng để so sánh Pareto
+end note
+
+@enduml
+
+@startuml
+title Cross-Service Communication Flow
+
+package "Entry Service" {
+    class EngineApiClient {
+        - restTemplate: RestTemplate
+        - engineBaseUrl: String
+        --
+        + submitOptimizationAsync(jobId, request): void
     }
 
-    package "Service Layer" {
-        component "Business\nServices" as Services {
-            [Branch Service]
-            [Depot Service]
-            [Fleet Service]
-            [Order Import Service]
-            [Optimization Job Service\n(@Async)]
-            [Solution Import/Export Service]
-            [Solution Analysis Service]
-            [Email Service]
-        }
-    }
-
-    package "Integration Layer" {
-        component "External\nClients" as Clients {
-            [Engine Client\n(HTTP REST)]
-            [Email Client\n(SMTP)]
-            [File Parser]
-            [File Generator]
-        }
-    }
-
-    package "Data Access Layer" {
-        component "JPA\nRepositories" as Repos {
-            [Branch Repository]
-            [Depot Repository]
-            [Vehicle Repository]
-            [Order Repository]
-            [Solution Repository]
-            [Route Repository]
-        }
-    }
-
-    package "Supporting Components" {
-        component "Mappers" as Mappers {
-            [Entity ↔ DTO\nConverters]
-        }
-
-        component "Utilities" as Utils {
-            [Geometry Utils]
-            [Validation Utils]
-            [DateTime Utils]
-        }
-
-        component "Configuration" as Config {
-            [Async Config\n(ThreadPool)]
-            [Email Config\n(SMTP)]
-            [Security Config\n(Mock Auth)]
-            [JPA Config]
-        }
+    class OptimizationCallbackController {
+        + handleCompletion(callback): void
+        + handleFailure(callback): void
     }
 }
 
-' ============================================
-' CONNECTIONS - VERTICAL FLOW
-' ============================================
-Frontend --> Controllers : "HTTP/REST"
+package "Engine Service" {
+    class OptimizationController {
+        + optimize(request): OptimizationResult
+    }
 
-Controllers --> Services : "Business Logic\nCalls"
+    class CallbackService {
+        - restTemplate: RestTemplate
+        - entryApiUrl: String
+        --
+        + sendCompletionCallback(jobId, result): void
+        + sendFailureCallback(jobId, message): void
+    }
+}
 
-Services --> Repos : "Data Access"
-Services --> Clients : "External\nIntegration"
-Services --> Mappers : "DTO Conversion"
-Services ..> Utils : "Uses"
+package "Shared DTOs" {
+    class EngineOptimizationRequest {
+        - jobId: Long
+        - config: OptimizationConfig
+        - orders: List<EngineOrderDTO>
+        - vehicles: List<EngineVehicleDTO>
+    }
 
-Repos --> DB : "JDBC/JPA"
+    class EngineCallbackRequest {
+        + CompletionCallback
+        + FailureCallback
+    }
 
-Clients --> Engine : "HTTP REST"
-Clients --> Email : "SMTP"
+    class CompletionCallback {
+        - jobId: Long
+        - solution: SolutionData
+    }
 
-Services ..> Config : "Configured by"
+    class SolutionData {
+        - totalCost: Double
+        - totalCO2: Double
+        - routes: List<RouteData>
+        - unassignedOrders: List<UnassignedOrderData>
+    }
+}
 
-' ============================================
-' USE CASE FLOW ANNOTATIONS
-' ============================================
-note right of Controllers
-    **VRP-001: Nhập dữ liệu**
-    • Depot API
-    • Fleet API
-    • Order API
+' Flow 1: Submit Job
+EngineApiClient -right-> OptimizationController : "POST /optimize\n{EngineOptimizationRequest}"
 
-    **VRP-002: Optimization**
-    • Solution API
-      POST /api/solutions/plan
+' Flow 2: Callback
+CallbackService -left-> OptimizationCallbackController : "POST /callback\n{EngineCallbackRequest}"
 
-    **VRP-003: Export**
-    • Solution API
-      GET /api/solutions/{id}/export
+' DTOs used
+EngineApiClient ..> EngineOptimizationRequest : sends
+CallbackService ..> EngineCallbackRequest : sends
+EngineCallbackRequest o-- CompletionCallback
+CompletionCallback o-- SolutionData
 
-    **VRP-004: Import**
-    • Solution API
-      POST /api/solutions/import
-
-    **VRP-005: Analysis**
-    • Solution API
-      GET /api/solutions/analyze
+note as N1
+  **Flow 1: Submit Optimization**
+  Entry → Engine
+  - POST /api/optimize
+  - Body: EngineOptimizationRequest
+  - Async processing
 end note
 
-note left of Services
-    **Core Services:**
-
-    • OptimizationJobService
-      → @Async processing
-      → Calls Engine Service
-      → Sends email notification
-
-    • OrderImportService
-      → File parsing
-      → Validation
-      → Batch save
-
-    • SolutionAnalysisService
-      → Compare solutions
-      → Calculate statistics
-      → Generate insights
+note as N2
+  **Flow 2: Callback Result**
+  Engine → Entry
+  - POST /api/callback/completion
+  - Body: CompletionCallback
+  - Save solution to DB
 end note
 
-note bottom of Clients
-    **Integration Points:**
+N1 .. EngineApiClient
+N2 .. CallbackService
 
-    • Engine Client
-      → POST /api/optimize
-      → Timeout: 15 minutes
-      → Retry: 3 attempts
+@enduml
 
-    • Email Client
-      → JavaMailSender
-      → SMTP: smtp.gmail.com:587
-      → TLS enabled
+@startuml
+title Route Planning Use Case - Complete Flow
 
-    • File Parser/Generator
-      → CSV, JSON, PDF formats
-end note
+actor User
+participant "OptimizationJob\nController" as Controller
+participant "OptimizationJob\nService" as JobService
+participant "Order\nRepository" as OrderRepo
+participant "Vehicle\nRepository" as VehicleRepo
+participant "Mappers" as Mapper
+participant "Engine\nApiClient" as EngineClient
+database "Database" as DB
 
-note top of DB
-    **Database:**
+box "Entry Service" #E3F2FD
+    participant Controller
+    participant JobService
+    participant OrderRepo
+    participant VehicleRepo
+    participant Mapper
+    participant EngineClient
+    participant DB
+end box
 
-    MySQL 8.x with Spatial Extension
+participant "Optimization\nController" as EngineController
+participant "Optimization\nService" as OptService
+participant "DistanceMatrix\nService" as DistService
+participant "GreenVRP\nCostCalculator" as Calculator
+participant "CallbackService" as Callback
 
-    Key tables:
-    • branches
-    • depots (POINT location)
-    • vehicles
-    • orders (POINT location)
-    • solutions
-    • routes
-    • route_segments
+box "Engine Service" #E8F5E9
+    participant EngineController
+    participant OptService
+    participant DistService
+    participant Calculator
+    participant Callback
+end box
 
-    Spatial queries for:
-    • Distance calculations
-    • Radius searches
-end note
+participant "Callback\nController" as CallbackController
+participant "Optimization\nCallbackService" as CallbackService
+participant "Email\nService" as Email
 
-' ============================================
-' LAYER BOUNDARIES
-' ============================================
-note as LayerNote
-    **Layered Architecture:**
+box "Entry Service" #E3F2FD
+    participant CallbackController
+    participant CallbackService
+    participant Email
+end box
 
-    1. API Layer
-       └─ HTTP endpoints, request/response handling
+== Phase 1: Submit Optimization Job ==
 
-    2. Service Layer
-       └─ Business logic, transactions, async processing
+User -> Controller: POST /api/jobs/submit\n{orderIds, vehicleIds, preferences}
+activate Controller
 
-    3. Integration Layer
-       └─ External system communication
+Controller -> JobService: submitJob(request, branchId, userId)
+activate JobService
 
-    4. Data Access Layer
-       └─ Database operations via JPA
+' Validation
+JobService -> JobService: Check concurrent job limit
+JobService -> OrderRepo: findAllById(orderIds)
+activate OrderRepo
+OrderRepo --> JobService: List<Order>
+deactivate OrderRepo
 
-    5. Supporting Components
-       └─ Cross-cutting concerns (mapping, utils, config)
+JobService -> JobService: validateAndLoadOrders()
+note right: Check:\n- Orders exist\n- Belong to branch\n- Status = SCHEDULED\n- Valid coordinates
 
-    **Benefits:**
-    • Clear separation of concerns
-    • Easy to test (mock dependencies)
-    • Easy to maintain
-    • Follows Spring Boot best practices
-end note
+JobService -> VehicleRepo: findAllByIdWithDepots(vehicleIds)
+activate VehicleRepo
+VehicleRepo --> JobService: List<Vehicle>
+deactivate VehicleRepo
 
-' ============================================
-' LEGEND
-' ============================================
-legend bottom left
-    **Component Responsibilities:**
+JobService -> JobService: validateAndLoadVehicles()
+note right: Check:\n- Vehicles exist\n- Belong to fleet\n- Status = AVAILABLE\n- Valid depots
 
-    • Controllers: Handle HTTP requests/responses
-    • Services: Implement business logic
-    • Repositories: Abstract database operations
-    • Clients: Communicate with external systems
-    • Mappers: Convert between layers (Entity ↔ DTO)
-    • Utils: Reusable helper functions
-    • Config: Application configuration
+' Create Job Entity
+JobService -> DB: Save OptimizationJob\n(status=PENDING)
+activate DB
+DB --> JobService: job (id=123)
+deactivate DB
 
-    **Key Design Patterns:**
-    • Dependency Injection (Spring)
-    • Repository Pattern (Data access)
-    • DTO Pattern (Data transfer)
-    • Facade Pattern (Service layer)
-    • Async Pattern (@Async processing)
-endlegend
+' Build Engine Request
+JobService -> Mapper: toEngineDTO(orders)
+activate Mapper
+Mapper --> JobService: List<EngineOrderDTO>
+deactivate Mapper
+
+JobService -> Mapper: toEngineDTO(vehicles)
+activate Mapper
+Mapper --> JobService: List<EngineVehicleDTO>
+deactivate Mapper
+
+JobService -> JobService: buildEngineRequest()
+note right: Combine:\n- Orders\n- Vehicles\n- Depots\n- VehicleTypes\n- Config
+
+' Send to Engine (Async)
+JobService -> EngineClient: submitOptimizationAsync(jobId=123, request)
+activate EngineClient
+note right: Async call\n(after transaction commit)
+
+JobService --> Controller: OptimizationJobDTO\n(id=123, status=PENDING)
+deactivate JobService
+
+Controller --> User: 200 OK\n{jobId: 123, status: "PENDING"}
+deactivate Controller
+
+== Phase 2: Engine Optimization (Async) ==
+
+EngineClient -> EngineController: POST /api/optimize\n{jobId=123, ...}
+activate EngineController
+deactivate EngineClient
+
+EngineController -> OptService: optimizeAsync(request)
+activate OptService
+
+OptService -> DB: Update job status\n(PENDING → PROCESSING)
+
+' Prepare Context
+OptService -> OptService: prepareContext(request)
+note right: Build OptimizationContext:\n- All locations\n- Map<Long, Order>\n- Map<Long, Vehicle>
+
+' Calculate Distance Matrix
+OptService -> DistService: createDistanceMatrix(coordinates)
+activate DistService
+DistService -> DistService: Call GraphHopper API
+DistService --> OptService: DistanceMatrix
+deactivate DistService
+
+' Build Green VRP
+OptService -> Calculator: buildGreenVehicleType(vehicleType, weights)
+activate Calculator
+Calculator --> OptService: VehicleTypeImpl\n(with CO2 cost)
+deactivate Calculator
+
+OptService -> Calculator: buildPhysicalCostMatrix(distMatrix, timeMatrix)
+activate Calculator
+Calculator --> OptService: VehicleRoutingTransportCostsMatrix
+deactivate Calculator
+
+OptService -> OptService: buildGreenVRP()
+note right: Create Jsprit:\n- VehicleRoutingProblem\n- Add vehicles\n- Add services (orders)\n- Set cost matrix
+
+' Run Optimization
+OptService -> OptService: createAlgorithm()
+note right: Configure Jsprit:\n- Max iterations\n- Threads\n- Constraints
+
+OptService -> OptService: algorithm.searchSolutions()
+note right: Jsprit optimization\n(может занять 1-30 минут)
+
+' Extract Results
+OptService -> OptService: extractRouteDetails(solution)
+OptService -> OptService: extractUnassignedOrders(solution)
+OptService -> OptService: calculateMetrics(solution)
+
+OptService -> OptService: Build OptimizationResult
+
+EngineController --> OptService: (async continues)
+deactivate EngineController
+
+== Phase 3: Send Callback ==
+
+OptService -> Callback: sendCompletionCallback(jobId=123, result)
+activate Callback
+
+Callback -> CallbackController: POST /api/callback/completion\n{jobId, solution}
+activate CallbackController
+deactivate OptService
+
+CallbackController -> CallbackService: handleCompletion(callback)
+activate CallbackService
+
+' Save Solution
+CallbackService -> DB: Find OptimizationJob(id=123)
+CallbackService -> CallbackService: saveSolution(job, callback)
+
+CallbackService -> DB: Create Solution entity
+activate DB
+DB --> CallbackService: solution (id=456)
+deactivate DB
+
+' Save Routes
+loop for each route in callback
+    CallbackService -> CallbackService: saveRoute(solution, routeData)
+    CallbackService -> DB: Create Route entity
+    activate DB
+    DB --> CallbackService: route
+    deactivate DB
+
+    loop for each stop in route
+        CallbackService -> CallbackService: saveStop(route, stopData)
+        CallbackService -> DB: Create RouteStop entity
+        activate DB
+        DB --> CallbackService: routeStop
+        deactivate DB
+    end
+end
+
+' Update Unassigned Orders
+loop for each unassigned order
+    CallbackService -> DB: Update Order.status\n→ UNASSIGNED
+    CallbackService -> DB: Create UnassignedOrder
+end
+
+' Update Job Status
+CallbackService -> DB: Update OptimizationJob\n(PROCESSING → COMPLETED)
+activate DB
+DB --> CallbackService: job updated
+deactivate DB
+
+' Send Email
+CallbackService -> Email: sendOptimizationSuccessEmail(userId, jobId, solutionId)
+activate Email
+Email --> User: 📧 Email notification
+deactivate Email
+
+CallbackService --> CallbackController: void
+deactivate CallbackService
+
+CallbackController --> Callback: 200 OK
+deactivate CallbackController
+
+Callback --> OptService: (callback sent)
+deactivate Callback
+
+== Phase 4: User Checks Result ==
+
+User -> Controller: GET /api/jobs/123
+activate Controller
+Controller -> JobService: getJobById(123, branchId)
+activate JobService
+JobService -> DB: Find OptimizationJob(id=123)
+DB --> JobService: job (with solution)
+JobService --> Controller: OptimizationJobDTO\n(status=COMPLETED)
+deactivate JobService
+Controller --> User: 200 OK\n{job, solution, routes}
+deactivate Controller
+
+@enduml
+
+@startuml
+title Route Planning Use Case - Communication Diagram
+
+' ========== ACTORS & COMPONENTS ==========
+
+actor User
+
+' Entry Service - Controllers
+object ":OptimizationJobController" as JobController
+object ":OptimizationCallbackController" as CallbackController
+
+' Entry Service - Services
+object ":OptimizationJobService" as JobService
+object ":OptimizationCallbackService" as CallbackService
+object ":EmailService" as EmailService
+
+' Entry Service - Integration
+object ":EngineApiClient" as EngineClient
+
+' Entry Service - Repositories
+object ":OrderRepository" as OrderRepo
+object ":VehicleRepository" as VehicleRepo
+object ":OptimizationJobRepository" as JobRepo
+object ":SolutionRepository" as SolutionRepo
+object ":RouteRepository" as RouteRepo
+
+' Entry Service - Mappers
+object ":Mappers" as Mappers
+
+' Engine Service - Controllers
+object ":OptimizationController" as EngineController
+
+' Engine Service - Services
+object ":OptimizationService" as OptService
+object ":DistanceMatrixService" as DistService
+object ":CallbackService" as EngineCallback
+
+' Engine Service - Utilities
+object ":GreenVRPCostCalculator" as Calculator
+object ":SolutionMetricsCalculator" as MetricsCalc
+object ":OptimizationResultExtractor" as Extractor
+
+' Database
+database ":Database" as DB
+
+' ========== COMMUNICATIONS ==========
+
+' Phase 1: Submit Job
+User -> JobController : "1: submitJob(request, branchId, userId)"
+JobController -> JobService : "1.1: submitJob(request, branchId, userId)"
+
+JobService -> JobService : "1.1.1: checkConcurrentJobLimit()"
+JobService -> OrderRepo : "1.1.2: findAllById(orderIds)"
+OrderRepo --> JobService : "List<Order>"
+
+JobService -> JobService : "1.1.3: validateAndLoadOrders()"
+
+JobService -> VehicleRepo : "1.1.4: findAllByIdWithDepots(vehicleIds)"
+VehicleRepo --> JobService : "List<Vehicle>"
+
+JobService -> JobService : "1.1.5: validateAndLoadVehicles()"
+
+JobService -> JobRepo : "1.1.6: save(job) [status=PENDING]"
+JobRepo -> DB : "INSERT OptimizationJob"
+DB --> JobRepo : "job.id=123"
+JobRepo --> JobService : "job"
+
+JobService -> Mappers : "1.1.7: toEngineDTO(orders, vehicles, depots)"
+Mappers --> JobService : "EngineDTOs"
+
+JobService -> JobService : "1.1.8: buildEngineRequest()"
+
+JobService -> EngineClient : "1.1.9: submitOptimizationAsync(jobId=123, request)"
+note right : Async call after\ntransaction commit
+
+JobService --> JobController : "OptimizationJobDTO"
+JobController --> User : "200 OK {jobId: 123}"
+
+' Phase 2: Engine Optimization
+EngineClient -> EngineController : "2: POST /optimize {jobId=123, ...}"
+EngineController -> OptService : "2.1: optimizeAsync(request)"
+
+OptService -> JobRepo : "2.1.1: updateStatus(jobId=123, PROCESSING)"
+JobRepo -> DB : "UPDATE status"
+
+OptService -> OptService : "2.1.2: prepareContext(request)"
+note right : Build locations,\nmaps of entities
+
+OptService -> DistService : "2.1.3: createDistanceMatrix(coordinates)"
+DistService -> DistService : "GraphHopper API call"
+DistService --> OptService : "DistanceMatrix"
+
+OptService -> Calculator : "2.1.4: buildGreenVehicleType(vehicleType, weights)"
+Calculator --> OptService : "VehicleTypeImpl"
+
+OptService -> Calculator : "2.1.5: buildPhysicalCostMatrix(distMatrix, timeMatrix)"
+Calculator --> OptService : "CostMatrix"
+
+OptService -> OptService : "2.1.6: buildGreenVRP()\n[create Jsprit problem]"
+
+OptService -> OptService : "2.1.7: createAlgorithm()\n[configure Jsprit]"
+
+OptService -> OptService : "2.1.8: algorithm.searchSolutions()\n[RUN OPTIMIZATION]"
+note right : May take\n1-30 minutes
+
+OptService -> Extractor : "2.1.9: extractRouteDetails(solution)"
+Extractor --> OptService : "RouteExtractionResult"
+
+OptService -> Extractor : "2.1.10: extractUnassignedOrders(solution)"
+Extractor --> OptService : "List<UnassignedOrder>"
+
+OptService -> MetricsCalc : "2.1.11: calculate(solution, context, matrix)"
+MetricsCalc --> OptService : "SolutionMetrics"
+
+OptService -> OptService : "2.1.12: buildOptimizationResult()"
+
+' Phase 3: Callback
+OptService -> EngineCallback : "3: sendCompletionCallback(jobId=123, result)"
+EngineCallback -> CallbackController : "3.1: POST /callback/completion {jobId, solution}"
+
+CallbackController -> CallbackService : "3.1.1: handleCompletion(callback)"
+
+CallbackService -> JobRepo : "3.1.1.1: findById(jobId=123)"
+JobRepo -> DB : "SELECT OptimizationJob"
+DB --> JobRepo : "job"
+JobRepo --> CallbackService : "job"
+
+CallbackService -> CallbackService : "3.1.1.2: saveSolution(job, callback)"
+
+CallbackService -> SolutionRepo : "3.1.1.3: save(solution)"
+SolutionRepo -> DB : "INSERT Solution"
+DB --> SolutionRepo : "solution.id=456"
+SolutionRepo --> CallbackService : "solution"
+
+CallbackService -> RouteRepo : "3.1.1.4: saveAll(routes)"
+RouteRepo -> DB : "INSERT Routes + RouteStops"
+DB --> RouteRepo : "routes saved"
+RouteRepo --> CallbackService : "routes"
+
+CallbackService -> OrderRepo : "3.1.1.5: updateStatus(unassignedOrders, UNASSIGNED)"
+OrderRepo -> DB : "UPDATE Orders"
+
+CallbackService -> JobRepo : "3.1.1.6: save(job) [status=COMPLETED]"
+JobRepo -> DB : "UPDATE OptimizationJob"
+DB --> JobRepo : "updated"
+
+CallbackService -> EmailService : "3.1.1.7: sendOptimizationSuccessEmail(userId, jobId, solutionId)"
+EmailService -> User : "📧 Email notification"
+
+CallbackService --> CallbackController : "void"
+CallbackController --> EngineCallback : "200 OK"
+
+' Phase 4: Check Result
+User -> JobController : "4: GET /jobs/123"
+JobController -> JobService : "4.1: getJobById(123, branchId)"
+JobService -> JobRepo : "4.1.1: findById(123)"
+JobRepo -> DB : "SELECT with Solution, Routes"
+DB --> JobRepo : "job + solution + routes"
+JobRepo --> JobService : "job"
+JobService --> JobController : "OptimizationJobDTO"
+JobController --> User : "200 OK {job, solution, routes}"
+
+' ========== LAYOUT HINTS ==========
+
+JobController -[hidden]down- JobService
+JobService -[hidden]down- OrderRepo
+OptService -[hidden]down- DistService
+
+@enduml
+
+@startuml
+title Route Planning - Component Level Sequence
+
+actor User
+
+box "Entry Service" #E3F2FD
+    participant "Controllers" as EntryController
+    participant "Services" as EntryService
+    participant "Repositories" as EntryRepo
+    participant "Mappers" as Mapper
+    participant "Integration\n(EngineApiClient)" as ApiClient
+end box
+
+box "Engine Service" #E8F5E9
+    participant "Controllers" as EngineController
+    participant "Services\n(Optimization)" as EngineService
+    participant "Utilities\n(Calculators)" as Utils
+    participant "Distance Matrix" as DistMatrix
+end box
+
+database "Database" as DB
+
+== Phase 1: Submit Optimization Request ==
+
+User -> EntryController: POST /api/jobs/submit\n{orderIds, vehicleIds, preferences}
+activate EntryController
+
+EntryController -> EntryService: submitJob(request)
+activate EntryService
+
+EntryService -> EntryRepo: Load & validate\nOrders, Vehicles, Depots
+activate EntryRepo
+EntryRepo -> DB: SELECT orders, vehicles
+DB --> EntryRepo: entities
+EntryRepo --> EntryService: validated entities
+deactivate EntryRepo
+
+EntryService -> EntryRepo: Save OptimizationJob\n(status = PENDING)
+activate EntryRepo
+EntryRepo -> DB: INSERT job
+DB --> EntryRepo: job.id = 123
+EntryRepo --> EntryService: job
+deactivate EntryRepo
+
+EntryService -> Mapper: Convert entities\n→ EngineDTOs
+activate Mapper
+Mapper --> EntryService: EngineOptimizationRequest
+deactivate Mapper
+
+EntryService -> ApiClient: submitOptimizationAsync\n(jobId=123, request)
+activate ApiClient
+note right: Async call\nafter commit
+
+EntryService --> EntryController: OptimizationJobDTO\n(id=123, status=PENDING)
+deactivate EntryService
+
+EntryController --> User: 200 OK\n{jobId: 123, status: "PENDING"}
+deactivate EntryController
+
+== Phase 2: Engine Optimization (Async) ==
+
+ApiClient -> EngineController: POST /api/optimize\n{jobId, orders, vehicles, config}
+activate EngineController
+deactivate ApiClient
+
+EngineController -> EngineService: optimizeAsync(request)
+activate EngineService
+
+EngineService -> EntryRepo: Update job status\n→ PROCESSING
+activate EntryRepo
+EntryRepo -> DB: UPDATE status
+deactivate EntryRepo
+
+EngineService -> EngineService: prepareContext()\n[Build maps & locations]
+
+EngineService -> DistMatrix: createDistanceMatrix(coordinates)
+activate DistMatrix
+DistMatrix -> DistMatrix: Call GraphHopper API
+DistMatrix --> EngineService: DistanceMatrix\n(distances, times)
+deactivate DistMatrix
+
+EngineService -> Utils: buildGreenVehicleType()\nbuildPhysicalCostMatrix()
+activate Utils
+Utils --> EngineService: Jsprit VRP components
+deactivate Utils
+
+EngineService -> EngineService: buildGreenVRP()\n[Create Jsprit problem]
+
+EngineService -> EngineService: createAlgorithm()\n[Configure solver]
+
+EngineService -> EngineService: ⏱️ RUN OPTIMIZATION\n(1-30 minutes)
+note right: Jsprit algorithm\nsearches for\nbest solution
+
+EngineService -> Utils: extractRouteDetails()\nextractUnassignedOrders()\ncalculateMetrics()
+activate Utils
+Utils --> EngineService: OptimizationResult\n(routes, metrics, unassigned)
+deactivate Utils
+
+EngineService --> EngineController: result
+deactivate EngineService
+deactivate EngineController
+
+== Phase 3: Callback to Entry Service ==
+
+EngineService -> ApiClient: sendCompletionCallback\n(jobId=123, result)
+activate EngineService
+activate ApiClient
+
+ApiClient -> EntryController: POST /api/callback/completion\n{jobId, solution, routes}
+activate EntryController
+
+EntryController -> EntryService: handleCompletion(callback)
+activate EntryService
+
+EntryService -> EntryRepo: Load OptimizationJob(123)
+activate EntryRepo
+EntryRepo -> DB: SELECT job
+DB --> EntryRepo: job
+EntryRepo --> EntryService: job
+deactivate EntryRepo
+
+EntryService -> EntryRepo: Save Solution\n+ Routes\n+ RouteStops
+activate EntryRepo
+EntryRepo -> DB: INSERT solution, routes, stops
+DB --> EntryRepo: saved (solution.id=456)
+EntryRepo --> EntryService: solution
+deactivate EntryRepo
+
+EntryService -> EntryRepo: Update job status\n→ COMPLETED
+activate EntryRepo
+EntryRepo -> DB: UPDATE job
+deactivate EntryRepo
+
+EntryService -> EntryService: Send email notification
+EntryService --> User: 📧 Optimization completed
+
+EntryService --> EntryController: void
+deactivate EntryService
+
+EntryController --> ApiClient: 200 OK
+deactivate EntryController
+
+ApiClient --> EngineService: callback sent
+deactivate ApiClient
+deactivate EngineService
+
+== Phase 4: User Retrieves Result ==
+
+User -> EntryController: GET /api/jobs/123
+activate EntryController
+
+EntryController -> EntryService: getJobById(123)
+activate EntryService
+
+EntryService -> EntryRepo: findById(123)\n[with solution, routes]
+activate EntryRepo
+EntryRepo -> DB: SELECT job + solution + routes
+DB --> EntryRepo: full data
+EntryRepo --> EntryService: job
+deactivate EntryRepo
+
+EntryService --> EntryController: OptimizationJobDTO\n(with solution & routes)
+deactivate EntryService
+
+EntryController --> User: 200 OK\n{job, solution, routes}
+deactivate EntryController
+
+@enduml
+
+@startuml
+title Route Planning - Package Level Sequence (High-Level Overview)
+
+actor User
+
+participant "<<Entry Service>>\nREST API" as EntryAPI #LightBlue
+participant "<<Entry Service>>\nBusiness Logic" as EntryLogic #LightBlue
+participant "<<Entry Service>>\nData Access" as EntryData #LightBlue
+
+participant "<<Engine Service>>\nOptimization API" as EngineAPI #LightGreen
+participant "<<Engine Service>>\nVRP Solver" as EngineSolver #LightGreen
+participant "<<External>>\nGraphHopper API" as GraphHopper #LightYellow
+
+database "PostgreSQL" as DB #LightGray
+
+== 1. Submit Job ==
+
+User -> EntryAPI: **POST /jobs/submit**\n{orders, vehicles, preferences}
+activate EntryAPI
+
+EntryAPI -> EntryLogic: Validate & Create Job
+activate EntryLogic
+
+EntryLogic -> EntryData: Load & Validate Data
+activate EntryData
+EntryData <-> DB: SELECT orders, vehicles
+EntryData --> EntryLogic: Validated entities
+deactivate EntryData
+
+EntryLogic -> EntryData: Save Job (PENDING)
+activate EntryData
+EntryData -> DB: INSERT OptimizationJob
+EntryData --> EntryLogic: job.id = 123
+deactivate EntryData
+
+EntryLogic -> EngineAPI: **Async Call**\nPOST /optimize\n{jobId, data}
+activate EngineAPI
+note right: Non-blocking\nasync call
+
+EntryLogic --> EntryAPI: JobDTO {id: 123}
+deactivate EntryLogic
+
+EntryAPI --> User: **202 Accepted**\n{jobId: 123, status: "PENDING"}
+deactivate EntryAPI
+
+== 2. Optimization (Background) ==
+
+EngineAPI -> EngineSolver: Run Optimization
+activate EngineSolver
+
+EngineSolver -> EntryData: Update Status → PROCESSING
+activate EntryData
+EntryData -> DB: UPDATE job status
+deactivate EntryData
+
+EngineSolver -> GraphHopper: **Calculate Distance Matrix**
+activate GraphHopper
+GraphHopper --> EngineSolver: distances & times
+deactivate GraphHopper
+
+EngineSolver -> EngineSolver: **Build Green VRP**\n- Create Jsprit problem\n- Add vehicles with CO2 cost\n- Add orders with constraints
+
+EngineSolver -> EngineSolver: ⏱️ **RUN SOLVER**\n(Jsprit Algorithm)\n1-30 minutes
+note right: Search for optimal\nroutes minimizing:\ncost + CO2 emissions
+
+EngineSolver -> EngineSolver: **Extract Results**\n- Route details\n- Metrics\n- Unassigned orders
+
+EngineSolver --> EngineAPI: OptimizationResult
+deactivate EngineSolver
+
+== 3. Save Results ==
+
+EngineAPI -> EntryAPI: **POST /callback/completion**\n{jobId, solution, routes}
+activate EntryAPI
+
+EntryAPI -> EntryLogic: Save Solution
+activate EntryLogic
+
+EntryLogic -> EntryData: Persist Results
+activate EntryData
+
+EntryData -> DB: INSERT Solution
+EntryData -> DB: INSERT Routes
+EntryData -> DB: INSERT RouteStops
+EntryData -> DB: UPDATE Job → COMPLETED
+
+EntryData --> EntryLogic: Saved
+deactivate EntryData
+
+EntryLogic -> User: 📧 **Email**\nOptimization completed!
+
+EntryLogic --> EntryAPI: Success
+deactivate EntryLogic
+
+EntryAPI --> EngineAPI: **200 OK**
+deactivate EntryAPI
+deactivate EngineAPI
+
+== 4. Retrieve Results ==
+
+User -> EntryAPI: **GET /jobs/123**
+activate EntryAPI
+
+EntryAPI -> EntryLogic: Get Job Details
+activate EntryLogic
+
+EntryLogic -> EntryData: Load Full Job
+activate EntryData
+EntryData <-> DB: SELECT job\n+ solution\n+ routes\n+ stops
+EntryData --> EntryLogic: Complete data
+deactivate EntryData
+
+EntryLogic --> EntryAPI: JobDTO + SolutionDTO
+deactivate EntryLogic
+
+EntryAPI --> User: **200 OK**\n{job, solution, routes}
+deactivate EntryAPI
 
 @enduml
