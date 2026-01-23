@@ -11,7 +11,7 @@ export class VehicleTypeManager {
 
     static init() {
         this.#modal = document.getElementById('vehicle-type-modal');
-        this.#form = document.getElementById('vehicle-type-form');
+        this.#form = document.getElementById('admin-vehicle-type-form');
 
         if (this.#form) {
             this.#form.addEventListener('submit', (e) => this.handleSubmit(e));
@@ -33,7 +33,7 @@ export class VehicleTypeManager {
     }
 
     static render() {
-        const container = document.getElementById('vehicle-types-list');
+        const container = document.getElementById('admin-vehicle-types-list');
 
         if (!this.#filteredTypes || this.#filteredTypes.length === 0) {
             container.innerHTML = `
@@ -118,14 +118,24 @@ export class VehicleTypeManager {
         this.#currentEditId = typeId;
         document.getElementById('vehicle-type-modal-title').textContent = 'Edit Vehicle Type';
 
-        document.getElementById('vtype-name').value = type.name;
-        document.getElementById('vtype-capacity').value = type.capacity;
-        document.getElementById('vtype-emission-factor').value = type.vehicle_features?.emission_factor || '';
-        document.getElementById('vtype-fixed-cost').value = type.fixed_cost;
-        document.getElementById('vtype-cost-per-km').value = type.cost_per_km;
-        document.getElementById('vtype-cost-per-hour').value = type.cost_per_hour;
-        document.getElementById('vtype-max-distance').value = type.max_distance || '';
-        document.getElementById('vtype-max-duration').value = type.max_duration || '';
+        document.getElementById('admin-vtype-name').value = type.name;
+        document.getElementById('admin-vtype-capacity').value = type.capacity;
+        document.getElementById('admin-vtype-fixed-cost').value = type.fixed_cost;
+        document.getElementById('admin-vtype-cost-per-km').value = type.cost_per_km;
+        document.getElementById('admin-vtype-cost-per-hour').value = type.cost_per_hour;
+        document.getElementById('admin-vtype-max-distance').value = type.max_distance || '';
+        document.getElementById('admin-vtype-max-duration').value = type.max_duration || '';
+
+        let emissionFactorValue = '';
+        if (type.vehicle_features) {
+            try {
+                const featuresObj = JSON.parse(type.vehicle_features);
+                emissionFactorValue = featuresObj.emission_factor || '';
+            } catch (e) {
+                console.warn('Lỗi parse vehicle_features:', e);
+            }
+        }
+        document.getElementById('admin-vtype-emission-factor').value = emissionFactorValue;
 
         this.#modal?.classList.add('active');
     }
@@ -157,24 +167,25 @@ export class VehicleTypeManager {
     static async handleSubmit(e) {
         e.preventDefault();
 
-        const formData = {
-            type_name: document.getElementById('vtype-name').value.trim(),
-            capacity: parseInt(document.getElementById('vtype-capacity').value),
-            fixed_cost: parseFloat(document.getElementById('vtype-fixed-cost').value),
-            cost_per_km: parseFloat(document.getElementById('vtype-cost-per-km').value),
-            cost_per_hour: parseFloat(document.getElementById('vtype-cost-per-hour').value),
-            vehicle_features: {}
-        };
-
-        const emissionFactor = document.getElementById('vtype-emission-factor').value;
+        const featuresObj = {};
+        const emissionFactor = document.getElementById('admin-vtype-emission-factor').value;
         if (emissionFactor) {
-            formData.vehicle_features.emission_factor = parseFloat(emissionFactor);
+            featuresObj.emission_factor = parseFloat(emissionFactor);
         }
 
-        const maxDistance = document.getElementById('vtype-max-distance').value;
+        const formData = {
+            type_name: document.getElementById('admin-vtype-name').value.trim(),
+            capacity: parseInt(document.getElementById('admin-vtype-capacity').value),
+            fixed_cost: parseFloat(document.getElementById('admin-vtype-fixed-cost').value),
+            cost_per_km: parseFloat(document.getElementById('admin-vtype-cost-per-km').value),
+            cost_per_hour: parseFloat(document.getElementById('admin-vtype-cost-per-hour').value),
+            vehicle_features: featuresObj
+        };
+
+        const maxDistance = document.getElementById('admin-vtype-max-distance').value;
         if (maxDistance) formData.max_distance = parseFloat(maxDistance);
 
-        const maxDuration = document.getElementById('vtype-max-duration').value;
+        const maxDuration = document.getElementById('admin-vtype-max-duration').value;
         if (maxDuration) formData.max_duration = parseFloat(maxDuration);
 
         Loading.show('Saving...');

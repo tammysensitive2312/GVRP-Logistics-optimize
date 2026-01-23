@@ -32,4 +32,13 @@ public class VehicleTypeController {
         var vehicleTypes = typeService.getVehicleTypesByBranchId(branchId);
         return ResponseEntity.ok(vehicleTypes);
     }
+
+    @PutMapping("/{id}")
+    ResponseEntity<VehicleTypeDTO> updateVehicleType(
+            @PathVariable Long id,
+            @Valid @RequestBody VehicleTypeInputDTO input) {
+        Long branchId = CurrentUserUtil.getCurrentBranchId();
+        VehicleTypeDTO updatedVehicleType = typeService.updateVehicleType(id, input, branchId);
+        return ResponseEntity.ok(updatedVehicleType);
+    }
 }

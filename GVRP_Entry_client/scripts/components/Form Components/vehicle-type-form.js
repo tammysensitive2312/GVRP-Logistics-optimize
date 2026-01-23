@@ -18,7 +18,7 @@ export class VehicleTypeForm {
      */
     static init() {
         this.#formElement = document.getElementById('vehicle-type-form');
-        this.#typesContainer = document.getElementById('vehicle-types-list');
+        this.#typesContainer = document.getElementById('setup-vehicle-types-list');
 
         if (!this.#formElement) {
             console.warn('Vehicle type form not found');

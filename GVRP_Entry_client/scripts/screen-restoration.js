@@ -77,7 +77,8 @@ export class ScreenRestoration {
         const validScreens = [
             Router.SCREENS.DEPOT_SETUP,
             Router.SCREENS.FLEET_SETUP,
-            Router.SCREENS.MAIN
+            Router.SCREENS.MAIN,
+            Router.SCREENS.ADMIN_SETTINGS
         ];
 
         if (lastScreen && validScreens.includes(lastScreen)) {

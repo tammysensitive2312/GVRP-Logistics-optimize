@@ -277,6 +277,30 @@
     margin-bottom: 24px;
 }
 
+.table-responsive {
+    max-height: 65vh;
+    overflow-y: auto;
+    overflow-x: auto;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--white);
+}
+
+.data-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background-color: #f8f9fa;
+    box-shadow: 0 2px 2px -1px rgba(0,0,0,0.1);
+}
+
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 800px;
+}
+
 @media (max-width: 968px) {
     .admin-sidebar {
         position: fixed;

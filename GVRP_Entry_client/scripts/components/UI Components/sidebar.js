@@ -106,7 +106,7 @@ export class Sidebar {
      * @param {Array} depots - Array of depot objects
      */
     static updateDepotsList(depots) {
-        const container = document.getElementById('depots-list');
+        const container = document.getElementById('sidebar-depots-list');
         const countLabel = document.getElementById('depot-count');
         if (!container) return;
 
@@ -231,7 +231,7 @@ export class Sidebar {
      * Update Vehicles List
      */
     static updateVehiclesList(vehicles) {
-        const container = document.getElementById('vehicles-list');
+        const container = document.getElementById('sidebar-vehicles-list');
         const countLabel = document.getElementById('vehicle-count');
         if (!container) return;
 

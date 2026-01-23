@@ -21,38 +21,69 @@ export class VehicleManager {
     }
 
     static render() {
-        const container = document.getElementById('vehicles-list');
+        const vehicles = this.#filteredVehicles || [];
+        const container = document.getElementById('admin-vehicles-list');
 
-        if (!this.#filteredVehicles || this.#filteredVehicles.length === 0) {
+        if (vehicles.length === 0) {
             container.innerHTML = `
-                <div class="empty-state" style="grid-column: 1/-1;">
+                <div class="empty-state">
                     <div class="empty-icon">🚗</div>
                     <div class="empty-text">No vehicles found</div>
-                    <div class="empty-hint">Add your first vehicle to get started</div>
+                    <div class="empty-hint">Let's add a new car to get started</div>
                 </div>
             `;
             return;
         }
 
-        container.innerHTML = this.#filteredVehicles.map(vehicle => `
-            <div class="item-card">
-                <div class="card-header">
-                    <div class="card-title">
-                        🚗 ${vehicle.vehicle_license_plate}
-                    </div>
-                </div>
-                <div class="card-details">
-                    <div class="detail-row">
-                        <span class="detail-label">Type:</span>
-                        <span class="detail-value">${vehicle.vehicle_type_name || 'N/A'}</span>
-                    </div>
-                    <div class="detail-row">
-                        <span class="detail-label">Status:</span>
-                        <span class="detail-value">${vehicle.status || 'AVAILABLE'}</span>
-                    </div>
-                </div>
+        container.innerHTML = `
+            <div class="table-responsive">
+                <table class="data-table" style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Vehicle License Plate</th>
+                            <th>Type</th>
+                            <th>Status</th>
+                            <th class="text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${vehicles.map((vehicle, index) => `
+                            <tr>
+                                <td>${index + 1}</td>
+                                <td>
+                                    <strong>${vehicle.vehicle_license_plate}</strong>
+                                </td>
+                                <td>${vehicle.vehicle_type_name || '<span class="text-muted">N/A</span>'}</td>
+                                <td>
+                                    ${this.#renderStatusBadge(vehicle.status)}
+                                </td>
+                                <td class="text-center">
+                                    <div class="action-buttons" style="justify-content: center;">
+                                        <button class="btn-icon" onclick="VehicleManager.openEdit(${vehicle.id})" title="Edit">
+                                            ✏️
+                                        </button>
+                                        <button class="btn-icon danger" onclick="VehicleManager.delete(${vehicle.id})" title="Delete">
+                                            🗑️
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
             </div>
-        `).join('');
+        `;
+    }
+
+    static #renderStatusBadge(status) {
+        const s = status || 'AVAILABLE';
+        let colorClass = 'badge-success';
+
+        if (s === 'ON_ROUTE' || s === 'BUSY') colorClass = 'badge-warning'; // Vàng
+        if (s === 'MAINTENANCE' || s === 'FAILED') colorClass = 'badge-danger'; // Đỏ
+
+        return `<span class="badge ${colorClass}" style="padding: 4px 8px; border-radius: 4px; font-size: 12px;">${s}</span>`;
     }
 
     static search(query) {

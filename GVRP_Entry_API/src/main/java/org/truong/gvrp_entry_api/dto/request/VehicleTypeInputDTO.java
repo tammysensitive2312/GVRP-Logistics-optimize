@@ -26,11 +26,11 @@ public class VehicleTypeInputDTO {
     private BigDecimal costPerKm;
 
     @DecimalMin(value = "0.0", message = "Cost per hour must be non-negative")
-    private String costPerHour;
+    private BigDecimal costPerHour;
 
     @DecimalMin(value = "0.0", message = "Max distance must be non-negative")
-    private String maxDistance;
+    private BigDecimal maxDistance;
 
     @DecimalMin(value = "0.0", message = "Max duration must be non-negative")
-    private String maxDuration;
+    private BigDecimal maxDuration;
 }

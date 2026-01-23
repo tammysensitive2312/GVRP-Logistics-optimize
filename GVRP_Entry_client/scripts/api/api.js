@@ -126,6 +126,34 @@ async function createVehicleType(vehicleTypeData) {
 }
 
 /**
+ * Create a new vehicle type
+ * @param typeId
+ * @param {Object} vehicleTypeData
+ * @returns {Promise<Object>} Created vehicle type DTO
+ */
+async function updateVehicleType(typeId, vehicleTypeData) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/vehicle-types/${typeId}`, {
+            method: 'PUT',
+            headers: getHeaders(),
+            body: JSON.stringify(vehicleTypeData)
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.message || 'Failed to update vehicle type');
+        }
+
+        const result = await response.json();
+        invalidateQuery(QueryKeys.vehicleTypes.all(BRANCH_ID));
+
+        return result;
+    } catch (error) {
+        return handleApiError(error);
+    }
+}
+
+/**
  * Get all vehicle types for current branch
  * @returns {Promise<Array>} List of vehicle type DTOs
  */
@@ -441,6 +469,7 @@ window.deleteOrder = deleteOrder;
 window.getAvailableVehicles = getAvailableVehicles;
 window.updateOrder = updateOrder;
 window.createVehicleType = createVehicleType;
+window.updateVehicleType = updateVehicleType;
 window.getVehicleTypes = getVehicleTypes;
 
 console.log('API Client initialized.');

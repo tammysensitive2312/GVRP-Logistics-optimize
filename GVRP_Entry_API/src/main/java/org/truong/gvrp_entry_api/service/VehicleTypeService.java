@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import org.truong.gvrp_entry_api.dto.request.VehicleTypeInputDTO;
 import org.truong.gvrp_entry_api.dto.response.VehicleTypeDTO;
 import org.truong.gvrp_entry_api.entity.Branch;
+import org.truong.gvrp_entry_api.entity.VehicleType;
 import org.truong.gvrp_entry_api.exception.ResourceNotFoundException;
 import org.truong.gvrp_entry_api.mapper.VehicleTypeMapper;
 import org.truong.gvrp_entry_api.repository.BranchRepository;
@@ -38,5 +39,25 @@ public class VehicleTypeService {
     public List<VehicleTypeDTO> getVehicleTypesByBranchId(Long branchId) {
         var vehicleTypes = typeRepository.findAllByBranchId(branchId);
         return typeMapper.toDTOList(vehicleTypes);
+    }
+
+    public VehicleTypeDTO updateVehicleType(Long id, VehicleTypeInputDTO input, Long branchId) {
+        VehicleType existingType = typeRepository.findByIdAndBranchId(id, branchId)
+                .orElseThrow(() -> new ResourceNotFoundException("Vehicle type not found.", "vehicleType"));
+
+        existingType.setTypeName(input.getTypeName());
+        existingType.setVehicleFeatures(
+                featuresService.toJson(input.getVehicleFeatures())
+        );
+        existingType.setDescription(input.getDescription());
+        existingType.setCapacity(input.getCapacity());
+        existingType.setFixedCost(input.getFixedCost());
+        existingType.setCostPerKm(input.getCostPerKm());
+        existingType.setCostPerHour(input.getCostPerHour());
+        existingType.setMaxDistance(input.getMaxDistance());
+        existingType.setMaxDuration(input.getMaxDuration());
+
+        var updatedType = typeRepository.save(existingType);
+        return typeMapper.toDTO(updatedType);
     }
 }

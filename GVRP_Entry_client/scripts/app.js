@@ -30,6 +30,8 @@ import { Loading } from './utils/loading.js';
 import { Validator } from './utils/validation.js';
 import { DOMHelpers } from './utils/dom-helpers.js';
 import {PersistenceManager} from "./persistence-manager.js";
+import {AdminSettings} from "./components/screens/admin-settings.js";
+import {VehicleTypeManager} from "./components/Admin/vehicle-type-manager.js";
 
 // Depot Setup screen
 Router.onScreenActivated(Router.SCREENS.DEPOT_SETUP, () => {
@@ -55,6 +57,12 @@ Router.onScreenActivated(Router.SCREENS.MAIN, async () => {
         await loadMainScreenData();
 
         setTimeout(() => PersistenceManager.restore(), 100);
+    }, 100);
+});
+
+Router.onScreenActivated(Router.SCREENS.ADMIN_SETTINGS, () => {
+    setTimeout(() => {
+        AdminSettings.switchSection('vehicle-types');
     }, 100);
 });
 
@@ -429,7 +437,8 @@ function restoreLastScreen() {
     const validScreens = [
         Router.SCREENS.DEPOT_SETUP,
         Router.SCREENS.FLEET_SETUP,
-        Router.SCREENS.MAIN
+        Router.SCREENS.MAIN,
+        Router.SCREENS.ADMIN_SETTINGS
     ];
 
     if (lastScreen && validScreens.includes(lastScreen)) {
@@ -457,6 +466,9 @@ function initEventListeners() {
     ResizableDivider.init();
     OrdersTable.init();
     OrdersFilters.init();
+
+    AdminSettings.init();
+    VehicleTypeManager.init();
 }
 
 /**

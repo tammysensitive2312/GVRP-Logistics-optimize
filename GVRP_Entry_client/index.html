@@ -152,7 +152,7 @@
     <!-- Existing Vehicle Types -->
     <div class="existing-types-section">
       <h3>Các loại xe hiện có</h3>
-      <div id="vehicle-types-list" class="vehicle-types-grid">
+      <div id="setup-vehicle-types-list" class="vehicle-types-grid">
         <div class="loading-message">Đang tải...</div>
       </div>
     </div>
@@ -193,7 +193,7 @@
 
       <div class="form-row">
         <div class="form-group">
-          <label for="vtype-cost-per-hour">Chi phí/giờ (VND) <span class="required">*</span></label>
+          <label for="vtype-cost-per-hour">Chi phí/hours (VND) <span class="required">*</span></label>
           <input type="number" id="vtype-cost-per-hour" min="0" step="1000" placeholder="4000" required />
         </div>
 
@@ -378,7 +378,7 @@
         </div>
 
         <div class="section-content expanded" id="depots-content">
-          <div id="depots-list" class="compact-list">
+          <div id="sidebar-depots-list" class="compact-list">
             <div class="empty-message">Loading depots...</div>
           </div>
         </div>
@@ -391,7 +391,7 @@
         </div>
 
         <div class="section-content expanded" id="vehicles-content">
-          <div id="vehicles-list" class="compact-list">
+          <div id="sidebar-vehicles-list" class="compact-list">
             <div class="empty-message">Loading vehicles...</div>
           </div>
         </div>
@@ -1250,19 +1250,16 @@
         <div class="admin-menu-item active" data-section="vehicle-types" onclick="AdminSettings.switchSection('vehicle-types')">
           <span class="icon">🚚</span>
           <span class="label">Vehicle Types</span>
-          <span class="badge" id="vehicle-types-count">0</span>
         </div>
 
         <div class="admin-menu-item" data-section="vehicles" onclick="AdminSettings.switchSection('vehicles')">
           <span class="icon">🚗</span>
           <span class="label">Vehicles</span>
-          <span class="badge" id="vehicles-count">0</span>
         </div>
 
         <div class="admin-menu-item" data-section="depots" onclick="AdminSettings.switchSection('depots')">
           <span class="icon">🏢</span>
           <span class="label">Depots</span>
-          <span class="badge" id="depots-count">0</span>
         </div>
       </div>
 
@@ -1295,7 +1292,7 @@
             </button>
           </div>
 
-          <div id="vehicle-types-list" class="items-grid">
+          <div id="admin-vehicle-types-list" class="items-grid">
             <!-- Populated by JS -->
           </div>
         </div>
@@ -1321,7 +1318,7 @@
             </button>
           </div>
 
-          <div id="vehicles-list" class="items-grid">
+          <div id="admin-vehicles-list">
             <!-- Populated by JS -->
           </div>
         </div>
@@ -1343,6 +1340,69 @@
         </div>
       </div>
     </main>
+  </div>
+</div>
+
+<div id="vehicle-type-modal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2 id="vehicle-type-modal-title">Add Vehicle Type</h2>
+      <button class="btn-close" onclick="VehicleTypeManager.closeModal()">✕</button>
+    </div>
+
+    <form id="admin-vehicle-type-form" class="modal-body" onsubmit="VehicleTypeManager.handleSubmit(event)">
+      <div class="form-group">
+        <label>Vehicle type name<span class="required">*</span></label>
+        <input type="text" id="admin-vtype-name" required />
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Capacity (kg) <span class="required">*</span></label>
+          <input type="number" id="admin-vtype-capacity" required />
+        </div>
+        <div class="form-group">
+          <label>Emission Factor</label>
+          <input type="number" id="admin-vtype-emission-factor" step="0.1" />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Fixed Cost (VND) <span class="required">*</span></label>
+          <input type="number" id="admin-vtype-fixed-cost" required />
+        </div>
+        <div class="form-group">
+          <label>Cost/Km (VND) <span class="required">*</span></label>
+          <input type="number" id="admin-vtype-cost-per-km" required />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Cost/hours (VND) <span class="required">*</span></label>
+          <input type="number" id="admin-vtype-cost-per-hour" required />
+        </div>
+        <div class="form-group">
+          <label>Max Distance (km)</label>
+          <input type="number" id="admin-vtype-max-distance" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Max Duration (minutes)</label>
+        <input type="number" id="admin-vtype-max-duration" />
+      </div>
+    </form>
+
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" onclick="VehicleTypeManager.closeModal()">
+        Cancel
+      </button>
+      <button type="submit" form="admin-vehicle-type-form" class="btn btn-primary">
+        Save
+      </button>
+    </div>
   </div>
 </div>
 
