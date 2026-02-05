@@ -45,7 +45,7 @@
       <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form">
 
         <div class="form-group">
-          <label>Branch</label>
+          <label>🏢 Branch</label>
           <input type="text"
                  formControlName="branch_name"
                  placeholder="Enter branch name"
@@ -56,14 +56,14 @@
         </div>
 
         <div class="form-group">
-          <label>Username</label>
+          <label>👤 Username</label>
           <input type="text"
                  formControlName="username"
                  placeholder="Username">
         </div>
 
         <div class="form-group">
-          <label>Password</label>
+          <label>🔒 Password</label>
           <div class="password-field">
             <input [type]="showPassword ? 'text' : 'password'"
                    formControlName="password"

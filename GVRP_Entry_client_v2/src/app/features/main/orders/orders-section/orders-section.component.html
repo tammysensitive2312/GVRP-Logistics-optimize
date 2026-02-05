@@ -1,26 +1,39 @@
-// src/app/features/main/orders/orders-section.component.html
-<div class="orders-section">
-  <!-- Tab Switcher -->
-  <mat-tab-group [(selectedIndex)]="selectedTabIndex">
+<div class="orders-section flex flex-col h-full relative">
+
+  <div *ngIf="isLoading" class="absolute inset-0 z-50 flex items-center justify-center bg-white/50 backdrop-blur-sm">
+    <mat-spinner diameter="40"></mat-spinner>
+  </div>
+
+  <app-orders-filters
+    (filterChange)="onFilterChange($event)">
+  </app-orders-filters>
+
+  <mat-tab-group [(selectedIndex)]="selectedTabIndex" class="flex-grow flex flex-col min-h-0">
+
     <mat-tab label="Orders">
-      <app-orders-table
-        [orders]="orders"
-        (selectionChange)="onOrderSelectionChange($event)">
-      </app-orders-table>
+      <div class="p-4 h-full">
+        <app-orders-table
+          [orders]="orders"
+          [totalElements]="totalElements"
+          [pageSize]="pageSize"
+          [currentPage]="currentPage"
+          (pageChange)="onPageChange($event)"
+          (selectionChange)="onOrderSelectionChange($event)"
+          (editOrder)="onEditOrder($event)">
+        </app-orders-table>
+      </div>
     </mat-tab>
 
     <mat-tab label="Routes" [disabled]="!solution">
-      <app-route-view
-        *ngIf="solution"
-        [solution]="solution">
-      </app-route-view>
+      <div class="p-4">
+        <p class="text-gray-500">Route map will be displayed here...</p>
+      </div>
     </mat-tab>
 
     <mat-tab label="Timeline" [disabled]="!solution">
-      <app-timeline-view
-        *ngIf="solution"
-        [solution]="solution">
-      </app-timeline-view>
+      <div class="p-4">
+        <p class="text-gray-500">Gantt chart timeline will be displayed here...</p>
+      </div>
     </mat-tab>
   </mat-tab-group>
 </div>

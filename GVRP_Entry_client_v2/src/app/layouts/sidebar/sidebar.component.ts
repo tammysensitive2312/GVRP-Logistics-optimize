@@ -1,5 +1,8 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { DepotDTO, VehicleDTO } from '@core/models';
+import {MatCheckboxModule} from '@angular/material/checkbox';
+import {MatDividerModule} from '@angular/material/divider';
+import {NgForOf, NgIf} from '@angular/common';
 
 interface Stats {
   scheduled: number;
@@ -12,6 +15,12 @@ interface Stats {
   selector: 'app-sidebar',
   templateUrl: './sidebar.component.html',
   standalone: true,
+  imports: [
+    MatCheckboxModule,
+    MatDividerModule,
+    NgIf,
+    NgForOf
+  ],
   styleUrls: ['./sidebar.component.scss']
 })
 export class SidebarComponent {

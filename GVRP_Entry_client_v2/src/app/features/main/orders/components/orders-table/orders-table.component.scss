@@ -1,0 +1,7 @@
+.table-container {
+  height: calc(100vh - 250px);
+}
+
+mat-row, mat-header-row {
+  min-height: 48px;
+}

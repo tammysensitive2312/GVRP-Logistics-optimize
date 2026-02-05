@@ -79,12 +79,12 @@ export class LoginComponent implements OnInit {
       )
       .subscribe({
         next: () => {
-          this.toast.success('Đăng nhập thành công!');
+          this.toast.success('Login successful!');
           const redirectUrl = this.authService.getRedirectUrl();
           this.router.navigate([redirectUrl]);
         },
         error: (error) => {
-          this.toast.error(error.message || 'Đăng nhập thất bại');
+          this.toast.error(error.message || 'Login failed!');
         }
       });
   }

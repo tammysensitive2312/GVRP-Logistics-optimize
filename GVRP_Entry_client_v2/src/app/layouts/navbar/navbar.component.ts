@@ -16,5 +16,6 @@ import {MatMenuModule} from '@angular/material/menu';
   styleUrl: './navbar.component.scss'
 })
 export class NavbarComponent {
+  activeTab!: string;
 
 }

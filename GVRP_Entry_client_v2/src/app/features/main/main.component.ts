@@ -5,6 +5,10 @@ import { takeUntil } from 'rxjs/operators';
 import { DepotDTO, OrderDTO, VehicleDTO, SolutionDTO } from '@core/models';
 import { AuthService } from '@core/services/auth.service';
 import { StateService } from '@core/services/state.service';
+import {SidebarComponent} from '@layouts/sidebar/sidebar.component';
+import {MapComponent} from '@shared/components/map/map.component';
+import {OrdersSectionComponent} from '@features/main/orders/orders-section/orders-section.component';
+import {NavbarComponent} from '@layouts/navbar/navbar.component';
 
 interface Stats {
   scheduled: number;
@@ -17,6 +21,12 @@ interface Stats {
   selector: 'app-main',
   templateUrl: './main.component.html',
   standalone: true,
+  imports: [
+    SidebarComponent,
+    MapComponent,
+    OrdersSectionComponent,
+    NavbarComponent
+  ],
   styleUrls: ['./main.component.scss']
 })
 export class MainComponent implements OnInit, OnDestroy {
@@ -66,11 +76,7 @@ export class MainComponent implements OnInit, OnDestroy {
 
   private subscribeToState(): void {
     // Subscribe to highlighted order
-    this.stateService.highlightedOrder$
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(orderId => {
-        this.highlightedOrderId = orderId;
-      });
+    // TODO
   }
 
   // Resize handlers
@@ -122,14 +128,14 @@ export class MainComponent implements OnInit, OnDestroy {
   }
 
   onVehicleSelectionChange(selectedIds: number[]): void {
-    this.stateService.setSelectedVehicles(selectedIds);
+    // TODO
   }
 
   onOrderSelectionChange(selectedIds: number[]): void {
-    this.stateService.setSelectedOrders(selectedIds);
+    // TODO
   }
 
   onOrderClicked(orderId: number): void {
-    this.stateService.highlightOrder(orderId);
+    // TODO
   }
 }

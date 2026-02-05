@@ -1,9 +1,4 @@
-// src/app/layouts/sidebar/sidebar.component.html
 <aside class="sidebar" [class.collapsed]="collapsed">
-  <!-- Collapse Button -->
-  <button class="btn-collapse" (click)="onToggleCollapse()">
-    {{ collapsed ? '►' : '◄ Hide Sidebar' }}
-  </button>
 
   <!-- Stats Section (Horizontal Grid) -->
   <div class="stats-section">
@@ -96,5 +91,10 @@
         </div>
       </div>
     </div>
+
+    <!-- Collapse Button -->
+    <button class="btn-collapse" (click)="onToggleCollapse()">
+      {{ collapsed ? '►' : '◄ Hide Sidebar' }}
+    </button>
   </div>
 </aside>

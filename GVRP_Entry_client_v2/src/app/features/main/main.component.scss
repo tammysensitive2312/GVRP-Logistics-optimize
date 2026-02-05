@@ -11,6 +11,12 @@
   display: flex;
   height: calc(100vh - var(--navbar-height));
   overflow: hidden;
+  width: 100%;
+}
+
+app-sidebar {
+  flex-shrink: 0;
+  z-index: 20;
 }
 
 // Main content area (70%)

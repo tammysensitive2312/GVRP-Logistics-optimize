@@ -1,0 +1,39 @@
+<form [formGroup]="filterForm" class="flex flex-wrap items-center gap-4 p-4 bg-white rounded-lg shadow-sm mb-4">
+
+  <mat-form-field appearance="outline" class="w-48">
+    <mat-label>Date</mat-label>
+    <input matInput type="date" formControlName="date">
+  </mat-form-field>
+
+  <mat-form-field appearance="outline" class="w-48">
+    <mat-label>Status</mat-label>
+    <mat-select formControlName="status">
+      <mat-option value="">All Statuses</mat-option>
+      <mat-option value="SCHEDULED">Scheduled</mat-option>
+      <mat-option value="ON_ROUTE">On Route</mat-option>
+      <mat-option value="COMPLETED">Completed</mat-option>
+      <mat-option value="FAILED">Failed</mat-option>
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline" class="w-40">
+    <mat-label>Priority</mat-label>
+    <mat-select formControlName="priority">
+      <mat-option value="">All</mat-option>
+      <mat-option value="1">High (1)</mat-option>
+      <mat-option value="2">Medium (2)</mat-option>
+      <mat-option value="3">Low (3)</mat-option>
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline" class="flex-grow">
+    <mat-label>Search orders</mat-label>
+    <mat-icon matPrefix>search</mat-icon>
+    <input matInput formControlName="search" placeholder="Order code, customer, address...">
+  </mat-form-field>
+
+  <button mat-stroked-button color="warn" type="button" (click)="clearFilters()">
+    <mat-icon>clear</mat-icon>
+    Clear
+  </button>
+</form>

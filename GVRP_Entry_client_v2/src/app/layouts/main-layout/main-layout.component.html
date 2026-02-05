@@ -1,14 +1,13 @@
-<div class="main-layout">
-  <app-navbar></app-navbar>
+<div class="layout-container">
+  <app-navbar class="navbar-wrapper"></app-navbar>
 
-  <div class="content-wrapper">
-    <app-sidebar
-      [collapsed]="sidebarCollapsed"
-      (toggleCollapse)="toggleSidebar()">
-    </app-sidebar>
+  <div class="content-container">
+    <app-sidebar class="sidebar-wrapper"></app-sidebar>
 
-    <main class="main-content">
-      <router-outlet></router-outlet>
-    </main>
+    <div class="main-wrapper">
+      <main class="flex-1 overflow-hidden">
+        <router-outlet></router-outlet>
+      </main>
+    </div>
   </div>
 </div>

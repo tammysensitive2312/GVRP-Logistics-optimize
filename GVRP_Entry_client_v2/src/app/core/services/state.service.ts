@@ -1,12 +1,12 @@
 import { Injectable } from '@angular/core';
-import {OrderFilters} from '@core/models';
-import {BehaviorSubject, Observable} from 'rxjs';
-import {map} from 'rxjs/operators';
+import { OrderFilter } from '@core/models';
+import { BehaviorSubject, Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 
 interface AppState {
   selectedOrders: Set<number>;
   selectedVehicles: Set<number>;
-  filters: OrderFilters;
+  filters: OrderFilter;
   activeSolutionId: number | null;
   activeJobId: number | null;
 }
