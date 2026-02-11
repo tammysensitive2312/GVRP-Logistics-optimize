@@ -1,4 +1,4 @@
-@import '../../../assets/styles/variables';
+@import '../../../../../assets/styles/variables';
 
 .navbar {
   height: var(--navbar-height);
@@ -10,6 +10,7 @@
   position: sticky;
   top: 0;
   z-index: var(--z-navbar);
+  background: var(--white);
 }
 
 .navbar-left {

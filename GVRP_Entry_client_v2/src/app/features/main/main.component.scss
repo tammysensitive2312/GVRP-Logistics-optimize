@@ -1,22 +1,28 @@
 @import '../../../assets/styles/variables';
 
-.main-layout {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  overflow: hidden;
+:host {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
-.content-wrapper {
+.main-layout {
   display: flex;
-  height: calc(100vh - var(--navbar-height));
+  height: 100%;
   overflow: hidden;
-  width: 100%;
+  position: relative;
 }
 
 app-sidebar {
+  width: var(--sidebar-width); // 30%
   flex-shrink: 0;
-  z-index: 20;
+  z-index: var(--z-sidebar);
+  height: 100%;
+  transition: width 0.3s ease;
+
+  &.collapsed {
+    width: var(--sidebar-collapsed-width);
+  }
 }
 
 // Main content area (70%)
@@ -27,16 +33,24 @@ app-sidebar {
   overflow: hidden;
   height: 100%;
   background: var(--bg-light);
+  position: relative;
 }
 
 // Map Section (60vh default)
 .map-section {
-  height: 60vh;
-  min-height: 200px;
+  height: var(--map-height);
+  min-height: 5vh;
   max-height: 95vh;
   position: relative;
   flex-shrink: 0;
   background: white;
+  transition: height 0.1s ease-out;
+
+  app-map {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
 }
 
 // Resize Divider
@@ -70,23 +84,58 @@ app-sidebar {
   .resize-icon {
     color: var(--text-gray);
   }
+
+  &:hover .resize-icon {
+    color: var(--primary-blue);
+  }
 }
 
 // Table Section (40vh)
 .table-section {
   flex: 1;
-  min-height: 200px;
+  min-height: 0;
   overflow: hidden;
   display: flex;
   flex-direction: column;
   background: white;
   border-top: 2px solid var(--border-color);
+
+  app-orders-section {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
 }
 
-// Responsive
+@media (max-width: 1024px) {
+  app-sidebar {
+    width: 40%;
+  }
+}
+
 @media (max-width: 768px) {
-  .content-wrapper {
+  .main-layout {
     flex-direction: column;
+  }
+
+  app-sidebar {
+    position: fixed;
+    left: -100%;
+    top: var(--navbar-height);
+    width: 80%;
+    height: calc(100vh - var(--navbar-height));
+    z-index: var(--z-sidebar);
+    transition: left 0.3s;
+
+    &.show {
+      left: 0;
+    }
+  }
+
+  .main-content {
+    width: 100%;
   }
 
   .map-section {

@@ -6,3 +6,4 @@ export * from './order.model';
 export * from './vehicle.model';
 export * from './solution.model';
 export * from './job.model';
+export * from './stats.model'

@@ -1,4 +1,4 @@
-export type OrderStatus = 'SCHEDULED' | 'ON_ROUTE' | 'COMPLETED' | 'FAILED';
+export type OrderStatus = 'SCHEDULED' | 'UNASSIGNED' | 'COMPLETED' | 'FAILED';
 
 export interface OrderInputDTO {
   order_code: string;

@@ -1,20 +1,19 @@
 import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
-import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import {forkJoin, Subject} from 'rxjs';
+import {finalize, takeUntil} from 'rxjs/operators';
 
-import { DepotDTO, OrderDTO, VehicleDTO, SolutionDTO } from '@core/models';
-import { AuthService } from '@core/services/auth.service';
-import { StateService } from '@core/services/state.service';
-import {SidebarComponent} from '@layouts/sidebar/sidebar.component';
+import {DepotDTO, OrderDTO, VehicleDTO, SolutionDTO, Stats, OrderFilter} from '@core/models';
+import {SidebarComponent} from '@features/main/components/sidebar/sidebar.component';
 import {MapComponent} from '@shared/components/map/map.component';
 import {OrdersSectionComponent} from '@features/main/orders/orders-section/orders-section.component';
-import {NavbarComponent} from '@layouts/navbar/navbar.component';
+import {ToastService} from '@shared/services/toast.service';
+import {ApiService} from '@core/services/api.service';
 
-interface Stats {
-  scheduled: number;
-  completed: number;
-  total: number;
-  routes: number;
+interface PaginationState {
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
 }
 
 @Component({
@@ -24,8 +23,7 @@ interface Stats {
   imports: [
     SidebarComponent,
     MapComponent,
-    OrdersSectionComponent,
-    NavbarComponent
+    OrdersSectionComponent
   ],
   styleUrls: ['./main.component.scss']
 })
@@ -36,13 +34,24 @@ export class MainComponent implements OnInit, OnDestroy {
   orders: OrderDTO[] = [];
   solution: SolutionDTO | null = null;
 
+  isSidebarCollapsed = false;
+
   // Stats
   stats: Stats = {
     scheduled: 0,
     completed: 0,
     total: 0,
-    routes: 0
+    unassigned: 0
   };
+
+  orderPagination: PaginationState = {
+    page: 0,
+    size: 20,
+    totalElements: 0,
+    totalPages: 0
+  };
+
+  isLoading = true;
 
   // UI State
   highlightedOrderId: number | null = null;
@@ -52,16 +61,19 @@ export class MainComponent implements OnInit, OnDestroy {
   private startY = 0;
   private startHeight = 0;
 
+  private currentFilter: OrderFilter = {
+    date: new Date().toISOString().split('T')[0]
+  };
+
   private destroy$ = new Subject<void>();
 
   constructor(
-    private authService: AuthService,
-    private stateService: StateService
+    private apiService: ApiService,
+    private toast: ToastService
   ) {}
 
   ngOnInit(): void {
     this.loadInitialData();
-    this.subscribeToState();
   }
 
   ngOnDestroy(): void {
@@ -70,13 +82,63 @@ export class MainComponent implements OnInit, OnDestroy {
   }
 
   private loadInitialData(): void {
-    // TODO: Load from API
-    console.log('Loading initial data...');
+    this.isLoading = true;
+
+    forkJoin({
+      vehicles: this.apiService.getVehicles(),
+      depots: this.apiService.getDepots(),
+      ordersResponse: this.apiService.getOrders(
+        this.currentFilter,
+        this.orderPagination.page,
+        this.orderPagination.size
+      )
+    })
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => this.isLoading = false)
+      )
+      .subscribe({
+        next: (response) => {
+          this.vehicles = response.vehicles;
+          this.depots = response.depots;
+          const orderData = response.ordersResponse;
+          this.orders = orderData.content || [];
+          this.orderPagination = {
+            ...this.orderPagination,
+            totalElements: orderData.total_elements,
+            totalPages: orderData.total_pages
+          };
+          this.calculateStats();
+
+          console.log('Data loaded. Stats calculated:', this.stats);
+        },
+        error: (err) => {
+          console.error('Error loading data', err);
+          this.toast.error('Không thể tải dữ liệu');
+        }
+      });
   }
 
-  private subscribeToState(): void {
-    // Subscribe to highlighted order
-    // TODO
+  private calculateStats(): void {
+    if (!this.orders) return;
+
+    const total = this.orders.length;
+    const scheduled = this.orders.filter(o => o.status === 'SCHEDULED').length;
+    const completed = this.orders.filter(o => o.status === 'COMPLETED').length;
+    const unAssigned = this.orders.filter(o => o.status === 'UNASSIGNED').length;
+
+
+    this.stats = {
+      total: total,
+      scheduled: scheduled,
+      completed: completed,
+      unassigned: unAssigned
+    };
+  }
+
+  onOrderUpdated(updatedOrders: OrderDTO[]): void {
+    this.orders = updatedOrders;
+    this.calculateStats();
   }
 
   // Resize handlers
@@ -124,11 +186,15 @@ export class MainComponent implements OnInit, OnDestroy {
 
   // Event handlers
   onSidebarToggle(): void {
-    // Handle sidebar collapse
+    this.isSidebarCollapsed = !this.isSidebarCollapsed;;
+
+    setTimeout(() => {
+      window.dispatchEvent(new Event('resize'))
+    })
   }
 
   onVehicleSelectionChange(selectedIds: number[]): void {
-    // TODO
+    this.toast.success(`There is ${selectedIds.length} vehicles selected`, 1000)
   }
 
   onOrderSelectionChange(selectedIds: number[]): void {

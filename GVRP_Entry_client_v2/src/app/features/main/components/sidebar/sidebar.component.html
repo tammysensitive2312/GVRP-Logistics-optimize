@@ -1,0 +1,119 @@
+<aside class="sidebar" [class.collapsed]="collapsed">
+
+  <div class="stats-section">
+    <h3 class="section-title" *ngIf="!collapsed">📊 TODAY'S STATS</h3>
+
+    <div class="stats-grid">
+      <div class="stat-card" title="Scheduled" (click)="onStatClick('scheduled')">
+        <div class="stat-number">{{ stats.scheduled }}</div>
+        <div class="stat-label" *ngIf="!collapsed">Scheduled</div>
+      </div>
+
+      <div class="stat-card" title="Completed" (click)="onStatClick('completed')">
+        <div class="stat-number">{{ stats.completed }}</div>
+        <div class="stat-label" *ngIf="!collapsed">Completed</div>
+      </div>
+
+      <div class="stat-card" title="Total" (click)="onStatClick('total')">
+        <div class="stat-number">{{ stats.total }}</div>
+        <div class="stat-label" *ngIf="!collapsed">Total</div>
+      </div>
+
+      <div class="stat-card" title="Routes" (click)="onStatClick('routes')">
+        <div class="stat-number">{{ stats.unassigned }}</div>
+        <div class="stat-label" *ngIf="!collapsed">Routes</div>
+      </div>
+    </div>
+  </div>
+
+  <mat-divider class="divider"></mat-divider>
+
+  <div class="sidebar-section">
+    <div class="section-header" (click)="toggleSection('depots')" title="Toggle Depots">
+      <h3 class="section-title" *ngIf="!collapsed">
+        📍 DEPOTS (<span>{{ depots.length }}</span>)
+      </h3>
+      <span *ngIf="collapsed" class="collapsed-icon">📍</span>
+
+      <span class="toggle-icon"
+            *ngIf="!collapsed"
+            [class.rotated]="!isSectionExpanded('depots')">
+        ▼
+      </span>
+    </div>
+
+    <div class="section-content"
+         [class.expanded]="isSectionExpanded('depots')"
+         *ngIf="!collapsed">
+
+      <div class="compact-list" id="depots-list">
+        <div *ngIf="depots.length === 0" class="empty-message">No depots</div>
+
+        <div *ngFor="let depot of depots"
+             class="depot-item-compact"
+             [title]="depot.address"
+             (click)="onDepotClick(depot)">
+          <span>📍 {{ depot.name }}</span>
+          <span style="font-size: 10px; opacity: 0.5">➜</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="section-header" (click)="toggleSection('vehicles')" title="Toggle Vehicles">
+      <h3 class="section-title" *ngIf="!collapsed">
+        🚚 VEHICLES (<span>{{ vehicles.length }}</span>)
+      </h3>
+      <span *ngIf="collapsed" class="collapsed-icon">🚚</span>
+
+      <span class="toggle-icon"
+            *ngIf="!collapsed"
+            [class.rotated]="!isSectionExpanded('vehicles')">
+        ▼
+      </span>
+    </div>
+
+    <div class="section-content"
+         [class.expanded]="isSectionExpanded('vehicles')"
+         *ngIf="!collapsed">
+
+      <div class="bulk-actions" *ngIf="vehicles.length > 0" style="display: flex; gap: 8px; margin-bottom: 12px;">
+        <button class="btn-tiny" (click)="selectAllVehicles()">☑️ Select All </button>
+        <button class="btn-tiny" (click)="deselectAllVehicles()">❌ Deselect All</button>
+      </div>
+
+      <div class="compact-list" id="vehicles-list">
+        <div *ngIf="vehicles.length === 0" class="empty-message">No vehicles</div>
+
+        <div *ngFor="let vehicle of vehicles" class="vehicle-item-compact">
+          <div style="display:flex; align-items:center; flex: 1;">
+
+            <input
+              #chk
+              type="checkbox"
+              [id]="'vehicle-' + vehicle.id"
+              [checked]="isVehicleSelected(vehicle.id)"
+              (change)="onVehicleToggle(vehicle.id, chk.checked)"
+              style="margin-right: 8px;"
+            />
+
+            <span class="status-dot"
+                  [class.available]="vehicle.status === 'AVAILABLE'"
+                  [class.in-use]="vehicle.status !== 'AVAILABLE'">
+            </span>
+            <span class="vehicle-plate">{{ vehicle.vehicle_license_plate }}</span>
+          </div>
+          <div style="font-size: 11px; color: #666">
+            {{ vehicle.vehicle_type_name }}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <button class="btn-collapse" (click)="onToggleCollapse()">
+    {{ collapsed ? '►' : '◄ Hide Sidebar' }}
+  </button>
+
+</aside>

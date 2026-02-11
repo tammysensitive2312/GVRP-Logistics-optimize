@@ -1,15 +1,8 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
-import { DepotDTO, VehicleDTO } from '@core/models';
-import {MatCheckboxModule} from '@angular/material/checkbox';
-import {MatDividerModule} from '@angular/material/divider';
-import {NgForOf, NgIf} from '@angular/common';
-
-interface Stats {
-  scheduled: number;
-  completed: number;
-  total: number;
-  routes: number;
-}
+import {Component, Input, Output, EventEmitter, HostBinding} from '@angular/core';
+import { DepotDTO, VehicleDTO, Stats } from '@core/models';
+import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatDividerModule } from '@angular/material/divider';
+import { NgFor, NgIf } from '@angular/common';
 
 @Component({
   selector: 'app-sidebar',
@@ -19,19 +12,22 @@ interface Stats {
     MatCheckboxModule,
     MatDividerModule,
     NgIf,
-    NgForOf
+    NgFor
   ],
   styleUrls: ['./sidebar.component.scss']
 })
 export class SidebarComponent {
   @Input() depots: DepotDTO[] = [];
   @Input() vehicles: VehicleDTO[] = [];
-  @Input() stats: Stats = { scheduled: 0, completed: 0, total: 0, routes: 0 };
-  @Input() collapsed = false;
+  @Input() stats: Stats = { scheduled: 0, completed: 0, total: 0, unassigned: 0 };
+  @Input()
+  @HostBinding('class.collapsed')
+  collapsed = false;
 
   @Output() toggleCollapse = new EventEmitter<void>();
   @Output() vehicleSelectionChange = new EventEmitter<number[]>();
   @Output() depotClick = new EventEmitter<DepotDTO>();
+  @Output() filterStatusChange = new EventEmitter<string>();
 
   expandedSections = new Set<string>(['depots', 'vehicles']);
   selectedVehicleIds = new Set<number>();
@@ -48,6 +44,10 @@ export class SidebarComponent {
     }
   }
 
+  isSectionExpanded(section: string): boolean {
+    return this.expandedSections.has(section);
+  }
+
   onDepotClick(depot: DepotDTO): void {
     this.depotClick.emit(depot);
   }
@@ -62,13 +62,22 @@ export class SidebarComponent {
   }
 
   selectAllVehicles(): void {
+    console.log('1. Button Select All clicked');
+    console.log('Current vehicles:', this.vehicles);
+
+    if (!this.vehicles || this.vehicles.length === 0) {
+      console.warn('Vehicles list is empty!');
+      return;
+    }
+
     this.vehicles.forEach(v => this.selectedVehicleIds.add(v.id));
+    console.log('2. IDs selected:', this.selectedVehicleIds);
     this.emitSelection();
   }
 
   deselectAllVehicles(): void {
     this.selectedVehicleIds.clear();
-    this.emitSelection();
+    // this.emitSelection();
   }
 
   isVehicleSelected(vehicleId: number): boolean {
@@ -76,8 +85,7 @@ export class SidebarComponent {
   }
 
   onStatClick(type: string): void {
-    // TODO: Filter orders by status
-    console.log('Stat clicked:', type);
+    this.filterStatusChange.emit(type);
   }
 
   private emitSelection(): void {

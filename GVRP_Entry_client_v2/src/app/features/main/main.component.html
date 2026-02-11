@@ -1,44 +1,38 @@
 <div class="main-layout">
-  <!-- Top Navbar -->
-  <app-navbar></app-navbar>
+  <app-sidebar
+    [depots]="depots"
+    [vehicles]="vehicles"
+    [stats]="stats"
+    [collapsed]="isSidebarCollapsed"
+    (toggleCollapse)="onSidebarToggle()"
+    (vehicleSelectionChange)="onVehicleSelectionChange($event)">
+  </app-sidebar>
 
-  <!-- Content Wrapper (Sidebar + Main) -->
-  <div class="content-wrapper">
-    <!-- Left Sidebar (30%) -->
-    <app-sidebar
-      [depots]="depots"
-      [vehicles]="vehicles"
-      [stats]="stats"
-      (toggleCollapse)="onSidebarToggle()"
-      (vehicleSelectionChange)="onVehicleSelectionChange($event)">
-    </app-sidebar>
+  <!-- Main Content Area (70%) -->
+  <main class="main-content">
+    <!-- Map Section (60vh) -->
+    <div class="map-section">
+      <app-map
+        [depots]="depots"
+        [orders]="orders"
+        [solution]="solution"
+        [highlightedOrderId]="highlightedOrderId"
+        (orderClicked)="onOrderClicked($event)">
+      </app-map>
+    </div>
 
-    <!-- Main Content Area (70%) -->
-    <main class="main-content">
-      <!-- Map Section (60vh) -->
-      <div class="map-section">
-        <app-map
-          [depots]="depots"
-          [orders]="orders"
-          [solution]="solution"
-          [highlightedOrderId]="highlightedOrderId"
-          (orderClicked)="onOrderClicked($event)">
-        </app-map>
+    <!-- Resize Divider -->
+    <div class="resize-divider"
+         (mousedown)="onResizeStart($event)">
+      <div class="resize-handle">
+        <span class="resize-icon">⋮</span>
       </div>
+    </div>
 
-      <!-- Resize Divider -->
-      <div class="resize-divider"
-           (mousedown)="onResizeStart($event)">
-        <div class="resize-handle">
-          <span class="resize-icon">⋮</span>
-        </div>
-      </div>
-
-      <!-- Table Section (40vh) -->
-      <div class="table-section">
-        <app-orders-section>
-        </app-orders-section>
-      </div>
-    </main>
-  </div>
+    <!-- Table Section (40vh) -->
+    <div class="table-section">
+      <app-orders-section>
+      </app-orders-section>
+    </div>
+  </main>
 </div>
