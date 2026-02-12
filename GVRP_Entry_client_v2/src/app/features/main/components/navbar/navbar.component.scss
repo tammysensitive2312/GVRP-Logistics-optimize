@@ -45,7 +45,10 @@
   }
 
   .brand-info {
+    display: flex;
+    flex-direction: column;
     margin-left: 8px;
+    line-height: 1.2;
 
     .branch-badge {
       font-size: 11px;
@@ -120,13 +123,13 @@
   align-items: center;
   gap: var(--space-sm);
   color: var(--text-dark);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-lg);
   padding: var(--space-sm) var(--space-md);
 
   mat-icon {
-    font-size: 18px;
-    width: 18px;
-    height: 18px;
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
   }
 }
 

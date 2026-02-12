@@ -1,22 +1,15 @@
-<!-- ============================================
-     NAVBAR COMPONENT - V2 (Angular)
-     Migrated from V1 index.html navbar section
-     ============================================ -->
-
 <mat-toolbar class="navbar">
-  <!-- Left Section -->
   <div class="navbar-left">
-    <!-- Menu Button (for mobile sidebar toggle) -->
-    <button mat-icon-button
-            (click)="onMenuClick()"
-            [attr.aria-label]="'Toggle sidebar'">
-      <mat-icon>menu</mat-icon>
-    </button>
+<!--    <button mat-icon-button-->
+<!--            (click)="onMenuClick()"-->
+<!--            [attr.aria-label]="'Toggle sidebar'">-->
+<!--      <mat-icon>menu</mat-icon>-->
+<!--    </button>-->
 
     <!-- Brand Logo & Name -->
     <div class="brand">
       <span class="brand-icon">📦</span>
-      <div class="brand-info" style="display: flex; flex-direction: column; line-height: 1.2;">
+      <div class="brand-info">
         <span class="brand-name">VRP System™</span>
 
         <span *ngIf="branchName" class="branch-badge">

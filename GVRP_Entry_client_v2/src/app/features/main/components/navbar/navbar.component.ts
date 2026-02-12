@@ -28,7 +28,7 @@ export class NavbarComponent {
   currentUser: User | null = null;
   branchName: string = '';
 
-  @Output() menuClick = new EventEmitter<void>();
+  // @Output() menuClick = new EventEmitter<void>();
   @Output() tabChange = new EventEmitter<string>();
 
   constructor(
@@ -38,12 +38,13 @@ export class NavbarComponent {
 
   ngOnInit(): void {
     this.loadCurrentUser();
+    this.loadBranchName()
     this.setActiveTabFromRoute();
   }
 
-  onMenuClick(): void {
-    this.menuClick.emit();
-  }
+  // onMenuClick(): void {
+  //   this.menuClick.emit();
+  // }
 
   onTabClick(tab: string): void {
     this.activeTab = tab;
