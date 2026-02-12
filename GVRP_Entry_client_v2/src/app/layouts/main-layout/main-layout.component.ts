@@ -12,4 +12,14 @@ import {NavbarComponent} from '@features/main/components/navbar/navbar.component
   templateUrl: './main-layout.component.html',
   styleUrl: './main-layout.component.scss'
 })
-export class MainLayoutComponent {}
+export class MainLayoutComponent {
+  onMenuClick() {
+    // Handle sidebar toggle for mobile
+    // TODO
+  }
+
+  onTabChange(tab: string) {
+    console.log('Active tab:', tab);
+    // Handle tab navigation if needed
+  }
+}

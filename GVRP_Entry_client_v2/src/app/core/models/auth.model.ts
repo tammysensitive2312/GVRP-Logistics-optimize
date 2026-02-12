@@ -12,6 +12,7 @@ export interface AuthResponse {
   username: string;
   role: string;
   branch_id: number;
+  branch_name: string;
 }
 
 export interface SessionData {

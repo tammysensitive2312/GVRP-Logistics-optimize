@@ -15,6 +15,7 @@ export interface AuthSession {
     role: string;
   };
   branchId: number;
+  branchName: string,
   rememberMe: boolean;
   loginTime: number; // timestamp
 }
@@ -110,13 +111,23 @@ export class StorageService {
     }
   }
 
-  // ============================================
-  // Authentication Session Management
-  // ============================================
+  saveLoginSession(apiResponse: any, rememberMe: boolean): void {
+    const session: AuthSession = {
+      token: apiResponse.access_token,
+      user: {
+        id: apiResponse.user_id,
+        username: apiResponse.username,
+        role: apiResponse.role
+      },
+      branchId: apiResponse.branch_id,
+      branchName: apiResponse.branch_name,
+      rememberMe: rememberMe,
+      loginTime: Date.now()
+    };
 
-  /**
-   * Save complete auth session (token + user + branch)
-   */
+    this.saveAuthSession(session);
+  }
+
   saveAuthSession(session: AuthSession): void {
     const storage = session.rememberMe ? localStorage : sessionStorage;
 
@@ -127,6 +138,11 @@ export class StorageService {
     };
 
     storage.setItem(this.KEYS.AUTH_SESSION, JSON.stringify(sessionWithTimestamp));
+  }
+
+  getBranchName(): string {
+    const session = this.getAuthSession();
+    return session?.branchName || '';
   }
 
   /**

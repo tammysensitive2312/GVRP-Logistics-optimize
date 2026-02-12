@@ -142,6 +142,7 @@ export class AuthService {
         role: response.role
       },
       branchId: response.branch_id,
+      branchName: response.branch_name,
       rememberMe,
       loginTime: Date.now()
     };

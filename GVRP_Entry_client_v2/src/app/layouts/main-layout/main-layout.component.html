@@ -1,5 +1,9 @@
 <div class="layout-container">
-  <app-navbar class="navbar-wrapper"></app-navbar>
+  <app-navbar
+    class="navbar-wrapper"
+    (menuClick)="onMenuClick()"
+    (tabChange)="onTabChange($event)">
+  </app-navbar>
 
   <div class="content-container">
     <router-outlet></router-outlet>

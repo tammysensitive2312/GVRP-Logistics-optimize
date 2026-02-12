@@ -1,53 +1,85 @@
-<mat-toolbar color="primary" class="navbar">
+<!-- ============================================
+     NAVBAR COMPONENT - V2 (Angular)
+     Migrated from V1 index.html navbar section
+     ============================================ -->
+
+<mat-toolbar class="navbar">
+  <!-- Left Section -->
   <div class="navbar-left">
-    <button mat-icon-button>
+    <!-- Menu Button (for mobile sidebar toggle) -->
+    <button mat-icon-button
+            (click)="onMenuClick()"
+            [attr.aria-label]="'Toggle sidebar'">
       <mat-icon>menu</mat-icon>
     </button>
+
+    <!-- Brand Logo & Name -->
     <div class="brand">
-      <span class="brand-icon">🚚</span>
-      <span class="brand-name">VRP System™</span>
+      <span class="brand-icon">📦</span>
+      <div class="brand-info" style="display: flex; flex-direction: column; line-height: 1.2;">
+        <span class="brand-name">VRP System™</span>
+
+        <span *ngIf="branchName" class="branch-badge">
+                {{ branchName }}
+            </span>
+      </div>
     </div>
   </div>
 
-  <!-- Center Menu -->
+  <!-- Center Menu (Navigation Tabs) -->
   <div class="navbar-center">
     <button mat-button
             class="nav-menu-item"
             [class.active]="activeTab === 'dashboard'"
-            >
+            (click)="onTabClick('dashboard')">
       Dashboard
     </button>
+
     <button mat-button
             class="nav-menu-item"
             [class.active]="activeTab === 'analysis'"
-    >
+            (click)="onTabClick('analysis')">
       Analysis
     </button>
+
     <button mat-button
             class="nav-menu-item"
             [class.active]="activeTab === 'history'"
-            >
+            (click)="onTabClick('history')">
       History
     </button>
   </div>
 
-  <!-- Right Side -->
+  <!-- Right Section -->
   <div class="navbar-right">
-<!--    <span class="user-info" *ngIf="currentUser">-->
-<!--      <mat-icon>person</mat-icon>-->
-<!--      {{ currentUser.username }}-->
-<!--    </span>-->
+    <!-- User Info (Optional - show username) -->
+    <span class="user-info" *ngIf="currentUser">
+      <mat-icon>person</mat-icon>
+      <span>{{ currentUser.username || 'Admin' }}</span>
+    </span>
 
-    <button mat-icon-button [matMenuTriggerFor]="userMenu">
+    <!-- User Menu Dropdown -->
+    <button mat-icon-button
+            [matMenuTriggerFor]="userMenu"
+            [attr.aria-label]="'Open user menu'">
       <mat-icon>more_vert</mat-icon>
     </button>
 
+    <!-- Dropdown Menu -->
     <mat-menu #userMenu="matMenu">
-      <button mat-menu-item>
-        <mat-icon>settings</mat-icon>
-        <span>Settings</span>
+      <button mat-menu-item (click)="onProfileClick()">
+        <mat-icon>person</mat-icon>
+        <span>Profile</span>
       </button>
-      <button mat-menu-item >
+
+      <button mat-menu-item (click)="onAdminClick()">
+        <mat-icon>settings</mat-icon>
+        <span>Administrator</span>
+      </button>
+
+      <mat-divider></mat-divider>
+
+      <button mat-menu-item (click)="onLogout()">
         <mat-icon>exit_to_app</mat-icon>
         <span>Logout</span>
       </button>

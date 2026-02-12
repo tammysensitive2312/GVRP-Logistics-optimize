@@ -1,16 +1,27 @@
 @import '../../../../../assets/styles/variables';
 
-.navbar {
+:host {
+  display: block;
+  width: 100%;
   height: var(--navbar-height);
+}
+
+.navbar {
+  height: var(--navbar-height) !important;
+  background: var(--white) !important;
+  color: var(--text-dark) !important;
+  border-bottom: 1px solid var(--border-color);
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 0 var(--space-xl);
-  box-shadow: var(--shadow-sm);
+  justify-content: space-between;
+  padding: 0 var(--space-xl) !important;
+  box-shadow: var(--shadow-sm) !important;
   position: sticky;
   top: 0;
   z-index: var(--z-navbar);
-  background: var(--white);
+
+  min-height: var(--navbar-height) !important;
+  max-height: var(--navbar-height) !important;
 }
 
 .navbar-left {
@@ -23,39 +34,78 @@
   display: flex;
   align-items: center;
   gap: var(--space-sm);
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  color: var(--text-dark);
+  user-select: none;
 
   .brand-icon {
     font-size: var(--font-size-2xl);
+    line-height: 1;
   }
 
-  .brand-name {
-    font-size: var(--font-size-lg);
-    font-weight: 700;
-    color: white;
+  .brand-info {
+    margin-left: 8px;
+
+    .branch-badge {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--primary-blue);
+      background: #e3f2fd;
+      padding: 2px 6px;
+      border-radius: 4px;
+      width: fit-content;
+    }
   }
 }
 
 .navbar-center {
   display: flex;
   gap: var(--space-sm);
+  flex: 1;
+  justify-content: center;
+  max-width: 600px;
 }
 
 .nav-menu-item {
-  color: rgba(255, 255, 255, 0.7);
-  font-size: var(--font-size-base);
-  font-weight: 500;
+  background: transparent;
+  border: none;
+  padding: 10px 20px;
   border-radius: var(--radius-md);
+  cursor: pointer;
+  font-size: var(--font-size-base) !important;
+  font-weight: 500 !important;
+  color: var(--text-gray) !important;
   transition: all 0.2s;
+  line-height: var(--navbar-height);
+
+  // Override Material button styles
+  &.mat-mdc-button {
+    min-width: auto;
+    padding: 10px 20px !important;
+
+    .mdc-button__label {
+      color: var(--text-gray);
+    }
+  }
 
   &:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: white;
+    background: var(--bg-light) !important;
+    color: var(--text-dark) !important;
+
+    .mdc-button__label {
+      color: var(--text-dark);
+    }
   }
 
   &.active {
-    background: rgba(255, 255, 255, 0.2);
-    color: white;
-    font-weight: 600;
+    background: var(--primary-blue) !important;
+    color: var(--white) !important;
+    font-weight: 600 !important;
+
+    .mdc-button__label {
+      color: var(--white);
+    }
   }
 }
 
@@ -69,12 +119,69 @@
   display: flex;
   align-items: center;
   gap: var(--space-sm);
-  color: white;
+  color: var(--text-dark);
   font-size: var(--font-size-sm);
+  padding: var(--space-sm) var(--space-md);
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+}
+
+::ng-deep .navbar {
+  .mat-mdc-icon-button {
+    color: var(--text-gray);
+
+    &:hover {
+      background: var(--bg-light);
+      color: var(--text-dark);
+    }
+  }
+}
+
+::ng-deep .mat-mdc-menu-panel {
+  min-width: 180px;
+  box-shadow: var(--shadow-lg);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+}
+
+::ng-deep .mat-mdc-menu-item {
+  font-size: var(--font-size-sm);
+  color: var(--text-dark);
+
+  &:hover {
+    background: var(--bg-light);
+  }
+
+  mat-icon {
+    margin-right: var(--space-sm);
+    color: var(--text-gray);
+  }
 }
 
 @media (max-width: 768px) {
+  .navbar {
+    padding: 0 var(--space-md) !important;
+  }
+
   .navbar-center {
+    display: none;
+  }
+
+  .brand-name {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .navbar-left {
+    gap: var(--space-sm);
+  }
+
+  .user-info span {
     display: none;
   }
 }
