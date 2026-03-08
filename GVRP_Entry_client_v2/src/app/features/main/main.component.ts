@@ -5,7 +5,7 @@ import {finalize, takeUntil} from 'rxjs/operators';
 import {DepotDTO, OrderDTO, VehicleDTO, SolutionDTO, Stats, OrderFilter} from '@core/models';
 import {SidebarComponent} from '@features/main/components/sidebar/sidebar.component';
 import {MapComponent} from '@shared/components/map/map.component';
-import {OrdersSectionComponent} from '@features/main/orders/orders-section/orders-section.component';
+import {OrdersSectionComponent} from '@features/main/orders/orders-section-view/orders-section.component';
 import {ToastService} from '@shared/services/toast.service';
 import {ApiService} from '@core/services/api.service';
 

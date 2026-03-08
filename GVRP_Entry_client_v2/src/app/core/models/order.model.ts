@@ -27,6 +27,6 @@ export interface OrderDTO extends OrderInputDTO {
 export interface OrderFilter {
   date: string;
   status?: string;
-  priority?: string;
+  priority?: number;
   search?: string;
 }

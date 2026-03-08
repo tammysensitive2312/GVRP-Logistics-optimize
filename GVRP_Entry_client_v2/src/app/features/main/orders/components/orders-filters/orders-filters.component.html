@@ -1,39 +1,65 @@
-<form [formGroup]="filterForm" class="flex flex-wrap items-center gap-4 p-4 bg-white rounded-lg shadow-sm mb-4">
+<form [formGroup]="filterForm" class="table-filters-row">
 
-  <mat-form-field appearance="outline" class="w-48">
-    <mat-label>Date</mat-label>
-    <input matInput type="date" formControlName="date">
-  </mat-form-field>
+  <!-- Date Filter -->
+  <div class="filter-group">
+    <mat-icon class="filter-icon">event</mat-icon>
+    <input type="date"
+           formControlName="date"
+           [max]="maxDate"
+           class="filter-input">
+  </div>
 
-  <mat-form-field appearance="outline" class="w-48">
-    <mat-label>Status</mat-label>
-    <mat-select formControlName="status">
-      <mat-option value="">All Statuses</mat-option>
-      <mat-option value="SCHEDULED">Scheduled</mat-option>
-      <mat-option value="ON_ROUTE">On Route</mat-option>
-      <mat-option value="COMPLETED">Completed</mat-option>
-      <mat-option value="FAILED">Failed</mat-option>
-    </mat-select>
-  </mat-form-field>
+  <!-- Status Filter -->
+  <div class="filter-group">
+    <label>Status:</label>
+    <select formControlName="status" class="filter-select">
+      <option value="">All</option>
+      <option value="UNASSIGNED">Unassigned</option>
+      <option value="SCHEDULED">Scheduled</option>
+      <option value="ON_ROUTE">On Route</option>
+      <option value="COMPLETED">Completed</option>
+      <option value="FAILED">Failed</option>
+    </select>
+  </div>
 
-  <mat-form-field appearance="outline" class="w-40">
-    <mat-label>Priority</mat-label>
-    <mat-select formControlName="priority">
-      <mat-option value="">All</mat-option>
-      <mat-option value="1">High (1)</mat-option>
-      <mat-option value="2">Medium (2)</mat-option>
-      <mat-option value="3">Low (3)</mat-option>
-    </mat-select>
-  </mat-form-field>
+  <div class="filter-spacer"></div>
 
-  <mat-form-field appearance="outline" class="flex-grow">
-    <mat-label>Search orders</mat-label>
-    <mat-icon matPrefix>search</mat-icon>
-    <input matInput formControlName="search" placeholder="Order code, customer, address...">
-  </mat-form-field>
+  <div class="filter-right-group">
 
-  <button mat-stroked-button color="warn" type="button" (click)="clearFilters()">
-    <mat-icon>clear</mat-icon>
-    Clear
-  </button>
+    <!-- Search Filter -->
+    <div class="filter-group search">
+      <mat-icon class="filter-icon">search</mat-icon>
+      <input type="text"
+             formControlName="search"
+             placeholder="Search orders..."
+             class="filter-input search-input">
+      <button mat-icon-button
+              *ngIf="filterForm.get('search')?.value"
+              (click)="clearSearch()"
+              type="button"
+              class="btn-clear-search">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+
+    <!-- Clear Button -->
+    <button mat-button
+            type="button"
+            (click)="clearFilters()"
+            [disabled]="!hasActiveFilters()"
+            class="btn-clear">
+      Clear
+    </button>
+
+    <!-- Refresh Button -->
+    <button mat-icon-button
+            type="button"
+            (click)="onRefresh()"
+            [matTooltip]="'Refresh data from server'"
+            class="btn-refresh">
+      <mat-icon>refresh</mat-icon>
+    </button>
+
+  </div>
+
 </form>

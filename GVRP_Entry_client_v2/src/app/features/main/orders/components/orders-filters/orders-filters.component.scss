@@ -1,0 +1,265 @@
+@import '../../../../../../assets/styles/variables';
+
+:host {
+  display: block;
+  width: 100%;
+}
+
+.table-filters-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm);
+  background: var(--white);
+  border-bottom: 1px solid var(--border-color);
+}
+
+// Spacer đẩy nhóm bên phải sang cuối
+.filter-spacer {
+  flex: 1;
+}
+
+// Nhóm bên phải: search + clear + refresh
+.filter-right-group {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: var(--bg-light);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  height: 36px;
+
+  .filter-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    color: var(--text-gray);
+  }
+
+  label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-dark);
+    margin: 0;
+    white-space: nowrap;
+  }
+
+  .filter-input {
+    border: none;
+    background: transparent;
+    outline: none;
+    font-size: 13px;
+    color: var(--text-dark);
+    padding: 0;
+    height: 24px;
+    min-width: 120px;
+
+    &::placeholder {
+      color: var(--text-light);
+    }
+
+    &:focus {
+      outline: none;
+    }
+  }
+
+  .filter-select {
+    border: none;
+    background: transparent;
+    outline: none;
+    font-size: 13px;
+    color: var(--text-dark);
+    padding: 0;
+    height: 24px;
+    min-width: 120px;
+    cursor: pointer;
+
+    &:focus {
+      outline: none;
+    }
+  }
+
+  &.search {
+    max-width: 280px;
+
+    .search-input {
+      flex: 1;
+      min-width: 180px;
+    }
+
+    .btn-clear-search {
+      width: 20px;
+      height: 20px;
+      padding: 0;
+      margin-left: 4px;
+
+      mat-icon {
+        font-size: 16px;
+        width: 16px;
+        height: 16px;
+      }
+    }
+  }
+
+  &:focus-within {
+    border-color: var(--primary-blue);
+    box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.1);
+  }
+}
+
+.btn-refresh {
+  width: 36px !important;
+  height: 36px !important;
+  border-radius: var(--radius-md) !important;
+  border: 1.5px solid var(--primary-blue) !important;
+  background: transparent;
+  transition: background 0.2s ease, box-shadow 0.2s ease;
+
+  // Fix wrapper position absolute của MDC
+  ::ng-deep .mat-mdc-button-persistent-ripple,
+  ::ng-deep .mat-mdc-focus-indicator {
+    border-radius: var(--radius-md) !important;
+  }
+
+  // Căn giữa icon trong button
+  ::ng-deep .mat-mdc-icon-button .mat-mdc-button-base,
+  &.mat-mdc-icon-button {
+    padding: 0 !important;
+  }
+
+  ::ng-deep svg,
+  ::ng-deep .mat-icon {
+    position: absolute !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    font-size: 20px !important;
+    width: 20px !important;
+    height: 20px !important;
+    line-height: 20px !important;
+    color: var(--primary-blue);
+    margin: 0 !important;
+  }
+
+  &:hover {
+    background: rgba(74, 144, 226, 0.08);
+    box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.15);
+  }
+}
+
+// Clear button: hover → xanh thay vì đỏ
+.btn-clear {
+  height: 36px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-gray);
+
+  &:hover:not([disabled]) {
+    color: var(--primary-blue);                       // ← đổi từ danger-red
+    background: rgba(74, 144, 226, 0.08);             // ← đổi từ rgba đỏ
+  }
+
+  &[disabled] {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+::ng-deep .table-filters-row {
+  .mat-mdc-button {
+    border-radius: var(--radius-md);
+  }
+
+  .mat-mdc-icon-button {
+    border-radius: var(--radius-md);
+  }
+}
+
+// Responsive
+@media (max-width: 1024px) {
+  .table-filters-row {
+    gap: 6px;
+    padding: 8px;
+  }
+
+  .filter-group {
+    padding: 4px 8px;
+
+    .filter-input,
+    .filter-select {
+      min-width: 100px;
+    }
+
+    &.search {
+      max-width: 220px;
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .table-filters-row {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .filter-spacer {
+    display: none;
+  }
+
+  .filter-right-group {
+    flex: 1 1 100%;
+    justify-content: flex-end;
+  }
+
+  .filter-group {
+    flex: 1;
+    min-width: 120px;
+
+    &.search {
+      flex: 1;
+      max-width: 100%;
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .table-filters-row {
+    padding: 6px;
+  }
+
+  .filter-group {
+    min-width: 0;
+
+    label {
+      display: none;
+    }
+
+    .filter-input,
+    .filter-select {
+      min-width: 80px;
+    }
+  }
+}
+
+// Entrance animation
+.table-filters-row {
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

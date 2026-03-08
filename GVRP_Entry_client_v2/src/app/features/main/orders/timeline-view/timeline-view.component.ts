@@ -1,4 +1,5 @@
-import { Component } from '@angular/core';
+import {Component, Input} from '@angular/core';
+import {SolutionDTO} from '@core/models';
 
 @Component({
   selector: 'app-timeline-view',
@@ -8,5 +9,6 @@ import { Component } from '@angular/core';
   styleUrl: './timeline-view.component.scss'
 })
 export class TimelineViewComponent {
+  @Input() solution!: SolutionDTO;
 
 }

@@ -1,111 +1,225 @@
-<div class="table-container bg-white rounded-lg shadow-sm overflow-hidden flex flex-col h-full">
+<div class="table-container">
 
-  <div class="overflow-auto flex-grow">
-    <table mat-table [dataSource]="dataSource" class="w-full">
+  <!-- Table with proper overflow -->
+  <div class="table-wrapper">
+    <table mat-table [dataSource]="dataSource" class="orders-table">
 
+      <!-- Select Column -->
       <ng-container matColumnDef="select">
-        <th mat-header-cell *matHeaderCellDef class="w-12">
-          <mat-checkbox (change)="$event ? toggleAllRows() : null"
-                        [checked]="selection.hasValue() && isAllSelected()"
-                        [indeterminate]="selection.hasValue() && !isAllSelected()"
-                        color="primary">
+        <th mat-header-cell *matHeaderCellDef>
+          <mat-checkbox
+            (change)="$event ? toggleAllRows() : null"
+            [checked]="selection.hasValue() && isAllSelected()"
+            [indeterminate]="selection.hasValue() && !isAllSelected()"
+            [color]="'primary'"
+            [aria-label]="'Select all orders'">
           </mat-checkbox>
         </th>
         <td mat-cell *matCellDef="let row">
-          <mat-checkbox (click)="$event.stopPropagation()"
-                        (change)="$event ? toggleRow(row) : null"
-                        [checked]="selection.isSelected(row)"
-                        color="primary">
+          <mat-checkbox
+            (click)="$event.stopPropagation()"
+            (change)="$event ? toggleRow(row) : null"
+            [checked]="selection.isSelected(row)"
+            [color]="'primary'"
+            [aria-label]="'Select order ' + row.order_code">
           </mat-checkbox>
         </td>
       </ng-container>
 
+      <!-- Order Code Column -->
       <ng-container matColumnDef="order_code">
-        <th mat-header-cell *matHeaderCellDef> Code </th>
-        <td mat-cell *matCellDef="let order"> <span class="font-medium text-blue-600">{{order.order_code}}</span> </td>
+        <th mat-header-cell *matHeaderCellDef>Order Code</th>
+        <td mat-cell *matCellDef="let order">
+          <span class="order-code">{{ order.order_code }}</span>
+        </td>
       </ng-container>
 
+      <!-- Customer Name Column -->
       <ng-container matColumnDef="customer_name">
-        <th mat-header-cell *matHeaderCellDef> Customer </th>
-        <td mat-cell *matCellDef="let order"> {{order.customer_name}} </td>
-      </ng-container>
-
-      <ng-container matColumnDef="address">
-        <th mat-header-cell *matHeaderCellDef> Address </th>
-        <td mat-cell *matCellDef="let order" class="max-w-[200px] truncate" [matTooltip]="order.address">
-          {{order.address}}
-        </td>
-      </ng-container>
-
-      <ng-container matColumnDef="priority">
-        <th mat-header-cell *matHeaderCellDef> Priority </th>
-        <td mat-cell *matCellDef="let order"> {{order.priority || '—'}} </td>
-      </ng-container>
-
-      <ng-container matColumnDef="time_window">
-        <th mat-header-cell *matHeaderCellDef> Time Window </th>
+        <th mat-header-cell *matHeaderCellDef>Customer</th>
         <td mat-cell *matCellDef="let order">
-          {{ order.time_window_start ? (order.time_window_start | slice:0:5) + ' - ' + (order.time_window_end | slice:0:5) : '—' }}
-        </td>
-      </ng-container>
-
-      <ng-container matColumnDef="demand">
-        <th mat-header-cell *matHeaderCellDef> Demand </th>
-        <td mat-cell *matCellDef="let order"> {{order.demand}} kg </td>
-      </ng-container>
-
-      <ng-container matColumnDef="service_time">
-        <th mat-header-cell *matHeaderCellDef> Service Time </th>
-        <td mat-cell *matCellDef="let order"> {{order.service_time}} min </td>
-      </ng-container>
-
-      <ng-container matColumnDef="notes">
-        <th mat-header-cell *matHeaderCellDef> Notes </th>
-        <td mat-cell *matCellDef="let order" class="max-w-[150px] truncate text-gray-500" [matTooltip]="order.delivery_notes">
-          {{order.delivery_notes || '—'}}
-        </td>
-      </ng-container>
-
-      <ng-container matColumnDef="status">
-        <th mat-header-cell *matHeaderCellDef> Status </th>
-        <td mat-cell *matCellDef="let order">
-          <div class="flex items-center gap-1 font-medium" [ngClass]="getStatusColor(order.status)">
-            <mat-icon class="text-[18px] leading-[18px] h-[18px] w-[18px]">{{getStatusIcon(order.status)}}</mat-icon>
-            {{order.status}}
+          <div class="customer-info">
+            <span>{{ order.customer_name }}</span>
           </div>
         </td>
       </ng-container>
 
-      <ng-container matColumnDef="actions">
-        <th mat-header-cell *matHeaderCellDef> Actions </th>
+      <!-- Address Column -->
+      <ng-container matColumnDef="address">
+        <th mat-header-cell *matHeaderCellDef>Address</th>
         <td mat-cell *matCellDef="let order">
-          <button mat-icon-button color="primary" matTooltip="Edit Order" (click)="editOrder.emit(order.id)">
+          <div class="address-cell" [matTooltip]="order.address">
+            <mat-icon class="location-icon">place</mat-icon>
+            <span class="truncate">{{ order.address }}</span>
+          </div>
+        </td>
+      </ng-container>
+
+      <!-- Priority Column -->
+      <ng-container matColumnDef="priority">
+        <th mat-header-cell *matHeaderCellDef>Priority</th>
+        <td mat-cell *matCellDef="let order">
+          <span class="priority-badge" [ngClass]="getPriorityClass(order.priority)">
+            {{ order.priority || '—' }}
+          </span>
+        </td>
+      </ng-container>
+
+      <!-- Time Window Column -->
+      <ng-container matColumnDef="time_window">
+        <th mat-header-cell *matHeaderCellDef>Time Window</th>
+        <td mat-cell *matCellDef="let order">
+          <div class="time-window" *ngIf="order.time_window_start; else noTimeWindow">
+            <mat-icon class="time-icon">schedule</mat-icon>
+            <span>{{ order.time_window_start | slice:0:5 }} - {{ order.time_window_end | slice:0:5 }}</span>
+          </div>
+          <ng-template #noTimeWindow>
+            <span class="no-data">—</span>
+          </ng-template>
+        </td>
+      </ng-container>
+
+      <!-- Demand Column -->
+      <ng-container matColumnDef="demand">
+        <th mat-header-cell *matHeaderCellDef>Demand</th>
+        <td mat-cell *matCellDef="let order" class="text-right">
+          <span class="demand-value">{{ order.demand }} <small>kg</small></span>
+        </td>
+      </ng-container>
+
+      <!-- Service Time Column -->
+      <ng-container matColumnDef="service_time">
+        <th mat-header-cell *matHeaderCellDef>Service Time</th>
+        <td mat-cell *matCellDef="let order">
+          <span class="service-time">{{ order.service_time }} <small>min</small></span>
+        </td>
+      </ng-container>
+
+      <!-- Notes Column -->
+      <ng-container matColumnDef="notes">
+        <th mat-header-cell *matHeaderCellDef>Notes</th>
+        <td mat-cell *matCellDef="let order">
+          <div class="notes-cell" [matTooltip]="order.delivery_notes || ''">
+            <mat-icon *ngIf="order.delivery_notes" class="notes-icon">note</mat-icon>
+            <span class="truncate">{{ order.delivery_notes || '—' }}</span>
+          </div>
+        </td>
+      </ng-container>
+
+      <!-- Status Column -->
+      <ng-container matColumnDef="status">
+        <th mat-header-cell *matHeaderCellDef>Status</th>
+        <td mat-cell *matCellDef="let order">
+          <div class="status-badge" [ngClass]="'status-' + order.status.toLowerCase()">
+            <mat-icon>{{ getStatusIcon(order.status) }}</mat-icon>
+            <span>{{ order.status }}</span>
+          </div>
+        </td>
+      </ng-container>
+
+      <!-- Actions Column -->
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef>Actions</th>
+        <td mat-cell *matCellDef="let order">
+          <button mat-icon-button
+                  color="primary"
+                  [matTooltip]="'Edit Order'"
+                  (click)="editOrder.emit(order.id); $event.stopPropagation()">
             <mat-icon>edit</mat-icon>
           </button>
         </td>
       </ng-container>
 
-      <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true" class="bg-gray-50"></tr>
-      <tr mat-row *matRowDef="let row; columns: displayedColumns;"
-          class="hover:bg-blue-50 transition-colors"
-          [ngClass]="{'bg-blue-50': selection.isSelected(row)}">
+      <!-- Header & Row Definitions -->
+      <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
+      <tr mat-row
+          *matRowDef="let row; columns: displayedColumns;"
+          [class.selected]="selection.isSelected(row)">
       </tr>
 
-      <tr class="mat-row" *matNoDataRow>
-        <td class="mat-cell p-8 text-center text-gray-500" [attr.colspan]="displayedColumns.length">
-          <mat-icon class="text-4xl mb-2">inbox</mat-icon>
-          <p class="text-lg font-medium">No orders found on the selected date</p>
+      <!-- No Data Row -->
+      <tr class="mat-mdc-no-data-row" *matNoDataRow>
+        <td class="mat-mdc-cell" [attr.colspan]="displayedColumns.length">
+          <div class="no-data-content">
+            <mat-icon>inbox</mat-icon>
+            <p>No orders found</p>
+            <small>Try adjusting your filters</small>
+          </div>
         </td>
       </tr>
     </table>
   </div>
 
-  <mat-paginator
-    [length]="totalElements"
-    [pageSize]="pageSize"
-    [pageIndex]="currentPage"
-    [pageSizeOptions]="[5, 10, 20, 50]"
-    (page)="pageChange.emit($event)"
-    showFirstLastButtons>
-  </mat-paginator>
+  <!-- ✅ Custom Paginator -->
+  <div class="custom-paginator">
+
+    <!-- Left: Selection & total info -->
+    <div class="paginator-left">
+      <span class="paginator-info">
+        Selected: <strong>{{ selection.selected.length }}</strong> orders
+      </span>
+      <span class="paginator-divider">|</span>
+      <span class="paginator-info">
+        Showing <strong>{{ getShowingFrom() }}–{{ getShowingTo() }}</strong> of <strong>{{ totalElements }}</strong> orders
+      </span>
+    </div>
+
+    <!-- Center: Page size selector -->
+    <div class="paginator-center">
+      <span class="paginator-label">Show:</span>
+      <select class="paginator-select"
+              [value]="pageSize"
+              (change)="onPageSizeChange($event)">
+        <option *ngFor="let size of pageSizeOptions" [value]="size">{{ size }}</option>
+      </select>
+      <span class="paginator-label">per page</span>
+    </div>
+
+    <!-- Right: Navigation -->
+    <div class="paginator-right">
+      <!-- First page -->
+      <button class="page-btn"
+              [disabled]="currentPage === 0"
+              (click)="goToPage(0)"
+              title="First page">
+        «
+      </button>
+      <!-- Prev page -->
+      <button class="page-btn"
+              [disabled]="currentPage === 0"
+              (click)="goToPage(currentPage - 1)"
+              title="Previous page">
+        ‹
+      </button>
+
+      <!-- Page numbers -->
+      <ng-container *ngFor="let page of getPageNumbers()">
+        <button class="page-btn"
+                [class.active]="page === currentPage"
+                (click)="goToPage(page)">
+          {{ page + 1 }}
+        </button>
+      </ng-container>
+
+      <!-- Next page -->
+      <button class="page-btn"
+              [disabled]="currentPage >= getTotalPages() - 1"
+              (click)="goToPage(currentPage + 1)"
+              title="Next page">
+        ›
+      </button>
+      <!-- Last page -->
+      <button class="page-btn"
+              [disabled]="currentPage >= getTotalPages() - 1"
+              (click)="goToPage(getTotalPages() - 1)"
+              title="Last page">
+        »
+      </button>
+
+      <span class="paginator-page-label">
+        Page <strong>{{ currentPage + 1 }}</strong> of <strong>{{ getTotalPages() }}</strong>
+      </span>
+    </div>
+
+  </div>
 </div>

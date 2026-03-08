@@ -1,0 +1,72 @@
+<div class="table-actions-row">
+
+  <!-- Add Order -->
+  <button mat-raised-button
+          color="primary"
+          (click)="onAddClick()"
+          [disabled]="loading">
+    <mat-icon>add</mat-icon>
+    <span>Add Order</span>
+  </button>
+
+  <!-- Import Orders -->
+  <button mat-raised-button
+          color="btn-outlined"
+          (click)="onImportClick()"
+          [disabled]="loading">
+    <mat-icon>upload_file</mat-icon>
+    <span>Import Orders</span>
+  </button>
+
+  <!-- Select All Orders -->
+  <button mat-raised-button
+          class="btn-outlined btn-select-all"
+          (click)="onSelectAllClick()"
+          [disabled]="loading">
+    <mat-icon>check_box</mat-icon>
+    <span>Select All Orders</span>
+  </button>
+
+  <!-- Plan Routes (Primary CTA) -->
+  <button mat-raised-button
+          color="primary"
+          class="btn-plan-routes"
+          (click)="onPlanRoutesClick()"
+          [disabled]="!canPlanRoutes() || loading"
+          [matTooltip]="getPlanRoutesTooltip()">
+    <mat-icon>route</mat-icon>
+    <span>Plan Routes</span>
+    <span class="badge" >{{ selectedCount || 0 }}</span>
+  </button>
+
+  <!-- More Actions Dropdown (⋮) -->
+  <button mat-icon-button
+          [matMenuTriggerFor]="moreMenu"
+          class="btn-more"
+          [disabled]="loading">
+    <mat-icon>more_vert</mat-icon>
+  </button>
+
+</div>
+
+<!-- Dropdown Menu (Bulk Actions) -->
+<mat-menu #moreMenu="matMenu" class="actions-dropdown">
+  <button mat-menu-item (click)="onExportClick()">
+    <mat-icon>download</mat-icon>
+    <span>Export to CSV</span>
+  </button>
+
+  <button mat-menu-item
+          (click)="onDeleteSelectedClick()"
+          [disabled]="!hasSelection">
+    <mat-icon>delete</mat-icon>
+    <span>Delete Selected</span>
+  </button>
+
+  <button mat-menu-item
+          (click)="onBulkEditClick()"
+          [disabled]="!hasSelection">
+    <mat-icon>edit</mat-icon>
+    <span>Bulk Edit</span>
+  </button>
+</mat-menu>

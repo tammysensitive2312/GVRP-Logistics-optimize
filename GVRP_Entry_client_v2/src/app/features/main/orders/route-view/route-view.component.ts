@@ -1,4 +1,5 @@
-import { Component } from '@angular/core';
+import {Component, Input} from '@angular/core';
+import {SolutionDTO} from '@core/models';
 
 @Component({
   selector: 'app-route-view',
@@ -8,5 +9,5 @@ import { Component } from '@angular/core';
   styleUrl: './route-view.component.scss'
 })
 export class RouteViewComponent {
-
+  @Input() solution!: SolutionDTO;
 }

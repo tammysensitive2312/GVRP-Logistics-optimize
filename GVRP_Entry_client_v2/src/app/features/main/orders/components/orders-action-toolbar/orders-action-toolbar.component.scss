@@ -1,0 +1,230 @@
+@import '../../../../../../assets/styles/variables';
+
+:host {
+  display: block;
+  width: 100%;
+}
+
+.table-actions-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;   // ✅ dồn tất cả sang trái
+  gap: var(--space-sm);
+  padding: var(--space-sm);
+  background: var(--white);
+  border-bottom: 2px solid var(--border-color);
+
+  button {
+    height: 36px;
+    font-weight: 500;             // ✅ chữ mảnh hơn (từ 600 → 400)
+    font-size: 13px;
+
+    mat-icon {
+      margin-right: 6px;
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+  }
+}
+
+.btn-plan-routes {
+  position: relative;
+
+  // ✅ Thêm padding-right để nhường chỗ cho badge
+  &:not([disabled]) {
+    animation: pulse 2s infinite;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4);   // ✅ pulse xanh lá
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(34, 197, 94, 0);
+  }
+}
+
+.btn-more {
+  width: 36px;
+
+  mat-icon {
+    margin-right: 0;
+  }
+}
+
+::ng-deep .actions-dropdown {
+  .mat-mdc-menu-panel {
+    min-width: 200px;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .mat-mdc-menu-item {
+    height: 40px;
+    font-size: 13px;
+
+    mat-icon {
+      margin-right: 12px;
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+      color: var(--text-gray);
+    }
+
+    &:hover:not([disabled]) {
+      background: var(--bg-light);
+
+      mat-icon {
+        color: var(--primary-blue);
+      }
+    }
+
+    &[disabled] {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+}
+
+::ng-deep .table-actions-row {
+
+  .mat-mdc-raised-button {
+    height: 36px;
+    border-radius: var(--radius-md);
+    padding: 0 16px;
+    font-weight: 400;             // ✅ chữ mảnh
+
+    &:hover:not([disabled]) {
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-md);
+    }
+
+    &[disabled] {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    // ✅ Plan Routes - xanh lá
+    &.btn-plan-routes {
+      --mdc-protected-button-container-color: #22c55e;
+      --mdc-protected-button-label-text-color: #ffffff;
+      background-color: #22c55e !important;
+      color: #ffffff !important;
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 18px;
+        height: 18px;
+        padding: 0 5px;
+        margin-left: 6px;
+        background: rgba(0, 0, 0, 0.25);
+        color: #ffffff;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 700;
+        line-height: 1;
+        vertical-align: middle;
+
+        &:empty {
+          display: none;
+        }
+      }
+    }
+
+    // ✅ Import Orders & Select All - nền trắng, chữ tối, có border
+    &.btn-outlined {
+      --mdc-protected-button-container-color: var(--white);
+      --mdc-protected-button-label-text-color: var(--text-dark);
+      background-color: var(--white) !important;
+      color: var(--text-dark) !important;
+      border: 1px solid var(--border-color) !important;
+      box-shadow: none !important;
+
+      &:hover:not([disabled]) {
+        border-color: var(--primary-blue) !important;
+        background-color: var(--bg-light) !important;
+        box-shadow: none !important;
+      }
+    }
+
+    // ✅ Select All - icon tím
+    &.btn-select-all {
+      mat-icon {
+        color: #7c3aed !important;   // tím
+      }
+    }
+  }
+
+  // Icon button (more menu)
+  .mat-mdc-icon-button {
+    width: 36px;
+    height: 36px;
+
+    mat-icon {
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+    }
+  }
+}
+
+// ============================================
+// RESPONSIVE
+// ============================================
+@media (max-width: 1024px) {
+  .table-actions-row {
+    gap: 6px;
+    padding: 8px;
+
+    button {
+      height: 34px;
+      padding: 0 12px;
+
+      span:not(.badge) {
+        display: none;
+      }
+
+      mat-icon {
+        margin-right: 0;
+      }
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .table-actions-row {
+    flex-wrap: wrap;
+    gap: 6px;
+
+    button {
+      flex: 1;
+      min-width: 80px;
+      height: 32px;
+    }
+
+    .btn-plan-routes {
+      flex: 1 1 100%;
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .table-actions-row {
+    padding: 6px;
+
+    button {
+      height: 32px;
+      font-size: 12px;
+      padding: 0 8px;
+    }
+  }
+}
+
+.table-actions-row.loading {
+  pointer-events: none;
+  opacity: 0.6;
+}

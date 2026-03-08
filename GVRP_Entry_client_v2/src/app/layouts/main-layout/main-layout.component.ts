@@ -13,10 +13,6 @@ import {NavbarComponent} from '@features/main/components/navbar/navbar.component
   styleUrl: './main-layout.component.scss'
 })
 export class MainLayoutComponent {
-  onMenuClick() {
-    // Handle sidebar toggle for mobile
-    // TODO
-  }
 
   onTabChange(tab: string) {
     console.log('Active tab:', tab);

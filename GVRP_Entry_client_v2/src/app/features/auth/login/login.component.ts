@@ -67,6 +67,7 @@ export class LoginComponent implements OnInit {
       return;
     }
 
+    this.loading = true;
     this.loadingService.show("Account verification in progress...");
     const { rememberMe, ...credentials } = this.loginForm.value;
 
