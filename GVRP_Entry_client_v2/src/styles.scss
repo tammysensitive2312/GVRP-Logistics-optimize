@@ -287,6 +287,39 @@ body {
   z-index: 2000 !important;
 }
 
+.mat-mdc-dialog-container {
+  .mdc-dialog__surface {
+    border-radius: 12px !important;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-xl);
+    overflow: hidden;
+  }
+
+  .mat-mdc-dialog-actions,
+  .mdc-dialog__actions {
+    padding: 10px 16px !important;
+    min-height: unset !important;
+    margin: 0 !important;
+  }
+
+  .mat-mdc-dialog-content,
+  .mdc-dialog__content {
+    padding: 16px 24px !important;
+    margin: 0 !important;
+  }
+
+  .mat-mdc-dialog-title,
+  .mdc-dialog__title {
+    padding: 16px 24px 16px !important;
+    margin: 0 !important;
+
+    &::before {
+      display: none !important;
+      height: 0 !important;
+    }
+  }
+}
+
 .mat-mdc-snack-bar-container {
   min-width: 0 !important;
   max-width: 90vw !important;
@@ -307,6 +340,19 @@ body {
     flex-grow: 0 !important;
     padding: 12px 20px !important;
     font-size: 14px !important;
+  }
+}
+
+.cdk-overlay-container {
+  .mat-mdc-select-panel {
+    .mat-mdc-option {
+      font-size: 13px !important;
+      min-height: 36px !important;
+
+      .mdc-list-item__primary-text {
+        font-size: 13px !important;
+      }
+    }
   }
 }
 

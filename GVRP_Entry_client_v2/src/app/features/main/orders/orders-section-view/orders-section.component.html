@@ -24,8 +24,7 @@
           (addClick)="onAddClick()"
           (planRoutesClick)="onPlanRoutesClick()"
           (deleteSelectedClick)="onDeleteSelected()"
-          (exportClick)="onExportClick()"
-          (refreshClick)="loadOrders()">
+          (exportClick)="onExportClick()">
         </app-orders-action-toolbar>
 
         <!-- Filters (Inside Orders Tab) -->
@@ -41,7 +40,8 @@
           [currentPage]="currentPage"
           (pageChange)="onPageChange($event)"
           (selectionChange)="onOrderSelectionChange($event)"
-          (editOrder)="onEditOrder($event)">
+          (editOrder)="onEditOrder($event)"
+          (orderClick)="onOrderClick($event)">
         </app-orders-table>
       </div>
     </mat-tab>

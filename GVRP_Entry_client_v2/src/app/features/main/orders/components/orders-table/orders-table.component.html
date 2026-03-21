@@ -70,7 +70,6 @@
         <th mat-header-cell *matHeaderCellDef>Time Window</th>
         <td mat-cell *matCellDef="let order">
           <div class="time-window" *ngIf="order.time_window_start; else noTimeWindow">
-            <mat-icon class="time-icon">schedule</mat-icon>
             <span>{{ order.time_window_start | slice:0:5 }} - {{ order.time_window_end | slice:0:5 }}</span>
           </div>
           <ng-template #noTimeWindow>
@@ -134,7 +133,8 @@
       <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
       <tr mat-row
           *matRowDef="let row; columns: displayedColumns;"
-          [class.selected]="selection.isSelected(row)">
+          [class.selected]="selection.isSelected(row)"
+          (click)="onRowClick(row, $event)">
       </tr>
 
       <!-- No Data Row -->

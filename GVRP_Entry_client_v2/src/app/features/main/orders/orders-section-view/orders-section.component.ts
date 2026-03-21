@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, OnDestroy } from '@angular/core';
+import {Component, inject, OnInit, OnDestroy, EventEmitter, Output} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
@@ -21,6 +21,11 @@ import { OrdersFiltersComponent } from '../components/orders-filters/orders-filt
 import { OrdersTableComponent } from '../components/orders-table/orders-table.component';
 import {TimelineViewComponent} from '@features/main/orders/timeline-view/timeline-view.component';
 import {RouteViewComponent} from '@features/main/orders/route-view/route-view.component';
+import {VehicleSelectionService} from '@shared/services/vehicle-selection.service';
+import {
+  RoutePlanningDialogComponent,
+  RoutePlanningDialogData, RoutePlanningDialogResult
+} from '@features/main/orders/components/route-planning-dialog/route-planning-dialog.component';
 
 
 @Component({
@@ -42,6 +47,8 @@ import {RouteViewComponent} from '@features/main/orders/route-view/route-view.co
 })
 export class OrdersSectionComponent implements OnInit, OnDestroy {
 
+  @Output() orderClick = new EventEmitter<OrderDTO>();
+
   private apiService = inject(ApiService);
   private toastService = inject(ToastService);
   private storageService = inject(StorageService);
@@ -55,7 +62,7 @@ export class OrdersSectionComponent implements OnInit, OnDestroy {
   solution: SolutionDTO | null = null;
 
   totalElements = 0;
-  pageSize = 10;
+  pageSize = 5;
   currentPage = 0;
 
   currentFilters: OrderFilter = {
@@ -66,6 +73,7 @@ export class OrdersSectionComponent implements OnInit, OnDestroy {
   selectedVehiclesCount = 0;
   private destroy$ = new Subject<void>();
 
+  constructor(private vehicleSelectionService: VehicleSelectionService) {}
 
   ngOnInit(): void {
     this.loadOrders();
@@ -95,6 +103,10 @@ export class OrdersSectionComponent implements OnInit, OnDestroy {
           this.isLoading = false;
         }
       });
+  }
+
+  onOrderClick(order: OrderDTO): void {
+    this.orderClick.emit(order);
   }
 
   onImportClick(): void {
@@ -132,37 +144,24 @@ export class OrdersSectionComponent implements OnInit, OnDestroy {
   }
 
   onPlanRoutesClick(): void {
-    console.log('Open Route Planning Dialog');
-    console.log('Selected orders:', this.selectedOrders.length);
-    console.log('Selected vehicles:', this.selectedVehiclesCount);
+    const totalDemand = this.selectedOrders.reduce((sum, o) => sum + (o.demand || 0), 0);
 
-    if (this.selectedOrders.length === 0) {
-      this.toastService.error('Please select at least 1 order');
-      return;
-    }
+    const dialogRef = this.dialog.open(RoutePlanningDialogComponent, {
+      width: '560px',
+      maxWidth: '90vw',
+      maxHeight: '90vh',
+      data: {
+        selectedOrdersCount: this.selectedOrders.length,
+        selectedVehiclesCount: this.selectedVehiclesCount,
+        totalDemand
+      } as RoutePlanningDialogData
+    });
 
-    if (this.selectedVehiclesCount === 0) {
-      this.toastService.error('Please select at least 1 vehicle from sidebar');
-      return;
-    }
-
-    // TODO: Open route planning dialog
-    // const dialogRef = this.dialog.open(RoutePlanningDialogComponent, {
-    //   width: '700px',
-    //   data: {
-    //     orderIds: this.selectedOrders.map(o => o.id),
-    //     selectedVehiclesCount: this.selectedVehiclesCount
-    //   }
-    // });
-    //
-    // dialogRef.afterClosed().subscribe(result => {
-    //   if (result?.solution) {
-    //     this.solution = result.solution;
-    //     this.selectedTabIndex = 1; // Switch to Routes tab
-    //   }
-    // });
-
-    this.toastService.info('Route Planning - Coming soon!');
+    dialogRef.afterClosed().subscribe((result: RoutePlanningDialogResult | null) => {
+      if (!result) return;
+      // TODO: gọi API optimize với result
+      console.log('Start optimization with:', result);
+    });
   }
 
   onDeleteSelected(): void {
@@ -268,9 +267,6 @@ export class OrdersSectionComponent implements OnInit, OnDestroy {
   onOrderSelectionChange(selected: OrderDTO[]): void {
     this.selectedOrders = selected;
     console.log(`${selected.length} orders selected`);
-
-    // Save to state
-    this.saveAppState();
   }
 
   onEditOrder(orderId: number): void {
@@ -296,16 +292,11 @@ export class OrdersSectionComponent implements OnInit, OnDestroy {
    * This could be from a shared service or state management
    */
   private subscribeToVehicleSelection(): void {
-    // TODO: Subscribe to vehicle selection from a service
-    // Example:
-    // this.vehicleService.selectedVehicles$
-    //   .pipe(takeUntil(this.destroy$))
-    //   .subscribe(selectedVehicles => {
-    //     this.selectedVehiclesCount = selectedVehicles.length;
-    //   });
-
-    // Mock: For now, set to 0
-    this.selectedVehiclesCount = 0;
+    this.vehicleSelectionService.selectedVehicleIds$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(ids => {
+        this.selectedVehiclesCount = ids.length;
+      });
   }
 
   /**
@@ -328,17 +319,6 @@ export class OrdersSectionComponent implements OnInit, OnDestroy {
         // this.loadSolution(appState.activeSolutionId);
       }
     }
-  }
-
-  /**
-   * Save app state to storage
-   */
-  private saveAppState(): void {
-    this.storageService.updateAppState({
-      selectedOrders: this.selectedOrders.map(o => o.id),
-      activeSolutionId: this.solution?.id,
-      lastUrl: window.location.pathname
-    });
   }
 
   /**
@@ -373,7 +353,6 @@ export class OrdersSectionComponent implements OnInit, OnDestroy {
   clearSolution(): void {
     this.solution = null;
     this.selectedTabIndex = 0; // Back to Orders tab
-    this.saveAppState();
   }
 
   /**
@@ -382,7 +361,6 @@ export class OrdersSectionComponent implements OnInit, OnDestroy {
   setSolution(solution: SolutionDTO): void {
     this.solution = solution;
     this.selectedTabIndex = 1; // Switch to Routes tab
-    this.saveAppState();
     this.toastService.success('Solution loaded successfully');
   }
 

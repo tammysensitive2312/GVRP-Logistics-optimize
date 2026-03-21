@@ -3,6 +3,7 @@ import { DepotDTO, VehicleDTO, Stats } from '@core/models';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatDividerModule } from '@angular/material/divider';
 import { NgFor, NgIf } from '@angular/common';
+import { VehicleSelectionService } from '@shared/services/vehicle-selection.service';
 
 @Component({
   selector: 'app-sidebar',
@@ -28,6 +29,8 @@ export class SidebarComponent {
   @Output() vehicleSelectionChange = new EventEmitter<number[]>();
   @Output() depotClick = new EventEmitter<DepotDTO>();
   @Output() filterStatusChange = new EventEmitter<string>();
+
+  constructor(private vehicleSelectionService: VehicleSelectionService) {}
 
   expandedSections = new Set<string>(['depots', 'vehicles']);
   selectedVehicleIds = new Set<number>();
@@ -77,7 +80,7 @@ export class SidebarComponent {
 
   deselectAllVehicles(): void {
     this.selectedVehicleIds.clear();
-    // this.emitSelection();
+    this.emitSelection();
   }
 
   isVehicleSelected(vehicleId: number): boolean {
@@ -89,6 +92,8 @@ export class SidebarComponent {
   }
 
   private emitSelection(): void {
-    this.vehicleSelectionChange.emit(Array.from(this.selectedVehicleIds));
+    const ids = Array.from(this.selectedVehicleIds);
+    this.vehicleSelectionChange.emit(ids);
+    this.vehicleSelectionService.setSelection(ids);
   }
 }

@@ -35,6 +35,7 @@ export class OrdersTableComponent {
   @Output() pageChange = new EventEmitter<PageEvent>();
   @Output() selectionChange = new EventEmitter<OrderDTO[]>();
   @Output() editOrder = new EventEmitter<number>();
+  @Output() orderClick = new EventEmitter<OrderDTO>();
 
   pageSizeOptions = [5, 10, 20, 50, 100];
 
@@ -161,7 +162,7 @@ export class OrdersTableComponent {
   }
 
   /**
-   * Handle row click (optional - can be used for row selection)
+   * Handle row click
    */
   onRowClick(row: OrderDTO, event: Event): void {
     // Don't toggle if clicking on action buttons
@@ -172,6 +173,7 @@ export class OrdersTableComponent {
 
     // Toggle row selection on row click
     this.toggleRow(row);
+    this.orderClick.emit(row);
   }
 
   /**

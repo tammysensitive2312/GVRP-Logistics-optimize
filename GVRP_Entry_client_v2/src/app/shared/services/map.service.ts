@@ -219,6 +219,13 @@ export class MapService {
   }
 
   centerTo(lat: number, lng: number, zoom: number = 15): void {
+    if (!this.map) return;
+
+    if (!lat || !lng) {
+      console.warn('Invalid coordinates:', lat, lng);
+      return;
+    }
+
     this.map.setView([lat, lng], zoom, { animate: true });
   }
 

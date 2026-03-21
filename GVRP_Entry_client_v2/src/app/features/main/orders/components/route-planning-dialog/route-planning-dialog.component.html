@@ -1,0 +1,92 @@
+<!-- route-planning-dialog.component.html -->
+<h2 mat-dialog-title>🚀 Route Planning & Optimization</h2>
+
+<mat-dialog-content>
+
+  <!-- Summary -->
+  <div class="form-section">
+    <h3 class="section-title">📊 Selection Summary</h3>
+    <div class="summary-grid">
+      <div class="summary-card">
+        <span class="summary-icon">📦</span>
+        <div>
+          <div class="summary-label">Orders Selected</div>
+          <div class="summary-value">{{ data.selectedOrdersCount }}</div>
+        </div>
+      </div>
+      <div class="summary-card">
+        <span class="summary-icon">🚚</span>
+        <div>
+          <div class="summary-label">Vehicles Selected</div>
+          <div class="summary-value">{{ data.selectedVehiclesCount }}</div>
+        </div>
+      </div>
+      <div class="summary-card">
+        <span class="summary-icon">📦</span>
+        <div>
+          <div class="summary-label">Total Demand</div>
+          <div class="summary-value">{{ data.totalDemand }} kg</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Optimization Preferences -->
+  <div class="form-section">
+    <h3 class="section-title">⚙️ Optimization Preferences</h3>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Optimization Goal</mat-label>
+      <mat-select [(ngModel)]="form.optimizationGoal">
+        <mat-option value="MINIMIZE_COST">💰 Minimize Cost (Default)</mat-option>
+        <mat-option value="MINIMIZE_DISTANCE">🛣️ Minimize Distance</mat-option>
+        <mat-option value="MINIMIZE_CO2">🌱 Minimize CO2 Emissions (Green)</mat-option>
+        <mat-option value="BALANCED">⚖️ Balanced</mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Optimization Speed</mat-label>
+      <mat-select [(ngModel)]="form.optimizationSpeed">
+        <mat-option value="FAST">⚡ Fast (2-3 minutes, acceptable quality)</mat-option>
+        <mat-option value="NORMAL">🎯 Normal (5-8 minutes, good quality) — Recommended</mat-option>
+        <mat-option value="HIGH_QUALITY">💎 High Quality (10-15 minutes, best quality)</mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Time Window Mode</mat-label>
+      <mat-select [(ngModel)]="form.timeWindowMode">
+        <mat-option value="STRICT">🔒 Strict (Must follow time windows exactly)</mat-option>
+        <mat-option value="FLEXIBLE">🔓 Flexible (Allow violations with penalty)</mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <div class="checkbox-group">
+      <mat-checkbox [(ngModel)]="form.allowUnassigned">
+        Allow Unassigned Orders
+        <span class="hint">Allow some orders to be skipped if not efficient</span>
+      </mat-checkbox>
+      <mat-checkbox [(ngModel)]="form.enablePareto">
+        Enable Pareto Analysis
+        <span class="hint">Generate multiple solutions for trade-off analysis</span>
+      </mat-checkbox>
+    </div>
+  </div>
+
+  <div class="info-box">
+    <span class="info-icon">⏱️</span>
+    <div class="info-content">
+      <span><strong>Estimated Processing Time:</strong> {{ estimatedTime }}</span>
+      <p>You can monitor progress in real-time and cancel anytime.</p>
+    </div>
+  </div>
+
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="onCancel()">Cancel</button>
+  <button mat-raised-button color="primary" (click)="onSubmit()">
+    🚀 Start Optimization
+  </button>
+</mat-dialog-actions>

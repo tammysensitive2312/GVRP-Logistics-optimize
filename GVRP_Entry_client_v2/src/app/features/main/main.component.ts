@@ -8,6 +8,7 @@ import {MapComponent} from '@shared/components/map/map.component';
 import {OrdersSectionComponent} from '@features/main/orders/orders-section-view/orders-section.component';
 import {ToastService} from '@shared/services/toast.service';
 import {ApiService} from '@core/services/api.service';
+import {MapService} from '@shared/services/map.service';
 
 interface PaginationState {
   page: number;
@@ -21,6 +22,7 @@ interface PaginationState {
   templateUrl: './main.component.html',
   standalone: true,
   imports: [
+
     SidebarComponent,
     MapComponent,
     OrdersSectionComponent
@@ -69,7 +71,8 @@ export class MainComponent implements OnInit, OnDestroy {
 
   constructor(
     private apiService: ApiService,
-    private toast: ToastService
+    private toast: ToastService,
+    private map: MapService
   ) {}
 
   ngOnInit(): void {
@@ -154,6 +157,18 @@ export class MainComponent implements OnInit, OnDestroy {
     event.preventDefault();
   }
 
+  onDepotClick(depot: DepotDTO): void {
+    if (!depot.latitude || !depot.longitude) {
+      this.toast.error('The depot does not yet have coordinates.');
+      return;
+    }
+    this.map.centerTo(depot.latitude, depot.longitude, 15);
+  }
+
+  onOrderClick(order: OrderDTO): void {
+    this.map.highlightOrder(order.id);
+  }
+
   @HostListener('document:mousemove', ['$event'])
   onResize(event: MouseEvent): void {
     if (!this.isResizing) return;
@@ -179,8 +194,7 @@ export class MainComponent implements OnInit, OnDestroy {
   onResizeEnd(): void {
     if (this.isResizing) {
       this.isResizing = false;
-      // Invalidate map size after resize
-      // TODO: Call map.invalidateSize()
+      this.map.invalidateSize();
     }
   }
 

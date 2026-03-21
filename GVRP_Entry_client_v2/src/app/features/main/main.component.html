@@ -5,6 +5,7 @@
     [stats]="stats"
     [collapsed]="isSidebarCollapsed"
     (toggleCollapse)="onSidebarToggle()"
+    (depotClick)="onDepotClick($event)"
     (vehicleSelectionChange)="onVehicleSelectionChange($event)">
   </app-sidebar>
 
@@ -31,7 +32,8 @@
 
     <!-- Table Section (40vh) -->
     <div class="table-section">
-      <app-orders-section-view>
+      <app-orders-section-view
+        (orderClick)="onOrderClick($event)">
       </app-orders-section-view>
     </div>
   </main>
