@@ -54,6 +54,28 @@ public class GlobalExceptionHandler {
     /**
      * Handle ResourceNotFoundException
      */
+    @ExceptionHandler(DataInvalidException.class)
+    public ResponseEntity<ErrorResponse> handleDataInvalidException(
+            DataInvalidException ex,
+            HttpServletRequest request) {
+
+        Map<String, String> errors = new HashMap<>();
+
+        ErrorResponse response = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .errorCode("0040006")
+                .message(ex.getMessage())
+                .path(request.getRequestURI())
+                .method(request.getMethod())
+                .validationErrors(errors)
+                .build();
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    }
+
+    /**
+     * Handle ResourceNotFoundException
+     */
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleResourceNotFoundException(
             ResourceNotFoundException ex,

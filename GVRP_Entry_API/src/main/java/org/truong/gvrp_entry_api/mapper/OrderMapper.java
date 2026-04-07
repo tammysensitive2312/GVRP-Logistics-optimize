@@ -25,13 +25,22 @@ public interface OrderMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "branch", source = "branch")
     @Mapping(target = "deliveryDate", source = "deliveryDate")
-    // Sử dụng expression java để gọi phương thức createPoint của GeometryMapper
     @Mapping(target = "location", expression = "java(geometryMapper.createPoint(dto.getLatitude(), dto.getLongitude()))")
-    @Mapping(target = "status", ignore = true) // Sẽ dùng @Builder.Default (SCHEDULED)
+    @Mapping(target = "status", ignore = true)
     @Mapping(target = "routeSegments", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     Order toEntity(OrderInputDTO dto, Branch branch, LocalDate deliveryDate);
+
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "branch", source = "branch")
+    @Mapping(target = "deliveryDate", source = "dto.deliveryDate")
+    @Mapping(target = "location", expression = "java(geometryMapper.createPoint(dto.getLatitude(), dto.getLongitude()))")
+    @Mapping(target = "status", ignore = true)
+    @Mapping(target = "routeSegments", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    Order toEntity(OrderInputDTO dto, Branch branch);
 
 
     // ========================================================================
@@ -55,7 +64,6 @@ public interface OrderMapper {
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "routeSegments", ignore = true)
-    @Mapping(target = "deliveryDate", source = "deliveryDate")
     @Mapping(target = "location", expression = "java(geometryMapper.createPoint(dto.getLatitude(), dto.getLongitude()))")
-    Order updateEntityFromDTO(OrderInputDTO dto, @MappingTarget Order entity, LocalDate deliveryDate);
+    Order updateEntityFromDTO(OrderInputDTO dto, @MappingTarget Order entity);
 }

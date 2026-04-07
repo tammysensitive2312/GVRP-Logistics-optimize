@@ -1,0 +1,112 @@
+<!-- import-orders-dialog.component.html -->
+<h2 mat-dialog-title>📥 Import Orders</h2>
+
+<mat-dialog-content>
+
+  <!-- Import Method -->
+  <div class="form-row-inline">
+    <span class="row-label">Import method:</span>
+    <mat-radio-group [(ngModel)]="method" class="radio-group">
+      <mat-radio-button value="file">📁 File (CSV/Excel)</mat-radio-button>
+      <mat-radio-button value="text">📝 Raw Text</mat-radio-button>
+    </mat-radio-group>
+  </div>
+
+  <!-- Overwrite -->
+  <div class="form-row-inline">
+    <span class="row-label">Overwrite existing:</span>
+    <mat-checkbox [(ngModel)]="overwrite"></mat-checkbox>
+  </div>
+
+  <div class="form-row-inline">
+    <span class="row-label">Skip validation errors:</span>
+    <mat-checkbox [(ngModel)]="skipValidationErrors"></mat-checkbox>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- File Upload -->
+  <div *ngIf="method === 'file'">
+    <input #fileInput type="file" accept=".csv,.xlsx"
+           (change)="onFileSelected($event)" hidden>
+
+    <div class="drop-zone"
+         [class.dragging]="isDragging"
+         [class.has-file]="selectedFile"
+         (click)="onDropZoneClick(fileInput)"
+         (dragover)="onDragOver($event)"
+         (dragleave)="onDragLeave()"
+         (drop)="onDrop($event)">
+
+      <!-- No file selected -->
+      <ng-container *ngIf="!selectedFile">
+        <div class="drop-icon">📁</div>
+        <p><strong>Click to select file</strong> or drag and drop</p>
+        <p class="drop-hint">CSV or Excel files (max 10MB)</p>
+      </ng-container>
+
+      <!-- File selected -->
+      <ng-container *ngIf="selectedFile">
+        <div class="file-info">
+          <span class="file-icon">📄</span>
+          <span class="file-name">{{ selectedFile.name }}</span>
+          <button mat-icon-button
+                  (click)="removeFile(); $event.stopPropagation()"
+                  class="btn-remove">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+      </ng-container>
+    </div>
+
+    <div class="error-text" *ngIf="fileError">⚠️ {{ fileError }}</div>
+  </div>
+
+  <!-- Text Input -->
+  <div *ngIf="method === 'text'">
+    <div class="format-hint">
+      <strong>Format:</strong> OrderCode|Name|Phone|Address|Demand|TWStart|TWEnd|Priority|Notes
+    </div>
+    <textarea
+      [(ngModel)]="textData"
+      rows="8"
+      class="text-input"
+      placeholder="ORD001|John|0901234567|123 Main St|50.5|08:00|12:00|1|Handle with care">
+    </textarea>
+  </div>
+
+  <!-- Common Fields -->
+  <div class="form-row">
+    <div class="form-field">
+      <label>Delivery Date <span class="required">*</span></label>
+      <input type="date" [(ngModel)]="deliveryDate" class="input-field">
+    </div>
+    <div class="form-field">
+      <label>Service Time (min) <span class="required">*</span></label>
+      <input type="number" [(ngModel)]="serviceTime" min="0" class="input-field">
+    </div>
+  </div>
+
+  <!-- Hints -->
+  <div class="help-section">
+    <p>💡 <strong>Hints:</strong></p>
+    <ul>
+      <li>CSV file: max 10MB, UTF-8 encoding</li>
+      <li>
+        <a (click)="downloadTemplate()" class="link">
+          📥 Download sample template
+        </a>
+      </li>
+    </ul>
+  </div>
+
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="onCancel()">Cancel</button>
+  <button mat-raised-button color="primary"
+          [disabled]="!canSubmit()"
+          (click)="onSubmit()">
+    📥 Import
+  </button>
+</mat-dialog-actions>

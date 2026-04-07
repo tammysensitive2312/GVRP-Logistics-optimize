@@ -65,7 +65,6 @@ public class OrderImportService {
         List<OrderInputDTO> allRawOrders = new ArrayList<>();
         List<ImportError> allErrors = new ArrayList<>();
 
-        // 2. Xử lý File (CSV/JSON)
         if (request.hasFile()) {
             MultipartFile file = request.getFile();
             String filename = file.getOriginalFilename();
@@ -85,7 +84,7 @@ public class OrderImportService {
                     allErrors.addAll(fileResult.getErrors());
                 }
             } catch (Exception e) {
-                // Bắt lỗi đọc file nghiêm trọng (VD: file hỏng hoàn toàn)
+                log.debug("Lỗi đọc file: {}", e.getMessage());
                 throw new InvalidFileFormatException("Lỗi đọc file: " + e.getMessage());
             }
         }
@@ -135,7 +134,7 @@ public class OrderImportService {
         for (int i = 0; i < rawOrders.size(); i++) {
             OrderInputDTO dto = rawOrders.get(i);
 
-            if (dto.getServiceTime()== null) {
+            if (dto.getServiceTime() == null) {
                 dto.setServiceTime(request.getServiceTime());
             }
 
@@ -215,7 +214,7 @@ public class OrderImportService {
                         Order existingOrder = orderRepository.findByBranchIdAndOrderCode(branch.getId(), dto.getOrderCode())
                                 .orElseThrow();
 
-                        orderMapper.updateEntityFromDTO(dto, existingOrder, request.getDeliveryDate());
+                        orderMapper.updateEntityFromDTO(dto, existingOrder);
                         log.info("entity service time value {}", existingOrder.getServiceTime());
                         orderRepository.save(existingOrder);
                         importedCount++;
@@ -297,44 +296,5 @@ public class OrderImportService {
         }
 
         return null; // Valid
-    }
-
-
-    @Transactional(readOnly = true)
-    public PageResponse<OrderDTO> getAllOrdersPaginated(Long branchId, int pageNo, int pageSize) {
-        // 1. Tạo đối tượng Pageable (có thể thêm Sort nếu muốn, ví dụ sort theo ID giảm dần)
-        Pageable pageable = PageRequest.of(pageNo, pageSize, Sort.by("id").descending());
-
-        // 2. Gọi Repository
-        Page<Order> orderPage = orderRepository.findByBranchIdOrderByCreatedAtDesc(branchId, pageable);
-
-        // 3. Map Entity sang DTO
-        // Lưu ý: orderPage.getContent() trả về List<Order>
-        List<OrderDTO> content = orderMapper.toDTOList(orderPage.getContent());
-
-        // 4. Build PageResponse
-        return PageResponse.<OrderDTO>builder()
-                .content(content)
-                .pageNo(orderPage.getNumber())
-                .pageSize(orderPage.getSize())
-                .totalElements(orderPage.getTotalElements())
-                .totalPages(orderPage.getTotalPages())
-                .last(orderPage.isLast())
-                .build();
-    }
-
-    public OrderDTO updateOrdersById(
-            Long orderId,
-            Long branchId,
-            LocalDate deliveryDate,
-            OrderInputDTO inputDTO) {
-
-        Order order = orderRepository.findByIdAndBranchId(orderId, branchId)
-                .orElseThrow(() -> new ResourceNotFoundException("Resources not found.", "order"));
-
-        order = orderMapper.updateEntityFromDTO(inputDTO, order, deliveryDate);
-        orderRepository.save(order);
-        OrderDTO orderDTO = orderMapper.toDTO(order);
-        return orderDTO;
     }
 }

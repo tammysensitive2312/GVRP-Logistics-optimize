@@ -20,11 +20,7 @@ export class AuthService {
 
   // Observable streams
   private currentUserSubject = new BehaviorSubject<User | null>(null);
-  public currentUser$ = this.currentUserSubject.asObservable();
-
   private isAuthenticatedSubject = new BehaviorSubject<boolean>(false);
-  public isAuthenticated$ = this.isAuthenticatedSubject.asObservable();
-
   constructor(
     private http: HttpClient,
     private router: Router,
@@ -45,7 +41,6 @@ export class AuthService {
     return this.http.post<AuthResponse>(`${environment.apiUrl}/auth/login`, credentials)
       .pipe(
         tap(response => this.handleLoginSuccess(response, rememberMe)),
-        catchError(error => this.handleError(error))
       );
   }
 

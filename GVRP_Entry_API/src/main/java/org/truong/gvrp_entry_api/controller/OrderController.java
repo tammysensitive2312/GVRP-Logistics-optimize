@@ -3,8 +3,10 @@ package org.truong.gvrp_entry_api.controller;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.truong.gvrp_entry_api.dto.request.OrderImportRequest;
 import org.truong.gvrp_entry_api.dto.request.OrderInputDTO;
@@ -13,6 +15,7 @@ import org.truong.gvrp_entry_api.dto.response.OrderDTO;
 import org.truong.gvrp_entry_api.dto.response.PageResponse;
 import org.truong.gvrp_entry_api.security.CurrentUserUtil;
 import org.truong.gvrp_entry_api.service.OrderImportService;
+import org.truong.gvrp_entry_api.service.OrderService;
 
 import java.time.LocalDate;
 
@@ -21,6 +24,7 @@ import java.time.LocalDate;
 @RequiredArgsConstructor
 public class OrderController {
     private final OrderImportService orderImportService;
+    private final OrderService orderService;
 
     @PostMapping(value = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ImportResultDTO> importOrders(
@@ -33,6 +37,16 @@ public class OrderController {
         return ResponseEntity.ok(result);
     }
 
+    @PostMapping
+    public ResponseEntity<OrderDTO> createOrder(
+            @RequestBody @Validated(OrderInputDTO.OnCreate.class)
+            OrderInputDTO inputDTO
+    ) {
+        Long branchId = CurrentUserUtil.getCurrentBranchId();
+        OrderDTO result = orderService.createOrder(inputDTO, branchId);
+        return ResponseEntity.ok(result);
+    }
+
     @GetMapping
     public ResponseEntity<PageResponse<OrderDTO>> getListOrders(
             @RequestParam(defaultValue = "0") int page,
@@ -40,23 +54,31 @@ public class OrderController {
     ) {
         Long branchId = CurrentUserUtil.getCurrentBranchId();
 
-        PageResponse<OrderDTO> result = orderImportService.getAllOrdersPaginated(branchId, page, size);
+        PageResponse<OrderDTO> result = orderService.getAllOrdersPaginated(branchId, page, size);
 
+        return ResponseEntity.ok(result);
+    }
+
+    @GetMapping("/{orderId}")
+    public ResponseEntity<OrderDTO> getOrderById(
+            @PathVariable Long orderId
+    ) {
+        Long branchId = CurrentUserUtil.getCurrentBranchId();
+        OrderDTO result = orderService.getOrderById(orderId, branchId);
         return ResponseEntity.ok(result);
     }
 
     @PutMapping("/{orderId}")
     public ResponseEntity<OrderDTO> updateOrder(
             @PathVariable Long orderId,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate deliveryDate,
-            @RequestBody @Valid OrderInputDTO inputDTO) {
+            @RequestBody @Validated(OrderInputDTO.OnUpdate.class) OrderInputDTO inputDTO
+    ) {
 
         Long branchId = CurrentUserUtil.getCurrentBranchId();
 
-        OrderDTO updatedOrder = orderImportService.updateOrdersById(
+        OrderDTO updatedOrder = orderService.updateOrdersById(
                 orderId,
                 branchId,
-                deliveryDate,
                 inputDTO
         );
 

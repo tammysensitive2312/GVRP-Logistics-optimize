@@ -1,7 +1,7 @@
 import {inject, Injectable} from '@angular/core';
 import {HttpClient, HttpParams} from '@angular/common/http';
 import {environment} from '@environments/environment';
-import {DepotDTO, OrderDTO, OrderFilter, PaginatedResponse, VehicleDTO} from '@core/models';
+import {DepotDTO, OrderDTO, OrderFilter, OrderInputDTO, PaginatedResponse, VehicleDTO} from '@core/models';
 import {Observable} from 'rxjs';
 import {map} from 'rxjs/operators';
 
@@ -35,5 +35,18 @@ export class ApiService {
 
   getDepots(): Observable<DepotDTO[]> {
     return this.http.get<DepotDTO[]>(`${this.apiUrl}/depots`);
+  }
+
+  updateOrder(orderId: number, updateData: OrderInputDTO): Observable<OrderDTO> {
+    return this.http.put<OrderDTO>(
+      `${this.apiUrl}/orders/${orderId}`,
+      updateData
+    );
+  }
+
+  getOrderById(orderId: number): Observable<OrderDTO> {
+    return this.http.get<OrderDTO>(
+      `${this.apiUrl}/orders/${orderId}`
+    );
   }
 }

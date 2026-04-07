@@ -4,15 +4,13 @@ import { MatTabsModule } from '@angular/material/tabs';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDialog } from '@angular/material/dialog';
-import { Subject } from 'rxjs';
+import {Observable, Subject} from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
-// Services
 import { ApiService } from '@core/services/api.service';
 import { ToastService } from '@shared/services/toast.service';
 import { StorageService } from '@core/services/storage.service';
 
-// Models
 import { OrderDTO, OrderFilter, SolutionDTO } from '@core/models';
 import { PageEvent } from '@angular/material/paginator';
 
@@ -26,6 +24,14 @@ import {
   RoutePlanningDialogComponent,
   RoutePlanningDialogData, RoutePlanningDialogResult
 } from '@features/main/orders/components/route-planning-dialog/route-planning-dialog.component';
+import {
+  ImportDialogResult,
+  ImportOrdersDialogComponent
+} from '@features/main/orders/components/import-orders-dialog/import-orders-dialog.component';
+import {
+  EditOrderDialogComponent,
+  EditOrderDialogData
+} from '@features/main/orders/components/edit-orders-dialog/edit-order-dialog.component';
 
 
 @Component({
@@ -110,37 +116,33 @@ export class OrdersSectionComponent implements OnInit, OnDestroy {
   }
 
   onImportClick(): void {
-    console.log('Open Import Orders Dialog');
-    // TODO: Open import dialog
-    // const dialogRef = this.dialog.open(ImportOrdersDialogComponent, {
-    //   width: '800px',
-    //   maxHeight: '90vh'
-    // });
-    //
-    // dialogRef.afterClosed().subscribe(result => {
-    //   if (result) {
-    //     this.loadOrders(); // Reload after import
-    //   }
-    // });
+    const dialogRef = this.dialog.open(ImportOrdersDialogComponent, {
+      width: '520px',
+      maxWidth: '90vw',
+      maxHeight: '90vh'
+    });
 
-    this.toastService.info('Import Orders - Coming soon!');
+    dialogRef.afterClosed().subscribe((result: ImportDialogResult | null) => {
+      if (!result) return;
+
+      // Build FormData và call API
+      const formData = new FormData();
+      if (result.method === 'file' && result.file) {
+        formData.append('file', result.file);
+      } else if (result.method === 'text' && result.textData) {
+        formData.append('textData', result.textData);
+      }
+      formData.append('deliveryDate', result.deliveryDate);
+      formData.append('serviceTime', String(result.serviceTime));
+      formData.append('overwriteExisting', String(result.overwrite));
+
+      // TODO: this.apiService.importOrders(formData).subscribe(...)
+      console.log('Import with:', result);
+    });
   }
 
   onAddClick(): void {
-    console.log('Open Add Order Dialog');
-    // TODO: Open add order dialog
-    // const dialogRef = this.dialog.open(AddOrderDialogComponent, {
-    //   width: '700px',
-    //   maxHeight: '90vh'
-    // });
-    //
-    // dialogRef.afterClosed().subscribe(result => {
-    //   if (result) {
-    //     this.loadOrders(); // Reload after adding
-    //   }
-    // });
-
-    this.toastService.info('Add Order - Coming soon!');
+    this.openEditDialog();
   }
 
   onPlanRoutesClick(): void {
@@ -244,19 +246,11 @@ export class OrdersSectionComponent implements OnInit, OnDestroy {
     // via the selectionChange event
   }
 
-  // ============================================
-  // FILTER HANDLERS
-  // ============================================
-
   onFilterChange(newFilters: OrderFilter): void {
     this.currentFilters = { ...this.currentFilters, ...newFilters };
     this.currentPage = 0; // Reset to first page
     this.loadOrders();
   }
-
-  // ============================================
-  // TABLE HANDLERS
-  // ============================================
 
   onPageChange(event: PageEvent): void {
     this.currentPage = event.pageIndex;
@@ -270,21 +264,21 @@ export class OrdersSectionComponent implements OnInit, OnDestroy {
   }
 
   onEditOrder(orderId: number): void {
-    console.log('Open Edit Order Modal with ID:', orderId);
+    this.openEditDialog(orderId);
+  }
 
-    // TODO: Open edit order dialog
-    // const dialogRef = this.dialog.open(EditOrderDialogComponent, {
-    //   width: '700px',
-    //   data: { orderId }
-    // });
-    //
-    // dialogRef.afterClosed().subscribe(result => {
-    //   if (result) {
-    //     this.loadOrders(); // Reload after editing
-    //   }
-    // });
+  private openEditDialog(orderId?: number): void {
+    const dialogRef = this.dialog.open(EditOrderDialogComponent, {
+      width: '600px',
+      maxWidth: '90vw',
+      maxHeight: '90vh',
+      data: { orderId } as EditOrderDialogData
+    });
 
-    this.toastService.info('Edit Order - Coming soon!');
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) this.loadOrders();
+      }
+    )
   }
 
   /**

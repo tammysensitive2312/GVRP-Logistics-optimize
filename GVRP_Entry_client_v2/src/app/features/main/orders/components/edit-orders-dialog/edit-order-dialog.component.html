@@ -1,0 +1,151 @@
+<h2 mat-dialog-title>{{ title }}</h2>
+
+<mat-dialog-content>
+
+  <!-- Loading state -->
+  <div class="loading-state" *ngIf="isLoading">
+    <mat-spinner [diameter]="32"></mat-spinner>
+    <span>Loading order data...</span>
+  </div>
+
+  <ng-container *ngIf="!isLoading">
+
+    <!-- Basic Information -->
+    <div class="form-section">
+      <h3 class="section-title">📋 Basic Information</h3>
+
+      <div class="form-row">
+        <div class="form-field">
+          <label>Order Code <span class="required">*</span></label>
+          <input type="text" [(ngModel)]="form.order_code"
+                 placeholder="ORD001" class="input-field">
+        </div>
+        <div class="form-field" *ngIf="isEditMode">
+          <label>Status</label>
+          <select [(ngModel)]="form.status" class="input-field select-field">
+            <option value="UNASSIGNED">Unassigned</option>
+            <option value="SCHEDULED">Scheduled</option>
+            <option value="ON_ROUTE">On Route</option>
+            <option value="COMPLETED">Completed</option>
+            <option value="FAILED">Failed</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-field">
+          <label>Customer Name <span class="required">*</span></label>
+          <input type="text" [(ngModel)]="form.customer_name"
+                 placeholder="John Doe" class="input-field">
+        </div>
+        <div class="form-field">
+          <label>Phone Number</label>
+          <input type="tel" [(ngModel)]="form.customer_phone"
+                 placeholder="0901234567" class="input-field">
+        </div>
+      </div>
+    </div>
+
+    <!-- Location -->
+    <div class="form-section">
+      <h3 class="section-title">📍 Location</h3>
+
+      <div class="form-field full-width">
+        <label>Address <span class="required">*</span></label>
+        <input type="text" [(ngModel)]="form.address"
+               placeholder="123 Main Street" class="input-field">
+      </div>
+
+      <div class="form-row">
+        <div class="form-field">
+          <label>Latitude <span class="required">*</span></label>
+          <input type="number" [(ngModel)]="form.latitude"
+                 step="any" placeholder="21.028511" class="input-field">
+        </div>
+        <div class="form-field">
+          <label>Longitude <span class="required">*</span></label>
+          <input type="number" [(ngModel)]="form.longitude"
+                 step="any" placeholder="105.804817" class="input-field">
+        </div>
+      </div>
+
+      <button mat-stroked-button class="btn-pick-location"
+              type="button" (click)="onPickLocation()">
+        <mat-icon>map</mat-icon>
+        Pick Location on Map
+      </button>
+    </div>
+
+    <!-- Order Details -->
+    <div class="form-section">
+      <h3 class="section-title">📦 Order Details</h3>
+
+      <div class="form-row">
+        <div class="form-field">
+          <label>Demand (kg) <span class="required">*</span></label>
+          <input type="number" [(ngModel)]="form.demand"
+                 step="0.1" min="0.1" placeholder="50.5" class="input-field">
+        </div>
+        <div class="form-field">
+          <label>Service Time (min) <span class="required">*</span></label>
+          <input type="number" [(ngModel)]="form.service_time"
+                 min="0" class="input-field">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-field">
+          <label>Priority (1-10)</label>
+          <input type="number" [(ngModel)]="form.priority"
+                 min="1" max="10" class="input-field">
+        </div>
+        <div class="form-field">
+          <label>Delivery Date</label>
+          <input type="date" [(ngModel)]="form.delivery_date" class="input-field">
+        </div>
+      </div>
+    </div>
+
+    <!-- Time Windows -->
+    <div class="form-section">
+      <h3 class="section-title">⏰ Time Windows <span class="optional">(Optional)</span></h3>
+
+      <div class="form-row">
+        <div class="form-field">
+          <label>Start Time</label>
+          <input type="time" [(ngModel)]="form.time_window_start" class="input-field">
+        </div>
+        <div class="form-field">
+          <label>End Time</label>
+          <input type="time" [(ngModel)]="form.time_window_end" class="input-field">
+        </div>
+      </div>
+    </div>
+
+    <!-- Notes -->
+    <div class="form-section">
+      <h3 class="section-title">📝 Notes</h3>
+
+      <div class="form-field full-width">
+        <label>Delivery Notes</label>
+        <textarea [(ngModel)]="form.delivery_notes"
+                  rows="3" placeholder="Special instructions..."
+                  class="input-field textarea-field">
+        </textarea>
+      </div>
+    </div>
+
+  </ng-container>
+
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="onCancel()">Cancel</button>
+  <button mat-raised-button color="primary"
+          [disabled]="!canSubmit()"
+          (click)="onSubmit()">
+    <mat-spinner *ngIf="isSaving" [diameter]="16"></mat-spinner>
+    <mat-icon *ngIf="!isSaving">save</mat-icon>
+    {{ isSaving ? 'Saving...' : (isEditMode ? 'Save Changes' : 'Add Order') }}
+  </button>
+</mat-dialog-actions>

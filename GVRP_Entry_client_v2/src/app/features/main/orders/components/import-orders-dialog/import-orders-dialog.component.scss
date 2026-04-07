@@ -1,0 +1,274 @@
+@import '../../../../../../assets/styles/variables';
+
+.form-row-inline {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 12px;
+
+  .row-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-dark);
+    white-space: nowrap;
+    min-width: 130px;
+  }
+}
+
+.radio-group {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+
+  ::ng-deep mat-radio-button {
+    .mdc-form-field {
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    .mdc-label {
+      white-space: nowrap;
+      padding-left: 6px;
+    }
+  }
+}
+
+.divider {
+  height: 1px;
+  background: var(--border-color);
+  margin: 12px 0;
+}
+
+.drop-zone {
+  border: 2px dashed var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 24px 16px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: var(--bg-light);
+  margin-bottom: 8px;
+
+  &:hover {
+    border-color: var(--primary-blue);
+    background: rgba(74, 144, 226, 0.04);
+  }
+
+  &.dragging {
+    border-color: var(--primary-blue);
+    background: rgba(74, 144, 226, 0.08);
+    transform: scale(1.01);
+  }
+
+  &.has-file {
+    border-style: solid;
+    border-color: var(--primary-blue);
+    background: rgba(74, 144, 226, 0.04);
+    padding: 12px 16px;
+  }
+
+  .drop-icon {
+    font-size: 32px;
+    margin-bottom: 8px;
+    line-height: 1;
+  }
+
+  p {
+    margin: 0 0 4px;
+    font-size: 13px;
+    color: var(--text-dark);
+
+    strong {
+      color: var(--primary-blue);
+    }
+  }
+
+  .drop-hint {
+    font-size: 11px;
+    color: var(--text-light);
+    margin: 0;
+  }
+}
+
+// File selected state
+.file-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  .file-icon {
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+
+  .file-name {
+    flex: 1;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-dark);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-align: left;
+  }
+
+  .btn-remove {
+    width: 28px !important;
+    height: 28px !important;
+    flex-shrink: 0;
+    color: var(--text-gray);
+
+    mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+    }
+
+    &:hover {
+      color: var(--danger-red);
+    }
+  }
+}
+
+// Error text
+.error-text {
+  font-size: 12px;
+  color: var(--danger-red);
+  margin-top: 4px;
+  margin-bottom: 8px;
+}
+
+.format-hint {
+  font-size: 11px;
+  color: var(--text-gray);
+  background: var(--bg-light);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  margin-bottom: 8px;
+  font-family: var(--font-family-mono);
+  line-height: 1.5;
+
+  strong {
+    color: var(--text-dark);
+  }
+}
+
+.text-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  font-size: 12px;
+  font-family: var(--font-family-mono);
+  color: var(--text-dark);
+  background: var(--white);
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.2s;
+  line-height: 1.6;
+
+  &::placeholder {
+    color: var(--text-light);
+    font-style: italic;
+  }
+
+  &:focus {
+    border-color: var(--primary-blue);
+    box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.1);
+  }
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+
+  label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-dark);
+
+    .required {
+      color: var(--danger-red);
+      margin-left: 2px;
+    }
+  }
+
+  .input-field {
+    height: 36px;
+    padding: 0 10px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    font-size: 13px;
+    color: var(--text-dark);
+    background: var(--white);
+    outline: none;
+    transition: border-color 0.2s;
+
+    &:focus {
+      border-color: var(--primary-blue);
+      box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.1);
+    }
+  }
+}
+
+.help-section {
+  margin-top: 12px;
+  padding: 10px 12px;
+  background: var(--bg-light);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+
+  p {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-dark);
+    margin: 0 0 6px;
+  }
+
+  ul {
+    margin: 0;
+    padding-left: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+
+    li {
+      font-size: 12px;
+      color: var(--text-gray);
+    }
+  }
+
+  .link {
+    color: var(--primary-blue);
+    cursor: pointer;
+    font-weight: 500;
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
+::ng-deep {
+  .mat-mdc-radio-button {
+    .mdc-form-field {
+      font-size: 13px;
+    }
+  }
+
+  .mat-mdc-checkbox {
+    .mdc-form-field {
+      font-size: 13px;
+    }
+  }
+}
