@@ -34,7 +34,6 @@ public class OrderInputDTO {
     @Size(max = 20, message = "Phone number must not exceed 20 characters")
     private String customerPhone;
 
-    @NotBlank(message = "Address is required")
     @Size(max = 255, message = "Address must not exceed 255 characters")
     private String address;
 

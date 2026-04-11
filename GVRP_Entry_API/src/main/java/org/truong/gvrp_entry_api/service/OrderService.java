@@ -13,6 +13,7 @@ import org.truong.gvrp_entry_api.dto.response.OrderDTO;
 import org.truong.gvrp_entry_api.dto.response.PageResponse;
 import org.truong.gvrp_entry_api.entity.Branch;
 import org.truong.gvrp_entry_api.entity.Order;
+import org.truong.gvrp_entry_api.exception.DataInvalidException;
 import org.truong.gvrp_entry_api.exception.ResourceNotFoundException;
 import org.truong.gvrp_entry_api.mapper.OrderMapper;
 import org.truong.gvrp_entry_api.repository.BranchRepository;
@@ -59,6 +60,8 @@ public class OrderService {
             Long branchId,
             OrderInputDTO inputDTO) {
 
+        validateBusinessLogic(inputDTO);
+
         Order order = orderRepository.findByIdAndBranchId(orderId, branchId)
                 .orElseThrow(() -> new ResourceNotFoundException("Resources not found.", "order"));
 
@@ -72,6 +75,7 @@ public class OrderService {
             OrderInputDTO input,
             Long branchId
     ) {
+        validateBusinessLogic(input);
         Branch branch = branchRepository.findById(branchId).orElseThrow(
                 () -> new ResourceNotFoundException("Resources not found.", "branch")
         );
@@ -87,5 +91,23 @@ public class OrderService {
         );
 
         return orderMapper.toDTO(order);
+    }
+
+    public void validateBusinessLogic(OrderInputDTO dto) {
+
+        boolean hasCoordinates = dto.getLatitude() != null && dto.getLongitude() != null;
+        boolean hasAddress = dto.getAddress() != null && !dto.getAddress().trim().isEmpty();
+
+        if (!hasCoordinates && !hasAddress) {
+            throw new DataInvalidException("You must provide coordinates (latitude/longitude) OR a detailed address.");
+        }
+
+        if (dto.getTimeWindowStart() != null && dto.getTimeWindowEnd() != null) {
+            if (dto.getTimeWindowStart().isAfter(dto.getTimeWindowEnd())) {
+                throw new DataInvalidException("Time Window start time cannot be after the end time.");
+            }
+        } else if (dto.getTimeWindowStart() != null || dto.getTimeWindowEnd() != null) {
+            throw new DataInvalidException("Time Window must have both start and end times, or neither.");
+        }
     }
 }

@@ -44,6 +44,13 @@ export class ApiService {
     );
   }
 
+  addOrder(createData: OrderInputDTO): Observable<OrderDTO> {
+    return this.http.post<OrderDTO>(
+      `${this.apiUrl}/orders`,
+      createData
+    )
+  }
+
   getOrderById(orderId: number): Observable<OrderDTO> {
     return this.http.get<OrderDTO>(
       `${this.apiUrl}/orders/${orderId}`

@@ -1,7 +1,7 @@
 import { Component, Inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
+import {MatDialogModule, MatDialogRef, MAT_DIALOG_DATA, MatDialog} from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSelectModule } from '@angular/material/select';
@@ -11,6 +11,8 @@ import { ApiService } from '@core/services/api.service';
 import { ToastService } from '@shared/services/toast.service';
 import { OrderDTO, OrderInputDTO } from '@core/models';
 import {MatProgressSpinner} from '@angular/material/progress-spinner';
+import {th} from 'date-fns/locale';
+import {MapPickerDialogComponent} from '@features/main/orders/components/map-picker-dialog/map-picker-dialog.component';
 
 export interface EditOrderDialogData {
   orderId?: number;
@@ -37,6 +39,7 @@ export class EditOrderDialogComponent implements OnInit {
   isEditMode = false;
   isLoading = false;
   isSaving = false;
+  private originalFormSnapshot: string = '';
 
   form: OrderInputDTO & { status?: string; delivery_date?: string } = {
     order_code: '',
@@ -63,7 +66,8 @@ export class EditOrderDialogComponent implements OnInit {
     private dialogRef: MatDialogRef<EditOrderDialogComponent>,
     @Inject(MAT_DIALOG_DATA) public data: EditOrderDialogData,
     private apiService: ApiService,
-    private toast: ToastService
+    private toast: ToastService,
+    private dialog: MatDialog
   ) {}
 
   ngOnInit(): void {
@@ -111,6 +115,8 @@ export class EditOrderDialogComponent implements OnInit {
       status: order.status,
       delivery_date: order.delivery_date
     };
+
+    this.originalFormSnapshot = JSON.stringify(this.form);
   }
 
   validate(): string[] {
@@ -130,10 +136,20 @@ export class EditOrderDialogComponent implements OnInit {
     return errors;
   }
 
+  hasChanges(): boolean {
+    if (!this.isEditMode) {
+      return true
+    }
+
+    const currentFormSnapshot = JSON.stringify((this.form));
+    return currentFormSnapshot !== this.originalFormSnapshot;
+  }
+
   canSubmit(): boolean {
     return !this.isLoading && !this.isSaving &&
       !!this.form.order_code && !!this.form.customer_name &&
-      !!this.form.address && !!this.form.demand;
+      !!this.form.address && !!this.form.demand &&
+      this.hasChanges();
   }
 
   onSubmit(): void {
@@ -158,8 +174,20 @@ export class EditOrderDialogComponent implements OnInit {
           }
         });
     } else {
-      // Create — làm sau
-      this.toast.info('Create order - Coming soon!');
+      this.isSaving = true;
+      const { status, ...createPayload } = this.form;
+      this.apiService.addOrder(createPayload)
+        .subscribe({
+          next: () => {
+            this.toast.success('Order created successfully');
+            this.isSaving = false;
+            this.dialogRef.close(true);
+          },
+          error: (err) => {
+            this.toast.error(err.message || 'Failed to create order');
+            this.isSaving = false;
+          }
+        });
     }
   }
 
@@ -168,6 +196,20 @@ export class EditOrderDialogComponent implements OnInit {
   }
 
   onPickLocation(): void {
-    this.toast.info('Location picker - Coming soon!');
+    const mapDialogRef = this.dialog.open(MapPickerDialogComponent, {
+      width: '600px',
+      data: {
+        lat: this.form.latitude,
+        lng: this.form.longitude,
+      }
+    });
+
+    mapDialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.form.latitude = result.lat;
+        this.form.longitude = result.lng;
+        this.toast.success('Location updated!');
+      }
+    })
   }
 }

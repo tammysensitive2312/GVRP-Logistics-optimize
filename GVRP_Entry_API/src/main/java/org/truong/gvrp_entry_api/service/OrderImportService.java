@@ -1,12 +1,10 @@
 package org.truong.gvrp_entry_api.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Validator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -14,8 +12,6 @@ import org.truong.gvrp_entry_api.dto.request.OrderImportRequest;
 import org.truong.gvrp_entry_api.dto.request.OrderInputDTO;
 import org.truong.gvrp_entry_api.dto.response.ImportError;
 import org.truong.gvrp_entry_api.dto.response.ImportResultDTO;
-import org.truong.gvrp_entry_api.dto.response.OrderDTO;
-import org.truong.gvrp_entry_api.dto.response.PageResponse;
 import org.truong.gvrp_entry_api.entity.Branch;
 import org.truong.gvrp_entry_api.entity.Order;
 import org.truong.gvrp_entry_api.exception.InvalidFileFormatException;
@@ -28,12 +24,10 @@ import org.truong.gvrp_entry_api.mapper.OrderMapper;
 import org.truong.gvrp_entry_api.repository.BranchRepository;
 import org.truong.gvrp_entry_api.repository.OrderRepository;
 
-import java.io.IOException;
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -50,6 +44,8 @@ public class OrderImportService {
     private final CsvFileParser csvFileParser;
     private final JsonFileParser jsonFileParser;
     private final TextDataParser textDataParser;
+
+    private final Validator validator;
 
     /**
      * Entry point cho việc import.
@@ -158,16 +154,17 @@ public class OrderImportService {
                 }
             }
 
-            // Business Validation (Check logic, tọa độ, demand...)
-            String errorMsg = validate(dto);
-            if (errorMsg != null) {
-                validationErrors.add(buildError(
-                        i + 1, // Line number giả định (tương đối)
-                        dto.getOrderCode(),
-                        "BusinessRule",
-                        errorMsg,
-                        "N/A"
-                ));
+            Set<ConstraintViolation<OrderInputDTO>> violations = validator.validate(dto, OrderInputDTO.OnCreate.class);
+
+            if (!violations.isEmpty()) {
+                String formatErrorMsg = violations.iterator().next().getMessage();
+                validationErrors.add(buildError(i + 1, dto.getOrderCode(), "Format/Constraint", formatErrorMsg, "N/A"));
+                continue;
+            }
+
+            String businessErrorMsg = validateBusinessLogic(dto);
+            if (businessErrorMsg != null) {
+                validationErrors.add(buildError(i + 1, dto.getOrderCode(), "BusinessRule", businessErrorMsg, "N/A"));
             } else {
                 validOrdersToSave.add(dto);
             }
@@ -259,29 +256,15 @@ public class OrderImportService {
                 .build();
     }
 
-    public String validate(OrderInputDTO dto) {
-        // 1. Validate Coordinates
+    public String validateBusinessLogic(OrderInputDTO dto) {
+
         boolean hasCoordinates = dto.getLatitude() != null && dto.getLongitude() != null;
         boolean hasAddress = dto.getAddress() != null && !dto.getAddress().trim().isEmpty();
 
         if (!hasCoordinates && !hasAddress) {
-            return "You must provide coordinates (latitude/longitude) OR a detailed address to automatically retrieve coordinates.";
+            return "You must provide coordinates (latitude/longitude) OR a detailed address.";
         }
 
-        // If coordinates are provided → validate range
-        if (hasCoordinates) {
-            if (dto.getLatitude() < -90 || dto.getLatitude() > 90 ||
-                    dto.getLongitude() < -180 || dto.getLongitude() > 180) {
-                return "Invalid coordinates (Lat: -90 to 90, Lng: -180 to 180).";
-            }
-        }
-
-        // 2. Validate Demand
-        if (dto.getDemand() == null || dto.getDemand().compareTo(BigDecimal.ZERO) <= 0) {
-            return "Demand must be a positive number (> 0).";
-        }
-
-        // 3. Validate Time Window
         if (dto.getTimeWindowStart() != null && dto.getTimeWindowEnd() != null) {
             if (dto.getTimeWindowStart().isAfter(dto.getTimeWindowEnd())) {
                 return "Time Window start time cannot be after the end time.";
@@ -290,11 +273,6 @@ public class OrderImportService {
             return "Time Window must have both start and end times, or neither.";
         }
 
-        // 4. Validate Service Time (already enriched with default if null)
-        if (dto.getServiceTime() == null || dto.getServiceTime() < 0) {
-            return "Invalid service time (must be >= 0).";
-        }
-
-        return null; // Valid
+        return null;
     }
 }

@@ -26,10 +26,6 @@ export class MapService {
     private routingService: RoutingService
   ) {}
 
-  // ============================================
-  // INITIALIZATION
-  // ============================================
-
   initializeMap(map: L.Map): void {
     this.map = map;
     this.routeLayers = L.featureGroup().addTo(this.map);
@@ -47,10 +43,6 @@ export class MapService {
     return this.mapReady$.asObservable();
   }
 
-  // ============================================
-  // DEPOT MANAGEMENT
-  // ============================================
-
   loadDepots(depots: DepotDTO[]): void {
     this.clearDepotMarkers();
 
@@ -65,10 +57,6 @@ export class MapService {
     this.depotMarkers.forEach(marker => this.map.removeLayer(marker));
     this.depotMarkers = [];
   }
-
-  // ============================================
-  // ORDER MANAGEMENT
-  // ============================================
 
   loadOrders(orders: OrderDTO[], onOrderClick?: (orderId: number) => void): void {
     this.clearOrderMarkers();
