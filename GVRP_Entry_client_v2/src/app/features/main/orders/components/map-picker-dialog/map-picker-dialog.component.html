@@ -1,0 +1,20 @@
+<h2 mat-dialog-title>📍 Select Location</h2>
+<mat-dialog-content>
+  <!-- Dùng component leaflet của @asymmetrik/ngx-leaflet giống hệt MapComponent -->
+  <div style="height: 400px; width: 100%; border-radius: 8px;"
+       leaflet
+       [leafletOptions]="mapOptions"
+       (leafletMapReady)="onMapReady($event)"
+       (leafletClick)="onMapClick($event)">
+  </div>
+
+  <div *ngIf="selectedLat && selectedLng" style="margin-top: 10px; font-weight: 500;">
+    Selected Coordinate: {{ selectedLat.toFixed(6) }}, {{ selectedLng.toFixed(6) }}
+  </div>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button (click)="onCancel()">Cancel</button>
+  <button mat-raised-button color="primary" [disabled]="!selectedLat" (click)="onConfirm()">
+    Confirm Location
+  </button>
+</mat-dialog-actions>
