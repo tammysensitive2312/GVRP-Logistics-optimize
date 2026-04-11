@@ -1,0 +1,79 @@
+<h2 mat-dialog-title>🔄 Optimization Job #{{ currentJob.id }}</h2>
+
+<mat-dialog-content>
+
+  <div class="status-section">
+    <div class="status-row">
+      <span class="status-label">Status:</span>
+      <span class="status-badge" [ngClass]="'status-' + currentJob.status.toLowerCase()">
+        {{ statusText }}
+      </span>
+    </div>
+
+    <div class="progress-section" *ngIf="isRunning || fakeProgress === 100">
+      <div class="progress-header">
+        <span class="progress-hint">
+          {{ fakeProgress === 100 ? 'Finalizing results...' : 'Processing your optimization request...' }}
+        </span>
+        <span class="progress-percent">{{ fakeProgress | number:'1.0-0' }}%</span>
+      </div>
+      <mat-progress-bar mode="determinate" [value]="fakeProgress" color="primary"></mat-progress-bar>
+    </div>
+
+  </div>
+
+  <!-- Result (when completed) -->
+  <div class="result-section" *ngIf="currentJob.status === 'COMPLETED'">
+
+    <div class="loading-solution" *ngIf="isLoadingSolution">
+      <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+      <p>Loading solution details...</p>
+    </div>
+
+    <div class="solution-summary" *ngIf="solution">
+      <h3 class="section-title">📊 Results</h3>
+      <div class="result-grid">
+        <div class="result-card">
+          <div class="result-label">💰 Total Cost</div>
+          <div class="result-value">{{ solution.total_cost | number }} VND</div>
+        </div>
+        <div class="result-card">
+          <div class="result-label">🛣️ Distance</div>
+          <div class="result-value">{{ solution.total_distance | number:'1.1-1' }} km</div>
+        </div>
+        <div class="result-card">
+          <div class="result-label">🚚 Routes</div>
+          <div class="result-value">{{ solution.total_vehicles_used }}</div>
+        </div>
+        <div class="result-card result-success">
+          <div class="result-label">✅ Served</div>
+          <div class="result-value">{{ solution.served_orders }}</div>
+        </div>
+        <div class="result-card" [class.result-warning]="solution.unserved_orders > 0">
+          <div class="result-label">❌ Unserved</div>
+          <div class="result-value">{{ solution.unserved_orders }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Error -->
+  <div class="error-section" *ngIf="currentJob.status === 'FAILED'">
+    <p class="error-text">{{ currentJob.error_message || 'Optimization failed. Please try again.' }}</p>
+  </div>
+
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button
+          *ngIf="isRunning"
+          (click)="onCancelJob()">
+    Cancel Job
+  </button>
+  <button mat-button (click)="onClose()">Close</button>
+  <button mat-raised-button color="primary"
+          *ngIf="canViewResult"
+          (click)="onViewResult()">
+    View Result
+  </button>
+</mat-dialog-actions>

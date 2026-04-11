@@ -1,4 +1,9 @@
-<h2 mat-dialog-title>{{ title }}</h2>
+<h2 mat-dialog-title class="dialog-header">
+  <span>{{ title }}</span>
+  <button mat-icon-button mat-dialog-close class="btn-close" tabindex="-1">
+    <mat-icon>close</mat-icon>
+  </button>
+</h2>
 
 <mat-dialog-content>
 

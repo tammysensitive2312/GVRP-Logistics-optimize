@@ -49,9 +49,6 @@ export class ImportOrdersDialogComponent {
     private dialogRef: MatDialogRef<ImportOrdersDialogComponent>
   ) {}
 
-  // ============================================
-  // FILE HANDLING
-  // ============================================
   onDropZoneClick(fileInput: HTMLInputElement): void {
     fileInput.click();
   }
@@ -106,9 +103,6 @@ export class ImportOrdersDialogComponent {
     this.fileError = '';
   }
 
-  // ============================================
-  // TEMPLATE DOWNLOAD
-  // ============================================
   downloadTemplate(): void {
     const csv =
       'orderCode,customerName,customerPhone,address,latitude,longitude,' +
@@ -124,9 +118,6 @@ export class ImportOrdersDialogComponent {
     URL.revokeObjectURL(url);
   }
 
-  // ============================================
-  // SUBMIT
-  // ============================================
   canSubmit(): boolean {
     if (!this.deliveryDate) return false;
     if (this.method === 'file') return !!this.selectedFile;

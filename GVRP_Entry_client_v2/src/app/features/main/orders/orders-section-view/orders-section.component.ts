@@ -4,14 +4,14 @@ import { MatTabsModule } from '@angular/material/tabs';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDialog } from '@angular/material/dialog';
-import {Observable, Subject} from 'rxjs';
+import {Subject} from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
 import { ApiService } from '@core/services/api.service';
 import { ToastService } from '@shared/services/toast.service';
 import { StorageService } from '@core/services/storage.service';
 
-import { OrderDTO, OrderFilter, SolutionDTO } from '@core/models';
+import {OrderDTO, OrderFilter, RoutePlanningRequest, SolutionDTO} from '@core/models';
 import { PageEvent } from '@angular/material/paginator';
 
 import { OrdersActionToolbarComponent } from '../components/orders-action-toolbar/orders-action-toolbar.component';
@@ -23,7 +23,7 @@ import {VehicleSelectionService} from '@shared/services/vehicle-selection.servic
 import {
   RoutePlanningDialogComponent,
   RoutePlanningDialogData, RoutePlanningDialogResult
-} from '@features/main/orders/components/route-planning-dialog/route-planning-dialog.component';
+} from '@features/main/jobs/route-planning-dialog/route-planning-dialog.component';
 import {
   ImportDialogResult,
   ImportOrdersDialogComponent
@@ -32,6 +32,7 @@ import {
   EditOrderDialogComponent,
   EditOrderDialogData
 } from '@features/main/orders/components/edit-orders-dialog/edit-order-dialog.component';
+import {JobMonitoringDialogComponent} from '@features/main/jobs/job-monitoring-dialog/job-monitoring-dialog.component';
 
 
 @Component({
@@ -161,8 +162,46 @@ export class OrdersSectionComponent implements OnInit, OnDestroy {
 
     dialogRef.afterClosed().subscribe((result: RoutePlanningDialogResult | null) => {
       if (!result) return;
-      // TODO: gọi API optimize với result
-      console.log('Start optimization with:', result);
+
+      const request: RoutePlanningRequest = {
+        order_ids: this.selectedOrders.map(o => o.id),
+        vehicle_ids: this.vehicleSelectionService.getSelectedIds(),
+        preferences: {
+          goal: result.optimizationGoal,
+          speed: result.optimizationSpeed,
+          allow_unassigned_orders: result.allowUnassigned,
+          time_window_mode: result.timeWindowMode,
+          enable_pareto_analysis: result.enablePareto
+        }
+      };
+
+      this.apiService.submitRoutePlanningJob(request)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: (job) => {
+            if (result.optimizationSpeed === 'FAST') {
+              const monitoringDialog = this.dialog.open(JobMonitoringDialogComponent, {
+                width: '560px',
+                maxWidth: '90vw',
+                disableClose: true,
+                data: { job }
+              });
+
+              monitoringDialog.afterClosed().subscribe((monitorResult) => {
+                if (monitorResult?.solution) {
+                  this.solution = monitorResult.solution;
+                  this.selectedTabIndex = 1;
+                }
+              });
+
+            } else {
+              this.toastService.info(`Job #${job.id} is running in background. You will be notified when complete.`);
+            }
+          },
+          error: (err) => {
+            this.toastService.error(err.message || 'Failed to submit optimization job');
+          }
+        });
     });
   }
 

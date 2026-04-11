@@ -1,4 +1,10 @@
-<h2 mat-dialog-title>📍 Select Location</h2>
+<h2 mat-dialog-title class="dialog-header">
+  <span>📍 Select Location</span>
+  <button mati-icon-button mat-dialog-close class="btn-close" tabindex="-1">
+    <mat-icon>close</mat-icon>
+  </button>
+</h2>
+
 <mat-dialog-content>
   <!-- Dùng component leaflet của @asymmetrik/ngx-leaflet giống hệt MapComponent -->
   <div style="height: 400px; width: 100%; border-radius: 8px;"

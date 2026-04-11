@@ -1,7 +1,16 @@
 import {inject, Injectable} from '@angular/core';
 import {HttpClient, HttpParams} from '@angular/common/http';
 import {environment} from '@environments/environment';
-import {DepotDTO, OrderDTO, OrderFilter, OrderInputDTO, PaginatedResponse, VehicleDTO} from '@core/models';
+import {
+  DepotDTO, JobDTO,
+  OrderDTO,
+  OrderFilter,
+  OrderInputDTO,
+  PaginatedResponse,
+  RoutePlanningRequest,
+  SolutionDTO,
+  VehicleDTO
+} from '@core/models';
 import {Observable} from 'rxjs';
 import {map} from 'rxjs/operators';
 
@@ -56,4 +65,21 @@ export class ApiService {
       `${this.apiUrl}/orders/${orderId}`
     );
   }
+
+  submitRoutePlanningJob(request: RoutePlanningRequest): Observable<JobDTO> {
+    return this.http.post<JobDTO>(`${this.apiUrl}/jobs/plan`, request);
+  }
+
+  getJobById(jobId: number): Observable<JobDTO> {
+    return this.http.get<JobDTO>(`${this.apiUrl}/jobs/${jobId}`);
+  }
+
+  cancelJob(jobId: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/jobs/${jobId}`);
+  }
+
+  getSolutionById(solutionId: number): Observable<SolutionDTO> {
+    return this.http.get<SolutionDTO>(`${this.apiUrl}/solutions/${solutionId}`);
+  }
+
 }

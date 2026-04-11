@@ -14,4 +14,8 @@ export class VehicleSelectionService {
   getCount(): number {
     return this.selectedIds$.getValue().length;
   }
+
+  getSelectedIds(): number[] {
+    return this.selectedIds$.getValue();
+  }
 }

@@ -434,10 +434,6 @@ async function updateOrder(orderId, updateData, deliveryDate = null) {
     }
 }
 
-// ============================================
-// SOLUTION API (for future use)
-// ============================================
-
 /**
  * Get available vehicles for planning
  * @returns {Promise<Array>} List of available vehicle DTOs
