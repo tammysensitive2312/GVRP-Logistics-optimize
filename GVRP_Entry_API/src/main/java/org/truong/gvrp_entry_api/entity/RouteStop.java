@@ -22,7 +22,12 @@ import java.time.LocalTime;
 public class RouteStop {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "route_stop_seq")
+    @SequenceGenerator(
+            name = "route_stop_seq",
+            sequenceName = "route_stop_sequence",
+            allocationSize = 50
+    )
     @Column(name = "id", nullable = false)
     private Long id;
 

@@ -169,6 +169,7 @@ public class OptimizationJobService {
 
         log.info("Job #{} cancelled successfully", jobId);
     }
+    
 
     /**
      * Get current running job

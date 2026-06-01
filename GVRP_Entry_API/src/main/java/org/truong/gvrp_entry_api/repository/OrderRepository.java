@@ -3,12 +3,12 @@ package org.truong.gvrp_entry_api.repository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.truong.gvrp_entry_api.entity.Order;
 import org.truong.gvrp_entry_api.entity.enums.OrderStatus;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -21,20 +21,6 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
      * @return List of orders
      */
     Optional<Order> findByIdAndBranchId(Long orderId, Long branchId);
-
-    /**
-     * Find orders by branch ID and status
-     * @param ids list of Order IDs
-     * @param status Order status
-     * @return List of orders
-     */
-    @Query("""
-    SELECT o FROM Order o
-    WHERE o.id IN :ids 
-    AND o.status = :status
-    ORDER BY o.priority ASC, o.id ASC
-    """)
-    List<Order> findByStatus(@Param("ids") List<Long> ids,@Param("status") OrderStatus status);
 
     /**
      * Find order by branch ID and order code
@@ -54,4 +40,11 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
 
     Page<Order> findByBranchIdOrderByCreatedAtDesc(Long branchId, Pageable pageable);
+
+    @Modifying(clearAutomatically = true)
+    @Query("UPDATE Order e SET e.status = :status WHERE e.id IN :ids")
+    void updateStatusByIds(
+            @Param("ids") List<Long> orderIds,
+            @Param("status") OrderStatus status
+    );
 }

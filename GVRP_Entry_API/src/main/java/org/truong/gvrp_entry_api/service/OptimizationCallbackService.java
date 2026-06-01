@@ -16,8 +16,9 @@ import org.truong.gvrp_entry_api.repository.*;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Slf4j
 @Service
@@ -35,40 +36,24 @@ public class OptimizationCallbackService {
 
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm:ss");
 
-    /**
-     * Handle optimization completion callback
-     * 🔧 CHANGES:
-     * - Uncommented saveSolution() logic
-     * - Uncommented job status update
-     * - Added error handling
-     */
     @Transactional
     public void handleCompletion(EngineCallbackRequest.CompletionCallback callback) {
-
         try {
-            // 1. Load job
             OptimizationJob job = jobRepository.findById(callback.getJobId())
                     .orElseThrow(() -> new ResourceNotFoundException("Job not found", "OptimizationJob"));
 
-            // 2. Validate job can receive completion
             if (job.getStatus() != OptimizationJobStatus.PROCESSING) {
-                log.warn("⚠️  Job #{} is not in PROCESSING state (current: {}). Ignoring callback.",
-                        job.getId(), job.getStatus());
+                log.warn("⚠️ Job #{} is not in PROCESSING state (current: {}). Ignoring callback.", job.getId(), job.getStatus());
                 return;
             }
 
-            // 🔧 CHANGE: Uncommented this block
-            // 3. Save solution
             Solution solution = saveSolution(job, callback);
 
-            // 4. Update job
             job.setStatus(OptimizationJobStatus.COMPLETED);
             job.setCompletedAt(LocalDateTime.now());
-
             job.setSolution(solution);
             jobRepository.save(job);
 
-            // 5. Send success email
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
                 @Override
                 public void afterCommit() {
@@ -84,9 +69,8 @@ public class OptimizationCallbackService {
             });
 
         } catch (Exception e) {
-            log.error("❌ Failed to process completion callback for job #{}: {}",
-                    callback.getJobId(), e.getMessage(), e);
-            throw e; // Re-throw to return 500 to Engine API
+            log.error("❌ Failed to process completion callback for job #{}: {}", callback.getJobId(), e.getMessage(), e);
+            throw e;
         }
     }
 
@@ -171,32 +155,19 @@ public class OptimizationCallbackService {
         }
     }
 
-    // ==================== HELPER METHODS ====================
 
-    /**
-     * Save solution with routes and segments
-     * <p>
-     * 🔧 CHANGES:
-     * - Uncommented entire method
-     * - Added null checks
-     * - Added error handling
-     */
     private Solution saveSolution(OptimizationJob job, EngineCallbackRequest.CompletionCallback callback) {
 
         EngineCallbackRequest.SolutionData solutionData = callback.getSolution();
-
         log.debug("💾 Saving solution for job #{}...", job.getId());
 
-        Long jobId = job.getId();
-
-        Solution solution = solutionRepository.findByJobId(jobId)
+        Solution solution = solutionRepository.findByJobId(job.getId())
                 .orElseGet(() -> Solution.builder()
                         .job(job)
                         .branch(job.getBranch())
                         .createdAt(LocalDateTime.now())
                         .build());
 
-        // 1. Create solution entity
         solution.setType(SolutionType.ENGINE_GENERATED);
         solution.setStatus(calculateSolutionStatus(callback));
         solution.setTotalDistance(solutionData.getTotalDistance());
@@ -214,52 +185,74 @@ public class OptimizationCallbackService {
             solution.getRoutes().clear();
         }
 
-        if (solutionData.getUnassignedOrders() != null) {
-            for (EngineCallbackRequest.UnassignedOrderData uaData : solutionData.getUnassignedOrders()) {
+        Set<Long> orderIds = Stream.concat(
+                Optional.ofNullable(solutionData.getRoutes()).orElse(Collections.emptyList()).stream()
+                        .flatMap(route -> Optional.ofNullable(route.getStops()).orElse(Collections.emptyList()).stream())
+                        .map(EngineCallbackRequest.StopData::getOrderId),
+                Optional.ofNullable(solutionData.getUnassignedOrders()).orElse(Collections.emptyList()).stream()
+                        .map(EngineCallbackRequest.UnassignedOrderData::getOrderId)
+        ).filter(Objects::nonNull).collect(Collectors.toSet());
 
-                Order order = orderRepository.findById(uaData.getOrderId()).orElse(null);
+        List<Order> orders = orderRepository.findAllById(orderIds);
+        Map<Long, Order> orderMap = orders.stream().collect(Collectors.toMap(Order::getId, o -> o));
 
-                if (order != null) {
-                    UnassignedOrder unassigned = UnassignedOrder.builder()
+        if (solutionData.getUnassignedOrders() != null && !solutionData.getUnassignedOrders().isEmpty()) {
+            List<UnassignedOrder> unassignedList = buildUnassignedOrder(solution, solutionData.getUnassignedOrders(), orderMap);
+            solution.getUnassignedOrders().addAll(unassignedList);
+
+            List<Long> unassignedOrderIds = unassignedList.stream().map(uo -> uo.getOrder().getId()).toList();
+            orderRepository.updateStatusByIds(unassignedOrderIds, OrderStatus.UNASSIGNED);
+        }
+
+        List<Long> assignedOrderIds = new ArrayList<>();
+        if (solutionData.getRoutes() != null) {
+            Set<Long> vehicleIds = solutionData.getRoutes().stream()
+                    .filter(Objects::nonNull)
+                    .map(EngineCallbackRequest.RouteData::getVehicleId)
+                    .collect(Collectors.toSet());
+
+            Map<Long, Vehicle> vehicleMap = vehicleRepository.findAllById(vehicleIds)
+                    .stream()
+                    .collect(Collectors.toMap(Vehicle::getId, v -> v));
+
+            for (EngineCallbackRequest.RouteData routeData : solutionData.getRoutes()) {
+                try {
+                    Route route = buildRoute(solution, routeData, vehicleMap, orderMap);
+                    solution.getRoutes().add(route);
+
+                    if (routeData.getStops() != null) {
+                        assignedOrderIds.addAll(routeData.getStops().stream()
+                                .map(EngineCallbackRequest.StopData::getOrderId)
+                                .filter(Objects::nonNull)
+                                .toList());
+                    }
+                } catch (Exception e) {
+                    log.error("❌ Failed to save route for vehicle {}: {}", routeData.getVehicleId(), e.getMessage(), e);
+                }
+            }
+
+            if (!assignedOrderIds.isEmpty()) {
+                orderRepository.updateStatusByIds(assignedOrderIds, OrderStatus.ON_ROUTE);
+            }
+        }
+
+        solutionRepository.save(solution);
+        return solution;
+    }
+
+    private List<UnassignedOrder> buildUnassignedOrder(Solution solution, List<EngineCallbackRequest.UnassignedOrderData> solutionData, Map<Long, Order> orderMap) {
+        return solutionData.stream()
+                .map(uaData -> {
+                    Order order = orderMap.get(uaData.getOrderId());
+                    if (order == null) return null;
+                    return UnassignedOrder.builder()
                             .solution(solution)
                             .order(order)
                             .reason(uaData.getReason())
                             .build();
-                    solution.getUnassignedOrders().add(unassigned);
-
-                    order.setStatus(OrderStatus.UNASSIGNED);
-                    orderRepository.save(order);
-
-                    log.info("⚠️ Order #{} unassigned: {}", order.getId(), uaData.getReason());
-                }
-            }
-        }
-
-        solution = solutionRepository.saveAndFlush(solution);
-
-        // 2. Save routes
-        List<Route> routes = new ArrayList<>();
-
-        // 🔧 CHANGE: Add null check
-        if (solutionData.getRoutes() != null) {
-
-            for (EngineCallbackRequest.RouteData routeData : solutionData.getRoutes()) {
-                try {
-                    Route route = saveRoute(solution, routeData);
-                    solution.getRoutes().add(route);
-                } catch (Exception e) {
-                    log.error("❌ Failed to save route for vehicle {}: {}",
-                            routeData.getVehicleId(), e.getMessage(), e);
-                    // Continue with other routes
-                }
-            }
-        }
-
-        solution = solutionRepository.save(solution);
-
-        log.debug("✓ Saved {} routes for solution #{}", routes.size(), solution.getId());
-
-        return solution;
+                })
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
     }
 
     private SolutionStatus calculateSolutionStatus(EngineCallbackRequest.CompletionCallback callback) {
@@ -271,9 +264,6 @@ public class OptimizationCallbackService {
         List<EngineCallbackRequest.RouteData> routes = solutionData.getRoutes();
 
         if (servedOrders == null || unservedOrders == null || routes == null) {
-            // If the core metrics are null, treat this as a data error.
-            // You can choose either INFEASIBLE or log WARN and return PARTIAL_SUCCESS.
-            // Here we choose INFEASIBLE to force the Engine's output data to be checked..status()
             return SolutionStatus.INFEASIBLE;
         }
 
@@ -292,101 +282,71 @@ public class OptimizationCallbackService {
         return SolutionStatus.INFEASIBLE;
     }
 
-    /**
-     * Save route with segments
-     * <p>
-     * 🔧 CHANGES:
-     * - Uncommented entire method
-     * - Added null checks
-     * - Fixed field mapping
-     */
-    private Route saveRoute(Solution solution, EngineCallbackRequest.RouteData routeData) {
-
+    private Route buildRoute(
+            Solution solution,
+            EngineCallbackRequest.RouteData routeData,
+            Map<Long, Vehicle> vehicleMap,
+            Map<Long, Order> orderMap
+    ) {
         log.debug("💾 Saving route for vehicle #{}...", routeData.getVehicleId());
 
-        // 1. Load vehicle
-        Vehicle vehicle = vehicleRepository.findById(routeData.getVehicleId())
-                .orElseThrow(() -> new ResourceNotFoundException("Vehicle not found", "Vehicle"));
-
-        // 2. Create route
         Route route = Route.builder()
                 .solution(solution)
-                .vehicle(vehicle)
-
-                // 🔧 CHANGE: Add null check and default value
+                .vehicle(vehicleMap.get(routeData.getVehicleId()))
                 .routeOrder(routeData.getRouteOrder() != null ? routeData.getRouteOrder() : 1)
-
                 .distance(routeData.getDistance())
-
-                // 🔧 CHANGE: Map duration to serviceTime (assuming this is the field name)
                 .serviceTime(routeData.getDuration())
-
                 .co2Emission(routeData.getCo2Emission())
                 .orderCount(routeData.getOrderCount())
                 .loadUtilization(routeData.getLoadUtilization())
                 .segments(new ArrayList<>())
                 .build();
 
-        route = routeRepository.save(route);
-
-        log.debug("✓ Created route #{}", route.getId());
-
-        // 🔧 CHANGE: Add null check
-        if (routeData.getStops() != null) {
-            for (EngineCallbackRequest.StopData stopData : routeData.getStops()) {
-                try {
-                    RouteStop stop = saveStop(route, stopData);
-                    route.getSegments().add(stop);
-                } catch (Exception e) {
-                    log.error("❌ Failed to save segment #{}: {}",
-                            stopData.getSequenceNumber(), e.getMessage(), e);
-                    // Continue with other segments
-                }
+        if (routeData.getStops() != null && !routeData.getStops().isEmpty()) {
+            try {
+                List<RouteStop> stops = buildStop(route, routeData.getStops(), orderMap);
+                route.getSegments().addAll(stops);
+            } catch (Exception e) {
+                log.error("❌ Failed to save segment : {}", e.getMessage());
             }
         }
-
-        log.debug("✓ Saved {} segments for route #{}", route.getSegments().size(), route.getId());
-
         return route;
     }
 
+    private List<RouteStop> buildStop(Route route, List<EngineCallbackRequest.StopData> stopData, Map<Long, Order> orderMap) {
+        return stopData.stream()
+                .map(stop -> {
+                    Order order = null;
 
-    private RouteStop saveStop(Route route, EngineCallbackRequest.StopData stopData) {
+                    if ("ORDER".equals(stop.getType()) || "CUSTOMER".equals(stop.getType())) {
+                        order = orderMap.get(stop.getOrderId());
+                    }
 
-        // Load order if type = ORDER/CUSTOMER
-        Order order = null;
-        if (("ORDER".equals(stopData.getType()) || "CUSTOMER".equals(stopData.getType()))
-                && stopData.getOrderId() != null) {
-            order = orderRepository.findById(stopData.getOrderId()).orElse(null);
-        }
+                    if (order == null && ("ORDER".equals(stop.getType())
+                            || "CUSTOMER".equals(stop.getType()))) {
+                        log.warn("Order not found for stop: {}", stop.getOrderId());
+                        return null;
+                    }
 
-        // Parse times
-        LocalTime arrivalTime = parseTime(stopData.getArrivalTime());
-        LocalTime departureTime = parseTime(stopData.getDepartureTime());
-
-        // Map LocationType
-        LocationType locationType = mapLocationType(stopData.getType());
-
-        // Create stop
-        RouteStop stop = RouteStop.builder()
-                .route(route)
-                .sequenceNumber(stopData.getSequenceNumber())
-                .type(locationType)
-                .order(order)
-                .locationId(stopData.getLocationId())
-                .locationName(stopData.getLocationName())
-                .location(geometryMapper.createPoint(stopData.getLatitude(), stopData.getLongitude()))
-                .arrivalTime(arrivalTime)
-                .departureTime(departureTime)
-                .serviceTime(stopData.getWaitTime())
-                .waitTime(stopData.getWaitTime())
-                .demand(stopData.getDemand())
-                .loadAfter(stopData.getLoadAfter())
-                .distanceToNext(stopData.getDistanceToNext())
-                .timeToNext(stopData.getTimeToNext())
-                .build();
-
-        return routeStopRepository.save(stop);
+                    return RouteStop.builder()
+                            .route(route)
+                            .order(order)
+                            .sequenceNumber(stop.getSequenceNumber())
+                            .type(mapLocationType(stop.getType()))
+                            .locationId(stop.getLocationId())
+                            .locationName(stop.getLocationName())
+                            .location(geometryMapper.createPoint(stop.getLatitude(), stop.getLongitude()))
+                            .arrivalTime(parseTime(stop.getArrivalTime()))
+                            .departureTime(parseTime(stop.getDepartureTime()))
+                            .serviceTime(stop.getWaitTime())
+                            .demand(stop.getDemand())
+                            .loadAfter(stop.getLoadAfter())
+                            .distanceToNext(stop.getDistanceToNext())
+                            .timeToNext(stop.getTimeToNext())
+                            .build();
+                })
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
     }
 
     private LocationType mapLocationType(String type) {
@@ -401,24 +361,15 @@ public class OptimizationCallbackService {
         }
     }
 
-
-    /**
-     * Parse time string (HH:mm:ss) to LocalTime
-     * <p>
-     * 🔧 CHANGES:
-     * - Added more flexible parsing (handles HH:mm format too)
-     */
     private LocalTime parseTime(String timeStr) {
         if (timeStr == null || timeStr.isEmpty()) {
             return null;
         }
 
         try {
-            // Try HH:mm:ss format first
             return LocalTime.parse(timeStr, TIME_FORMATTER);
         } catch (Exception e) {
             try {
-                // 🔧 CHANGE: Try HH:mm format as fallback
                 return LocalTime.parse(timeStr, DateTimeFormatter.ofPattern("HH:mm"));
             } catch (Exception e2) {
                 log.warn("⚠️  Failed to parse time: {}", timeStr);

@@ -7,6 +7,8 @@ import com.graphhopper.jsprit.core.problem.solution.route.activity.TourActivity;
 import lombok.extern.slf4j.Slf4j;
 import org.truong.gvrp_engine_api.model.*;
 
+import static org.truong.gvrp_engine_api.utils.AppConstant.DEMAND_SCALE;
+
 /**
  * Solution Metrics Calculator
  *
@@ -111,7 +113,7 @@ public class SolutionMetricsCalculator {
                         return 0.0;
                     })
                     .sum();
-            double loadUtil = (routeLoad / typeDTO.getCapacity()) * 100.0;
+            double loadUtil = (routeLoad * DEMAND_SCALE / typeDTO.getCapacity()) * 100.0;
             totalLoadUtilization += loadUtil;
 
             // Time utilization (simplified)

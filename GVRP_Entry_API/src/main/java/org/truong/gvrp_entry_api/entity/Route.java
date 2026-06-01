@@ -24,7 +24,12 @@ import java.util.List;
 public class Route {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "route_seq")
+    @SequenceGenerator(
+            name = "route_seq",
+            sequenceName = "route_sequence",
+            allocationSize = 50
+    )
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)

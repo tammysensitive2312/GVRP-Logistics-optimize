@@ -13,7 +13,12 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder
 public class UnassignedOrder extends BaseEntity{
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "unassigned_order_seq")
+    @SequenceGenerator(
+            name = "unassigned_order_seq",
+            sequenceName = "unassigned_order_sequence",
+            allocationSize = 50
+    )
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
