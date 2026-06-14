@@ -156,7 +156,7 @@ public class OptimizationCallbackService {
     }
 
 
-    private Solution saveSolution(OptimizationJob job, EngineCallbackRequest.CompletionCallback callback) {
+    private Solution  saveSolution(OptimizationJob job, EngineCallbackRequest.CompletionCallback callback) {
 
         EngineCallbackRequest.SolutionData solutionData = callback.getSolution();
         log.debug("💾 Saving solution for job #{}...", job.getId());
