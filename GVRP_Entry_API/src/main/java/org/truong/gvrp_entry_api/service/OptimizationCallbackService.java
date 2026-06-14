@@ -2,6 +2,7 @@ package org.truong.gvrp_entry_api.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,6 +15,7 @@ import org.truong.gvrp_entry_api.entity.enums.*;
 import org.truong.gvrp_entry_api.exception.ResourceNotFoundException;
 import org.truong.gvrp_entry_api.mapper.GeometryMapper;
 import org.truong.gvrp_entry_api.repository.*;
+import org.truong.gvrp_entry_api.util.JobCompletionEvent;
 
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -36,6 +38,7 @@ public class OptimizationCallbackService {
     private final EmailService emailService;
     private final GeometryMapper geometryMapper;
     private final TransactionTemplate transactionTemplate;
+    private final ApplicationEventPublisher eventPublisher;
 
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm:ss");
 
@@ -56,20 +59,7 @@ public class OptimizationCallbackService {
             job.setCompletedAt(LocalDateTime.now());
             job.setSolution(solution);
             jobRepository.save(job);
-
-            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-                @Override
-                public void afterCommit() {
-                    try {
-                        emailService.sendOptimizationSuccessEmail(
-                                job.getCreatedBy().getId(),
-                                job.getId(),
-                                solution.getId());
-                    } catch (Exception e) {
-                        log.warn("⚠️ Failed to trigger async email: {}", e.getMessage());
-                    }
-                }
-            });
+            eventPublisher.publishEvent(buildCompletionEvent(job, solution));
 
         } catch (Exception e) {
             log.error("❌ Failed to process completion callback for job #{}: {}", callback.getJobId(), e.getMessage(), e);
@@ -82,6 +72,26 @@ public class OptimizationCallbackService {
             });
             throw e;
         }
+    }
+
+    private JobCompletionEvent buildCompletionEvent(OptimizationJob job, Solution solution) {
+        return new JobCompletionEvent(
+                this,
+                job.getId(),
+                job.getBranch().getId(),
+                job.getBranch().getName(),
+                job.getCreatedBy().getId(),
+                solution.getId(),
+                solution.getStatus(),
+                solution.getTotalDistance() != null ? solution.getTotalDistance().doubleValue() : 0,
+                solution.getTotalCost() != null ? solution.getTotalCost().doubleValue() : 0,
+                solution.getTotalCO2() != null ? solution.getTotalCO2().doubleValue() : 0,
+                solution.getTotalVehiclesUsed() != null ? solution.getTotalVehiclesUsed() : 0,
+                solution.getServedOrders() != null ? solution.getServedOrders() : 0,
+                solution.getUnservedOrders() != null ? solution.getUnservedOrders() : 0,
+                job.getCompletedAt(),
+                null
+        );
     }
 
     private void markJobFailed(Long jobId, String errorMessage) {
