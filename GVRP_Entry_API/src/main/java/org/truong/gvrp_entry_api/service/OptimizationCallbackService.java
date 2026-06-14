@@ -3,9 +3,11 @@ package org.truong.gvrp_entry_api.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.truong.gvrp_entry_api.dto.request.EngineCallbackRequest;
 import org.truong.gvrp_entry_api.entity.*;
 import org.truong.gvrp_entry_api.entity.enums.*;
@@ -33,6 +35,7 @@ public class OptimizationCallbackService {
     private final VehicleRepository vehicleRepository;
     private final EmailService emailService;
     private final GeometryMapper geometryMapper;
+    private final TransactionTemplate transactionTemplate;
 
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm:ss");
 
@@ -70,7 +73,28 @@ public class OptimizationCallbackService {
 
         } catch (Exception e) {
             log.error("❌ Failed to process completion callback for job #{}: {}", callback.getJobId(), e.getMessage(), e);
+            transactionTemplate.setPropagationBehavior(
+                    TransactionDefinition.PROPAGATION_REQUIRES_NEW
+            );
+            transactionTemplate.execute(status -> {
+                markJobFailed(callback.getJobId(), e.getMessage());
+                return null;
+            });
             throw e;
+        }
+    }
+
+    private void markJobFailed(Long jobId, String errorMessage) {
+        try {
+            OptimizationJob job = jobRepository.findById(jobId).orElse(null);
+            if (job != null) {
+                job.setStatus(OptimizationJobStatus.FAILED);
+                job.setErrorMessage("Internal error: " + errorMessage);
+                job.setCompletedAt(LocalDateTime.now());
+                jobRepository.save(job);
+            }
+        } catch (Exception e) {
+            log.error("❌ Failed to mark job as FAILED: {}", e.getMessage());
         }
     }
 
@@ -204,7 +228,7 @@ public class OptimizationCallbackService {
             orderRepository.updateStatusByIds(unassignedOrderIds, OrderStatus.UNASSIGNED);
         }
 
-        List<Long> assignedOrderIds = new ArrayList<>();
+        Set<Long> assignedOrderIds = new HashSet<>();
         if (solutionData.getRoutes() != null) {
             Set<Long> vehicleIds = solutionData.getRoutes().stream()
                     .filter(Objects::nonNull)
@@ -216,27 +240,46 @@ public class OptimizationCallbackService {
                     .collect(Collectors.toMap(Vehicle::getId, v -> v));
 
             for (EngineCallbackRequest.RouteData routeData : solutionData.getRoutes()) {
-                try {
-                    Route route = buildRoute(solution, routeData, vehicleMap, orderMap);
-                    solution.getRoutes().add(route);
-
-                    if (routeData.getStops() != null) {
-                        assignedOrderIds.addAll(routeData.getStops().stream()
-                                .map(EngineCallbackRequest.StopData::getOrderId)
-                                .filter(Objects::nonNull)
-                                .toList());
-                    }
-                } catch (Exception e) {
-                    log.error("❌ Failed to save route for vehicle {}: {}", routeData.getVehicleId(), e.getMessage(), e);
+                if (routeData.getStops() != null) {
+                    assignedOrderIds.addAll(routeData.getStops().stream()
+                            .map(EngineCallbackRequest.StopData::getOrderId)
+                            .filter(Objects::nonNull)
+                            .toList());
                 }
             }
 
+            List<Route> routes = solutionData.getRoutes().stream()
+                    .map(routeData -> buildRoute(
+                            solution,
+                            routeData,
+                            vehicleMap,
+                            orderMap
+                    ))
+                    .collect(Collectors.toList());
+
+            routeRepository.saveAll(routes);
+
+            List<RouteStop> allStops = new ArrayList<>();
+            for (int i = 0; i < routes.size(); i++) {
+                Route route = routes.get(i);
+                EngineCallbackRequest.RouteData routeData = solutionData.getRoutes().get(i);
+
+                if (routeData.getStops() != null) {
+                    List<RouteStop> stops = buildStop(route, routeData.getStops(), orderMap);
+                    route.getSegments().addAll(stops);
+                    allStops.addAll(stops);
+                }
+            }
+
+            routeStopRepository.saveAll(allStops);
+            solution.getRoutes().addAll(routes);
+
             if (!assignedOrderIds.isEmpty()) {
-                orderRepository.updateStatusByIds(assignedOrderIds, OrderStatus.ON_ROUTE);
+                orderRepository.updateStatusByIds(assignedOrderIds.stream().toList(), OrderStatus.ON_ROUTE);
             }
         }
 
-        solutionRepository.save(solution);
+//        solution = solutionRepository.save(solution);
         return solution;
     }
 
@@ -288,7 +331,6 @@ public class OptimizationCallbackService {
             Map<Long, Vehicle> vehicleMap,
             Map<Long, Order> orderMap
     ) {
-        log.debug("💾 Saving route for vehicle #{}...", routeData.getVehicleId());
 
         Route route = Route.builder()
                 .solution(solution)
@@ -301,15 +343,6 @@ public class OptimizationCallbackService {
                 .loadUtilization(routeData.getLoadUtilization())
                 .segments(new ArrayList<>())
                 .build();
-
-        if (routeData.getStops() != null && !routeData.getStops().isEmpty()) {
-            try {
-                List<RouteStop> stops = buildStop(route, routeData.getStops(), orderMap);
-                route.getSegments().addAll(stops);
-            } catch (Exception e) {
-                log.error("❌ Failed to save segment : {}", e.getMessage());
-            }
-        }
         return route;
     }
 
