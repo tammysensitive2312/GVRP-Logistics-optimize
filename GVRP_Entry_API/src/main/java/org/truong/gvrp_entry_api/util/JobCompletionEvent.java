@@ -8,7 +8,6 @@ import org.truong.gvrp_entry_api.entity.enums.SolutionStatus;
 import java.time.LocalDateTime;
 
 @Getter
-@Builder
 public class JobCompletionEvent extends ApplicationEvent {
 
     private final Long jobId;
@@ -28,6 +27,7 @@ public class JobCompletionEvent extends ApplicationEvent {
     private final LocalDateTime completedAt;
     private final String errorMessage;
 
+    @Builder
     public JobCompletionEvent(Object source, Long jobId, Long branchId,
                               String branchName, Long userId, Long solutionId,
                               SolutionStatus solutionStatus, double totalDistance,

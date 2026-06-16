@@ -19,7 +19,7 @@ public class JobCompletionEventListener {
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onJobCompleted(JobCompletionEvent event) {
-        log.info("📣 Broadcasting JobCompletionEvent for job #{} to {} channels",
+        log.info("Broadcasting JobCompletionEvent for job #{} to {} channels",
                 event.getJobId(), channels.size());
 
         for (NotificationChannel channel : channels) {
