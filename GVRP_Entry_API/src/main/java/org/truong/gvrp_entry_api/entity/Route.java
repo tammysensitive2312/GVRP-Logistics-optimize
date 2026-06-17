@@ -32,7 +32,7 @@ public class Route {
     )
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "solution_id", nullable = false)
     private Solution solution;
 

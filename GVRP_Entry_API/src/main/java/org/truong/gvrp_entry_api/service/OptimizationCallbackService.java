@@ -39,6 +39,7 @@ public class OptimizationCallbackService {
     private final GeometryMapper geometryMapper;
     private final TransactionTemplate transactionTemplate;
     private final ApplicationEventPublisher eventPublisher;
+    private final JobStatusUpdater jobStatusUpdater;
 
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm:ss");
 
@@ -57,18 +58,17 @@ public class OptimizationCallbackService {
 
             job.setStatus(OptimizationJobStatus.COMPLETED);
             job.setCompletedAt(LocalDateTime.now());
-            job.setSolution(solution);
+//            job.setSolution(solution);
             jobRepository.save(job);
             eventPublisher.publishEvent(buildCompletionEvent(job, solution));
 
         } catch (Exception e) {
             log.error("❌ Failed to process completion callback for job #{}: {}", callback.getJobId(), e.getMessage(), e);
-            transactionTemplate.setPropagationBehavior(
-                    TransactionDefinition.PROPAGATION_REQUIRES_NEW
-            );
-            transactionTemplate.execute(status -> {
-                markJobFailed(callback.getJobId(), e.getMessage());
-                return null;
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCompletion(int status) {
+                    jobStatusUpdater.markAsFailed(callback.getJobId(), e.getMessage());
+                }
             });
             throw e;
         }

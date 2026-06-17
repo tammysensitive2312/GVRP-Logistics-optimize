@@ -39,7 +39,6 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
      */
     boolean existsByBranchIdAndOrderCode(Long branchId, String orderCode);
 
-
     Page<Order> findByBranchIdOrderByCreatedAtDesc(Long branchId, Pageable pageable);
 
     @Modifying(clearAutomatically = true)
