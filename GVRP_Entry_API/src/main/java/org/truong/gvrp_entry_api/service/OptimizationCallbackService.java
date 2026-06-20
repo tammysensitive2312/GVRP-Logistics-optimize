@@ -4,11 +4,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
-import org.springframework.transaction.support.TransactionTemplate;
 import org.truong.gvrp_entry_api.dto.request.EngineCallbackRequest;
 import org.truong.gvrp_entry_api.entity.*;
 import org.truong.gvrp_entry_api.entity.enums.*;
@@ -37,9 +35,9 @@ public class OptimizationCallbackService {
     private final VehicleRepository vehicleRepository;
     private final EmailService emailService;
     private final GeometryMapper geometryMapper;
-    private final TransactionTemplate transactionTemplate;
     private final ApplicationEventPublisher eventPublisher;
     private final JobStatusUpdater jobStatusUpdater;
+    private final OrderStatusTransitionService orderStatusTransitionService;
 
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm:ss");
 
@@ -234,8 +232,13 @@ public class OptimizationCallbackService {
             List<UnassignedOrder> unassignedList = buildUnassignedOrder(solution, solutionData.getUnassignedOrders(), orderMap);
             solution.getUnassignedOrders().addAll(unassignedList);
 
-            List<Long> unassignedOrderIds = unassignedList.stream().map(uo -> uo.getOrder().getId()).toList();
-            orderRepository.updateStatusByIds(unassignedOrderIds, OrderStatus.UNASSIGNED);
+            if (!unassignedList.isEmpty()) {
+                List<Order> unassignedOrders = unassignedList.stream()
+                        .map(UnassignedOrder::getOrder)
+                        .toList();
+                orderStatusTransitionService.bulkTransition(
+                        unassignedOrders, OrderStatus.UNASSIGNED);
+            }
         }
 
         Set<Long> assignedOrderIds = new HashSet<>();
@@ -285,7 +288,11 @@ public class OptimizationCallbackService {
             solution.getRoutes().addAll(routes);
 
             if (!assignedOrderIds.isEmpty()) {
-                orderRepository.updateStatusByIds(assignedOrderIds.stream().toList(), OrderStatus.ON_ROUTE);
+                List<Order> assignedOrders = orders.stream()
+                        .filter(o -> assignedOrderIds.contains(o.getId()))
+                        .toList();
+                orderStatusTransitionService.bulkTransition(
+                        assignedOrders, OrderStatus.ON_ROUTE);
             }
         }
 
