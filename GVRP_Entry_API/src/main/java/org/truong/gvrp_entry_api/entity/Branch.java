@@ -20,6 +20,9 @@ public class Branch extends BaseEntity{
     @Column(nullable = false, unique = true, length = 100)
     private String name;
 
+    @Column
+    private String branchWebhookURL;
+
     @OneToMany(mappedBy = "branch", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<Depot> depots = new ArrayList<>();

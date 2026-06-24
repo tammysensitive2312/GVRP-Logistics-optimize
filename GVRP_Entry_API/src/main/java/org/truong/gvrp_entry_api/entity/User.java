@@ -24,6 +24,9 @@ public class User extends BaseEntity{
     @Column(nullable = false, unique = true, length = 50)
     private String username;
 
+    @Column(unique = true, length = 50)
+    private String slackUserId;
+
     @Column(nullable = false)
     private String password;
 

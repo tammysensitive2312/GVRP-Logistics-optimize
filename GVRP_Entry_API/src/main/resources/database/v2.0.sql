@@ -197,12 +197,8 @@ FROM route_stops rs
          LEFT JOIN orders o ON rs.order_id = o.id
 ORDER BY rs.route_id, rs.sequence_number;
 
+alter table branches
+add column branch_webhook_url varchar(100);
 
-alter table solutions
-    drop foreign key FKqumi4xrqfsitk6hk3u54oi157;
-
-alter table solutions
-    drop index FKqumi4xrqfsitk6hk3u54oi157;
-
-alter table solutions
-    drop column created_by_user_id;
+alter table users
+add column slack_user_id varchar(50) unique null

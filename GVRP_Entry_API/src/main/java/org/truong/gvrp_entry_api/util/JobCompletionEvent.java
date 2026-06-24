@@ -14,6 +14,8 @@ public class JobCompletionEvent extends ApplicationEvent {
     private final Long branchId;
     private final String branchName;
     private final Long userId;
+    private final String slackUserId;
+    private final String branchWebhookURL;
 
     private final Long solutionId;
     private final SolutionStatus solutionStatus;
@@ -29,7 +31,8 @@ public class JobCompletionEvent extends ApplicationEvent {
 
     @Builder
     public JobCompletionEvent(Object source, Long jobId, Long branchId,
-                              String branchName, Long userId, Long solutionId,
+                              String branchName, Long userId, String slackUserId,
+                              String branchWebhookURL, Long solutionId,
                               SolutionStatus solutionStatus, double totalDistance,
                               double totalCost, double totalCO2, int totalVehiclesUsed,
                               int servedOrdersCount, int unservedOrdersCount,
@@ -39,6 +42,8 @@ public class JobCompletionEvent extends ApplicationEvent {
         this.branchId = branchId;
         this.branchName = branchName;
         this.userId = userId;
+        this.slackUserId = slackUserId;
+        this.branchWebhookURL = branchWebhookURL;
         this.solutionId = solutionId;
         this.solutionStatus = solutionStatus;
         this.totalDistance = totalDistance;

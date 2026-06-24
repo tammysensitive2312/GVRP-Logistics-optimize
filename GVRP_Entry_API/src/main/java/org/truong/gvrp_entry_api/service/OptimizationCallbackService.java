@@ -79,6 +79,8 @@ public class OptimizationCallbackService {
                 job.getBranch().getId(),
                 job.getBranch().getName(),
                 job.getCreatedBy().getId(),
+                job.getCreatedBy().getSlackUserId(),
+                job.getBranch().getBranchWebhookURL(),
                 solution.getId(),
                 solution.getStatus(),
                 solution.getTotalDistance() != null ? solution.getTotalDistance().doubleValue() : 0,
