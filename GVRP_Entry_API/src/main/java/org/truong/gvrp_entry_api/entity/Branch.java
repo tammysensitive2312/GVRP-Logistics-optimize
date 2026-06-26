@@ -20,7 +20,7 @@ public class Branch extends BaseEntity{
     @Column(nullable = false, unique = true, length = 100)
     private String name;
 
-    @Column
+    @Column(name = "branch_webhook_url")
     private String branchWebhookURL;
 
     @OneToMany(mappedBy = "branch", cascade = CascadeType.ALL, orphanRemoval = true)

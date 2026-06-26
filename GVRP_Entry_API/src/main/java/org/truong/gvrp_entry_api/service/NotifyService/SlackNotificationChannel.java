@@ -20,6 +20,12 @@ public class SlackNotificationChannel implements NotificationChannel {
     private final RestTemplate restTemplate;
 
     @Override
+    public boolean supports(JobCompletionEvent event) {
+        return event.getBranchWebhookURL() != null
+                && !event.getBranchWebhookURL().isBlank();
+    }
+
+    @Override
     public void handle(JobCompletionEvent event) {
         Long jobId = event.getJobId();
         String status = event.getSolutionStatus().toString();

@@ -28,7 +28,7 @@ public class OptimizationJob {
     @JoinColumn(name = "branch_id", nullable = false)
     private Branch branch;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "created_by_user_id", nullable = false)
     private User createdBy;
 
