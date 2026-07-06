@@ -1,14 +1,18 @@
 package org.truong.gvrp_entry_api.integration.file;
 
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 import org.truong.gvrp_entry_api.dto.request.OrderInputDTO;
 import org.truong.gvrp_entry_api.dto.response.ImportError;
-import org.truong.gvrp_entry_api.exception.InvalidFileFormatException;
+import org.truong.gvrp_entry_api.exception.BackendServerError;
+import org.truong.gvrp_entry_api.exception.BusinessException;
+import org.truong.gvrp_entry_api.exception.DataInvalidException;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -37,9 +41,9 @@ public class CsvFileParser implements FileParser<OrderInputDTO>{
      *
      * @param file CSV file từ MultipartFile
      * @return ParseResult chứa danh sách orders hợp lệ và errors
-     * @throws InvalidFileFormatException nếu file không hợp lệ
+     * @throws DataInvalidException nếu file không hợp lệ
      */
-    public ParseResult<OrderInputDTO> parse(MultipartFile file) throws InvalidFileFormatException {
+    public ParseResult<OrderInputDTO> parse(MultipartFile file) {
         validateFile(file);
 
         List<OrderInputDTO> validOrders = new ArrayList<>();
@@ -85,32 +89,33 @@ public class CsvFileParser implements FileParser<OrderInputDTO>{
             return new ParseResult<>(validOrders, errors);
 
         } catch (IOException e) {
-            log.error("Failed to read CSV file: {}", e.getMessage());
-            throw new InvalidFileFormatException("Cannot read CSV file: " + e.getMessage());
+            throw new DataInvalidException("Cannot read CSV file: " + e.getMessage());
+        } catch (Exception e) {
+            throw new BackendServerError();
         }
     }
 
     /**
      * Validate file trước khi parse.
      */
-    private void validateFile(MultipartFile file) throws InvalidFileFormatException {
+    private void validateFile(MultipartFile file) throws DataInvalidException {
         if (file == null || file.isEmpty()) {
-            throw new InvalidFileFormatException("File is empty");
+            throw new DataInvalidException("File is empty");
         }
 
         if (file.getSize() > MAX_FILE_SIZE) {
-            throw new InvalidFileFormatException(
+            throw new DataInvalidException(
                     String.format("File size exceeds limit of %d MB", MAX_FILE_SIZE / 1024 / 1024));
         }
 
         String filename = file.getOriginalFilename();
         if (filename == null || !filename.toLowerCase().endsWith(".csv")) {
-            throw new InvalidFileFormatException("Only CSV files are accepted");
+            throw new DataInvalidException("Only CSV files are accepted");
         }
 
         String contentType = file.getContentType();
         if (contentType != null && !contentType.contains("csv") && !contentType.contains("text")) {
-            throw new InvalidFileFormatException("Invalid content type: " + contentType);
+            throw new DataInvalidException("Invalid content type: " + contentType);
         }
     }
 
@@ -212,10 +217,6 @@ public class CsvFileParser implements FileParser<OrderInputDTO>{
         }
     }
 
-    // =========================================================================
-    // HELPER METHODS
-    // =========================================================================
-
     /**
      * Safely get column value, handling case-insensitive và missing columns.
      */
@@ -268,22 +269,20 @@ public class CsvFileParser implements FileParser<OrderInputDTO>{
     /**
      * Exception khi parse một field trong CSV record.
      */
-    public static class ParseException extends Exception {
+    @Getter
+    public static class ParseException extends BusinessException {
         private final String field;
         private final int lineNumber;
 
         public ParseException(String field, int lineNumber, String message) {
-            super(message);
+            super(
+                    message,
+                    "0040009",
+                    HttpStatus.BAD_REQUEST
+            );
             this.field = field;
             this.lineNumber = lineNumber;
         }
 
-        public String getField() {
-            return field;
-        }
-
-        public int getLineNumber() {
-            return lineNumber;
-        }
     }
 }

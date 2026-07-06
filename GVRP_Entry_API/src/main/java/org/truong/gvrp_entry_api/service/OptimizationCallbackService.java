@@ -13,6 +13,7 @@ import org.truong.gvrp_entry_api.entity.enums.*;
 import org.truong.gvrp_entry_api.exception.ResourceNotFoundException;
 import org.truong.gvrp_entry_api.mapper.GeometryMapper;
 import org.truong.gvrp_entry_api.repository.*;
+import org.truong.gvrp_entry_api.service.orders.OrderStatusTransitionService;
 import org.truong.gvrp_entry_api.util.JobCompletionEvent;
 
 import java.time.LocalDateTime;

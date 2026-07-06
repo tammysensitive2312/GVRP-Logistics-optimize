@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.truong.gvrp_entry_api.dto.request.OrderInputDTO;
 import org.truong.gvrp_entry_api.dto.response.ImportError;
+import org.truong.gvrp_entry_api.exception.DataInvalidException;
 
 
 import java.math.BigDecimal;
@@ -75,7 +76,7 @@ public class TextDataParser { // If there is a DataParser interface, implement i
 
                 validOrders.add(dto);
 
-            } catch (IllegalArgumentException e) {
+            } catch (DataInvalidException e) {
                 // Catch format errors thrown by helper methods
                 errors.add(ImportError.builder()
                         .lineNumber(lineNumber)
@@ -100,13 +101,9 @@ public class TextDataParser { // If there is a DataParser interface, implement i
         return new ParseResult<>(validOrders, errors);
     }
 
-    // =========================================================================
-    // HELPER METHODS (Make code cleaner and report exactly which field is wrong)
-    // =========================================================================
-
     private String parseRequiredString(String value, String fieldName) {
         if (value == null || value.trim().isEmpty()) {
-            throw new IllegalArgumentException("Required field '" + fieldName + "' is empty.");
+            throw new DataInvalidException("Required field '" + fieldName + "' is empty.");
         }
         return value.trim();
     }
@@ -120,12 +117,12 @@ public class TextDataParser { // If there is a DataParser interface, implement i
 
     private BigDecimal parseBigDecimal(String value, String fieldName) {
         if (value == null || value.trim().isEmpty()) {
-            throw new IllegalArgumentException("Field '" + fieldName + "' is required.");
+            throw new DataInvalidException("Field '" + fieldName + "' is required.");
         }
         try {
             return new BigDecimal(value.trim());
         } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("Invalid BigDecimal format in field '" + fieldName + "': " + value);
+            throw new DataInvalidException("Invalid BigDecimal format in field '" + fieldName + "': " + value);
         }
     }
 
@@ -136,7 +133,7 @@ public class TextDataParser { // If there is a DataParser interface, implement i
         try {
             return Integer.parseInt(value.trim());
         } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("Invalid integer format in field '" + fieldName + "': " + value);
+            throw new DataInvalidException("Invalid integer format in field '" + fieldName + "': " + value);
         }
     }
 
@@ -147,7 +144,7 @@ public class TextDataParser { // If there is a DataParser interface, implement i
         try {
             return LocalTime.parse(value.trim()); // Default ISO format (HH:mm or HH:mm:ss)
         } catch (DateTimeParseException e) {
-            throw new IllegalArgumentException("Invalid time format in field '" + fieldName + "'. Required HH:mm: " + value);
+            throw new DataInvalidException("Invalid time format in field '" + fieldName + "'. Required HH:mm: " + value);
         }
     }
 }

@@ -108,12 +108,14 @@ public class SolutionMetricsCalculator {
             double routeLoad = route.getActivities().stream()
                     .mapToDouble(act -> {
                         if (act instanceof TourActivity.JobActivity jobAct) {
-                            return jobAct.getJob().getSize().get(0);
+                            String orderId = jobAct.getJob().getId().replace("order-", "");
+                            Order orderDTO = context.orderDTOs().get(Long.parseLong(orderId));
+                            return orderDTO != null ? orderDTO.getDemand() : 0.0;
                         }
                         return 0.0;
                     })
                     .sum();
-            double loadUtil = (routeLoad * DEMAND_SCALE / typeDTO.getCapacity()) * 100.0;
+            double loadUtil = (routeLoad / typeDTO.getCapacity()) * 100.0;
             totalLoadUtilization += loadUtil;
 
             // Time utilization (simplified)

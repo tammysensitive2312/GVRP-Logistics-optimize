@@ -17,7 +17,7 @@ import org.truong.gvrp_entry_api.entity.*;
 import org.truong.gvrp_entry_api.entity.enums.OptimizationJobStatus;
 import org.truong.gvrp_entry_api.entity.enums.OrderStatus;
 import org.truong.gvrp_entry_api.entity.enums.VehicleStatus;
-import org.truong.gvrp_entry_api.exception.JobCancellationException;
+import org.truong.gvrp_entry_api.exception.DataInvalidException;
 import org.truong.gvrp_entry_api.exception.JobLimitException;
 import org.truong.gvrp_entry_api.exception.ResourceNotFoundException;
 import org.truong.gvrp_entry_api.integration.external_api.EngineApiClient;
@@ -153,7 +153,7 @@ public class OptimizationJobService {
 
         // Check if can be cancelled
         if (!job.canBeCancelled()) {
-            throw new JobCancellationException(
+            throw new DataInvalidException(
                     "Job cannot be cancelled. Current status: " + job.getStatus());
         }
 

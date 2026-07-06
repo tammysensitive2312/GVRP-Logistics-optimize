@@ -15,6 +15,7 @@ import org.truong.gvrp_entry_api.dto.request.EngineOptimizationRequest;
 import org.truong.gvrp_entry_api.dto.response.EngineOptimizationResponse;
 import org.truong.gvrp_entry_api.entity.OptimizationJob;
 import org.truong.gvrp_entry_api.entity.enums.OptimizationJobStatus;
+import org.truong.gvrp_entry_api.exception.ResourceNotFoundException;
 import org.truong.gvrp_entry_api.repository.OptimizationJobRepository;
 
 
@@ -109,7 +110,7 @@ public class EngineApiClientImpl implements EngineApiClient{
     private void updateJobStatus(Long jobId, OptimizationJobStatus status, String errorMessage, String externalJobId) {
         try {
             OptimizationJob job = jobRepository.findById(jobId)
-                    .orElseThrow(() -> new IllegalArgumentException("Job not found: " + jobId));
+                    .orElseThrow(() -> new ResourceNotFoundException("Resource not found", "jobs"));
 
             job.setStatus(status);
 

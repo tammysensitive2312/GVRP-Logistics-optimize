@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 import org.truong.gvrp_entry_api.dto.request.OrderInputDTO;
 import org.truong.gvrp_entry_api.dto.response.ImportError;
-import org.truong.gvrp_entry_api.exception.InvalidFileFormatException;
+import org.truong.gvrp_entry_api.exception.DataInvalidException;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -34,7 +34,7 @@ public class JsonFileParser implements FileParser<OrderInputDTO> {
     }
 
     @Override
-    public ParseResult<OrderInputDTO> parse(MultipartFile file) throws InvalidFileFormatException {
+    public ParseResult<OrderInputDTO> parse(MultipartFile file) throws DataInvalidException {
         validateFile(file);
 
         List<OrderInputDTO> validOrders = new ArrayList<>();
@@ -46,7 +46,7 @@ public class JsonFileParser implements FileParser<OrderInputDTO> {
 
             // Kiểm tra xem root có phải là Array không (JSON import phải là mảng [])
             if (parser.nextToken() != JsonToken.START_ARRAY) {
-                throw new InvalidFileFormatException("JSON root must be an array [...]");
+                throw new DataInvalidException("JSON root must be an array [...]");
             }
 
             // Lặp qua từng phần tử trong mảng
@@ -75,20 +75,20 @@ public class JsonFileParser implements FileParser<OrderInputDTO> {
             return new ParseResult<>(validOrders, errors);
 
         } catch (IOException e) {
-            throw new InvalidFileFormatException("Error reading JSON file: " + e.getMessage());
+            throw new DataInvalidException("Error reading JSON file: " + e.getMessage());
         }
     }
 
-    private void validateFile(MultipartFile file) throws InvalidFileFormatException {
+    private void validateFile(MultipartFile file) throws DataInvalidException {
         if (file == null || file.isEmpty()) {
-            throw new InvalidFileFormatException("File is empty");
+            throw new DataInvalidException("File is empty");
         }
         if (file.getSize() > MAX_FILE_SIZE) {
-            throw new InvalidFileFormatException("File size exceeds limit");
+            throw new DataInvalidException("File size exceeds limit");
         }
         String filename = file.getOriginalFilename();
         if (filename == null || !filename.toLowerCase().endsWith(".json")) {
-            throw new InvalidFileFormatException("Only JSON files are accepted");
+            throw new DataInvalidException("Only JSON files are accepted");
         }
     }
 

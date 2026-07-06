@@ -1,7 +1,13 @@
 package org.truong.gvrp_entry_api.exception;
 
-public class JobLimitException extends RuntimeException {
+import org.springframework.http.HttpStatus;
+
+public class JobLimitException extends BusinessException {
     public JobLimitException(String message) {
-        super(message);
+        super(
+                message,
+                ErrorCode.JOB_LIMIT_EXCEEDED.getCode(),
+                HttpStatus.CONFLICT
+        );
     }
 }

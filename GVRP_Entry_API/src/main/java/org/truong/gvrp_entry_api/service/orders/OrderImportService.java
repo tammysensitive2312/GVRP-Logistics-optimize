@@ -1,4 +1,4 @@
-package org.truong.gvrp_entry_api.service;
+package org.truong.gvrp_entry_api.service.orders;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.ConstraintViolation;
@@ -14,8 +14,10 @@ import org.truong.gvrp_entry_api.dto.response.ImportError;
 import org.truong.gvrp_entry_api.dto.response.ImportResultDTO;
 import org.truong.gvrp_entry_api.entity.Branch;
 import org.truong.gvrp_entry_api.entity.Order;
-import org.truong.gvrp_entry_api.exception.InvalidFileFormatException;
+import org.truong.gvrp_entry_api.exception.BackendServerError;
+import org.truong.gvrp_entry_api.exception.DataInvalidException;
 import org.truong.gvrp_entry_api.exception.ResourceNotFoundException;
+import org.truong.gvrp_entry_api.exception.UnsupportedValueException;
 import org.truong.gvrp_entry_api.integration.file.CsvFileParser;
 import org.truong.gvrp_entry_api.integration.file.JsonFileParser;
 import org.truong.gvrp_entry_api.integration.file.ParseResult;
@@ -23,8 +25,8 @@ import org.truong.gvrp_entry_api.integration.file.TextDataParser;
 import org.truong.gvrp_entry_api.mapper.OrderMapper;
 import org.truong.gvrp_entry_api.repository.BranchRepository;
 import org.truong.gvrp_entry_api.repository.OrderRepository;
+import org.truong.gvrp_entry_api.service.GeocodingService;
 
-import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -60,44 +62,45 @@ public class OrderImportService {
 
         List<OrderInputDTO> allRawOrders = new ArrayList<>();
         List<ImportError> allErrors = new ArrayList<>();
+        Integer choice = request.getChoice();
+        switch (choice) {
+            case 0: throw new UnsupportedValueException("Unsupported value.", "file");
+            case 1: throw new DataInvalidException("Request has no data.");
+            case 2: {
+                MultipartFile file = request.getFile();
+                String filename = file.getOriginalFilename();
 
-        if (request.hasFile()) {
-            MultipartFile file = request.getFile();
-            String filename = file.getOriginalFilename();
+                ParseResult<OrderInputDTO> fileResult;
+                try {
+                    if (filename != null && filename.toLowerCase().endsWith(".csv")) {
+                        fileResult = csvFileParser.parse(file);
+                    } else if (filename != null && filename.toLowerCase().endsWith(".json")) {
+                        fileResult = jsonFileParser.parse(file);
+                    } else {
+                        throw new DataInvalidException("Định dạng file không hỗ trợ (chỉ CSV/JSON).");
+                    }
 
-            ParseResult<OrderInputDTO> fileResult = null;
-            try {
-                if (filename != null && filename.toLowerCase().endsWith(".csv")) {
-                    fileResult = csvFileParser.parse(file);
-                } else if (filename != null && filename.toLowerCase().endsWith(".json")) {
-                    fileResult = jsonFileParser.parse(file);
-                } else {
-                    throw new InvalidFileFormatException("Định dạng file không hỗ trợ (chỉ CSV/JSON).");
+                    if (fileResult != null) {
+                        allRawOrders.addAll(fileResult.getValidItems());
+                        allErrors.addAll(fileResult.getErrors());
+                    }
+                } catch (Exception e) {
+                    log.debug("Lỗi đọc file: {}", e.getMessage());
+                    throw new DataInvalidException("Lỗi đọc file: " + e.getMessage());
                 }
-
-                if (fileResult != null) {
-                    allRawOrders.addAll(fileResult.getValidItems());
-                    allErrors.addAll(fileResult.getErrors());
-                }
-            } catch (Exception e) {
-                log.debug("Lỗi đọc file: {}", e.getMessage());
-                throw new InvalidFileFormatException("Lỗi đọc file: " + e.getMessage());
             }
+            case 3: {
+                log.info("Parsing text data input");
+                ParseResult<OrderInputDTO> textResult = textDataParser.parse(request.getTextData());
+                allRawOrders.addAll(textResult.getValidItems());
+                allErrors.addAll(textResult.getErrors());
+
+                log.debug("Parsed {} orders from text data with {} errors",
+                        textResult.getValidItems().size(), textResult.getErrors().size());
+            }
+            case 4: throw new BackendServerError();
         }
 
-        // 3. Xử lý Text Data
-        log.info("request has text data: {}", request.hasText());
-        if (request.hasText()) {
-            log.info("Parsing text data input");
-            ParseResult<OrderInputDTO> textResult = textDataParser.parse(request.getTextData());
-            allRawOrders.addAll(textResult.getValidItems());
-            allErrors.addAll(textResult.getErrors());
-
-            log.debug("Parsed {} orders from text data with {} errors",
-                    textResult.getValidItems().size(), textResult.getErrors().size());
-        }
-
-        // 4. Chuyển tiếp đến logic xử lý dữ liệu đã parse
         return processParsedData(allRawOrders, allErrors, request, branch);
     }
 
@@ -121,7 +124,7 @@ public class OrderImportService {
 
         } catch (Exception e) {
             log.error("Lỗi khi serialize đối tượng để debug: {}", e.getMessage());
-        }
+        } 
 
         List<OrderInputDTO> validOrdersToSave = new ArrayList<>();
         List<ImportError> validationErrors = new ArrayList<>(parseErrors);

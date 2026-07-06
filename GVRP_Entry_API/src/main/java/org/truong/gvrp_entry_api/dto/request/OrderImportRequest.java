@@ -27,20 +27,33 @@ import java.time.LocalDate;
 
         private Boolean overwriteExisting;
 
-        // Helper methods
-        public boolean hasFile() {
+        private boolean hasFile() {
             return file != null && !file.isEmpty();
         }
 
-        public boolean hasText() {
+        private boolean hasText() {
             return textData != null && !textData.trim().isEmpty();
         }
 
-        public boolean hasBothInputs() {
+        private boolean hasBothInputs() {
             return hasFile() && hasText();
         }
 
-        public boolean hasNoInput() {
+        private boolean hasNoInput() {
             return !hasFile() && !hasText();
+        }
+
+        public Integer getChoice() {
+            if (hasBothInputs()) {
+                return 0;
+            } else if (hasNoInput()) {
+                return 1;
+            } else if (hasFile()) {
+                return 2;
+            } else if (hasText()) {
+                return 3;
+            } else {
+                return 4;
+            }
         }
     }

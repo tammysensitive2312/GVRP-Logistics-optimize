@@ -1,15 +1,17 @@
 package org.truong.gvrp_entry_api.exception;
 
 import lombok.Getter;
-import lombok.Setter;
+import org.springframework.http.HttpStatus;
 
 @Getter
-@Setter
-public class UnsupportedValueException extends IllegalArgumentException {
-    public String fieldName;
+public class UnsupportedValueException extends BusinessException {
+    private final String fieldName;
 
     public UnsupportedValueException(String message, String fieldName) {
-        super(message);
+        super(
+                message,
+                ErrorCode.UNSUPPORTED_VALUE.getCode(),
+                HttpStatus.BAD_REQUEST);
         this.fieldName = fieldName;
     }
 }

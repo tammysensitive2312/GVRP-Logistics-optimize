@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.truong.gvrp_entry_api.dto.request.DepotInputDTO;
+import org.truong.gvrp_entry_api.exception.DataInvalidException;
 
 /**
  * Helper mapper for JTS geometry objects
@@ -60,12 +61,9 @@ public class GeometryMapper {
      */
     public Point createPoint(Double latitude, Double longitude) {
         if (latitude == null || longitude == null) {
-            log.info("Đeo on roi");
             return null;
         }
-
 //        validateCoordinates(latitude, longitude);
-
         Coordinate coordinate = new Coordinate(longitude, latitude);
         return geometryFactory.createPoint(coordinate);
     }
@@ -75,10 +73,10 @@ public class GeometryMapper {
      */
     private void validateCoordinates(Double latitude, Double longitude) {
         if (latitude < -90 || latitude > 90) {
-            throw new IllegalArgumentException("Latitude must be between -90 and 90");
+            throw new DataInvalidException("Latitude must be between -90 and 90");
         }
         if (longitude < -180 || longitude > 180) {
-            throw new IllegalArgumentException("Longitude must be between -180 and 180");
+            throw new DataInvalidException("Longitude must be between -180 and 180");
         }
     }
 }

@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.truong.gvrp_entry_api.dto.request.EngineOptimizationRequest;
 import org.truong.gvrp_entry_api.dto.request.RoutePlanningRequest;
+import org.truong.gvrp_entry_api.exception.DataInvalidException;
 import org.truong.gvrp_entry_api.util.AppConstant;
 
 @Component
@@ -150,21 +151,21 @@ public class OptimizationConfigMapper {
      */
     public void validateConfig(EngineOptimizationRequest.OptimizationConfig config) {
         if (config == null) {
-            throw new IllegalArgumentException("Config cannot be null");
+            throw new DataInvalidException("Config cannot be null");
         }
 
         // Validate weights
         if (config.getCostWeight() == null || config.getCo2Weight() == null) {
-            throw new IllegalArgumentException("Cost and CO2 weights are required");
+            throw new DataInvalidException("Cost and CO2 weights are required");
         }
 
         if (config.getCostWeight() < 0 || config.getCo2Weight() < 0) {
-            throw new IllegalArgumentException("Weights must be non-negative");
+            throw new DataInvalidException("Weights must be non-negative");
         }
 
         double sum = config.getCostWeight() + config.getCo2Weight();
         if (sum == 0) {
-            throw new IllegalArgumentException("At least one weight must be > 0");
+            throw new DataInvalidException("At least one weight must be > 0");
         }
 
         // Warn if distanceWeight is set (deprecated)

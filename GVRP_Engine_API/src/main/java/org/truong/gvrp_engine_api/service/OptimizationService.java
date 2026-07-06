@@ -720,11 +720,12 @@ public class OptimizationService {
 
             if (maxDistance == null) return true;
 
-            double totalDistance = 0.0;
+            // ===== BƯỚC 1: Tính d_current — khoảng cách route hiện tại (chưa có job mới) =====
+            double currentDistance = 0.0;
             TourActivity prevAct = iFacts.getRoute().getStart();
 
             for (TourActivity act : iFacts.getRoute().getActivities()) {
-                totalDistance += costs.getDistance(
+                currentDistance += costs.getDistance(
                         prevAct.getLocation(),
                         act.getLocation(),
                         prevAct.getEndTime(),
@@ -733,14 +734,52 @@ public class OptimizationService {
                 prevAct = act;
             }
 
-            totalDistance += costs.getDistance(
+            currentDistance += costs.getDistance(
                     prevAct.getLocation(),
                     iFacts.getRoute().getEnd().getLocation(),
                     prevAct.getEndTime(),
                     iFacts.getRoute().getVehicle()
             );
 
-            return totalDistance <= maxDistance;
+            // ===== BƯỚC 2: Tính Δd_min — detour tốt nhất khi chèn job mới =====
+            // Lấy location của job đang được xem xét chèn
+            Location jobLocation = iFacts.getJob().getActivities().stream()
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalStateException(
+                            "Job " + iFacts.getJob().getId() + " has no activities"))
+                    .getLocation();
+
+            double minDetour = Double.MAX_VALUE;
+            TourActivity prev = iFacts.getRoute().getStart();
+
+            // Danh sách các "điểm nối tiếp theo" để duyệt mọi vị trí chèn khả dĩ,
+            // bao gồm cả vị trí cuối route (trước khi về depot)
+            java.util.List<TourActivity> candidates = new java.util.ArrayList<>(
+                    iFacts.getRoute().getActivities());
+            candidates.add(iFacts.getRoute().getEnd());
+
+            for (TourActivity next : candidates) {
+                double dPrevNext = costs.getDistance(
+                        prev.getLocation(), next.getLocation(),
+                        prev.getEndTime(), iFacts.getRoute().getVehicle());
+
+                double dPrevJob = costs.getDistance(
+                        prev.getLocation(), jobLocation,
+                        prev.getEndTime(), iFacts.getRoute().getVehicle());
+
+                double dJobNext = costs.getDistance(
+                        jobLocation, next.getLocation(),
+                        prev.getEndTime(), iFacts.getRoute().getVehicle());
+
+                double detour = dPrevJob + dJobNext - dPrevNext;
+                minDetour = Math.min(minDetour, detour);
+
+                prev = next;
+            }
+
+            double projectedDistance = currentDistance + minDetour;
+
+            return projectedDistance <= maxDistance;
         }
     }
 

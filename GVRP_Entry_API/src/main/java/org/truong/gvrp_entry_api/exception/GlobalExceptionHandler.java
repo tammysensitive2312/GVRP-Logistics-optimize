@@ -2,7 +2,6 @@ package org.truong.gvrp_entry_api.exception;
 
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
@@ -22,9 +21,6 @@ public class GlobalExceptionHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
-    /**
-     * Handle validation errors from @Valid
-     */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidationException(
             MethodArgumentNotValidException ex,
@@ -37,131 +33,14 @@ public class GlobalExceptionHandler {
             errors.put(fieldName, errorMessage);
         });
 
-        ErrorResponse response = ErrorResponse.builder()
-                .timestamp(LocalDateTime.now())
-                .errorCode("0040001")
-                .message("Invalid input data.")
-                .path(request.getRequestURI())
-                .method(request.getMethod())
-                .validationErrors(errors)
-                .build();
-
         logger.warn("Validation error: {}", errors);
 
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
-    }
-
-    /**
-     * Handle ResourceNotFoundException
-     */
-    @ExceptionHandler(DataInvalidException.class)
-    public ResponseEntity<ErrorResponse> handleDataInvalidException(
-            DataInvalidException ex,
-            HttpServletRequest request) {
-
-        Map<String, String> errors = new HashMap<>();
-
-        ErrorResponse response = ErrorResponse.builder()
-                .timestamp(LocalDateTime.now())
-                .errorCode("0040006")
-                .message(ex.getMessage())
-                .path(request.getRequestURI())
-                .method(request.getMethod())
-                .validationErrors(errors)
-                .build();
-
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
-    }
-
-    /**
-     * Handle ResourceNotFoundException
-     */
-    @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleResourceNotFoundException(
-            ResourceNotFoundException ex,
-            HttpServletRequest request) {
-
-        Map<String, String> errors = new HashMap<>();
-        errors.put("resource", ex.getResourceName());
-
-        ErrorResponse response = ErrorResponse.builder()
-                .timestamp(LocalDateTime.now())
-                .errorCode("0040002")
-                .message(ex.getMessage())
-                .path(request.getRequestURI())
-                .method(request.getMethod())
-                .validationErrors(errors)
-                .build();
-
-        logger.warn("Resources not found: {}", ex.getMessage());
-
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
-    }
-
-    /**
-     * Handle ResourceConflictException
-     */
-    @ExceptionHandler(ResourceConflictException.class)
-    public ResponseEntity<ErrorResponse> handleDuplicateEntityException(
-            ResourceConflictException ex,
-            HttpServletRequest request) {
-
-        Map<String, String> errors = new HashMap<>();
-        errors.put("resource", ex.getResourceName());
-
-        ErrorResponse response = ErrorResponse.builder()
-                .timestamp(LocalDateTime.now())
-                .errorCode("0040003")
-                .message(ex.getMessage())
-                .path(request.getRequestURI())
-                .method(request.getMethod())
-                .validationErrors(errors)
-                .build();
-
-        logger.warn("Duplicate entity: {}", ex.getMessage());
-
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
-    }
-
-    @ExceptionHandler(InvalidOrderTransitionException.class)
-    public ResponseEntity<ErrorResponse> handleInvalidOrderTransition(
-            InvalidOrderTransitionException ex,
-            HttpServletRequest request) {
-
-        ErrorResponse response = ErrorResponse.builder()
-                .timestamp(LocalDateTime.now())
-                .errorCode("0040007")
-                .message(ex.getMessage())
-                .path(request.getRequestURI())
-                .method(request.getMethod())
-                .build();
-
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
-    }
-
-    /**
-     * Handle IllegalArgumentException
-     */
-    @ExceptionHandler(UnsupportedValueException.class)
-    public ResponseEntity<ErrorResponse> handleIllegalArgumentException(
-            UnsupportedValueException ex,
-            HttpServletRequest request) {
-
-        Map<String, String> errors = new HashMap<>();
-        errors.put("field", ex.getFieldName());
-
-        ErrorResponse response = ErrorResponse.builder()
-                .timestamp(LocalDateTime.now())
-                .errorCode("0040004")
-                .message(ex.getMessage())
-                .path(request.getRequestURI())
-                .method(request.getMethod())
-                .validationErrors(errors)
-                .build();
-
-        logger.warn("Unsupported value: {}", ex.getFieldName());
-
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        return buildResponse(
+                HttpStatus.BAD_REQUEST,
+                "0040001",
+                "Invalid input data.",
+                request,
+                errors);
     }
 
     /**
@@ -172,15 +51,12 @@ public class GlobalExceptionHandler {
             MaxUploadSizeExceededException ex,
             HttpServletRequest request) {
 
-        ErrorResponse response = ErrorResponse.builder()
-                .timestamp(LocalDateTime.now())
-                .errorCode("0040005")
-                .message("Maximum upload size exceeded.")
-                .path(request.getRequestURI())
-                .method(request.getMethod())
-                .build();
-
-        return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).body(response);
+        return buildResponse(
+                HttpStatus.PAYLOAD_TOO_LARGE,
+                "0040005",
+                "Maximum upload size exceeded.",
+                request,
+                null);
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
@@ -188,71 +64,72 @@ public class GlobalExceptionHandler {
             HttpMessageNotReadableException ex,
             HttpServletRequest request) {
 
-        ErrorResponse response = ErrorResponse.builder()
-                .timestamp(LocalDateTime.now())
-                .errorCode("0030001")
-                .message("Invalid JSON format.")
-                .path(request.getRequestURI())
-                .method(request.getMethod())
-                .build();
-
         logger.warn("Error message: {}", ex.getMessage());
 
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        return buildResponse(
+                HttpStatus.BAD_REQUEST,
+                "0030001",
+                "Invalid JSON format.",
+                request,
+                null);
     }
 
-    @ExceptionHandler(InvalidFileFormatException.class)
-    public ResponseEntity<ErrorResponse> handleInvalidFileFormatException(
-            InvalidFileFormatException ex,
+    @ExceptionHandler(BusinessException.class)
+    public ResponseEntity<ErrorResponse> handleBusinessException(
+            BusinessException ex,
             HttpServletRequest request) {
 
-        ErrorResponse response = ErrorResponse.builder()
-                .timestamp(LocalDateTime.now())
-                .errorCode("0030002")
-                .message("Invalid File format.")
-                .path(request.getRequestURI())
-                .method(request.getMethod())
-                .build();
-
-        logger.warn("Error message: {}", ex.getMessage());
-
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        return buildResponse(
+                ex.getStatus(),
+                ex.getErrorCode(),
+                ex.getMessage(),
+                request,
+                null);
     }
 
-    @ExceptionHandler(JobLimitException.class)
-    public ResponseEntity<ErrorResponse> handleJobLimitException(
-            JobLimitException ex,
-            HttpServletRequest request) {
-
-        ErrorResponse response = ErrorResponse.builder()
-                .timestamp(LocalDateTime.now())
-                .errorCode("0040901")
-                .message(ex.getMessage())
-                .path(request.getRequestURI())
-                .method(request.getMethod())
-                .build();
-
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
-    }
-
-    /**
-     * Handle generic exceptions
-     */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGenericException(
             Exception ex,
             HttpServletRequest request) {
 
-        ErrorResponse response = ErrorResponse.builder()
-                .timestamp(LocalDateTime.now())
-                .errorCode("0050001")
-                .message("Internal Server Error")
-                .path(request.getRequestURI())
-                .method(request.getMethod())
-                .build();
-
         logger.error("Unexpected error occurred", ex);
 
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        return buildResponse(
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                "0050001",
+                "Internal Server Error",
+                request,
+                null);
+    }
+
+    private ResponseEntity<ErrorResponse> buildResponse(
+            HttpStatus status,
+            String errorCode,
+            String message,
+            HttpServletRequest request,
+            Map<String, String> errors) {
+
+        return ResponseEntity.status(status)
+                .body(buildErrorResponse(
+                        errorCode,
+                        message,
+                        request,
+                        errors));
+    }
+
+    private ErrorResponse buildErrorResponse(
+            String errorCode,
+            String message,
+            HttpServletRequest request,
+            Map<String, String> validationErrors) {
+
+        return ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .errorCode(errorCode)
+                .message(message)
+                .path(request.getRequestURI())
+                .method(request.getMethod())
+                .validationErrors(validationErrors)
+                .build();
     }
 }

@@ -1,14 +1,16 @@
 package org.truong.gvrp_entry_api.exception;
 
 import lombok.Getter;
-import lombok.Setter;
+import org.springframework.http.HttpStatus;
 
 @Getter
-@Setter
-public class ResourceConflictException extends RuntimeException {
-    private String resourceName;
+public class ResourceConflictException extends BusinessException {
+    private final String resourceName;
     public ResourceConflictException(String message, String resourceName) {
-        super(message);
+        super(
+                message,
+                ErrorCode.RESOURCE_CONFLICT.getCode(),
+                HttpStatus.CONFLICT);
         this.resourceName = resourceName;
     }
 }

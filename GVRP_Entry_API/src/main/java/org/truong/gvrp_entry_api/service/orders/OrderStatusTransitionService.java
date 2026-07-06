@@ -1,4 +1,4 @@
-package org.truong.gvrp_entry_api.service;
+package org.truong.gvrp_entry_api.service.orders;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
