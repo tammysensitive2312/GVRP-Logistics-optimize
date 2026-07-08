@@ -2,6 +2,7 @@ package org.truong.gvrp_engine_api.model;
 
 import lombok.Getter;
 import lombok.ToString;
+import org.truong.gvrp_engine_api.utils.AppConstant;
 
 /**
  * Objective Preset - Pre-defined weight combinations
@@ -34,7 +35,7 @@ public enum ObjectivePreset {
      * Pure eco: Only minimize emissions
      * Use when: Carbon neutrality mandate, regulations
      */
-    PURE_ECO("Pure Green", 0.0, 1.0);
+    PURE_ECO("Pure Green", AppConstant.EPSILON, 1.0);
 
     private final String displayName;
     public final double costWeight;

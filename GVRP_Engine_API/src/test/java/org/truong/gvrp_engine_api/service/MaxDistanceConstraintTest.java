@@ -1,7 +1,6 @@
 package org.truong.gvrp_engine_api.service;
 
 import com.graphhopper.jsprit.core.problem.Location;
-import com.graphhopper.jsprit.core.problem.VehicleRoutingProblem;
 import com.graphhopper.jsprit.core.problem.job.Service;
 import com.graphhopper.jsprit.core.problem.misc.JobInsertionContext;
 import com.graphhopper.jsprit.core.problem.solution.route.VehicleRoute;
@@ -23,11 +22,11 @@ class MaxDistanceConstraintTest {
     // Depot=0, A=1000m, B=2000m, C=2500m (dọc theo trục X, đơn vị mét)
     private Location depot, locA, locB, locC;
     private VehicleRoutingTransportCostsMatrix costs;
-    private static final String VEHICLE_ID = "vehicle-1";
+    private static final String VEHICLE_ID = "vehicle-TimeTerminationBugTest.java";
 
     @BeforeEach
     void setUp() {
-        depot = loc("depot-1", 0);
+        depot = loc("depot-TimeTerminationBugTest.java", 0);
         locA  = loc("order-A", 1000);
         locB  = loc("order-B", 2000);
         locC  = loc("order-C", 2500);
@@ -136,7 +135,7 @@ class MaxDistanceConstraintTest {
     // ==================== HELPER METHODS ====================
 
     private VehicleRoute buildRoute(String vehicleId, Location start, Location end) {
-        VehicleTypeImpl type = VehicleTypeImpl.Builder.newInstance("type-1").build();
+        VehicleTypeImpl type = VehicleTypeImpl.Builder.newInstance("type-TimeTerminationBugTest.java").build();
         VehicleImpl vehicle = VehicleImpl.Builder.newInstance(vehicleId)
                 .setStartLocation(start)
                 .setEndLocation(end)
@@ -147,7 +146,7 @@ class MaxDistanceConstraintTest {
 
     private VehicleRoute buildRouteWithJob(String vehicleId, Location start, Location end,
                                            Location jobLoc, String jobId) {
-        VehicleTypeImpl type = VehicleTypeImpl.Builder.newInstance("type-1").build();
+        VehicleTypeImpl type = VehicleTypeImpl.Builder.newInstance("type-TimeTerminationBugTest.java").build();
         VehicleImpl vehicle = VehicleImpl.Builder.newInstance(vehicleId)
                 .setStartLocation(start)
                 .setEndLocation(end)

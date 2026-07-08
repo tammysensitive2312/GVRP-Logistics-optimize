@@ -487,15 +487,17 @@ public class OptimizationService {
         VehicleRoutingAlgorithm algorithm = builder.buildAlgorithm();
 
         // Set timeout
-//        if (config.getTimeoutSeconds() != null && config.getTimeoutSeconds() > 0) {
-//            long timeoutMs = config.getTimeoutSeconds() * 1000L;
-//            log.info("Setting algorithm timeout to: {} ms", timeoutMs);
-//
-//            TimeTermination timeoutTermination = new TimeTermination(timeoutMs);
-//            algorithm.setPrematureAlgorithmTermination(timeoutTermination);
-//        } else {
-//            log.info("No timeout configured, algorithm will run until max iterations: {}", maxIterations);
-//        }
+        if (config.getTimeoutSeconds() != null && config.getTimeoutSeconds() > 0) {
+            log.info("RAW timeoutSeconds from config = {}", config.getTimeoutSeconds());
+            long timeoutMs = config.getTimeoutSeconds() * 1000L;
+            log.info("Computed timeoutMs = {}", timeoutMs);
+
+            TimeTermination timeoutTermination = new TimeTermination(timeoutMs);
+            algorithm.setPrematureAlgorithmTermination(timeoutTermination);
+            algorithm.addListener(timeoutTermination);
+        } else {
+            log.info("No timeout configured, algorithm will run until max iterations: {}", maxIterations);
+        }
 
         log.info("=== Jsprit Algorithm Configured ===");
         log.info("Max Iterations: {}", maxIterations);
