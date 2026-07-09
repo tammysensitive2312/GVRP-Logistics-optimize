@@ -215,16 +215,16 @@ public class OptimizationService {
         log.info("   This will run {} optimization scenarios", ObjectivePreset.values().length);
 
         List<SolutionCandidate> candidates = new ArrayList<>();
+        List<ParetoWeightSampler.WeightPoint> weightPoints = ParetoWeightSampler.generate(4, 2.0);
 
         // Run optimization for each preset
-        for (ObjectivePreset preset : ObjectivePreset.values()) {
-
-            log.info("   Running {} optimization...", preset.getDisplayName());
+        for (ParetoWeightSampler.WeightPoint point : weightPoints) {
+            log.info("Running {} optimization...", point.label());
 
             // Override weights for this run
             OptimizationConfig presetConfig = config.clone();
-            presetConfig.setCostWeight(preset.costWeight);
-            presetConfig.setCo2Weight(preset.co2Weight);
+            presetConfig.setCostWeight(point.costWeight());
+            presetConfig.setCo2Weight(point.co2Weight());
 
             // Build and solve VRP
             VehicleRoutingProblem vrp = buildGreenVRP(context, matrix, presetConfig);
@@ -241,17 +241,15 @@ public class OptimizationService {
             );
 
             candidates.add(new SolutionCandidate(
-                    preset.name(),
+                    point.label(),
                     bestSolution,
                     metrics,
-                    preset.costWeight,
-                    preset.co2Weight
+                    point.costWeight(),
+                    point.co2Weight()
             ));
 
             log.info("   ✓ {} | Cost: {} VND | CO2: {} kg",
-                    preset.name(),
-                    metrics.getTotalCostVnd(),
-                    metrics.getTotalCo2Kg());
+                    point.label(), metrics.getTotalCostVnd(), metrics.getTotalCo2Kg());
         }
 
         // Build Pareto frontier
@@ -317,10 +315,6 @@ public class OptimizationService {
                     costWeight,
                     co2Weight
             );
-
-            log.info("Vehicle Type {}: Final CostPerKm configured in Jsprit = {}",
-                    greenVehicleType.getTypeId(),
-                    greenVehicleType.getVehicleCostParams().perDistanceUnit);
 
             VehicleImpl jspritVehicle = buildJspritVehicle(
                     vehicleDTO,
@@ -488,13 +482,10 @@ public class OptimizationService {
 
         // Set timeout
         if (config.getTimeoutSeconds() != null && config.getTimeoutSeconds() > 0) {
-            log.info("RAW timeoutSeconds from config = {}", config.getTimeoutSeconds());
-            long timeoutMs = config.getTimeoutSeconds() * 1000L;
-            log.info("Computed timeoutMs = {}", timeoutMs);
-
-            TimeTermination timeoutTermination = new TimeTermination(timeoutMs);
-            algorithm.setPrematureAlgorithmTermination(timeoutTermination);
-            algorithm.addListener(timeoutTermination);
+//            long timeoutMs = config.getTimeoutSeconds() * 1000L;
+//            TimeTermination timeoutTermination = new TimeTermination(timeoutMs);
+//            algorithm.setPrematureAlgorithmTermination(timeoutTermination);
+//            algorithm.addListener(timeoutTermination);
         } else {
             log.info("No timeout configured, algorithm will run until max iterations: {}", maxIterations);
         }

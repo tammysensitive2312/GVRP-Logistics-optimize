@@ -144,23 +144,6 @@ public class GreenVRPCostCalculator {
                 .setCostPerTransportTime(weightedTimeCost)
                 .setFixedCost(weightedFixedCost);
 
-        // ========== STEP 5: Log for debugging ==========
-
-        log.info("🌱 GREEN Vehicle Type: {} | Capacity: {} kg",
-                vehicleTypeDTO.getTypeName(),
-                vehicleTypeDTO.getCapacity());
-        log.info("   💰 Fuel cost: {} VND/m ({} VND/km)",
-                fuelCostPerMeter,
-                fuelCostPerKm);
-        log.info("   🌿 CO2 cost: {} VND/m ({} g/km × {} VND/kg)",
-                co2CostPerMeter,
-                emissionFactorGramPerKm,
-                CARBON_PRICE_PER_KG);
-        log.info("   ⚖️  Weighted total: {} VND/m (cost={}, CO2={})",
-                totalCostPerMeter,
-                costWeight,
-                co2Weight);
-
         return typeBuilder.build();
     }
 
@@ -250,14 +233,6 @@ public class GreenVRPCostCalculator {
         double highCO2CostPerKm = (highFactor / 1000.0) * CARBON_PRICE_PER_KG;
         double lowCO2CostPerKm = (lowFactor / 1000.0) * CARBON_PRICE_PER_KG;
         double savings = highCO2CostPerKm - lowCO2CostPerKm;
-
-        log.info("💰 Carbon Pricing Impact Analysis:");
-        log.info("   {} ({} g/km) → CO2 cost: {} VND/km",
-                highEmission.getTypeName(), highFactor, highCO2CostPerKm);
-        log.info("   {} ({} g/km) → CO2 cost: {} VND/km",
-                lowEmission.getTypeName(), lowFactor, lowCO2CostPerKm);
-        log.info("   💚 Savings by choosing low-emission: {} VND/km ({})",
-                savings, savings / highCO2CostPerKm);
     }
 
     /**

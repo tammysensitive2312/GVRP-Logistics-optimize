@@ -45,10 +45,6 @@ public class SolutionConverter {
         if (result.getUnassignedOrders() != null && !result.getUnassignedOrders().isEmpty()) {
             solutionData.put("unassigned_orders", result.getUnassignedOrders());
         }
-
-        log.debug("✓ Converted {} routes",
-                result.getRoutes().size());
-
         return solutionData;
     }
 
