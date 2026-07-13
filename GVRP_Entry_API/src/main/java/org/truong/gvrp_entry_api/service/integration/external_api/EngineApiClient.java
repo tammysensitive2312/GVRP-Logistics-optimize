@@ -1,4 +1,4 @@
-package org.truong.gvrp_entry_api.integration.external_api;
+package org.truong.gvrp_entry_api.service.integration.external_api;
 
 import org.truong.gvrp_entry_api.dto.request.EngineOptimizationRequest;
 

@@ -1,4 +1,4 @@
-package org.truong.gvrp_entry_api.integration.file;
+package org.truong.gvrp_entry_api.service.integration.file;
 
 import org.springframework.web.multipart.MultipartFile;
 import org.truong.gvrp_entry_api.exception.DataInvalidException;

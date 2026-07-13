@@ -7,10 +7,13 @@ import org.truong.gvrp_entry_api.dto.request.VehicleTypeInputDTO;
 import org.truong.gvrp_entry_api.dto.response.VehicleTypeDTO;
 import org.truong.gvrp_entry_api.entity.Branch;
 import org.truong.gvrp_entry_api.entity.VehicleType;
-import org.truong.gvrp_entry_api.exception.ResourceNotFoundException;
+import org.truong.gvrp_entry_api.exception.DataInvalidException;
+import org.truong.gvrp_entry_api.exception.ErrorDetail;
 import org.truong.gvrp_entry_api.mapper.VehicleTypeMapper;
 import org.truong.gvrp_entry_api.repository.BranchRepository;
 import org.truong.gvrp_entry_api.repository.VehicleTypeRepository;
+import org.truong.gvrp_entry_api.util.AppConstant;
+import org.truong.gvrp_entry_api.util.ErrorCode;
 
 import java.util.List;
 
@@ -25,7 +28,14 @@ public class VehicleTypeService {
 
     public VehicleTypeDTO createVehicleType(VehicleTypeInputDTO dto, Long branchId) {
         Branch branch = branchRepository.findById(branchId)
-                .orElseThrow(() -> new ResourceNotFoundException("Resources not found.", "branch"));
+                .orElseThrow(() -> new DataInvalidException(
+                        List.of(
+                                ErrorDetail.builder()
+                                        .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
+                                        .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
+                                        .resource(AppConstant.BRANCH)
+                                        .build()
+                        )));
 
         var vehicleTypeEntity = typeMapper.toEntity(dto);
         vehicleTypeEntity.setVehicleFeatures(
@@ -43,7 +53,14 @@ public class VehicleTypeService {
 
     public VehicleTypeDTO updateVehicleType(Long id, VehicleTypeInputDTO input, Long branchId) {
         VehicleType existingType = typeRepository.findByIdAndBranchId(id, branchId)
-                .orElseThrow(() -> new ResourceNotFoundException("Vehicle type not found.", "vehicleType"));
+                .orElseThrow(() -> new DataInvalidException(
+                        List.of(
+                                ErrorDetail.builder()
+                                        .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
+                                        .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
+                                        .resource(AppConstant.VEHICLE_TYPE)
+                                        .build()
+                        )));
 
         existingType.setTypeName(input.getTypeName());
         existingType.setVehicleFeatures(

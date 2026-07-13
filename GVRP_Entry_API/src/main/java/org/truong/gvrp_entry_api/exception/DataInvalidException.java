@@ -1,22 +1,16 @@
 package org.truong.gvrp_entry_api.exception;
 
-import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-import org.springframework.http.HttpStatus;
+
+import java.util.List;
 
 @Getter
-@Setter
-public class DataInvalidException extends BusinessException {
+public class DataInvalidException extends RuntimeException {
 
-    public DataInvalidException(
-            String message
-    ) {
-        super(
-                message,
-                ErrorCode.VALIDATION_ERROR.getCode(),
-                HttpStatus.BAD_REQUEST
-        );
+    private final List<ErrorDetail> errors;
+
+    public DataInvalidException(List<ErrorDetail> errors) {
+        super();
+        this.errors = errors;
     }
 }

@@ -14,18 +14,18 @@ import org.truong.gvrp_entry_api.dto.response.ImportError;
 import org.truong.gvrp_entry_api.dto.response.ImportResultDTO;
 import org.truong.gvrp_entry_api.entity.Branch;
 import org.truong.gvrp_entry_api.entity.Order;
-import org.truong.gvrp_entry_api.exception.BackendServerError;
 import org.truong.gvrp_entry_api.exception.DataInvalidException;
-import org.truong.gvrp_entry_api.exception.ResourceNotFoundException;
-import org.truong.gvrp_entry_api.exception.UnsupportedValueException;
-import org.truong.gvrp_entry_api.integration.file.CsvFileParser;
-import org.truong.gvrp_entry_api.integration.file.JsonFileParser;
-import org.truong.gvrp_entry_api.integration.file.ParseResult;
-import org.truong.gvrp_entry_api.integration.file.TextDataParser;
+import org.truong.gvrp_entry_api.service.integration.file.CsvFileParser;
+import org.truong.gvrp_entry_api.service.integration.file.JsonFileParser;
+import org.truong.gvrp_entry_api.service.integration.file.ParseResult;
+import org.truong.gvrp_entry_api.service.integration.file.TextDataParser;
+import org.truong.gvrp_entry_api.util.ErrorCode;
+import org.truong.gvrp_entry_api.exception.ErrorDetail;
 import org.truong.gvrp_entry_api.mapper.OrderMapper;
 import org.truong.gvrp_entry_api.repository.BranchRepository;
 import org.truong.gvrp_entry_api.repository.OrderRepository;
 import org.truong.gvrp_entry_api.service.GeocodingService;
+import org.truong.gvrp_entry_api.util.AppConstant;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -45,30 +45,47 @@ public class OrderImportService {
 
     private final CsvFileParser csvFileParser;
     private final JsonFileParser jsonFileParser;
-    private final TextDataParser textDataParser;
+    private final TextDataParser dataParser;
 
     private final Validator validator;
 
-    /**
-     * Entry point cho việc import.
-     * Orchestrates: Parsing -> Validation -> Confirmation -> Saving
-     */
     @Transactional
     public ImportResultDTO createOrdersByImportRequest(OrderImportRequest request, Long branchId) {
 
         log.info("Importing orders for Branch ID: {}", branchId);
         Branch branch = branchRepository.findById(branchId)
-                .orElseThrow(() -> new ResourceNotFoundException("Branch not found", "Branch"));
+                .orElseThrow(() -> new DataInvalidException(List.of(
+                        ErrorDetail.builder()
+                                .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
+                                .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
+                                .resource(AppConstant.BRANCH)
+                                .build()
+                )));
 
         List<OrderInputDTO> allRawOrders = new ArrayList<>();
         List<ImportError> allErrors = new ArrayList<>();
         Integer choice = request.getChoice();
+
         switch (choice) {
-            case 0: throw new UnsupportedValueException("Unsupported value.", "file");
-            case 1: throw new DataInvalidException("Request has no data.");
+            case 0:
+                throw new DataInvalidException(List.of(
+                        ErrorDetail.builder()
+                                .code(ErrorCode.UNSUPPORTED_VALUE.getCode())
+                                .message("Request has both file and text input")
+                                .field(AppConstant.FILE)
+                                .build()
+                ));
+            case 1:
+                throw new DataInvalidException(List.of(
+                        ErrorDetail.builder()
+                                .code(ErrorCode.UNSUPPORTED_VALUE.getCode())
+                                .message("Request has no file and text input")
+                                .field(AppConstant.FILE)
+                                .build()
+                ));
             case 2: {
                 MultipartFile file = request.getFile();
-                String filename = file.getOriginalFilename();
+                String filename = file != null ? file.getOriginalFilename() : null;
 
                 ParseResult<OrderInputDTO> fileResult;
                 try {
@@ -77,36 +94,57 @@ public class OrderImportService {
                     } else if (filename != null && filename.toLowerCase().endsWith(".json")) {
                         fileResult = jsonFileParser.parse(file);
                     } else {
-                        throw new DataInvalidException("Định dạng file không hỗ trợ (chỉ CSV/JSON).");
+                        throw new DataInvalidException(List.of(
+                                ErrorDetail.builder()
+                                        .code(ErrorCode.UNSUPPORTED_VALUE.getCode())
+                                        .message("Định dạng file không hỗ trợ (chỉ CSV/JSON).")
+                                        .field(AppConstant.FILE)
+                                        .build()
+                        ));
                     }
 
                     if (fileResult != null) {
                         allRawOrders.addAll(fileResult.getValidItems());
                         allErrors.addAll(fileResult.getErrors());
                     }
+                } catch (DataInvalidException e) {
+                    throw e;
                 } catch (Exception e) {
-                    log.debug("Lỗi đọc file: {}", e.getMessage());
-                    throw new DataInvalidException("Lỗi đọc file: " + e.getMessage());
+                    log.error("Lỗi hệ thống khi đọc file: {}", e.getMessage(), e);
+                    throw new DataInvalidException(List.of(
+                            ErrorDetail.builder()
+                                    .code(ErrorCode.BACKEND_SERVER_ERROR.getCode())
+                                    .message(ErrorCode.BACKEND_SERVER_ERROR.getMessage())
+                                    .field(AppConstant.FILE)
+                                    .build()
+                    ));
                 }
+                break;
             }
             case 3: {
                 log.info("Parsing text data input");
-                ParseResult<OrderInputDTO> textResult = textDataParser.parse(request.getTextData());
+                ParseResult<OrderInputDTO> textResult = dataParser.parse(request.getTextData());
                 allRawOrders.addAll(textResult.getValidItems());
                 allErrors.addAll(textResult.getErrors());
 
                 log.debug("Parsed {} orders from text data with {} errors",
                         textResult.getValidItems().size(), textResult.getErrors().size());
+                break;
             }
-            case 4: throw new BackendServerError();
+            case 4:
+                throw new RuntimeException("Unexpected backend server error simulation");
+            default:
+                throw new DataInvalidException(List.of(
+                        ErrorDetail.builder()
+                                .code(ErrorCode.BACKEND_SERVER_ERROR.getCode())
+                                .code(ErrorCode.BACKEND_SERVER_ERROR.getCode())
+                                .build()
+                ));
         }
 
         return processParsedData(allRawOrders, allErrors, request, branch);
     }
 
-    /**
-     * Logic trung tâm: Validate Business Rules & Quyết định lưu
-     */
     private ImportResultDTO processParsedData(List<OrderInputDTO> rawOrders,
                                               List<ImportError> parseErrors,
                                               OrderImportRequest request,
@@ -124,12 +162,11 @@ public class OrderImportService {
 
         } catch (Exception e) {
             log.error("Lỗi khi serialize đối tượng để debug: {}", e.getMessage());
-        } 
+        }
 
         List<OrderInputDTO> validOrdersToSave = new ArrayList<>();
         List<ImportError> validationErrors = new ArrayList<>(parseErrors);
 
-        // Bước 4.1: Enrich & Business Validation
         for (int i = 0; i < rawOrders.size(); i++) {
             OrderInputDTO dto = rawOrders.get(i);
 
@@ -153,7 +190,6 @@ public class OrderImportService {
                             "The coordinates cannot be obtained from the address: " + dto.getAddress(),
                             dto.getAddress()
                     ));
-                    // Không bỏ qua dòng này, nhưng đánh dấu lỗi → user sẽ thấy
                 }
             }
 
@@ -173,8 +209,6 @@ public class OrderImportService {
             }
         }
 
-        // Bước 4.2: Decision Gate (Cổng quyết định)
-        // Nếu có lỗi VÀ user chưa xác nhận bỏ qua lỗi (skipValidationErrors = false)
         if (!validationErrors.isEmpty() && !Boolean.TRUE.equals(request.getSkipValidationErrors())) {
             return ImportResultDTO.builder()
                     .success(false)
@@ -186,14 +220,9 @@ public class OrderImportService {
                     .build();
         }
 
-        // Bước 4.3: Lưu dữ liệu (Persistence)
-        // Đến đây nghĩa là: Hoặc không có lỗi, Hoặc User đã đồng ý skip lỗi
         return saveOrdersToDatabase(validOrdersToSave, branch, request, validationErrors);
     }
 
-    /**
-     * Lưu danh sách đơn hàng hợp lệ vào Database
-     */
     private ImportResultDTO saveOrdersToDatabase(List<OrderInputDTO> validOrders,
                                                  Branch branch,
                                                  OrderImportRequest request,
@@ -219,9 +248,7 @@ public class OrderImportService {
                         orderRepository.save(existingOrder);
                         importedCount++;
                     } else {
-                        // SKIP (Duplicate & Overwrite=false)
                         skippedCount++;
-                        // Có thể thêm vào warning log hoặc list error nhẹ nếu muốn user biết
                     }
                 } else {
                     Order newOrder = orderMapper.toEntity(dto, branch, request.getDeliveryDate());
@@ -235,16 +262,15 @@ public class OrderImportService {
             }
         }
 
-        // Tính tổng số bản ghi đã xử lý (bao gồm cả lỗi parse ban đầu)
         int totalProcessed = importedCount + skippedCount + dbErrors.size();
 
         return ImportResultDTO.builder()
-                .success(true) // Transaction hoàn tất (dù có thể skip một số dòng lỗi)
+                .success(true)
                 .totalRecords(totalProcessed)
                 .importedCount(importedCount)
                 .skippedCount(skippedCount)
                 .errors(dbErrors)
-                .requiresConfirmation(false) // Đã xong, không cần confirm nữa
+                .requiresConfirmation(false)
                 .build();
     }
 

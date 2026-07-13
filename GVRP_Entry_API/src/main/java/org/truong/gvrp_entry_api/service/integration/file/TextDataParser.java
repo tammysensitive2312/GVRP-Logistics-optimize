@@ -1,11 +1,10 @@
-package org.truong.gvrp_entry_api.integration.file;
+package org.truong.gvrp_entry_api.service.integration.file;
 
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.truong.gvrp_entry_api.dto.request.OrderInputDTO;
 import org.truong.gvrp_entry_api.dto.response.ImportError;
-import org.truong.gvrp_entry_api.exception.DataInvalidException;
-
 
 import java.math.BigDecimal;
 import java.time.LocalTime;
@@ -15,7 +14,7 @@ import java.util.List;
 
 @Component
 @Slf4j
-public class TextDataParser { // If there is a DataParser interface, implement it here
+public class TextDataParser implements DataParser {
 
     private static final String SEPARATOR = "\\|"; // Split by character '|'
 
@@ -33,24 +32,19 @@ public class TextDataParser { // If there is a DataParser interface, implement i
             int lineNumber = i + 1;
             String line = lines[i].trim();
 
-            // Skip empty lines
             if (line.isEmpty()) continue;
-
-            // split(regex, -1) to keep empty strings if data is missing at the end
             String[] fields = line.split(SEPARATOR, -1);
 
-            // Check minimum number of fields
             if (fields.length < 10) {
-                log.warn("Line {}: Missing fields. Found {}, required 12.", lineNumber, fields.length);
+                log.warn("Line {}: Missing fields. Found {}, required at least 10.", lineNumber, fields.length);
                 errors.add(ImportError.builder()
                         .lineNumber(lineNumber)
-                        .errorMessage("Line missing data. Required 12 fields, found " + fields.length)
+                        .errorMessage("Line missing data. Required at least 10 fields, found " + fields.length)
                         .rawData(line)
                         .build());
                 continue;
             }
 
-            // Get orderCode first to use in error reporting (if any)
             String orderCode = fields[0].trim();
 
             try {
@@ -59,34 +53,33 @@ public class TextDataParser { // If there is a DataParser interface, implement i
                 // 4:Demand | 5:TWS | 6:TWE | 7:Prio | 8:Notes | 9:STime
 
                 OrderInputDTO dto = OrderInputDTO.builder()
-                        .orderCode(parseRequiredString(fields[0], "Order Code"))
-                        .customerName(parseRequiredString(fields[1], "Customer Name"))
+                        .orderCode(parseRequiredString(fields[0], "orderCode"))
+                        .customerName(parseRequiredString(fields[1], "customerName"))
                         .customerPhone(parseOptionalString(fields[2]))
-                        .address(parseRequiredString(fields[3], "Address"))
+                        .address(parseRequiredString(fields[3], "address"))
 
-                        .demand(parseBigDecimal(fields[4], "Demand"))
+                        .demand(parseBigDecimal(fields[4], "demand"))
 
-                        .timeWindowStart(parseTime(fields[5], "Time Window Start"))
-                        .timeWindowEnd(parseTime(fields[6], "Time Window End"))
+                        .timeWindowStart(parseTime(fields[5], "timeWindowStart"))
+                        .timeWindowEnd(parseTime(fields[6], "timeWindowEnd"))
 
-                        .priority(parseInteger(fields[7], "Priority"))
+                        .priority(parseInteger(fields[7], "priority"))
                         .deliveryNotes(parseOptionalString(fields[8]))
-                        .serviceTime(parseInteger(fields[9], "Service Time"))
+                        .serviceTime(parseInteger(fields[9], "serviceTime"))
                         .build();
 
                 validOrders.add(dto);
 
-            } catch (DataInvalidException e) {
-                // Catch format errors thrown by helper methods
+            } catch (ParseException e) {
                 errors.add(ImportError.builder()
                         .lineNumber(lineNumber)
                         .orderCode(orderCode.isEmpty() ? "UNKNOWN" : orderCode)
-                        .errorMessage(e.getMessage()) // Detailed message from helper (e.g., "Invalid number format in Latitude field")
+                        .field(e.getField())
+                        .errorMessage(e.getMessage())
                         .rawData(line)
                         .build());
 
             } catch (Exception e) {
-                // Catch unexpected errors
                 log.error("Unexpected error at line {}: {}", lineNumber, e.getMessage());
                 errors.add(ImportError.builder()
                         .lineNumber(lineNumber)
@@ -101,9 +94,9 @@ public class TextDataParser { // If there is a DataParser interface, implement i
         return new ParseResult<>(validOrders, errors);
     }
 
-    private String parseRequiredString(String value, String fieldName) {
+    private String parseRequiredString(String value, String fieldName) throws ParseException {
         if (value == null || value.trim().isEmpty()) {
-            throw new DataInvalidException("Required field '" + fieldName + "' is empty.");
+            throw new ParseException(fieldName, "Required field '" + fieldName + "' is empty.");
         }
         return value.trim();
     }
@@ -115,36 +108,46 @@ public class TextDataParser { // If there is a DataParser interface, implement i
         return value.trim();
     }
 
-    private BigDecimal parseBigDecimal(String value, String fieldName) {
+    private BigDecimal parseBigDecimal(String value, String fieldName) throws ParseException {
         if (value == null || value.trim().isEmpty()) {
-            throw new DataInvalidException("Field '" + fieldName + "' is required.");
+            throw new ParseException(fieldName, "Field '" + fieldName + "' is required.");
         }
         try {
             return new BigDecimal(value.trim());
         } catch (NumberFormatException e) {
-            throw new DataInvalidException("Invalid BigDecimal format in field '" + fieldName + "': " + value);
+            throw new ParseException(fieldName, "Invalid BigDecimal format in field '" + fieldName + "': " + value);
         }
     }
 
-    private Integer parseInteger(String value, String fieldName) {
-        if (value == null || value.trim().isEmpty()) {
-            return null; // Priority/ServiceTime can be null depending on logic, assume nullable here
-        }
-        try {
-            return Integer.parseInt(value.trim());
-        } catch (NumberFormatException e) {
-            throw new DataInvalidException("Invalid integer format in field '" + fieldName + "': " + value);
-        }
-    }
-
-    private LocalTime parseTime(String value, String fieldName) {
+    private Integer parseInteger(String value, String fieldName) throws ParseException {
         if (value == null || value.trim().isEmpty()) {
             return null;
         }
         try {
-            return LocalTime.parse(value.trim()); // Default ISO format (HH:mm or HH:mm:ss)
+            return Integer.parseInt(value.trim());
+        } catch (NumberFormatException e) {
+            throw new ParseException(fieldName, "Invalid integer format in field '" + fieldName + "': " + value);
+        }
+    }
+
+    private LocalTime parseTime(String value, String fieldName) throws ParseException {
+        if (value == null || value.trim().isEmpty()) {
+            return null;
+        }
+        try {
+            return LocalTime.parse(value.trim());
         } catch (DateTimeParseException e) {
-            throw new DataInvalidException("Invalid time format in field '" + fieldName + "'. Required HH:mm: " + value);
+            throw new ParseException(fieldName, "Invalid time format in field '" + fieldName + "'. Required HH:mm: " + value);
+        }
+    }
+
+    @Getter
+    public static class ParseException extends Exception {
+        private final String field;
+
+        public ParseException(String field, String message) {
+            super(message);
+            this.field = field;
         }
     }
 }

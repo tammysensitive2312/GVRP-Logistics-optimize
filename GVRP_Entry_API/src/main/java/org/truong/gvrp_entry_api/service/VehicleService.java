@@ -1,6 +1,5 @@
 package org.truong.gvrp_entry_api.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.ValidationException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,12 +18,15 @@ import org.truong.gvrp_entry_api.entity.Fleet;
 import org.truong.gvrp_entry_api.entity.Vehicle;
 import org.truong.gvrp_entry_api.entity.VehicleType;
 import org.truong.gvrp_entry_api.entity.enums.VehicleStatus;
-import org.truong.gvrp_entry_api.exception.ResourceNotFoundException;
+import org.truong.gvrp_entry_api.exception.DataInvalidException;
+import org.truong.gvrp_entry_api.exception.ErrorDetail;
 import org.truong.gvrp_entry_api.mapper.VehicleMapper;
 import org.truong.gvrp_entry_api.repository.DepotRepository;
 import org.truong.gvrp_entry_api.repository.FleetRepository;
 import org.truong.gvrp_entry_api.repository.VehicleRepository;
 import org.truong.gvrp_entry_api.repository.VehicleTypeRepository;
+import org.truong.gvrp_entry_api.util.AppConstant;
+import org.truong.gvrp_entry_api.util.ErrorCode;
 
 import java.util.List;
 
@@ -37,9 +39,6 @@ public class VehicleService {
     private final FleetRepository fleetRepository;
     private final DepotRepository depotRepository;
     private final VehicleTypeRepository typeRepository;
-
-    private final ObjectMapper objectMapper;
-    private final VehicleFeaturesService featuresService;
     
     @Transactional(readOnly = true)
     public PageResponse<VehicleDTO> getAllVehiclesPaginated(Long branchId, int pageNo, int pageSize) {
@@ -63,15 +62,43 @@ public class VehicleService {
         }
 
         Fleet fleet = fleetRepository.findById(fleetId)
-                .orElseThrow(() -> new ResourceNotFoundException("Fleet not found", "Fleet"));
+                .orElseThrow(() -> new DataInvalidException(
+                        List.of(
+                                ErrorDetail.builder()
+                                        .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
+                                        .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
+                                        .resource(AppConstant.FLEET)
+                                        .build()
+                        )));
 
         Depot startDepot = depotRepository.findById(input.getStartDepotId())
-                .orElseThrow(() -> new ResourceNotFoundException("Start depot not found", "Depot"));
+                .orElseThrow(() -> new DataInvalidException(
+                        List.of(
+                                ErrorDetail.builder()
+                                        .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
+                                        .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
+                                        .resource(AppConstant.DEPOT)
+                                        .build()
+                        )));
         Depot endDepot = depotRepository.findById(input.getEndDepotId())
-                .orElseThrow(() -> new ResourceNotFoundException("End depot not found", "Depot"));
+                .orElseThrow(() -> new DataInvalidException(
+                        List.of(
+                                ErrorDetail.builder()
+                                        .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
+                                        .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
+                                        .resource(AppConstant.DEPOT)
+                                        .build()
+                        )));
 
         VehicleType vehicleType = typeRepository.findById(input.getVehicleTypeId())
-                .orElseThrow(() -> new ResourceNotFoundException("Vehicle type not found", "VehicleType"));
+                .orElseThrow(() -> new DataInvalidException(
+                        List.of(
+                                ErrorDetail.builder()
+                                        .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
+                                        .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
+                                        .resource(AppConstant.VEHICLE_TYPE)
+                                        .build()
+                        )));
 
         Vehicle vehicle = Vehicle.builder()
                 .vehicleLicensePlate(input.getVehicleLicensePlate())
@@ -83,8 +110,7 @@ public class VehicleService {
                 .build();
 
         vehicleRepository.save(vehicle);
-        VehicleDTO output = vehicleMapper.toDTO(vehicle);
-        return output;
+        return vehicleMapper.toDTO(vehicle);
     }
 
     @Transactional
@@ -92,26 +118,55 @@ public class VehicleService {
         log.info("Updating vehicle: {}", id);
 
         Vehicle vehicle = vehicleRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Vehicle not found", "Vehicle"));
+                .orElseThrow(() -> new DataInvalidException(
+                        List.of(
+                                ErrorDetail.builder()
+                                        .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
+                                        .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
+                                        .resource(AppConstant.VEHICLE)
+                                        .build()
+                        ))
+                );
 
         vehicleMapper.updateEntityFromDTO(input, vehicle);
 
         if (input.getStartDepotId() != null) {
             Depot startDepot = depotRepository.findById(input.getStartDepotId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Start depot not found", "Depot"));
+                    .orElseThrow(() -> new DataInvalidException(
+                            List.of(
+                                    ErrorDetail.builder()
+                                            .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
+                                            .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
+                                            .resource(AppConstant.DEPOT)
+                                            .build()
+                            )));
             vehicle.setStartDepot(startDepot);
         }
 
         if (input.getEndDepotId() != null) {
             Depot endDepot = depotRepository.findById(input.getEndDepotId())
-                    .orElseThrow(() -> new ResourceNotFoundException("End depot not found", "Depot"));
+                    .orElseThrow(() -> new DataInvalidException(
+                            List.of(
+                                    ErrorDetail.builder()
+                                            .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
+                                            .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
+                                            .resource(AppConstant.DEPOT)
+                                            .build()
+                            )));
             vehicle.setEndDepot(endDepot);
         }
 
         if (input.getVehicleTypeId() != null) {
-            Depot endDepot = depotRepository.findById(input.getEndDepotId())
-                    .orElseThrow(() -> new ResourceNotFoundException("End depot not found", "Depot"));
-            vehicle.setEndDepot(endDepot);
+            VehicleType type = typeRepository.findById(input.getVehicleTypeId())
+                    .orElseThrow(() -> new DataInvalidException(
+                            List.of(
+                                    ErrorDetail.builder()
+                                            .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
+                                            .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
+                                            .resource(AppConstant.VEHICLE_TYPE)
+                                            .build()
+                            )));
+            vehicle.setVehicleType(type);
         }
 
         if (input.getStatus() != null) {

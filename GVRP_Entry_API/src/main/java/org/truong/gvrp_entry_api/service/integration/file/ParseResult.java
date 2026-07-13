@@ -1,4 +1,4 @@
-package org.truong.gvrp_entry_api.integration.file;
+package org.truong.gvrp_entry_api.service.integration.file;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

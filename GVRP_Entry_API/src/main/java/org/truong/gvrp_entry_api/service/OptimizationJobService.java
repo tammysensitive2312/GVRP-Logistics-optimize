@@ -2,7 +2,6 @@ package org.truong.gvrp_entry_api.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.validation.ValidationException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
@@ -18,11 +17,12 @@ import org.truong.gvrp_entry_api.entity.enums.OptimizationJobStatus;
 import org.truong.gvrp_entry_api.entity.enums.OrderStatus;
 import org.truong.gvrp_entry_api.entity.enums.VehicleStatus;
 import org.truong.gvrp_entry_api.exception.DataInvalidException;
-import org.truong.gvrp_entry_api.exception.JobLimitException;
-import org.truong.gvrp_entry_api.exception.ResourceNotFoundException;
-import org.truong.gvrp_entry_api.integration.external_api.EngineApiClient;
+import org.truong.gvrp_entry_api.exception.ErrorDetail;
+import org.truong.gvrp_entry_api.service.integration.external_api.EngineApiClient;
 import org.truong.gvrp_entry_api.mapper.*;
 import org.truong.gvrp_entry_api.repository.*;
+import org.truong.gvrp_entry_api.util.AppConstant;
+import org.truong.gvrp_entry_api.util.ErrorCode;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -45,7 +45,6 @@ public class OptimizationJobService {
     private final BranchRepository branchRepository;
     private final UserRepository userRepository;
 
-
     private final DepotMapper depotMapper;
     private final OrderMapper orderMapper;
     private final VehicleMapper vehicleMapper;
@@ -55,7 +54,6 @@ public class OptimizationJobService {
     private final OptimizationConfigMapper optimizationConfigMapper;
 
     private final EngineApiClient engineApiClient;
-    private final EmailService emailService;
 
     /**
      * VRP-002 Step 8-11: Submit optimization job
@@ -65,19 +63,20 @@ public class OptimizationJobService {
      * @return OptimizationJobDTO
      */
     @Transactional
-    public OptimizationJobDTO submitJob(
-            RoutePlanningRequest request,
-            Long branchId,
-            Long userId) {
-
-//        log.info("Submitting optimization job for branch {} by user {}", branchId, userId);
+    public OptimizationJobDTO submitJob(RoutePlanningRequest request, Long branchId, Long userId) {
 
         // Step 1: Check concurrent job limit
         long runningJobsCount = jobRepository.countByBranchIdAndStatus(branchId, OptimizationJobStatus.PROCESSING);
 
         if (runningJobsCount >= maxConcurrentJobs) {
             log.warn("Branch {} has reached the limit of running jobs {}", branchId, maxConcurrentJobs);
-            throw new JobLimitException("The limit for " + maxConcurrentJobs + " jobs has been reached.");
+            throw new DataInvalidException(List.of(
+                    ErrorDetail.builder()
+                            .code(ErrorCode.JOB_LIMIT_EXCEEDED.getCode())
+                            .message(ErrorCode.JOB_LIMIT_EXCEEDED.getCode())
+                            .resource(AppConstant.JOB)
+                            .build()
+            ));
         }
 
         // Step 2: Validate orders BEFORE creating job
@@ -98,10 +97,22 @@ public class OptimizationJobService {
 
         // Step 4: Create job entity
         Branch branch = branchRepository.findById(branchId)
-                .orElseThrow(() -> new ResourceNotFoundException("Resource not found", "Branch"));
+                .orElseThrow(() -> new DataInvalidException(List.of(
+                        ErrorDetail.builder()
+                                .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
+                                .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
+                                .resource(AppConstant.BRANCH)
+                                .build()
+                )));
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Resource not found", "User"));
+                .orElseThrow(() -> new DataInvalidException(List.of(
+                        ErrorDetail.builder()
+                                .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
+                                .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
+                                .resource(AppConstant.USER)
+                                .build()
+                )));
 
         OptimizationJob job = OptimizationJob.builder()
                 .branch(branch)
@@ -116,11 +127,7 @@ public class OptimizationJobService {
 
         // Step 5: Build engine request
         EngineOptimizationRequest engineRequest = buildEngineRequest(
-                orders,
-                vehicles,
-                depots,
-                vehicleTypes,
-                request.getPreferences()
+                orders, vehicles, depots, vehicleTypes, request.getPreferences()
         );
 
         final Long jobId = job.getId();
@@ -144,32 +151,42 @@ public class OptimizationJobService {
         log.info("Cancelling job #{} for branch {}", jobId, branchId);
 
         OptimizationJob job = jobRepository.findById(jobId)
-                .orElseThrow(() -> new ResourceNotFoundException("Resource not found", "Job"));
+                .orElseThrow(() -> new DataInvalidException(List.of(
+                        ErrorDetail.builder()
+                                .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
+                                .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
+                                .resource(AppConstant.JOB)
+                                .build()
+                )));
 
         // Verify branch ownership
         if (!job.getBranch().getId().equals(branchId)) {
-            throw new ResourceNotFoundException("Job does not belong to this branch", "Job");
+            throw new DataInvalidException(List.of(
+                    ErrorDetail.builder()
+                            .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
+                            .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
+                            .resource(AppConstant.JOB)
+                            .build()
+            ));
         }
 
         // Check if can be cancelled
         if (!job.canBeCancelled()) {
-            throw new DataInvalidException(
-                    "Job cannot be cancelled. Current status: " + job.getStatus());
+            throw new DataInvalidException(List.of(
+                    ErrorDetail.builder()
+                            .code(ErrorCode.RESOURCE_CONFLICT.getCode())
+                            .message("Job can't be cancelled")
+                            .resource(AppConstant.JOB)
+                            .build()
+            ));
         }
 
-        // TODO: Cancel in optimization engine
-        // if (job.getExternalJobId() != null) {
-        //     optimizationEngine.cancelOptimization(job.getExternalJobId());
-        // }
-
-        // Update status
         job.setStatus(OptimizationJobStatus.CANCELLED);
         job.setCancelledAt(LocalDateTime.now());
         jobRepository.save(job);
 
         log.info("Job #{} cancelled successfully", jobId);
     }
-    
 
     /**
      * Get current running job
@@ -179,8 +196,7 @@ public class OptimizationJobService {
     @Transactional(readOnly = true)
     public Optional<OptimizationJobDTO> getCurrentRunningJob(Long branchId) {
         return jobRepository
-                .findFirstByBranchIdAndStatusOrderByCreatedAtDesc(
-                        branchId, OptimizationJobStatus.PROCESSING)
+                .findFirstByBranchIdAndStatusOrderByCreatedAtDesc(branchId, OptimizationJobStatus.PROCESSING)
                 .map(jobMapper::toDTO);
     }
 
@@ -206,60 +222,80 @@ public class OptimizationJobService {
     @Transactional(readOnly = true)
     public OptimizationJobDTO getJobById(Long jobId, Long branchId) {
         OptimizationJob job = jobRepository.findById(jobId)
-                .orElseThrow(() -> new ResourceNotFoundException("Resource not found", "Job"));
+                .orElseThrow(() -> new DataInvalidException(List.of(
+                        ErrorDetail.builder()
+                                .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
+                                .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
+                                .resource(AppConstant.JOB)
+                                .build()
+                )));
 
         if (!job.getBranch().getId().equals(branchId)) {
-            throw new ResourceNotFoundException("Job does not belong to this branch", "Job");
+            throw new DataInvalidException(List.of(
+                    ErrorDetail.builder()
+                            .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
+                            .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
+                            .resource(AppConstant.JOB)
+                            .build()
+            ));
         }
 
         return jobMapper.toDTO(job);
     }
 
-    // ==================== VALIDATION METHODS ====================
-
     private List<Order> validateAndLoadOrders(List<Long> orderIds, Long branchId) {
         List<Order> orders = orderRepository.findAllById(orderIds);
 
-        // Check all orders exist
         if (orders.size() != orderIds.size()) {
-            Set<Long> foundIds = orders.stream().map(Order::getId).collect(Collectors.toSet());
-            List<Long> missingIds = orderIds.stream()
-                    .filter(id -> !foundIds.contains(id))
-                    .collect(Collectors.toList());
-            throw new ValidationException("Orders not found: " + missingIds);
+            throw new DataInvalidException(List.of(
+                    ErrorDetail.builder()
+                            .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
+                            .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
+                            .resource(AppConstant.ORDER)
+                            .build()
+            ));
         }
 
-        // Check all orders belong to branch
         List<Order> wrongBranch = orders.stream()
                 .filter(o -> !o.getBranch().getId().equals(branchId))
-                .collect(Collectors.toList());
-
+                .toList();
         if (!wrongBranch.isEmpty()) {
-            throw new ValidationException(
-                    "Orders belong to different branch: " +
-                            wrongBranch.stream().map(Order::getOrderCode).collect(Collectors.joining(", ")));
+            throw new DataInvalidException(List.of(
+                    ErrorDetail.builder()
+                            .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
+                            .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
+                            .resource(AppConstant.ORDER)
+                            .field(wrongBranch.stream().map(Order::getOrderCode).collect(Collectors.joining(", ")))
+                            .build()
+            ));
         }
 
-        // Check order status = SCHEDULED
         List<Order> invalidStatus = orders.stream()
                 .filter(o -> o.getStatus() != OrderStatus.SCHEDULED)
-                .collect(Collectors.toList());
-
+                .toList();
         if (!invalidStatus.isEmpty()) {
-            throw new ValidationException(
-                    "Orders must have SCHEDULED status: " +
-                            invalidStatus.stream().map(Order::getOrderCode).collect(Collectors.joining(", ")));
+            throw new DataInvalidException(List.of(
+                    ErrorDetail.builder()
+                            .code(ErrorCode.RESOURCE_CONFLICT.getCode())
+                            .message(ErrorCode.RESOURCE_CONFLICT.getMessage())
+                            .resource(AppConstant.ORDER)
+                            .field(invalidStatus.stream().map(Order::getOrderCode).collect(Collectors.joining(", ")))
+                            .build()
+            ));
         }
 
-        // Check orders have valid coordinates
         List<Order> invalidCoords = orders.stream()
                 .filter(o -> o.getLocation() == null)
-                .collect(Collectors.toList());
-
+                .toList();
         if (!invalidCoords.isEmpty()) {
-            throw new ValidationException(
-                    "Orders have invalid coordinates: " +
-                            invalidCoords.stream().map(Order::getOrderCode).collect(Collectors.joining(", ")));
+            throw new DataInvalidException(List.of(
+                    ErrorDetail.builder()
+                            .code(ErrorCode.VALIDATION_ERROR.getCode())
+                            .message(ErrorCode.VALIDATION_ERROR.getMessage())
+                            .resource(invalidCoords.stream().map(Order::getOrderCode).collect(Collectors.joining(", ")))
+                            .field(AppConstant.LOCATION)
+                            .build()
+            ));
         }
 
         log.info("Validated {} orders for branch {}", orders.size(), branchId);
@@ -269,93 +305,93 @@ public class OptimizationJobService {
     private List<Vehicle> validateAndLoadVehicles(List<Long> vehicleIds, Long branchId) {
         List<Vehicle> vehicles = vehicleRepository.findAllByIdWithDepots(vehicleIds);
 
-        // Check all vehicles exist
         if (vehicles.size() != vehicleIds.size()) {
             Set<Long> foundIds = vehicles.stream().map(Vehicle::getId).collect(Collectors.toSet());
             List<Long> missingIds = vehicleIds.stream()
                     .filter(id -> !foundIds.contains(id))
-                    .collect(Collectors.toList());
-            throw new ValidationException("Vehicles not found: " + missingIds);
+                    .toList();
+
+            throw new DataInvalidException(List.of(
+                    ErrorDetail.builder()
+                            .code("0040402")
+                            .message("Vehicles not found: " + missingIds)
+                            .resource("vehicle")
+                            .build()
+            ));
         }
 
-        // Check all vehicles belong to branch's fleet
         List<Vehicle> wrongFleet = vehicles.stream()
                 .filter(v -> !v.getFleet().getBranch().getId().equals(branchId))
-                .collect(Collectors.toList());
-
+                .toList();
         if (!wrongFleet.isEmpty()) {
-            throw new ValidationException(
-                    "Vehicles belong to different branch: " +
-                            wrongFleet.stream().map(Vehicle::getVehicleLicensePlate).collect(Collectors.joining(", ")));
+            throw new DataInvalidException(List.of(
+                    ErrorDetail.builder()
+                            .code("0040001")
+                            .message("Vehicles belong to different branch: " +
+                                    wrongFleet.stream().map(Vehicle::getVehicleLicensePlate).collect(Collectors.joining(", ")))
+                            .resource("vehicle")
+                            .field("fleet.branchId")
+                            .build()
+            ));
         }
 
-        // Check vehicle status = AVAILABLE
         List<Vehicle> notAvailable = vehicles.stream()
                 .filter(v -> v.getStatus() != VehicleStatus.AVAILABLE)
-                .collect(Collectors.toList());
-
+                .toList();
         if (!notAvailable.isEmpty()) {
-            throw new ValidationException(
-                    "Vehicles not available: " +
-                            notAvailable.stream().map(Vehicle::getVehicleLicensePlate).collect(Collectors.joining(", ")));
+            throw new DataInvalidException(List.of(
+                    ErrorDetail.builder()
+                            .code("0040001")
+                            .message("Vehicles not available: " +
+                                    notAvailable.stream().map(Vehicle::getVehicleLicensePlate).collect(Collectors.joining(", ")))
+                            .resource("vehicle")
+                            .field("status")
+                            .build()
+            ));
         }
 
-        // Check vehicles have valid depots
         List<Vehicle> invalidDepot = vehicles.stream()
                 .filter(v -> v.getStartDepot() == null || v.getEndDepot() == null)
-                .collect(Collectors.toList());
-
+                .toList();
         if (!invalidDepot.isEmpty()) {
-            throw new ValidationException(
-                    "Vehicles have invalid depots: " +
-                            invalidDepot.stream().map(Vehicle::getVehicleLicensePlate).collect(Collectors.joining(", ")));
+            throw new DataInvalidException(List.of(
+                    ErrorDetail.builder()
+                            .code("0040001")
+                            .message("Vehicles have invalid depots: " +
+                                    invalidDepot.stream().map(Vehicle::getVehicleLicensePlate).collect(Collectors.joining(", ")))
+                            .resource("vehicle")
+                            .field("depot")
+                            .build()
+            ));
         }
 
         log.info("Validated {} vehicles for branch {}", vehicles.size(), branchId);
         return vehicles;
     }
 
-    // ==================== HELPER METHODS ====================
-
-    /**
-     * Build engine request với mapped config
-     */
-    // Giả định: Các tham số đầu vào được thay đổi thành các List/Set đã được tải và lọc.
-// Bạn nên gọi logic lọc này TRƯỚC khi gọi buildEngineRequest
     private EngineOptimizationRequest buildEngineRequest(
             List<Order> orders,
             List<Vehicle> vehicles,
             Set<Depot> depots,
             Set<VehicleType> vehicleTypes,
-            RoutePlanningRequest.OptimizationPreferences userPreferences
-    ) {
+            RoutePlanningRequest.OptimizationPreferences userPreferences) {
 
         EngineOptimizationRequest request = new EngineOptimizationRequest();
 
-        List<EngineDepotDTO> depotDTOs = depots.stream()
-                .map(depotMapper::toEngineDTO)
-                .toList();
+        List<EngineDepotDTO> depotDTOs = depots.stream().map(depotMapper::toEngineDTO).toList();
         request.setDepots(depotDTOs);
 
-        List<EngineOrderDTO> orderDTOs = orders.stream()
-                .map(orderMapper::toEngineDTO)
-                .toList();
+        List<EngineOrderDTO> orderDTOs = orders.stream().map(orderMapper::toEngineDTO).toList();
         request.setOrders(orderDTOs);
 
-        List<EngineVehicleTypeDTO> typeDTOs = vehicleTypes.stream()
-                .map(vehicleTypeMapper::toEngineDTO)
-                .toList();
+        List<EngineVehicleTypeDTO> typeDTOs = vehicleTypes.stream().map(vehicleTypeMapper::toEngineDTO).toList();
         request.setVehicleTypes(typeDTOs);
 
-
-        List<EngineVehicleDTO> vehicleDTOs = vehicles.stream()
-                .map(vehicleMapper::toEngineDTO)
-                .toList();
+        List<EngineVehicleDTO> vehicleDTOs = vehicles.stream().map(vehicleMapper::toEngineDTO).toList();
         request.setVehicles(vehicleDTOs);
 
         EngineOptimizationRequest.OptimizationConfig engineConfig =
                 optimizationConfigMapper.toEngineConfig(userPreferences);
-
         request.setConfig(engineConfig);
 
         return request;
@@ -378,12 +414,8 @@ public class OptimizationJobService {
     }
 
     private Integer estimateDuration(int orderCount, int vehicleCount) {
-        // Simple estimation: 2 minutes per order + 1 minute per vehicle
-        // This can be improved with more sophisticated algorithm
-        int baseTime = 5; // 5 minutes base
+        int baseTime = 5;
         int orderTime = orderCount * 2;
-        int vehicleTime = vehicleCount;
-
-        return Math.min(baseTime + orderTime + vehicleTime, 30); // Max 30 minutes
+        return Math.min(baseTime + orderTime + vehicleCount, 30);
     }
 }

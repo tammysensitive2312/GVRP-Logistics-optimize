@@ -1,6 +1,6 @@
-package org.truong.gvrp_entry_api.service.NotifyService;
+package org.truong.gvrp_entry_api.service.notify;
 
-import org.truong.gvrp_entry_api.util.JobCompletionEvent;
+import org.truong.gvrp_entry_api.service.event.JobCompletionEvent;
 
 public interface NotificationChannel {
     void handle(JobCompletionEvent event);

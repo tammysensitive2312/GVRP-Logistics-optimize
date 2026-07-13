@@ -13,7 +13,6 @@ import com.graphhopper.jsprit.core.util.Coordinate;
 import com.graphhopper.jsprit.core.util.Solutions;
 import com.graphhopper.jsprit.core.util.VehicleRoutingTransportCostsMatrix;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,46 +23,53 @@ import org.truong.gvrp_engine_api.distance_matrix.DistanceMatrixEntry;
 import org.truong.gvrp_engine_api.distance_matrix.DistanceMatrixService;
 import org.truong.gvrp_engine_api.distance_matrix.OptCoordinates;
 
+import java.io.FileWriter;
+import java.io.IOException;
 import java.math.BigDecimal;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * BENCHMARK GIAI ĐOẠN 2 — Xác nhận hội tụ thực sự ở FULL iterations.
+ * BENCHMARK GIAI ĐOẠN 2 — Xác nhận hội tụ thực sự ở FULL iterations, CHẠY NHIỀU LẦN.
  * <p>
- * KHÁC VỚI BẢN TRƯỚC (JspritPerformanceBenchmarkTest gốc):
- * - Bản trước quét cả ma trận 9 tổ hợp ở 50 iterations để tìm ứng viên nhanh —
- *   kết quả: threads scale gần tuyến tính, FAST_REGRET giảm ~70% thời gian,
- *   nhưng KHÔNG kết luận được về CHẤT LƯỢNG vì 50 iterations chưa hội tụ
- *   (unassigned dao động 365-394/1000, tức ~37-39%, ở MỌI cấu hình).
+ * THAY ĐỔI SO VỚI BẢN 1-LẦN-CHẠY TRƯỚC:
+ * - Một lần chạy duy nhất mỗi cấu hình không đủ để phân biệt "cấu hình A tốt hơn B"
+ *   khỏi nhiễu ngẫu nhiên (Jsprit dùng random trong construction + ruin strategy,
+ *   nên 2 lần chạy CÙNG cấu hình vẫn cho cost khác nhau). Bản này chạy
+ *   {@link #RUNS_PER_CONFIG} lần mỗi cấu hình để có mean/stddev đáng tin cậy.
+ * - MỌI kết quả (mỗi run, mỗi mốc % iteration) được ghi ra CSV NGAY SAU KHI CÓ,
+ *   không đợi toàn bộ benchmark chạy xong mới ghi — vì tổng thời gian chạy có
+ *   thể lên tới nhiều giờ, nếu bị gián đoạn (crash, dừng thủ công) giữa chừng,
+ *   các run đã hoàn tất trước đó vẫn phải giữ được dữ liệu, không mất trắng.
  * <p>
- * - Bản này CHỈ chạy 2 cấu hình để so sánh công bằng tại điểm hội tụ thực sự:
- *   1. regret_insertion, fastRegret=true,  threads=4  (ứng viên "nhanh nhất")
- *   2. regret_insertion, fastRegret=false, threads=4  (baseline "chất lượng cao")
- * <p>
- * - Thêm IterationEndsListener để log tiến độ (cost, unassigned) theo mốc %
- *   của MAX_ITERATIONS, giúp quan sát TRỰC TIẾP xu hướng hội tụ theo thời
- *   gian thực thay vì đợi im lặng đến khi xong mới biết kết quả cuối.
+ * OUTPUT (trong build/benchmark-reports/):
+ * - convergence_summary_<timestamp>.csv : 1 dòng = 1 run hoàn tất
+ *   (config, run_id, elapsed_ms, jsprit_cost, vehicles_used, unassigned)
+ *   → dùng để tính mean/stddev, so sánh 2 cấu hình một cách có ý nghĩa thống kê.
+ * - convergence_progress_<timestamp>.csv : 1 dòng = 1 mốc % iteration của 1 run
+ *   (config, run_id, iteration, percent_done, elapsed_ms, cost, unassigned)
+ *   → dùng để vẽ đường cong hội tụ, xác nhận cost đã plateau hay còn đang giảm
+ *   ở gần iteration cuối (bằng chứng trực tiếp cho việc đã hội tụ thật hay chưa).
  * <p>
  * QUAN TRỌNG:
- * - Test @Disabled mặc định — bỏ khi chạy thật.
  * - MAX_ITERATIONS = 2000, KHÔNG set timeout (giữ nguyên bài học từ Timeout bug).
- * - Ước tính thời gian chạy dựa trên số liệu 50-iteration đã đo:
- *   regret+fastRegret=true+threads=4:  127s/50 iter ≈ 2.54s/iter → ~85 phút cho 2000 iter
- *   regret+fastRegret=false+threads=4: 430s/50 iter ≈ 8.6s/iter  → ~287 phút (~4.8h) cho 2000 iter
- *   ĐÂY LÀ NGOẠI SUY THÔ (giả định thời gian/iteration không đổi theo thời gian,
- *   điều này CHƯA được xác nhận — có thể route càng phức tạp về sau, mỗi
- *   iteration càng chậm dần, hoặc ngược lại nếu ruin size giảm dần theo
- *   adaptive strategy của Jsprit). Progress log sẽ cho biết ngoại suy này
- *   đúng sai đến đâu khi chạy thật.
- * - Vì baseline fastRegret=false có thể mất gần 5 tiếng, cân nhắc chạy
- *   qua đêm hoặc dùng ENABLE_SLOW_BASELINE=false để tạm tắt nếu muốn xem
- *   riêng ứng viên nhanh trước.
+ * - RUNS_PER_CONFIG mặc định = 5 — đủ để tính stddev có ý nghĩa mà không quá tốn
+ *   thời gian. Có thể giảm xuống 3 nếu cần kết quả sớm, tăng lên nếu variance cao.
+ * - Ước tính thời gian (dựa trên benchmark 1-lần trước, ~85 phút/run nhanh,
+ *   ~vài giờ/run chậm): với RUNS_PER_CONFIG=5, tổng thời gian có thể RẤT dài
+ *   cho baseline chậm — cân nhắc ENABLE_SLOW_BASELINE=false trước, chạy riêng
+ *   ứng viên nhanh 5 lần để có kết quả sớm, sau đó chạy baseline chậm qua đêm.
  */
 @SpringBootTest
 public class JspritConvergenceBenchmarkTest {
@@ -78,7 +84,16 @@ public class JspritConvergenceBenchmarkTest {
     /** FULL iterations — mục tiêu là quan sát điểm hội tụ thực sự, không cắt ngang. */
     private static final int MAX_ITERATIONS = 2000;
 
-    private static final long RANDOM_SEED = 42L;
+    /**
+     * Số lần chạy LẶP LẠI mỗi cấu hình. Jsprit có random nội bộ (construction,
+     * ruin strategy) nên 1 lần chạy không đủ để phân biệt "tốt hơn thật sự"
+     * khỏi "may mắn lần này". Cần >= 3 để tính stddev có ý nghĩa tối thiểu,
+     * khuyến nghị 5 nếu thời gian cho phép.
+     */
+    private static final int RUNS_PER_CONFIG = 5;
+
+    /** Tọa độ bài toán CỐ ĐỊNH giữa mọi run — chỉ Jsprit's internal random thay đổi. */
+    private static final long COORDINATE_SEED = 42L;
 
     private static final double CENTER_LAT = 21.0285;
     private static final double CENTER_LON = 105.8542;
@@ -86,8 +101,8 @@ public class JspritConvergenceBenchmarkTest {
 
     /**
      * Đặt false nếu muốn tạm bỏ qua baseline "chất lượng cao" (fastRegret=false)
-     * vì nó có thể chạy rất lâu (~4-5 tiếng theo ngoại suy thô) — chỉ chạy
-     * ứng viên nhanh (fastRegret=true) trước để có kết quả sớm.
+     * vì nó có thể chạy rất lâu — chỉ chạy ứng viên nhanh (fastRegret=true)
+     * RUNS_PER_CONFIG lần trước để có kết quả sớm.
      */
     private static final boolean ENABLE_SLOW_BASELINE = true;
 
@@ -101,14 +116,34 @@ public class JspritConvergenceBenchmarkTest {
     private static double[][] sharedDistanceMatrix;
     private static double[][] sharedTimeMatrix;
 
+    // File output — khởi tạo 1 lần, ghi append xuyên suốt toàn bộ benchmark
+    private static Path summaryCsvPath;
+    private static Path progressCsvPath;
+
     @BeforeAll
-    static void logBenchmarkHeader() {
+    static void setupOutputFiles() throws IOException {
+        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+
+        Path outputDir = Paths.get("build", "benchmark-reports");
+        Files.createDirectories(outputDir);
+
+        summaryCsvPath = outputDir.resolve("convergence_summary_" + timestamp + ".csv");
+        progressCsvPath = outputDir.resolve("convergence_progress_" + timestamp + ".csv");
+
+        try (FileWriter w = new FileWriter(summaryCsvPath.toFile())) {
+            w.write("config,run_id,construction,fast_regret,threads,elapsed_ms,jsprit_cost,vehicles_used,unassigned\n");
+        }
+        try (FileWriter w = new FileWriter(progressCsvPath.toFile())) {
+            w.write("config,run_id,iteration,percent_done,elapsed_ms,cost,unassigned\n");
+        }
+
         log.info("================================================================");
-        log.info(" JSPRIT CONVERGENCE BENCHMARK (FULL ITERATIONS)");
-        log.info(" Orders={} | Vehicles={} | MaxIterations={} | Seed={}",
-                NUM_ORDERS, NUM_VEHICLES, MAX_ITERATIONS, RANDOM_SEED);
-        log.info(" ⚠️  Ước tính thời gian: ứng viên nhanh ~85 phút, baseline chậm ~4-5 giờ");
-        log.info(" ⚠️  Đây là ngoại suy THÔ từ benchmark 50-iteration trước — có thể sai lệch");
+        log.info(" JSPRIT CONVERGENCE BENCHMARK (FULL ITERATIONS, MULTIPLE RUNS)");
+        log.info(" Orders={} | Vehicles={} | MaxIterations={} | RunsPerConfig={} | CoordSeed={}",
+                NUM_ORDERS, NUM_VEHICLES, MAX_ITERATIONS, RUNS_PER_CONFIG, COORDINATE_SEED);
+        log.info(" 📄 Summary CSV : {}", summaryCsvPath.toAbsolutePath());
+        log.info(" 📄 Progress CSV: {}", progressCsvPath.toAbsolutePath());
+        log.info(" ⚠️  Dữ liệu được ghi NGAY SAU MỖI RUN — an toàn nếu benchmark bị gián đoạn giữa chừng");
         log.info("================================================================");
     }
 
@@ -120,7 +155,7 @@ public class JspritConvergenceBenchmarkTest {
         log.info("🗺️  Building shared distance matrix via REAL GraphHopper ({} locations)...",
                 NUM_ORDERS + 1);
 
-        Random random = new Random(RANDOM_SEED);
+        Random random = new Random(COORDINATE_SEED);
         List<OptCoordinates> coordinates = new ArrayList<>();
 
         coordinates.add(new OptCoordinates(
@@ -161,61 +196,65 @@ public class JspritConvergenceBenchmarkTest {
     // ==================== BENCHMARK CHÍNH ====================
 
     @Test
-//    @Disabled("Benchmark thủ công dài hơi (tới ~5 tiếng cho baseline chậm). "
-//            + "Bỏ @Disabled khi sẵn sàng chạy qua đêm hoặc để nền lâu dài.")
     void benchmarkConvergenceAtFullIterations() {
         ensureSharedMatrixBuilt();
 
-        List<BenchmarkResult> results = new ArrayList<>();
+        List<BenchmarkResult> fastResults = new ArrayList<>();
+        List<BenchmarkResult> slowResults = new ArrayList<>();
 
-        // Ứng viên 1: cấu hình nhanh nhất từ benchmark 50-iteration trước
-        log.info("=== [1/2] Ứng viên NHANH: regret_insertion, fastRegret=true, threads=4 ===");
-        results.add(runSingleConfiguration(Jsprit.Construction.REGRET_INSERTION, true, 4));
+        String fastConfigLabel = "fastRegret=true";
+        log.info("=== [1/2] Ứng viên NHANH: regret_insertion, fastRegret=true, threads=4 — {} runs ===",
+                RUNS_PER_CONFIG);
+        for (int runId = 1; runId <= RUNS_PER_CONFIG; runId++) {
+            BenchmarkResult r = runSingleConfiguration(
+                    fastConfigLabel, runId, Jsprit.Construction.REGRET_INSERTION, true, 4);
+            fastResults.add(r);
+            appendSummaryRow(r);
+        }
 
-        // Ứng viên 2: baseline "chất lượng cao" — chỉ chạy nếu ENABLE_SLOW_BASELINE
         if (ENABLE_SLOW_BASELINE) {
-            log.info("=== [2/2] Baseline CHẤT LƯỢNG: regret_insertion, fastRegret=false, threads=4 ===");
-            results.add(runSingleConfiguration(Jsprit.Construction.REGRET_INSERTION, false, 4));
+            String slowConfigLabel = "fastRegret=false";
+            log.info("=== [2/2] Baseline CHẤT LƯỢNG: regret_insertion, fastRegret=false, threads=4 — {} runs ===",
+                    RUNS_PER_CONFIG);
+            for (int runId = 1; runId <= RUNS_PER_CONFIG; runId++) {
+                BenchmarkResult r = runSingleConfiguration(
+                        slowConfigLabel, runId, Jsprit.Construction.REGRET_INSERTION, false, 4);
+                slowResults.add(r);
+                appendSummaryRow(r);
+            }
         } else {
             log.info("=== [2/2] Bỏ qua baseline chậm (ENABLE_SLOW_BASELINE=false) ===");
         }
 
-        printResultsTable(results);
-
-        for (BenchmarkResult r : results) {
-            assertTrue(Double.isFinite(r.jspritCost),
-                    "Cấu hình " + r.label + " trả về cost không hữu hạn: " + r.jspritCost);
-            assertFalse(r.jspritCost < 0,
-                    "Cấu hình " + r.label + " trả về cost âm bất thường: " + r.jspritCost);
+        for (BenchmarkResult r : fastResults) {
+            assertTrue(Double.isFinite(r.jspritCost), "Run " + r.runId + " (" + r.configLabel + ") trả về cost không hữu hạn: " + r.jspritCost);
+            assertFalse(r.jspritCost < 0, "Run " + r.runId + " (" + r.configLabel + ") trả về cost âm bất thường: " + r.jspritCost);
+        }
+        for (BenchmarkResult r : slowResults) {
+            assertTrue(Double.isFinite(r.jspritCost), "Run " + r.runId + " (" + r.configLabel + ") trả về cost không hữu hạn: " + r.jspritCost);
+            assertFalse(r.jspritCost < 0, "Run " + r.runId + " (" + r.configLabel + ") trả về cost âm bất thường: " + r.jspritCost);
         }
 
-        // So sánh trực tiếp nếu chạy cả 2 — đây là câu trả lời thật cho câu hỏi
-        // "chênh lệch 3.59% ở 50 iterations còn tồn tại ở full iterations không?"
-        if (results.size() == 2) {
-            BenchmarkResult fast = results.get(0);
-            BenchmarkResult slow = results.get(1);
-            double costDiffPercent = (fast.jspritCost - slow.jspritCost) / slow.jspritCost * 100.0;
-
-            log.info("================================================================");
-            log.info(" SO SÁNH TRỰC TIẾP TẠI FULL {} ITERATIONS", MAX_ITERATIONS);
-            log.info("================================================================");
-            log.info(" Ứng viên nhanh : {} ms | cost={} | unassigned={}",
-                    fast.elapsedMillis, fast.jspritCost, fast.unassignedCount);
-            log.info(" Baseline chậm  : {} ms | cost={} | unassigned={}",
-                    slow.elapsedMillis, slow.jspritCost, slow.unassignedCount);
-            log.info(" Chênh lệch cost: {}% (dương = ứng viên nhanh tệ hơn)",
-                    String.format("%.2f", costDiffPercent));
-            log.info(" Chênh lệch thời gian: {}x (baseline chậm hơn bao nhiêu lần)",
-                    String.format("%.2f", (double) slow.elapsedMillis / fast.elapsedMillis));
-            log.info("================================================================");
+        printAggregateStatistics("fastRegret=true", fastResults);
+        if (!slowResults.isEmpty()) {
+            printAggregateStatistics("fastRegret=false", slowResults);
+            printComparison(fastResults, slowResults);
         }
+
+        log.info("================================================================");
+        log.info(" ✅ Benchmark hoàn tất. Dữ liệu đầy đủ đã lưu tại:");
+        log.info("    {}", summaryCsvPath.toAbsolutePath());
+        log.info("    {}", progressCsvPath.toAbsolutePath());
+        log.info("================================================================");
     }
 
     /**
-     * Chạy một cấu hình Jsprit cụ thể, có progress listener log tiến độ hội tụ
-     * theo mốc % iterations thay vì im lặng tới khi xong.
+     * Chạy một cấu hình Jsprit cụ thể (1 run), có progress listener log tiến độ
+     * hội tụ theo mốc % iterations — ghi từng dòng progress ra CSV ngay lập tức.
      */
     private BenchmarkResult runSingleConfiguration(
+            String configLabel,
+            int runId,
             Jsprit.Construction construction,
             boolean fastRegret,
             int threads) {
@@ -230,11 +269,9 @@ public class JspritConvergenceBenchmarkTest {
 
         VehicleRoutingAlgorithm algorithm = builder.buildAlgorithm();
 
-        String label = String.format("%s | fastRegret=%s | threads=%d", construction, fastRegret, threads);
+        String fullLabel = String.format("%s | run=%d/%d | %s | threads=%d",
+                configLabel, runId, RUNS_PER_CONFIG, construction, threads);
 
-        // Progress listener: log mỗi khi đạt thêm PROGRESS_LOG_EVERY_PERCENT% iterations,
-        // kèm thời gian đã trôi qua và cost/unassigned hiện tại — cho phép quan sát
-        // TRỰC TIẾP xu hướng hội tụ (cost có đang giảm dần đều, hay đã bão hòa sớm?)
         long algorithmStartTime = System.currentTimeMillis();
         int logStepIterations = Math.max(1, MAX_ITERATIONS * PROGRESS_LOG_EVERY_PERCENT / 100);
 
@@ -245,12 +282,15 @@ public class JspritConvergenceBenchmarkTest {
                 double percentDone = 100.0 * iteration / MAX_ITERATIONS;
 
                 log.info("    [{}] {}% ({}/{}) | {}s trôi qua | cost={} | unassigned={}",
-                        label,
+                        fullLabel,
                         String.format("%.0f", percentDone),
                         iteration, MAX_ITERATIONS,
                         elapsedSoFar / 1000,
                         String.format("%.0f", currentBest.getCost()),
                         currentBest.getUnassignedJobs().size());
+
+                appendProgressRow(configLabel, runId, iteration, percentDone,
+                        elapsedSoFar, currentBest.getCost(), currentBest.getUnassignedJobs().size());
             }
         });
 
@@ -261,10 +301,11 @@ public class JspritConvergenceBenchmarkTest {
         VehicleRoutingProblemSolution best = Solutions.bestOf(solutions);
 
         log.info("    → HOÀN TẤT [{}]: {} ms | jspritCost={} | vehiclesUsed={} | unassigned={}",
-                label, elapsed, best.getCost(), best.getRoutes().size(), best.getUnassignedJobs().size());
+                fullLabel, elapsed, best.getCost(), best.getRoutes().size(), best.getUnassignedJobs().size());
 
         return new BenchmarkResult(
-                label,
+                configLabel,
+                runId,
                 construction,
                 fastRegret,
                 threads,
@@ -276,8 +317,8 @@ public class JspritConvergenceBenchmarkTest {
     }
 
     /**
-     * Build VRP đơn giản hóa — giống hệt bản benchmark 50-iteration trước,
-     * giữ nguyên để đảm bảo so sánh công bằng giữa 2 lần benchmark.
+     * Build VRP đơn giản hóa — giống hệt bản benchmark trước, giữ nguyên để
+     * đảm bảo so sánh công bằng giữa các run và giữa các lần benchmark khác nhau.
      */
     private VehicleRoutingProblem buildVrp() {
         VehicleRoutingProblem.Builder vrpBuilder = VehicleRoutingProblem.Builder.newInstance();
@@ -337,27 +378,138 @@ public class JspritConvergenceBenchmarkTest {
         return vrpBuilder.build();
     }
 
-    // ==================== IN KẾT QUẢ ====================
+    // ==================== GHI FILE (APPEND NGAY SAU MỖI SỰ KIỆN) ====================
 
-    private void printResultsTable(List<BenchmarkResult> results) {
-        log.info("================================================================");
-        log.info(" KẾT QUẢ BENCHMARK (paste vào Excel/Sheets, phân tách bởi dấu phẩy)");
-        log.info("================================================================");
-        log.info("construction,fast_regret,threads,elapsed_ms,jsprit_cost,vehicles_used,unassigned");
+    /**
+     * Ghi 1 dòng summary ngay sau khi 1 run hoàn tất — KHÔNG đợi toàn bộ
+     * benchmark xong. Dùng "synchronized" vì @Test có thể chạy tuần tự ở đây,
+     * nhưng an toàn hơn nếu sau này benchmark được song song hóa giữa các run.
+     */
+    private static synchronized void appendSummaryRow(BenchmarkResult r) {
+        try (FileWriter w = new FileWriter(summaryCsvPath.toFile(), true)) {
+            w.write(String.format(Locale.US, "%s,%d,%s,%s,%d,%d,%.4f,%d,%d%n",
+                    r.configLabel, r.runId, r.construction, r.fastRegret, r.threads,
+                    r.elapsedMillis, r.jspritCost, r.vehiclesUsed, r.unassignedCount));
+        } catch (IOException e) {
+            // Non-fatal nhưng LOUD: mất 1 dòng summary không nên làm sập benchmark
+            // đang chạy nhiều giờ, nhưng phải cảnh báo rõ vì đây là dữ liệu quý.
+            log.error("❌ Không ghi được summary row cho run {} ({}): {}",
+                    r.runId, r.configLabel, e.getMessage(), e);
+        }
+    }
 
-        for (BenchmarkResult r : results) {
-            log.info("{},{},{},{},{},{},{}",
-                    r.construction, r.fastRegret, r.threads,
-                    r.elapsedMillis, r.jspritCost, r.vehiclesUsed, r.unassignedCount);
+    private static synchronized void appendProgressRow(
+            String configLabel, int runId, int iteration, double percentDone,
+            long elapsedMs, double cost, int unassigned) {
+        try (FileWriter w = new FileWriter(progressCsvPath.toFile(), true)) {
+            w.write(String.format(Locale.US, "%s,%d,%d,%.1f,%d,%.4f,%d%n",
+                    configLabel, runId, iteration, percentDone, elapsedMs, cost, unassigned));
+        } catch (IOException e) {
+            log.error("❌ Không ghi được progress row cho run {} ({}) tại iteration {}: {}",
+                    runId, configLabel, iteration, e.getMessage(), e);
+        }
+    }
+
+    // ==================== THỐNG KÊ TỔNG HỢP ====================
+
+    private void printAggregateStatistics(String configLabel, List<BenchmarkResult> results) {
+        if (results.isEmpty()) {
+            return;
         }
 
+        double[] costs = results.stream().mapToDouble(r -> r.jspritCost).toArray();
+        long[] elapsedMs = results.stream().mapToLong(r -> r.elapsedMillis).toArray();
+        int[] unassigned = results.stream().mapToInt(r -> r.unassignedCount).toArray();
+
+        double meanCost = mean(costs);
+        double stdCost = stdDev(costs, meanCost);
+        double meanElapsed = mean(toDoubleArray(elapsedMs));
+        double meanUnassigned = mean(toDoubleArray(unassigned));
+
+        log.info("----------------------------------------------------------------");
+        log.info(" Thống kê [{}] qua {} lần chạy:", configLabel, results.size());
+        log.info("   Cost:       mean={} | stddev={} | min={} | max={}",
+                String.format(Locale.US, "%.2f", meanCost),
+                String.format(Locale.US, "%.2f", stdCost),
+                String.format(Locale.US, "%.2f", min(costs)),
+                String.format(Locale.US, "%.2f", max(costs)));
+        log.info("   Elapsed:    mean={} ms", String.format(Locale.US, "%.0f", meanElapsed));
+        log.info("   Unassigned: mean={} (min={}, max={})",
+                String.format(Locale.US, "%.1f", meanUnassigned),
+                (int) min(toDoubleArray(unassigned)), (int) max(toDoubleArray(unassigned)));
+        log.info("----------------------------------------------------------------");
+    }
+
+    private void printComparison(List<BenchmarkResult> fastResults, List<BenchmarkResult> slowResults) {
+        double meanFastCost = mean(fastResults.stream().mapToDouble(r -> r.jspritCost).toArray());
+        double meanSlowCost = mean(slowResults.stream().mapToDouble(r -> r.jspritCost).toArray());
+        double meanFastElapsed = mean(toDoubleArray(fastResults.stream().mapToLong(r -> r.elapsedMillis).toArray()));
+        double meanSlowElapsed = mean(toDoubleArray(slowResults.stream().mapToLong(r -> r.elapsedMillis).toArray()));
+
+        double costDiffPercent = (meanFastCost - meanSlowCost) / meanSlowCost * 100.0;
+        double speedupFactor = meanSlowElapsed / meanFastElapsed;
+
         log.info("================================================================");
+        log.info(" SO SÁNH TỔNG HỢP (trung bình qua {} lần chạy mỗi cấu hình)", RUNS_PER_CONFIG);
+        log.info("================================================================");
+        log.info(" fastRegret=true : mean cost={} | mean elapsed={} ms",
+                String.format(Locale.US, "%.2f", meanFastCost), String.format(Locale.US, "%.0f", meanFastElapsed));
+        log.info(" fastRegret=false: mean cost={} | mean elapsed={} ms",
+                String.format(Locale.US, "%.2f", meanSlowCost), String.format(Locale.US, "%.0f", meanSlowElapsed));
+        log.info(" Chênh lệch cost trung bình: {}% (dương = fastRegret=true tệ hơn)",
+                String.format(Locale.US, "%.2f", costDiffPercent));
+        log.info(" Tốc độ: fastRegret=true nhanh hơn {}x", String.format(Locale.US, "%.2f", speedupFactor));
+        log.info("================================================================");
+        log.info(" ⚠️  Nếu stddev của mỗi cấu hình (xem thống kê ở trên) LỚN so với");
+        log.info("    chênh lệch mean giữa 2 cấu hình, kết luận 'A tốt hơn B' chưa");
+        log.info("    đủ vững — hai phân phối có thể overlap đáng kể. Xem thêm CSV.");
+        log.info("================================================================");
+    }
+
+    private static double mean(double[] values) {
+        double sum = 0;
+        for (double v : values) sum += v;
+        return sum / values.length;
+    }
+
+    private static double stdDev(double[] values, double mean) {
+        double sumSq = 0;
+        for (double v : values) {
+            double diff = v - mean;
+            sumSq += diff * diff;
+        }
+        return Math.sqrt(sumSq / values.length);
+    }
+
+    private static double min(double[] values) {
+        double m = Double.MAX_VALUE;
+        for (double v : values) m = Math.min(m, v);
+        return m;
+    }
+
+    private static double max(double[] values) {
+        double m = -Double.MAX_VALUE;
+        for (double v : values) m = Math.max(m, v);
+        return m;
+    }
+
+    private static double[] toDoubleArray(long[] values) {
+        double[] result = new double[values.length];
+        for (int i = 0; i < values.length; i++) result[i] = values[i];
+        return result;
+    }
+
+    private static double[] toDoubleArray(int[] values) {
+        double[] result = new double[values.length];
+        for (int i = 0; i < values.length; i++) result[i] = values[i];
+        return result;
     }
 
     // ==================== DATA HOLDER ====================
 
     private static class BenchmarkResult {
-        final String label;
+        final String configLabel;
+        final int runId;
         final Jsprit.Construction construction;
         final boolean fastRegret;
         final int threads;
@@ -366,10 +518,11 @@ public class JspritConvergenceBenchmarkTest {
         final int vehiclesUsed;
         final int unassignedCount;
 
-        BenchmarkResult(String label, Jsprit.Construction construction, boolean fastRegret,
+        BenchmarkResult(String configLabel, int runId, Jsprit.Construction construction, boolean fastRegret,
                         int threads, long elapsedMillis, double jspritCost,
                         int vehiclesUsed, int unassignedCount) {
-            this.label = label;
+            this.configLabel = configLabel;
+            this.runId = runId;
             this.construction = construction;
             this.fastRegret = fastRegret;
             this.threads = threads;

@@ -1,4 +1,4 @@
-package org.truong.gvrp_entry_api.util;
+package org.truong.gvrp_entry_api.service.event;
 
 import lombok.Builder;
 import lombok.Getter;

@@ -14,11 +14,13 @@ import org.truong.gvrp_entry_api.dto.response.PageResponse;
 import org.truong.gvrp_entry_api.entity.Branch;
 import org.truong.gvrp_entry_api.entity.Order;
 import org.truong.gvrp_entry_api.exception.DataInvalidException;
-import org.truong.gvrp_entry_api.exception.ResourceNotFoundException;
+import org.truong.gvrp_entry_api.exception.ErrorDetail;
 import org.truong.gvrp_entry_api.mapper.OrderMapper;
 import org.truong.gvrp_entry_api.repository.BranchRepository;
 import org.truong.gvrp_entry_api.repository.OrderRepository;
 import org.truong.gvrp_entry_api.service.GeocodingService;
+import org.truong.gvrp_entry_api.util.AppConstant;
+import org.truong.gvrp_entry_api.util.ErrorCode;
 
 import java.util.List;
 
@@ -33,17 +35,10 @@ public class OrderService {
 
     @Transactional(readOnly = true)
     public PageResponse<OrderDTO> getAllOrdersPaginated(Long branchId, int pageNo, int pageSize) {
-        // 1. Tạo đối tượng Pageable (có thể thêm Sort nếu muốn, ví dụ sort theo ID giảm dần)
         Pageable pageable = PageRequest.of(pageNo, pageSize, Sort.by("id").descending());
-
-        // 2. Gọi Repository
         Page<Order> orderPage = orderRepository.findByBranchIdOrderByCreatedAtDesc(branchId, pageable);
-
-        // 3. Map Entity sang DTO
-        // Lưu ý: orderPage.getContent() trả về List<Order>
         List<OrderDTO> content = orderMapper.toDTOList(orderPage.getContent());
 
-        // 4. Build PageResponse
         return PageResponse.<OrderDTO>builder()
                 .content(content)
                 .pageNo(orderPage.getNumber())
@@ -62,7 +57,15 @@ public class OrderService {
         validateBusinessLogic(inputDTO);
 
         Order order = orderRepository.findByIdAndBranchId(orderId, branchId)
-                .orElseThrow(() -> new ResourceNotFoundException("Resources not found.", "order"));
+                .orElseThrow(() -> new DataInvalidException(
+                        List.of(
+                                ErrorDetail.builder()
+                                        .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
+                                        .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
+                                        .resource(AppConstant.ORDER)
+                                        .build()
+                        )
+                ));
 
         order = orderMapper.updateEntityFromDTO(inputDTO, order);
         orderRepository.save(order);
@@ -75,9 +78,15 @@ public class OrderService {
             Long branchId
     ) {
         validateBusinessLogic(input);
-        Branch branch = branchRepository.findById(branchId).orElseThrow(
-                () -> new ResourceNotFoundException("Resources not found.", "branch")
-        );
+        Branch branch = branchRepository.findById(branchId).orElseThrow(() -> new DataInvalidException(
+                List.of(
+                        ErrorDetail.builder()
+                                .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
+                                .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
+                                .resource(AppConstant.BRANCH)
+                                .build()
+                )
+        ));
 
         Order order = orderMapper.toEntity(input, branch, input.getDeliveryDate());
         Order saved = orderRepository.save(order);
@@ -85,9 +94,15 @@ public class OrderService {
     }
 
     public OrderDTO getOrderById(Long orderId, Long branchId) {
-        Order order = orderRepository.findByIdAndBranchId(orderId, branchId).orElseThrow(
-                () -> new ResourceNotFoundException("Resources not found.", "order")
-        );
+        Order order = orderRepository.findByIdAndBranchId(orderId, branchId).orElseThrow(() -> new DataInvalidException(
+                List.of(
+                        ErrorDetail.builder()
+                                .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
+                                .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
+                                .resource(AppConstant.ORDER)
+                                .build()
+                )
+        ));
 
         return orderMapper.toDTO(order);
     }
@@ -98,15 +113,35 @@ public class OrderService {
         boolean hasAddress = dto.getAddress() != null && !dto.getAddress().trim().isEmpty();
 
         if (!hasCoordinates && !hasAddress) {
-            throw new DataInvalidException("You must provide coordinates (latitude/longitude) OR a detailed address.");
+            throw new DataInvalidException(
+                    List.of(
+                            ErrorDetail.builder()
+                                    .code(ErrorCode.VALIDATION_ERROR.getCode())
+                                    .message("You must provide coordinates (latitude/longitude) OR a detailed address.")
+                                    .resource(AppConstant.ORDER)
+                                    .build()
+                    ));
         }
 
         if (dto.getTimeWindowStart() != null && dto.getTimeWindowEnd() != null) {
             if (dto.getTimeWindowStart().isAfter(dto.getTimeWindowEnd())) {
-                throw new DataInvalidException("Time Window start time cannot be after the end time.");
+                throw new DataInvalidException(
+                        List.of(
+                                ErrorDetail.builder()
+                                        .code(ErrorCode.VALIDATION_ERROR.getCode())
+                                        .message("Time Window start time cannot be after the end time.")
+                                        .resource(AppConstant.ORDER)
+                                        .build()
+                        ));
             }
         } else if (dto.getTimeWindowStart() != null || dto.getTimeWindowEnd() != null) {
-            throw new DataInvalidException("Time Window must have both start and end times, or neither.");
+            List.of(
+                    ErrorDetail.builder()
+                            .code(ErrorCode.VALIDATION_ERROR.getCode())
+                            .message("Time Window must have both start and end times, or neither.")
+                            .resource(AppConstant.ORDER)
+                            .build()
+            );
         }
     }
 }

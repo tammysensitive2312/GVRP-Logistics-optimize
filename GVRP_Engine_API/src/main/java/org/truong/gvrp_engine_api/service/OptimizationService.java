@@ -456,11 +456,13 @@ public class OptimizationService {
         }
 
         int maxIterations = config.getMaxIterations() != null ? config.getMaxIterations() : 2000;
-        int numThreads = config.getNumThreads() != null ? config.getNumThreads() : 4;
+        int numThreads = config.getNumThreads() != null ? config.getNumThreads() : 1;
 
         Jsprit.Builder builder = Jsprit.Builder.newInstance(vrp);
-        builder.setProperty(Jsprit.Parameter.ITERATIONS, String.valueOf(maxIterations));
-        builder.setProperty(Jsprit.Parameter.THREADS, String.valueOf(numThreads));
+        builder.setProperty(Jsprit.Parameter.ITERATIONS, String.valueOf(maxIterations))
+                .setProperty(Jsprit.Parameter.THREADS, String.valueOf(numThreads))
+                .setProperty(Jsprit.Parameter.FAST_REGRET, "true")
+                .setProperty(Jsprit.Parameter.CONSTRUCTION, String.valueOf(Jsprit.Construction.REGRET_INSERTION));
 
         // Add max distance constraints
         if (!vehicleMaxDistances.isEmpty()) {

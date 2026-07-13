@@ -10,11 +10,14 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 import org.truong.gvrp_entry_api.dto.request.EngineCallbackRequest;
 import org.truong.gvrp_entry_api.entity.*;
 import org.truong.gvrp_entry_api.entity.enums.*;
-import org.truong.gvrp_entry_api.exception.ResourceNotFoundException;
+import org.truong.gvrp_entry_api.exception.DataInvalidException;
+import org.truong.gvrp_entry_api.exception.ErrorDetail;
 import org.truong.gvrp_entry_api.mapper.GeometryMapper;
 import org.truong.gvrp_entry_api.repository.*;
 import org.truong.gvrp_entry_api.service.orders.OrderStatusTransitionService;
-import org.truong.gvrp_entry_api.util.JobCompletionEvent;
+import org.truong.gvrp_entry_api.service.event.JobCompletionEvent;
+import org.truong.gvrp_entry_api.util.AppConstant;
+import org.truong.gvrp_entry_api.util.ErrorCode;
 
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -46,7 +49,15 @@ public class OptimizationCallbackService {
     public void handleCompletion(EngineCallbackRequest.CompletionCallback callback) {
         try {
             OptimizationJob job = jobRepository.findById(callback.getJobId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Job not found", "OptimizationJob"));
+                    .orElseThrow(() -> new DataInvalidException(
+                            List.of(
+                                    ErrorDetail.builder()
+                                            .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
+                                            .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
+                                            .resource(AppConstant.JOB)
+                                            .build()
+                            ))
+                    );
 
             if (job.getStatus() != OptimizationJobStatus.PROCESSING) {
                 log.warn("⚠️ Job #{} is not in PROCESSING state (current: {}). Ignoring callback.", job.getId(), job.getStatus());
@@ -57,7 +68,7 @@ public class OptimizationCallbackService {
 
             job.setStatus(OptimizationJobStatus.COMPLETED);
             job.setCompletedAt(LocalDateTime.now());
-//            job.setSolution(solution);
+            job.setSolution(solution);
             jobRepository.save(job);
             eventPublisher.publishEvent(buildCompletionEvent(job, solution));
 
@@ -124,7 +135,16 @@ public class OptimizationCallbackService {
         try {
             // 1. Load job
             OptimizationJob job = jobRepository.findById(callback.getJobId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Job not found", "OptimizationJob"));
+                    .orElseThrow(
+                            () -> new DataInvalidException(
+                                    List.of(
+                                            ErrorDetail.builder()
+                                                    .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
+                                                    .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
+                                                    .resource(AppConstant.JOB)
+                                                    .build()
+                                    ))
+                    );
 
             // 2. Validate job can receive failure
             if (job.getStatus() != OptimizationJobStatus.PROCESSING) {
@@ -170,7 +190,9 @@ public class OptimizationCallbackService {
         try {
             // 1. Load job
             OptimizationJob job = jobRepository.findById(callback.getJobId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Job not found", "OptimizationJob"));
+                    .orElseThrow(
+
+                    );
 
             // 2. Update progress (if you have progress field)
             // 🔧 TODO: Add progress field to OptimizationJob entity if needed
@@ -271,9 +293,9 @@ public class OptimizationCallbackService {
                             vehicleMap,
                             orderMap
                     ))
-                    .collect(Collectors.toList());
+                    .toList();
 
-            routeRepository.saveAll(routes);
+//            routeRepository.saveAll(routes);
 
             List<RouteStop> allStops = new ArrayList<>();
             for (int i = 0; i < routes.size(); i++) {
@@ -287,7 +309,7 @@ public class OptimizationCallbackService {
                 }
             }
 
-            routeStopRepository.saveAll(allStops);
+//            routeStopRepository.saveAll(allStops);
             solution.getRoutes().addAll(routes);
 
             if (!assignedOrderIds.isEmpty()) {
@@ -299,8 +321,7 @@ public class OptimizationCallbackService {
             }
         }
 
-//        solution = solutionRepository.save(solution);
-        return solution;
+        return solutionRepository.save(solution);
     }
 
     private List<UnassignedOrder> buildUnassignedOrder(Solution solution, List<EngineCallbackRequest.UnassignedOrderData> solutionData, Map<Long, Order> orderMap) {
@@ -352,7 +373,7 @@ public class OptimizationCallbackService {
             Map<Long, Order> orderMap
     ) {
 
-        Route route = Route.builder()
+        return Route.builder()
                 .solution(solution)
                 .vehicle(vehicleMap.get(routeData.getVehicleId()))
                 .routeOrder(routeData.getRouteOrder() != null ? routeData.getRouteOrder() : 1)
@@ -363,7 +384,6 @@ public class OptimizationCallbackService {
                 .loadUtilization(routeData.getLoadUtilization())
                 .segments(new ArrayList<>())
                 .build();
-        return route;
     }
 
     private List<RouteStop> buildStop(Route route, List<EngineCallbackRequest.StopData> stopData, Map<Long, Order> orderMap) {

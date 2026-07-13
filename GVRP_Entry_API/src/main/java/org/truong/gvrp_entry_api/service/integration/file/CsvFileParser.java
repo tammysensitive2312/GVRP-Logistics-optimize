@@ -1,18 +1,18 @@
-package org.truong.gvrp_entry_api.integration.file;
+package org.truong.gvrp_entry_api.service.integration.file;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 import org.truong.gvrp_entry_api.dto.request.OrderInputDTO;
 import org.truong.gvrp_entry_api.dto.response.ImportError;
-import org.truong.gvrp_entry_api.exception.BackendServerError;
-import org.truong.gvrp_entry_api.exception.BusinessException;
 import org.truong.gvrp_entry_api.exception.DataInvalidException;
+import org.truong.gvrp_entry_api.util.ErrorCode;
+import org.truong.gvrp_entry_api.exception.ErrorDetail;
+import org.truong.gvrp_entry_api.util.AppConstant;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -31,7 +31,7 @@ import java.util.List;
  */
 @Component
 @Slf4j
-public class CsvFileParser implements FileParser<OrderInputDTO>{
+public class CsvFileParser implements FileParser<OrderInputDTO> {
 
     private static final long MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
@@ -41,7 +41,6 @@ public class CsvFileParser implements FileParser<OrderInputDTO>{
      *
      * @param file CSV file từ MultipartFile
      * @return ParseResult chứa danh sách orders hợp lệ và errors
-     * @throws DataInvalidException nếu file không hợp lệ
      */
     public ParseResult<OrderInputDTO> parse(MultipartFile file) {
         validateFile(file);
@@ -52,7 +51,6 @@ public class CsvFileParser implements FileParser<OrderInputDTO>{
         try (BufferedReader reader = new BufferedReader(
                 new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8))) {
 
-            // Configure CSV format
             CSVFormat csvFormat = CSVFormat.DEFAULT.builder()
                     .setHeader()
                     .setSkipHeaderRecord(true)
@@ -63,8 +61,7 @@ public class CsvFileParser implements FileParser<OrderInputDTO>{
                     .build();
 
             CSVParser csvParser = new CSVParser(reader, csvFormat);
-
-            int lineNumber = 1; // Bắt đầu từ 1 (header là dòng 0)
+            int lineNumber = 1;
 
             for (CSVRecord record : csvParser) {
                 lineNumber++;
@@ -89,39 +86,54 @@ public class CsvFileParser implements FileParser<OrderInputDTO>{
             return new ParseResult<>(validOrders, errors);
 
         } catch (IOException e) {
-            throw new DataInvalidException("Cannot read CSV file: " + e.getMessage());
+            ErrorDetail errorDetail = ErrorDetail.builder()
+                    .code(ErrorCode.INTERNAL_ERROR.getCode())
+                    .message(ErrorCode.INTERNAL_ERROR.getMessage())
+                    .resource(AppConstant.FILE)
+                    .build();
+            throw new DataInvalidException(List.of(errorDetail));
+
         } catch (Exception e) {
-            throw new BackendServerError();
+            throw new RuntimeException("Unexpected error during CSV parsing", e);
         }
     }
 
     /**
-     * Validate file trước khi parse.
+     * Validate file trước khi parse, gom tất cả lỗi vào một List và ném DataInvalidException.
      */
-    private void validateFile(MultipartFile file) throws DataInvalidException {
+    private void validateFile(MultipartFile file) {
+        List<ErrorDetail> fileErrors = new ArrayList<>();
+
         if (file == null || file.isEmpty()) {
-            throw new DataInvalidException("File is empty");
+            fileErrors.add(ErrorDetail.builder()
+                    .code(ErrorCode.EMPTY_FIELD_ERROR.getCode())
+                    .message(ErrorCode.EMPTY_FIELD_ERROR.getMessage())
+                    .resource(AppConstant.FILE)
+                    .build());
+        } else {
+            if (file.getSize() > MAX_FILE_SIZE) {
+                fileErrors.add(ErrorDetail.builder()
+                        .code(ErrorCode.FILE_SIZE_EXCEEDED.getCode())
+                        .message(ErrorCode.FILE_SIZE_EXCEEDED.getMessage())
+                        .resource(AppConstant.FILE)
+                        .build());
+            }
+
+            String filename = file.getOriginalFilename();
+            if (filename == null || !filename.toLowerCase().endsWith(".csv")) {
+                fileErrors.add(ErrorDetail.builder()
+                        .code(ErrorCode.VALIDATION_ERROR.getCode())
+                        .message(ErrorCode.VALIDATION_ERROR.getMessage())
+                        .resource(AppConstant.FILE)
+                        .build());
+            }
         }
 
-        if (file.getSize() > MAX_FILE_SIZE) {
-            throw new DataInvalidException(
-                    String.format("File size exceeds limit of %d MB", MAX_FILE_SIZE / 1024 / 1024));
-        }
-
-        String filename = file.getOriginalFilename();
-        if (filename == null || !filename.toLowerCase().endsWith(".csv")) {
-            throw new DataInvalidException("Only CSV files are accepted");
-        }
-
-        String contentType = file.getContentType();
-        if (contentType != null && !contentType.contains("csv") && !contentType.contains("text")) {
-            throw new DataInvalidException("Invalid content type: " + contentType);
+        if (!fileErrors.isEmpty()) {
+            throw new DataInvalidException(fileErrors);
         }
     }
 
-    /**
-     * Parse một CSV record thành OrderInputDTO.
-     */
     private OrderInputDTO parseRecord(CSVRecord record, int lineNumber) throws ParseException {
         try {
             return OrderInputDTO.builder()
@@ -144,42 +156,25 @@ public class CsvFileParser implements FileParser<OrderInputDTO>{
         }
     }
 
-    // =========================================================================
-    // PARSING METHODS - Required Fields
-    // =========================================================================
-
-    private String parseRequiredString(CSVRecord record, String columnName, int lineNumber)
-            throws ParseException {
+    private String parseRequiredString(CSVRecord record, String columnName, int lineNumber) throws ParseException {
         String value = safeGet(record, columnName);
-
         if (value == null || value.trim().isEmpty()) {
-            throw new ParseException(columnName, lineNumber,
-                    String.format("Field '%s' is required", columnName));
+            throw new ParseException(columnName, lineNumber, String.format("Field '%s' is required", columnName));
         }
-
         return value.trim();
     }
 
-    private BigDecimal parseRequiredBigDecimal(CSVRecord record, String columnName, int lineNumber)
-            throws ParseException {
+    private BigDecimal parseRequiredBigDecimal(CSVRecord record, String columnName, int lineNumber) throws ParseException {
         String value = safeGet(record, columnName);
-
         if (value == null || value.trim().isEmpty()) {
-            throw new ParseException(columnName, lineNumber,
-                    String.format("Field '%s' is required", columnName));
+            throw new ParseException(columnName, lineNumber, String.format("Field '%s' is required", columnName));
         }
-
         try {
             return new BigDecimal(value.trim());
         } catch (NumberFormatException e) {
-            throw new ParseException(columnName, lineNumber,
-                    String.format("Invalid decimal format for '%s': %s", columnName, value));
+            throw new ParseException(columnName, lineNumber, String.format("Invalid decimal format for '%s': %s", columnName, value));
         }
     }
-
-    // =========================================================================
-    // PARSING METHODS - Optional Fields
-    // =========================================================================
 
     private String parseOptionalString(CSVRecord record, String columnName) {
         String value = safeGet(record, columnName);
@@ -188,11 +183,9 @@ public class CsvFileParser implements FileParser<OrderInputDTO>{
 
     private Integer parseOptionalInteger(CSVRecord record, String columnName) {
         String value = safeGet(record, columnName);
-
         if (value == null || value.trim().isEmpty()) {
             return null;
         }
-
         try {
             return Integer.parseInt(value.trim());
         } catch (NumberFormatException e) {
@@ -203,43 +196,33 @@ public class CsvFileParser implements FileParser<OrderInputDTO>{
 
     private LocalTime parseOptionalTime(CSVRecord record, String columnName) {
         String value = safeGet(record, columnName);
-
         if (value == null || value.trim().isEmpty()) {
             return null;
         }
-
         try {
             return LocalTime.parse(value.trim(), TIME_FORMATTER);
         } catch (DateTimeParseException e) {
-            log.warn("Invalid time format for column '{}': {}. Expected HH:mm. Setting to null.",
-                    columnName, value);
+            log.warn("Invalid time format for column '{}': {}. Expected HH:mm. Setting to null.", columnName, value);
             return null;
         }
     }
 
-    /**
-     * Safely get column value, handling case-insensitive và missing columns.
-     */
     private String safeGet(CSVRecord record, String columnName) {
         try {
             if (record.isMapped(columnName)) {
                 return record.get(columnName);
             }
-
-            // Try common variations
             String[] variations = {
                     columnName.toLowerCase(),
                     columnName.toUpperCase(),
                     camelToSnake(columnName),
                     snakeToCamel(columnName)
             };
-
             for (String variation : variations) {
                 if (record.isMapped(variation)) {
                     return record.get(variation);
                 }
             }
-
             return null;
         } catch (IllegalArgumentException e) {
             return null;
@@ -253,7 +236,6 @@ public class CsvFileParser implements FileParser<OrderInputDTO>{
     private String snakeToCamel(String str) {
         StringBuilder result = new StringBuilder();
         boolean capitalizeNext = false;
-
         for (char c : str.toCharArray()) {
             if (c == '_') {
                 capitalizeNext = true;
@@ -262,27 +244,18 @@ public class CsvFileParser implements FileParser<OrderInputDTO>{
                 capitalizeNext = false;
             }
         }
-
         return result.toString();
     }
 
-    /**
-     * Exception khi parse một field trong CSV record.
-     */
     @Getter
-    public static class ParseException extends BusinessException {
+    public static class ParseException extends Exception {
         private final String field;
         private final int lineNumber;
 
         public ParseException(String field, int lineNumber, String message) {
-            super(
-                    message,
-                    "0040009",
-                    HttpStatus.BAD_REQUEST
-            );
+            super(message);
             this.field = field;
             this.lineNumber = lineNumber;
         }
-
     }
 }

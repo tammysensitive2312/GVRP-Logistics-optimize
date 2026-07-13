@@ -43,8 +43,6 @@ public class GeocodingService {
         }
 
         try {
-            // Goong sử dụng param 'address' và 'api_key'
-            // Sử dụng {address} placeholder để RestTemplate tự động encode tiếng Việt đúng cách
             String url = UriComponentsBuilder.fromUriString(goongURI)
                     .queryParam("address", "{address}")
                     .queryParam("api_key", apiKey)
@@ -53,7 +51,6 @@ public class GeocodingService {
 
             log.debug("Calling Goong API for address: {}", address.trim());
 
-            // Goong trả về một Object (không phải List như LocationIQ)
             Map<String, Object> response = restTemplate.getForObject(url, Map.class, address.trim());
 
             if (response != null && "OK".equals(response.get("status"))) {

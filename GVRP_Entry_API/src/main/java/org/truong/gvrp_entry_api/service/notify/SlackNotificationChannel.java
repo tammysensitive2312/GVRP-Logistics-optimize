@@ -1,4 +1,4 @@
-package org.truong.gvrp_entry_api.service.NotifyService;
+package org.truong.gvrp_entry_api.service.notify;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -8,7 +8,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
-import org.truong.gvrp_entry_api.util.JobCompletionEvent;
+import org.truong.gvrp_entry_api.service.event.JobCompletionEvent;
 
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;

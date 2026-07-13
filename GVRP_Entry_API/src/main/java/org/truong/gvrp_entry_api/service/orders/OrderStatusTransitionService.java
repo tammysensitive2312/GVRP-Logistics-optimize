@@ -5,8 +5,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.truong.gvrp_entry_api.entity.Order;
 import org.truong.gvrp_entry_api.entity.enums.OrderStatus;
-import org.truong.gvrp_entry_api.exception.InvalidOrderTransitionException;
+import org.truong.gvrp_entry_api.exception.DataInvalidException;
+import org.truong.gvrp_entry_api.exception.ErrorDetail;
 import org.truong.gvrp_entry_api.repository.OrderRepository;
+import org.truong.gvrp_entry_api.util.AppConstant;
+import org.truong.gvrp_entry_api.util.ErrorCode;
 
 import java.util.List;
 import java.util.Map;
@@ -77,10 +80,16 @@ public class OrderStatusTransitionService {
         return new BulkTransitionResult(validOrders, invalidOrders);
     }
 
-    private void validateTransition(
-            OrderStatus current, OrderStatus next, String orderCode) {
+    private void validateTransition(OrderStatus current, OrderStatus next, String orderCode) {
         if (!current.canTransitionTo(next)) {
-            throw new InvalidOrderTransitionException(current, next);
+            ErrorDetail errorDetail = ErrorDetail.builder()
+                    .code(ErrorCode.INVALID_ORDER_TRANSITION.getCode())
+                    .message(String.format("Cannot transition order '%s' from [%s] to [%s]", orderCode, current, next))
+                    .resource(AppConstant.ORDER)
+                    .field("status")
+                    .build();
+
+            throw new DataInvalidException(List.of(errorDetail));
         }
     }
 

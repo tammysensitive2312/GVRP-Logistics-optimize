@@ -16,17 +16,22 @@ import org.thymeleaf.context.Context;
 import org.truong.gvrp_entry_api.entity.OptimizationJob;
 import org.truong.gvrp_entry_api.entity.Solution;
 import org.truong.gvrp_entry_api.entity.User;
-import org.truong.gvrp_entry_api.exception.ResourceNotFoundException;
+import org.truong.gvrp_entry_api.exception.DataInvalidException;
+import org.truong.gvrp_entry_api.exception.ErrorDetail;
 import org.truong.gvrp_entry_api.repository.OptimizationJobRepository;
 import org.truong.gvrp_entry_api.repository.SolutionRepository;
 import org.truong.gvrp_entry_api.repository.UserRepository;
+import org.truong.gvrp_entry_api.util.AppConstant;
+import org.truong.gvrp_entry_api.util.ErrorCode;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.text.NumberFormat;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
@@ -59,13 +64,34 @@ public class EmailService {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void sendOptimizationSuccessEmail(Long userId, Long jobId, Long solutionId) {
         User user = userRepository.findById(userId).orElseThrow(
-                () -> new ResourceNotFoundException("User with ID " + userId + " not found.", "user")
+                () -> new DataInvalidException(
+                        List.of(
+                                ErrorDetail.builder()
+                                        .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
+                                        .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
+                                        .resource(AppConstant.USER)
+                                        .build()
+                        ))
         );
         OptimizationJob job = jobRepository.findById(jobId).orElseThrow(
-                () -> new ResourceNotFoundException("Resource not found.", "job")
+                () -> new DataInvalidException(
+                        List.of(
+                                ErrorDetail.builder()
+                                        .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
+                                        .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
+                                        .resource(AppConstant.JOB)
+                                        .build()
+                        ))
         );
         Solution solution = solutionRepository.findById(solutionId).orElseThrow(
-                () -> new ResourceNotFoundException("Resource not found.", "solution")
+                () -> new DataInvalidException(
+                        List.of(
+                                ErrorDetail.builder()
+                                        .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
+                                        .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
+                                        .resource(AppConstant.SOLUTION)
+                                        .build()
+                        ))
         );
 
 
@@ -115,10 +141,24 @@ public class EmailService {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void sendOptimizationFailureEmail(Long userId, Long jobId, Exception error) {
         User user = userRepository.findById(userId).orElseThrow(
-                () -> new ResourceNotFoundException("User with ID " + userId + " not found.", "user")
+                () -> new DataInvalidException(
+                        List.of(
+                                ErrorDetail.builder()
+                                        .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
+                                        .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
+                                        .resource(AppConstant.USER)
+                                        .build()
+                        ))
         );
         OptimizationJob job = jobRepository.findById(jobId).orElseThrow(
-                () -> new ResourceNotFoundException("Resource not found.", "job")
+                () -> new DataInvalidException(
+                        List.of(
+                                ErrorDetail.builder()
+                                        .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
+                                        .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
+                                        .resource(AppConstant.JOB)
+                                        .build()
+                        ))
         );
 
         log.info("Sending failure email to {} for job #{}", user.getEmail(), job.getId());
@@ -217,7 +257,6 @@ public class EmailService {
         return templateEngine.process(templateName, context);
     }
 
-    // ==================== HELPER METHODS ====================
 
     private String formatDateTime(LocalDateTime dateTime) {
         if (dateTime == null) return "N/A";
@@ -226,7 +265,7 @@ public class EmailService {
 
     private String formatCost(BigDecimal cost) {
         if (cost == null) return "0 ₫";
-        BigDecimal rounded = cost.setScale(0, BigDecimal.ROUND_UP);
+        BigDecimal rounded = cost.setScale(0, RoundingMode.UP);
         NumberFormat nf = NumberFormat.getCurrencyInstance(new Locale("vi", "VN"));
         return nf.format(rounded);
     }
