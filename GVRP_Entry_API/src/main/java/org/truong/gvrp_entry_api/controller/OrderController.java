@@ -80,14 +80,4 @@ public class OrderController {
 
         return ResponseEntity.ok(updatedOrder);
     }
-
-    @PutMapping()
-    public ResponseEntity<OrderDTO> bulkUpdateOrder(
-            @RequestBody @Validated(OrderInputDTO.OnUpdate.class) OrderInputDTO inputDTO
-    ) {
-
-        Long branchId = CurrentUserUtil.getCurrentBranchId();
-
-        return ResponseEntity.ok(updatedOrder);
-    }
 }

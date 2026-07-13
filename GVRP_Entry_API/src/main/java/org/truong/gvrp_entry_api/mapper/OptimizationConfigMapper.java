@@ -143,48 +143,4 @@ public class OptimizationConfigMapper {
 
         return config;
     }
-
-    /**
-     * Validate config before sending to engine
-     *
-     * Ensures all required fields are set and values are valid
-     */
-    public void validateConfig(EngineOptimizationRequest.OptimizationConfig config) {
-        if (config == null) {
-            throw new DataInvalidException("Config cannot be null");
-        }
-
-        // Validate weights
-        if (config.getCostWeight() == null || config.getCo2Weight() == null) {
-            throw new DataInvalidException("Cost and CO2 weights are required");
-        }
-
-        if (config.getCostWeight() < 0 || config.getCo2Weight() < 0) {
-            throw new DataInvalidException("Weights must be non-negative");
-        }
-
-        double sum = config.getCostWeight() + config.getCo2Weight();
-        if (sum == 0) {
-            throw new DataInvalidException("At least one weight must be > 0");
-        }
-
-        // Warn if distanceWeight is set (deprecated)
-        if (config.getDistanceWeight() != null && config.getDistanceWeight() > 0) {
-            log.warn("⚠️  distanceWeight is DEPRECATED and will be ignored. " +
-                    "Use costWeight and co2Weight instead.");
-        }
-
-        // Validate algorithm parameters
-        if (config.getMaxIterations() != null && config.getMaxIterations() < 100) {
-            log.warn("MaxIterations {} is very low, may produce poor results",
-                    config.getMaxIterations());
-        }
-
-        if (config.getTimeoutSeconds() != null && config.getTimeoutSeconds() < 60) {
-            log.warn("Timeout {}s is very short, optimization may not complete",
-                    config.getTimeoutSeconds());
-        }
-
-        log.debug("Config validated successfully");
-    }
 }

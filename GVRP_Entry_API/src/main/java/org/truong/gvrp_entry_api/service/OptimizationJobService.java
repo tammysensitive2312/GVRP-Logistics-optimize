@@ -313,9 +313,10 @@ public class OptimizationJobService {
 
             throw new DataInvalidException(List.of(
                     ErrorDetail.builder()
-                            .code("0040402")
-                            .message("Vehicles not found: " + missingIds)
-                            .resource("vehicle")
+                            .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
+                            .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
+                            .resource(AppConstant.VEHICLE)
+                            .field(missingIds.toString())
                             .build()
             ));
         }
@@ -326,11 +327,9 @@ public class OptimizationJobService {
         if (!wrongFleet.isEmpty()) {
             throw new DataInvalidException(List.of(
                     ErrorDetail.builder()
-                            .code("0040001")
-                            .message("Vehicles belong to different branch: " +
-                                    wrongFleet.stream().map(Vehicle::getVehicleLicensePlate).collect(Collectors.joining(", ")))
-                            .resource("vehicle")
-                            .field("fleet.branchId")
+                            .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
+                            .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
+                            .resource(AppConstant.VEHICLE)
                             .build()
             ));
         }
@@ -341,11 +340,9 @@ public class OptimizationJobService {
         if (!notAvailable.isEmpty()) {
             throw new DataInvalidException(List.of(
                     ErrorDetail.builder()
-                            .code("0040001")
-                            .message("Vehicles not available: " +
-                                    notAvailable.stream().map(Vehicle::getVehicleLicensePlate).collect(Collectors.joining(", ")))
-                            .resource("vehicle")
-                            .field("status")
+                            .code(ErrorCode.RESOURCE_CONFLICT.getCode())
+                            .message(ErrorCode.RESOURCE_CONFLICT.getMessage())
+                            .resource(AppConstant.VEHICLE)
                             .build()
             ));
         }
@@ -356,11 +353,10 @@ public class OptimizationJobService {
         if (!invalidDepot.isEmpty()) {
             throw new DataInvalidException(List.of(
                     ErrorDetail.builder()
-                            .code("0040001")
-                            .message("Vehicles have invalid depots: " +
-                                    invalidDepot.stream().map(Vehicle::getVehicleLicensePlate).collect(Collectors.joining(", ")))
-                            .resource("vehicle")
-                            .field("depot")
+                            .code(ErrorCode.RESOURCE_CONFLICT.getCode())
+                            .message(ErrorCode.RESOURCE_CONFLICT.getMessage())
+                            .resource(AppConstant.DEPOT)
+                            .field(AppConstant.VEHICLE)
                             .build()
             ));
         }

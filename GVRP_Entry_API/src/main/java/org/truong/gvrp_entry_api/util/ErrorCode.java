@@ -13,6 +13,9 @@ public enum ErrorCode {
     FILE_SIZE_EXCEEDED("0040003", "File size exceed limit."),
     EMPTY_FIELD_ERROR("0040004", "Empty required field."),
 
+    // 401
+    INCORRECT_LOGIN_INFORMATION("0040101", "Incorrect login information."),
+
     // 404
     RESOURCE_NOT_FOUND("0040402", "Resource not found."),
 

@@ -13,10 +13,15 @@ import org.truong.gvrp_entry_api.dto.request.RegisterRequest;
 import org.truong.gvrp_entry_api.entity.Branch;
 import org.truong.gvrp_entry_api.entity.User;
 import org.truong.gvrp_entry_api.exception.DataInvalidException;
+import org.truong.gvrp_entry_api.exception.ErrorDetail;
 import org.truong.gvrp_entry_api.repository.BranchRepository;
 import org.truong.gvrp_entry_api.repository.UserRepository;
 import org.truong.gvrp_entry_api.security.BranchUsernamePasswordAuthenticationToken;
 import org.truong.gvrp_entry_api.security.jwt.JwtTokenProvider;
+import org.truong.gvrp_entry_api.util.AppConstant;
+import org.truong.gvrp_entry_api.util.ErrorCode;
+
+import java.util.List;
 
 /**
  * Authentication Controller
@@ -36,7 +41,13 @@ public class AuthController {
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest loginRequest) {
         String branchName = loginRequest.getBranchName();
         Branch branch = branchRepository.findByName(branchName)
-                .orElseThrow(() -> new ResourceNotFoundException("Branch not found: " + branchName, "branch_name"));
+                .orElseThrow(() -> new DataInvalidException(List.of(
+                        ErrorDetail.builder()
+                                .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
+                                .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
+                                .resource(AppConstant.BRANCH)
+                                .build()
+                )));
 
         // Authenticate user
         Authentication authentication = authenticationManager.authenticate(
@@ -49,9 +60,15 @@ public class AuthController {
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
-        // Get user info
         User user = userRepository.findByUsernameAndBranchId(loginRequest.getUsername(), branch.getId())
-                .orElseThrow(() -> new DataInvalidException("Incorrect user information"));
+                .orElseThrow(() -> new DataInvalidException(List.of(
+                        ErrorDetail.builder()
+                                .code(ErrorCode.INCORRECT_LOGIN_INFORMATION.getCode())
+                                .message(ErrorCode.INCORRECT_LOGIN_INFORMATION.getMessage())
+                                .resource(AppConstant.USER)
+                                .build()
+                ))
+                );
 
         // Generate JWT token with claims
         String jwt = tokenProvider.generateTokenWithClaims(

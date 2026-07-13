@@ -10,6 +10,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.truong.gvrp_entry_api.dto.request.DepotInputDTO;
 import org.truong.gvrp_entry_api.exception.DataInvalidException;
+import org.truong.gvrp_entry_api.exception.ErrorDetail;
+import org.truong.gvrp_entry_api.util.AppConstant;
+import org.truong.gvrp_entry_api.util.ErrorCode;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Helper mapper for JTS geometry objects
@@ -63,7 +69,6 @@ public class GeometryMapper {
         if (latitude == null || longitude == null) {
             return null;
         }
-//        validateCoordinates(latitude, longitude);
         Coordinate coordinate = new Coordinate(longitude, latitude);
         return geometryFactory.createPoint(coordinate);
     }
@@ -72,11 +77,26 @@ public class GeometryMapper {
      * Validate coordinates
      */
     private void validateCoordinates(Double latitude, Double longitude) {
+        List<ErrorDetail> errorsInfo = new ArrayList<>();
         if (latitude < -90 || latitude > 90) {
-            throw new DataInvalidException("Latitude must be between -90 and 90");
+            errorsInfo.add(
+                    ErrorDetail.builder()
+                            .code(ErrorCode.VALIDATION_ERROR.getCode())
+                            .message(ErrorCode.VALIDATION_ERROR.getMessage())
+                            .field(AppConstant.LATITUDE)
+                            .build()
+            );
         }
         if (longitude < -180 || longitude > 180) {
-            throw new DataInvalidException("Longitude must be between -180 and 180");
+            errorsInfo.add(
+                    ErrorDetail.builder()
+                            .code(ErrorCode.VALIDATION_ERROR.getCode())
+                            .message(ErrorCode.VALIDATION_ERROR.getMessage())
+                            .field(AppConstant.LONGITUDE)
+                            .build()
+            );
         }
+
+        throw new DataInvalidException(errorsInfo);
     }
 }
