@@ -13,23 +13,15 @@ public class OptimizationResult {
     private final Long jobId;
     private final OptimizationMode optimizationMode;
 
-    // ===== Execution context =====
     private final DistanceTimeMatrix distanceTimeMatrix;
 
-    // ===== Selected solution =====
     private final SolutionCandidate selected;
 
-    // ===== Pareto frontier (optional) =====
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private final List<SolutionCandidate> paretoFrontier;
 
-    // ===== Details =====
     private final List<RouteDetail> routes;
     private final List<UnassignedOrder> unassignedOrders;
-
-    // =========================================================
-    // =============== Derived summary metrics =================
-    // =========================================================
 
     public Double getTotalCost() {
         return selected.getMetrics().getTotalCostVnd();
@@ -59,9 +51,6 @@ public class OptimizationResult {
         return selected.getMetrics().getOrdersUnserved();
     }
 
-    // =========================================================
-    // ================= Factory methods =======================
-    // =========================================================
 
     /**
      * Single-objective optimization result

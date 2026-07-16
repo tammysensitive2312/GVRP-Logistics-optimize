@@ -1,5 +1,6 @@
 package org.truong.gvrp_entry_api.dto.request;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
@@ -138,10 +139,8 @@ public class EngineCallbackRequest {
      * Unassigned order data
      */
     @Data
-    public static class UnassignedOrderData {
-        @JsonProperty("order_id")
+    public static class  UnassignedOrderData {
         private Long orderId;
-        @JsonProperty("order_code")
         private String orderCode;
         private String reason;
     }

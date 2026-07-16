@@ -54,18 +54,6 @@ public class EngineApiClientImpl implements EngineApiClient{
         }
 
         try {
-            String payload = objectMapper.writerWithDefaultPrettyPrinter()
-                    .writeValueAsString(engineRequest);
-
-            log.debug("📤 ===== ENGINE PAYLOAD =====");
-            log.debug("\n{}", payload);
-            log.debug("============================");
-
-        } catch (Exception e) {
-            log.warn("Cannot log payload", e);
-        }
-
-        try {
             // Prepare HTTP request
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);

@@ -56,12 +56,12 @@ public class OptimizationConfigMapper {
             case FAST:
                 config.setMaxIterations(800);
                 config.setTimeoutSeconds(180);  // 3 minutes
-                config.setNumThreads(1);
+                config.setNumThreads(4);
                 break;
             case NORMAL:
                 config.setMaxIterations(2000);
                 config.setTimeoutSeconds(480);  // 8 minutes
-                config.setNumThreads(2);
+                config.setNumThreads(4);
                 break;
             case HIGH_QUALITY:
                 config.setMaxIterations(5000);
@@ -71,7 +71,7 @@ public class OptimizationConfigMapper {
             default:
                 config.setMaxIterations(2000);
                 config.setTimeoutSeconds(480);
-                config.setNumThreads(2);
+                config.setNumThreads(4);
         }
     }
 

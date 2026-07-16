@@ -33,19 +33,14 @@ public class WebConfig {
     @Bean
     public ObjectMapper objectMapper() {
         ObjectMapper mapper = new ObjectMapper();
-
         // Register Java 8 date/time module
         mapper.registerModule(new JavaTimeModule());
-
         // Disable writing dates as timestamps
         mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-
         // Pretty print for development
         mapper.enable(SerializationFeature.INDENT_OUTPUT);
-
         // Set up naming strategy from camelCase (Java) to snake_case (JSON)
         mapper.setPropertyNamingStrategy(com.fasterxml.jackson.databind.PropertyNamingStrategies.SNAKE_CASE);
-
         return mapper;
     }
 
