@@ -29,6 +29,12 @@ import org.truong.gvrp_engine_api.distance_matrix.DistanceMatrixEntry;
 import org.truong.gvrp_engine_api.distance_matrix.DistanceMatrixService;
 import org.truong.gvrp_engine_api.distance_matrix.OptCoordinates;
 import org.truong.gvrp_engine_api.model.*;
+import org.truong.gvrp_engine_api.clustering.ClusterMergeService;
+import org.truong.gvrp_engine_api.clustering.KMeansClusterer;
+import org.truong.gvrp_engine_api.clustering.VehicleClusterAssigner;
+
+import static org.truong.gvrp_engine_api.utils.AppConstant.CLUSTER_FIRST_ORDER_THRESHOLD;
+import static org.truong.gvrp_engine_api.utils.AppConstant.CLUSTER_TARGET_SIZE;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -132,8 +138,117 @@ public class OptimizationService {
             return optimizeMultiObjective(context, matrix, config, request);
         } else {
             // DEFAULT MODE: Single weighted optimization
-            return optimizeSingleObjective(context, matrix, config, request);
+            Map<String, Integer> clusterAssignment = buildClusterAssignmentIfEligible(context);
+            return optimizeSingleObjective(context, matrix, config, request, clusterAssignment);
         }
+    }
+
+    /**
+     * Chạy pipeline cluster-first (K-means -> merge -> vehicle assignment) NẾU
+     * đủ điều kiện, trả về null nếu không (job nhỏ, hoặc không đủ dữ liệu để
+     * phân cụm có ý nghĩa).
+     * <p>
+     * ĐIỀU KIỆN BẬT (TẤT CẢ phải đúng):
+     * 1. Số order >= CLUSTER_FIRST_ORDER_THRESHOLD.
+     * 2. C = min(ceil(N/S_target), numVehicles) > 1 — nếu <= 1, phân cụm vô
+     *    nghĩa (không có gì để partition), bỏ qua để tránh tốn preprocessing
+     *    vô ích.
+     * <p>
+     * TRẢ VỀ null (KHÔNG throw) khi không đủ điều kiện — đây là nhánh BÌNH
+     * THƯỜNG của luồng xử lý (đa số job nhỏ), không phải lỗi.
+     */
+    private Map<String, Integer> buildClusterAssignmentIfEligible(OptimizationContext context) {
+
+        int orderCount = context.orderDTOs().size();
+        if (orderCount < CLUSTER_FIRST_ORDER_THRESHOLD) {
+            log.debug("Cluster-first bỏ qua: {} orders < ngưỡng {}", orderCount, CLUSTER_FIRST_ORDER_THRESHOLD);
+            return null;
+        }
+
+        int numVehicles = context.vehicleDTOs().size();
+        int rawClusters = (int) Math.ceil((double) orderCount / CLUSTER_TARGET_SIZE);
+        int numClusters = Math.min(Math.max(1, rawClusters), numVehicles);
+
+        if (numClusters <= 1) {
+            log.info("Cluster-first bỏ qua: C tính được = {} (numVehicles={}, rawClusters={}) — " +
+                            "không đủ điều kiện phân vùng có ý nghĩa",
+                    numClusters, numVehicles, rawClusters);
+            return null;
+        }
+
+        log.info("🔀 Cluster-first ĐƯỢC BẬT: {} orders, C={} cluster, {} vehicle",
+                orderCount, numClusters, numVehicles);
+
+        // ===== Bước 1: build order coordinates + demands theo thứ tự ID cố định =====
+        // BẮT BUỘC sort theo orderId để đảm bảo index nhất quán xuyên suốt toàn bộ
+        // pipeline (KMeans -> merge -> map ngược về jobId) — xem thảo luận trước
+        // về rủi ro lệch index nếu duyệt trực tiếp HashMap.values().
+        List<Long> orderIds = context.orderDTOs().keySet().stream().sorted().toList();
+
+        List<OptCoordinates> orderCoords = orderIds.stream()
+                .map(id -> {
+                    Order o = context.orderDTOs().get(id);
+                    return new OptCoordinates(
+                            BigDecimal.valueOf(o.getLatitude()),
+                            BigDecimal.valueOf(o.getLongitude()));
+                })
+                .toList();
+
+        double[] demands = orderIds.stream()
+                .mapToDouble(id -> context.orderDTOs().get(id).getDemand())
+                .toArray();
+
+        // ===== Bước 2: K-means (seed cố định 42L, đồng bộ toàn project) =====
+        KMeansClusterer.ClusterAssignment initialAssignment =
+                KMeansClusterer.fit(orderCoords, numClusters);
+
+        // ===== Bước 3: merge cụm nhỏ — ngưỡng = capacity NHỎ NHẤT trong các
+        // vehicle type khả dụng, đơn vị demand THÔ (không nhân DEMAND_SCALE) =====
+        double minClusterDemandThreshold = context.vehicleTypeDTOs().values().stream()
+                .mapToDouble(VehicleType::getCapacity)
+                .min()
+                .orElseThrow(() -> new IllegalStateException(
+                        "Không tìm thấy VehicleType nào để tính minClusterDemandThreshold"));
+
+        ClusterMergeService.MergedClusterAssignment merged = ClusterMergeService.merge(
+                initialAssignment, orderCoords, demands, minClusterDemandThreshold);
+
+        // ===== Bước 4: build clusterIdByJobId (map ngược orderIds[i] -> jobId) =====
+        Map<String, Integer> clusterIdByJobId = new HashMap<>();
+        int[] clusterIdByIndex = merged.clusterIdByOrderIndex();
+        for (int i = 0; i < orderIds.size(); i++) {
+            clusterIdByJobId.put("order-" + orderIds.get(i), clusterIdByIndex[i]);
+        }
+
+        // ===== Bước 5: vehicle -> cluster (demand-proportional quota) =====
+        List<ClusterMergeService.ClusterCentroid> centroids =
+                ClusterMergeService.computeCentroids(merged, orderCoords);
+        List<ClusterMergeService.ClusterDemand> clusterDemands =
+                ClusterMergeService.computeClusterDemands(merged, demands);
+
+        List<VehicleClusterAssigner.VehicleDepotInfo> vehicleInfos = context.vehicleDTOs().values().stream()
+                .map(v -> {
+                    Depot startDepot = context.depotDTOs().get(v.getStartDepotId());
+                    return new VehicleClusterAssigner.VehicleDepotInfo(
+                            String.valueOf(v.getId()), startDepot.getLatitude(), startDepot.getLongitude());
+                })
+                .toList();
+
+        Map<String, Integer> clusterIdByVehicleIdRaw =
+                VehicleClusterAssigner.assign(vehicleInfos, centroids, clusterDemands);
+
+        // Chuẩn hóa key về đúng format Jsprit dùng ("vehicle-{id}") — giữ
+        // VehicleClusterAssigner không phụ thuộc quy ước prefix của tầng Jsprit.
+        Map<String, Integer> clusterIdByVehicleId = new HashMap<>();
+        clusterIdByVehicleIdRaw.forEach((rawId, clusterId) ->
+                clusterIdByVehicleId.put("vehicle-" + rawId, clusterId));
+
+        // ===== Kết quả cuối: gộp cả 2 map để truyền 1 tham số duy nhất xuống
+        // createAlgorithm() — job key và vehicle key có prefix khác nhau
+        // ("order-"/"vehicle-") nên KHÔNG đụng độ khi gộp chung 1 Map. =====
+        Map<String, Integer> combined = new HashMap<>(clusterIdByJobId);
+        combined.putAll(clusterIdByVehicleId);
+        return combined;
     }
 
     // ==================== SINGLE OBJECTIVE OPTIMIZATION (DEFAULT) ====================
@@ -148,13 +263,14 @@ public class OptimizationService {
             OptimizationContext context,
             DistanceTimeMatrix matrix,
             OptimizationConfig config,
-            EngineOptimizationRequest request) {
+            EngineOptimizationRequest request,
+            Map<String, Integer> clusterAssignment) {
 
         // Build GREEN VRP
         VehicleRoutingProblem vrp = buildGreenVRP(context, matrix, config);
 
         // Create and run algorithm
-        VehicleRoutingAlgorithm algorithm = createAlgorithm(vrp, context, config);
+        VehicleRoutingAlgorithm algorithm = createAlgorithm(vrp, context, config, clusterAssignment);
         addProgressListener(algorithm, request.getJobId(), config);
 
         Collection<VehicleRoutingProblemSolution> solutions = algorithm.searchSolutions();
@@ -228,8 +344,10 @@ public class OptimizationService {
 
             // Build and solve VRP
             VehicleRoutingProblem vrp = buildGreenVRP(context, matrix, presetConfig);
-            VehicleRoutingAlgorithm algorithm = createAlgorithm(vrp, context, presetConfig);
-
+            // Cluster-first CHƯA áp dụng cho nhánh Pareto (quyết định đã chốt) — truyền
+            // null tường minh, KHÔNG phải quên set. Mỗi weight-point trong Pareto vẫn
+            // giải trên toàn bộ order set, không phân vùng cluster.
+            VehicleRoutingAlgorithm algorithm = createAlgorithm(vrp, context, presetConfig, null);
             Collection<VehicleRoutingProblemSolution> solutions = algorithm.searchSolutions();
             VehicleRoutingProblemSolution bestSolution = Solutions.bestOf(solutions);
 
@@ -444,7 +562,9 @@ public class OptimizationService {
     private VehicleRoutingAlgorithm createAlgorithm(
             VehicleRoutingProblem vrp,
             OptimizationContext context,
-            OptimizationConfig config) {
+            OptimizationConfig config,
+            Map<String, Integer> clusterAssignment
+            ) {
 
         // Build vehicle max distance constraints
         Map<String, Double> vehicleMaxDistances = new HashMap<>();
@@ -478,6 +598,28 @@ public class OptimizationService {
 
             log.info("✅ Applied MaxDistance constraints for {} vehicles",
                     vehicleMaxDistances.size());
+        }
+
+        boolean needsConstraintManager = !vehicleMaxDistances.isEmpty() || clusterAssignment != null;
+
+        if (needsConstraintManager) {
+            StateManager stateManager = new StateManager(vrp);
+            ConstraintManager constraintManager = new ConstraintManager(vrp, stateManager);
+
+            if (!vehicleMaxDistances.isEmpty()) {
+                constraintManager.addConstraint(new MaxDistanceConstraint(
+                        vrp.getTransportCosts(),
+                        vehicleMaxDistances
+                ));
+                log.info("✅ Applied MaxDistance constraints for {} vehicles", vehicleMaxDistances.size());
+            }
+
+            if (clusterAssignment != null) {
+                constraintManager.addConstraint(new ClusterRouteConstraint(clusterAssignment));
+                log.info("✅ Applied ClusterRoute constraint ({} vehicle/job entries)", clusterAssignment.size());
+            }
+
+            builder.setStateAndConstraintManager(stateManager, constraintManager);
         }
 
         VehicleRoutingAlgorithm algorithm = builder.buildAlgorithm();
@@ -693,6 +835,46 @@ public class OptimizationService {
         } catch (Exception e) {
             log.warn("Failed to parse time: {}, using default", timeStr);
             return 0;
+        }
+    }
+
+    // ==================== CLUSTER ROUTE CONSTRAINT ====================
+
+    /**
+     * Chặn Jsprit chèn job thuộc cluster A vào route đang phục vụ cluster B (A != B).
+     * <p>
+     * TIỀN ĐỀ: vehicleId -> clusterId và jobId -> clusterId đã được tính SẴN
+     * TRƯỚC KHI optimize (qua VehicleClusterAssigner + ClusterMergeService),
+     * KHÔNG suy luận trong lúc chạy (khác với ý tưởng "route tự khóa cluster
+     * từ job đầu tiên" đã bị loại bỏ vì phi-determinism với multi-thread).
+     * <p>
+     * AN TOÀN KHI THIẾU DỮ LIỆU: nếu vehicle hoặc job không có trong map
+     * (lỗi mapping ở tầng trên), constraint KHÔNG chặn (return true) — tránh
+     * biến 1 lỗi tiềm ẩn ở tầng khác thành unassigned hàng loạt khó chẩn đoán.
+     * Cùng nguyên tắc với MaxDistanceConstraint (maxDistance == null -> true).
+     */
+    static class ClusterRouteConstraint implements HardRouteConstraint {
+        private final Map<String, Integer> clusterIdByEntityId; // key: "order-{id}" hoặc "vehicle-{id}"
+
+        public ClusterRouteConstraint(Map<String, Integer> clusterIdByEntityId) {
+            this.clusterIdByEntityId = clusterIdByEntityId;
+        }
+
+        @Override
+        public boolean fulfilled(JobInsertionContext iFacts) {
+            String vehicleId = iFacts.getRoute().getVehicle().getId();
+            Integer vehicleCluster = clusterIdByEntityId.get(vehicleId);
+            if (vehicleCluster == null) {
+                return true; // vehicle không rõ cluster -> không chặn (an toàn)
+            }
+
+            String jobId = iFacts.getJob().getId();
+            Integer jobCluster = clusterIdByEntityId.get(jobId);
+            if (jobCluster == null) {
+                return true; // job không rõ cluster -> không chặn (an toàn)
+            }
+
+            return jobCluster.equals(vehicleCluster);
         }
     }
 
