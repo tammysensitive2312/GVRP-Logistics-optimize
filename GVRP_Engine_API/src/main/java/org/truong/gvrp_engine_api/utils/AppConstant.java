@@ -22,4 +22,26 @@ public class AppConstant {
      * Giá trị đồng bộ với GVRP_Entry_API.util.AppConstant.EPSILON.
      */
     public static final double EPSILON = 0.0001;
+
+    /**
+     * Ngưỡng số order để BẬT cluster-first pre-processing (Fisher-Jaikumar
+     * style, xem VehicleClusterAssigner + ClusterRouteConstraint).
+     * Dưới ngưỡng này, Jsprit solve trực tiếp trên toàn bộ bài toán — chi phí
+     * phân cụm (K-means + merge + assign) không bù lại được lợi ích giảm
+     * search space.
+     * <p>
+     * ⚠️ GIÁ TRỊ TẠM THỜI — CHƯA benchmark A/B. Cần đo elapsed time + cost +
+     * unassigned có/không cluster-first ở các mốc 5k/10k/20k orders (style
+     * JspritConvergenceBenchmarkTest) trước khi coi là ngưỡng chính thức.
+     */
+    public static final int CLUSTER_FIRST_ORDER_THRESHOLD = 5000;
+
+    /**
+     * Kích thước cụm mục tiêu S_target trong công thức
+     * C = min(ceil(N / S_target), numVehicles).
+     * <p>
+     * ⚠️ GIÁ TRỊ TẠM THỜI — CHƯA benchmark, không dùng làm căn cứ quyết định
+     * production tới khi có số đo thực nghiệm.
+     */
+    public static final int CLUSTER_TARGET_SIZE = 800;
 }

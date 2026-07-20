@@ -584,22 +584,6 @@ public class OptimizationService {
                 .setProperty(Jsprit.Parameter.FAST_REGRET, "true")
                 .setProperty(Jsprit.Parameter.CONSTRUCTION, String.valueOf(Jsprit.Construction.REGRET_INSERTION));
 
-        // Add max distance constraints
-        if (!vehicleMaxDistances.isEmpty()) {
-            StateManager stateManager = new StateManager(vrp);
-            ConstraintManager constraintManager = new ConstraintManager(vrp, stateManager);
-
-            constraintManager.addConstraint(new MaxDistanceConstraint(
-                    vrp.getTransportCosts(),
-                    vehicleMaxDistances
-            ));
-
-            builder.setStateAndConstraintManager(stateManager, constraintManager);
-
-            log.info("✅ Applied MaxDistance constraints for {} vehicles",
-                    vehicleMaxDistances.size());
-        }
-
         boolean needsConstraintManager = !vehicleMaxDistances.isEmpty() || clusterAssignment != null;
 
         if (needsConstraintManager) {

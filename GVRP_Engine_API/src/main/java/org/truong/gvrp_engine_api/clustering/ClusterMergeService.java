@@ -1,14 +1,10 @@
 package org.truong.gvrp_engine_api.clustering;
 
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.truong.gvrp_engine_api.distance_matrix.OptCoordinates;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.TreeSet;
+import java.util.*;
 
 /**
  * Merge các cụm nhỏ (Phương án C đã chốt) — xử lý TRƯỚC khi đưa cluster
@@ -42,11 +38,8 @@ import java.util.TreeSet;
  * @author Truong
  */
 @Slf4j
+@NoArgsConstructor
 public final class ClusterMergeService {
-
-    private ClusterMergeService() {
-        // Utility class — không khởi tạo instance
-    }
 
     /**
      * Kết quả sau merge.
@@ -121,6 +114,99 @@ public final class ClusterMergeService {
 
         // ===== BƯỚC 3: Remap cluster ID về dạng liền mạch 0..(M-1) =====
         return remapToContiguousIds(initialAssignment, parent, activeClusterIds);
+    }
+
+    /**
+     * Tổng demand của 1 cluster sau merge — dùng cho VehicleClusterAssigner
+     * để tính quota vehicle tỷ lệ theo demand (Phương án 1). Tính ĐỘC LẬP,
+     * cùng nguyên tắc với computeCentroids(): không giữ state từ merge(),
+     * đọc lại từ kết quả cuối cùng để tách rõ trách nhiệm.
+     */
+    public record ClusterDemand(int clusterId, double totalDemand) {}
+
+    /**
+     * @param merged  kết quả từ {@link #merge}
+     * @param demands demands[i] = demand order tại index i — PHẢI cùng thứ tự
+     *                index với mảng demands đã truyền vào merge()
+     */
+    public static List<ClusterDemand> computeClusterDemands(
+            MergedClusterAssignment merged,
+            double[] demands) {
+
+        if (merged == null) {
+            throw new IllegalArgumentException("merged không được null");
+        }
+        if (demands == null || demands.length != merged.clusterIdByOrderIndex().length) {
+            throw new IllegalArgumentException(
+                    "demands phải cùng độ dài với merged.clusterIdByOrderIndex()");
+        }
+
+        double[] totals = new double[merged.numClusters()];
+        int[] clusterIdByIndex = merged.clusterIdByOrderIndex();
+        for (int i = 0; i < clusterIdByIndex.length; i++) {
+            totals[clusterIdByIndex[i]] += demands[i];
+        }
+
+        List<ClusterDemand> result = new ArrayList<>(merged.numClusters());
+        for (int c = 0; c < merged.numClusters(); c++) {
+            result.add(new ClusterDemand(c, totals[c]));
+        }
+        return result;
+    }
+
+    /**
+     * Centroid của 1 cluster sau merge — dùng cho VehicleClusterAssigner để
+     * tính khoảng cách depot-centroid. Tính ĐỘC LẬP sau khi merge() hoàn tất,
+     * không giữ lại state trung gian từ quá trình merge (đơn giản hơn, và
+     * tách biệt rõ trách nhiệm: merge() lo việc merge, đây là tiện ích đọc).
+     *
+     * @param clusterId ID cluster (đã remap liền mạch, khớp MergedClusterAssignment)
+     * @param lat       vĩ độ trung bình các điểm trong cluster
+     * @param lon       kinh độ trung bình các điểm trong cluster
+     */
+    public record ClusterCentroid(int clusterId, double lat, double lon) {}
+
+    /**
+     * Tính centroid cho mỗi cluster trong kết quả merge cuối cùng.
+     *
+     * @param merged      kết quả từ {@link #merge}
+     * @param coordinates danh sách tọa độ — PHẢI cùng thứ tự index với
+     *                    coordinates đã truyền vào merge()
+     * @return danh sách centroid, 1 phần tử cho mỗi cluster trong [0, merged.numClusters())
+     */
+    public static List<ClusterCentroid> computeCentroids(
+            MergedClusterAssignment merged,
+            List<OptCoordinates> coordinates) {
+
+        if (merged == null) {
+            throw new IllegalArgumentException("merged không được null");
+        }
+        if (coordinates == null || coordinates.size() != merged.clusterIdByOrderIndex().length) {
+            throw new IllegalArgumentException(
+                    "coordinates phải cùng độ dài với merged.clusterIdByOrderIndex()");
+        }
+
+        double[] sumLat = new double[merged.numClusters()];
+        double[] sumLon = new double[merged.numClusters()];
+        int[] counts = new int[merged.numClusters()];
+
+        int[] clusterIdByIndex = merged.clusterIdByOrderIndex();
+        for (int i = 0; i < clusterIdByIndex.length; i++) {
+            int c = clusterIdByIndex[i];
+            sumLat[c] += coordinates.get(i).latDouble();
+            sumLon[c] += coordinates.get(i).lonDouble();
+            counts[c]++;
+        }
+
+        List<ClusterCentroid> result = new java.util.ArrayList<>(merged.numClusters());
+        for (int c = 0; c < merged.numClusters(); c++) {
+            // counts[c] không thể = 0 vì MergedClusterAssignment.numClusters() đã
+            // remap liền mạch, LUÔN khớp số cluster thực sự có điểm (bất biến đã
+            // đảm bảo trong remapToContiguousIds()).
+            result.add(new ClusterCentroid(c, sumLat[c] / counts[c], sumLon[c] / counts[c]));
+        }
+
+        return result;
     }
 
     // ==================== TÍNH STATS BAN ĐẦU ====================
