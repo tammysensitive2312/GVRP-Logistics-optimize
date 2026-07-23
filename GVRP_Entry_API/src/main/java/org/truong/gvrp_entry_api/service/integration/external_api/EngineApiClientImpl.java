@@ -22,6 +22,7 @@ import org.truong.gvrp_entry_api.util.AppConstant;
 import org.truong.gvrp_entry_api.util.ErrorCode;
 
 import java.util.List;
+import java.util.Map;
 
 
 @Slf4j
@@ -97,6 +98,34 @@ public class EngineApiClientImpl implements EngineApiClient{
             errorMessage = e.getMessage();
         } finally {
             updateJobStatus(jobId, finalStatus, errorMessage, externalJobId);
+        }
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> getProgress(Long jobId) {
+        String url = engineBaseUrl + "/optimization/" + jobId + "/progress";
+        try {
+            ResponseEntity<Map> resp = restTemplate.getForEntity(url, Map.class);
+            return (Map<String, Object>) resp.getBody();
+        } catch (HttpClientErrorException.NotFound nf) {
+            // Engine không có job này (chưa chạy / đã evict sau TTL)
+            return null;
+        } catch (Exception e) {
+            log.warn("Không lấy được progress job #{} từ engine: {}", jobId, e.getMessage());
+            return null;
+        }
+    }
+
+    @Override
+    public void requestCancel(Long jobId) {
+        String url = engineBaseUrl + "/optimization/" + jobId + "/cancel";
+        try {
+            restTemplate.postForEntity(url, HttpEntity.EMPTY, Void.class);
+            log.info("Đã gửi yêu cầu cancel job #{} xuống engine", jobId);
+        } catch (Exception e) {
+            // best-effort: DB đã set CANCELLED; engine không tới được thì chỉ cảnh báo
+            log.warn("Không gửi được cancel job #{} xuống engine: {}", jobId, e.getMessage());
         }
     }
 

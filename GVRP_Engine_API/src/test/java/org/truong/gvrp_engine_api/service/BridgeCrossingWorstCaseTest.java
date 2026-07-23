@@ -98,7 +98,7 @@ public class BridgeCrossingWorstCaseTest {
         int longBienCount = longBienPoints.size();
 
         long start = System.currentTimeMillis();
-        DistanceMatrix matrix = distanceMatrixService.createDistanceMatrix(allPoints);
+        DistanceMatrix matrix = distanceMatrixService.createDistanceMatrix(allPoints, null); // null = full matrix (không prune)
         long elapsed = System.currentTimeMillis() - start;
         log.info("✅ GraphHopper matrix built in {} ms ({} locations)", elapsed, allPoints.size());
 

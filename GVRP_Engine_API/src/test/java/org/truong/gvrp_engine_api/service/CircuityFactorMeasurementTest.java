@@ -92,7 +92,7 @@ public class CircuityFactorMeasurementTest {
                 : loadCoordinatesFromDatabase();
 
         long start = System.currentTimeMillis();
-        DistanceMatrix ghMatrix = distanceMatrixService.createDistanceMatrix(coordinates);
+        DistanceMatrix ghMatrix = distanceMatrixService.createDistanceMatrix(coordinates, null); // null = full matrix (không prune)
         long elapsed = System.currentTimeMillis() - start;
 
         int n = coordinates.size();

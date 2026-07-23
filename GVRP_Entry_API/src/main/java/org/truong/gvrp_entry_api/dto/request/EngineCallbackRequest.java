@@ -63,6 +63,18 @@ public class EngineCallbackRequest {
     }
 
     /**
+     * Cancellation callback - Engine gọi khi job bị hủy theo yêu cầu (KHÔNG kèm lời giải)
+     */
+    @Data
+    public static class CancellationCallback {
+
+        @NotNull
+        private Long jobId;
+
+        private String reason;
+    }
+
+    /**
      * Solution data structure
      */
     @Data

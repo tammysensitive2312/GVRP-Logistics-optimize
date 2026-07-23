@@ -52,6 +52,25 @@ public class OptimizationCallbackController {
     }
 
     /**
+     * Callback khi optimization bị hủy theo yêu cầu (KHÔNG kèm lời giải)
+     * POST /api/v1/solutions/callbacks/cancelled
+     */
+    @PostMapping("/cancelled")
+    public ResponseEntity<Void> onOptimizationCancelled(
+            @Valid @RequestBody EngineCallbackRequest.CancellationCallback request) {
+
+        log.warn("=== Optimization Cancelled Callback ===");
+        log.warn("Job ID: {}", request.getJobId());
+        log.warn("Reason: {}", request.getReason());
+
+        callbackService.handleCancellation(request);
+
+        log.info("✓ Cancellation callback processed");
+
+        return ResponseEntity.ok().build();
+    }
+
+    /**
      * Callback để update progress (optional)
      * POST /api/solutions/callbacks/progress
      */

@@ -179,6 +179,52 @@ public class OptimizationCallbackService {
     }
 
     /**
+     * Handle cancellation callback — Engine báo job đã dừng theo yêu cầu.
+     * <p>
+     * Idempotent: nếu job đã ở trạng thái kết thúc (thường là CANCELLED do
+     * cancelJob() set trước khi gọi engine), callback này bị bỏ qua — tránh
+     * ghi đè trạng thái đã đúng.
+     */
+    @Transactional
+    public void handleCancellation(EngineCallbackRequest.CancellationCallback callback) {
+
+        log.warn("📥 Processing cancellation callback for job #{}", callback.getJobId());
+
+        try {
+            OptimizationJob job = jobRepository.findById(callback.getJobId())
+                    .orElseThrow(
+                            () -> new DataInvalidException(
+                                    List.of(
+                                            ErrorDetail.builder()
+                                                    .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
+                                                    .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
+                                                    .resource(AppConstant.JOB)
+                                                    .build()
+                                    ))
+                    );
+
+            // Chỉ set CANCELLED nếu job còn đang chạy — nếu đã CANCELLED/COMPLETED/FAILED thì bỏ qua.
+            if (job.getStatus() != OptimizationJobStatus.PROCESSING) {
+                log.warn("⚠️  Job #{} không ở trạng thái PROCESSING (hiện: {}). Bỏ qua cancellation callback.",
+                        job.getId(), job.getStatus());
+                return;
+            }
+
+            job.setStatus(OptimizationJobStatus.CANCELLED);
+            job.setCompletedAt(LocalDateTime.now());
+            job.setErrorMessage(callback.getReason() != null ? callback.getReason() : "Cancelled");
+            jobRepository.save(job);
+
+            log.info("✅ Job #{} marked as CANCELLED", job.getId());
+
+        } catch (Exception e) {
+            log.error("❌ Failed to process cancellation callback for job #{}: {}",
+                    callback.getJobId(), e.getMessage(), e);
+            throw e;
+        }
+    }
+
+    /**
      * Handle progress update callback (optional)
      * <p>
      * 🔧 CHANGES:

@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.truong.gvrp_engine_api.job.JobRegistry;
 import org.truong.gvrp_engine_api.model.EngineOptimizationRequest;
 import org.truong.gvrp_engine_api.model.EngineOptimizationResponse;
 import org.truong.gvrp_engine_api.service.OptimizationService;
@@ -19,6 +20,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class OptimizationController {
     private final OptimizationService optimizationService;
+    private final JobRegistry jobRegistry;
 
     @PostMapping
     public ResponseEntity<EngineOptimizationResponse> optimize(
@@ -95,6 +97,63 @@ public class OptimizationController {
                 throw new IllegalArgumentException("Depot " + depot.getName() + " missing coordinates");
             }
         }
+    }
+
+    /**
+     * Lấy tiến độ hiện tại của job (poll). Trả 404 nếu job không tồn tại
+     * (chưa chạy / đã bị evict sau TTL).
+     */
+    @GetMapping("/{jobId}/progress")
+    public ResponseEntity<Map<String, Object>> progress(@PathVariable Long jobId) {
+        JobRegistry.JobHandle h = jobRegistry.get(jobId);
+        if (h == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("jobId", jobId);
+        body.put("status", h.status());
+        body.put("phase", h.phase());
+        body.put("startedAt", h.startedAt());
+        body.put("finishedAt", h.finishedAt());
+
+        JobRegistry.ProgressSnapshot snap = h.snapshot();
+        if (snap != null) {
+            body.put("iteration", snap.iteration());
+            body.put("maxIterations", snap.maxIterations());
+            body.put("percent", snap.maxIterations() > 0
+                    ? (100 * snap.iteration() / snap.maxIterations()) : 0);
+            body.put("bestCost", snap.bestCost());
+            body.put("routes", snap.routes());
+            body.put("unassigned", snap.unassigned());
+            body.put("elapsedSeconds", snap.elapsedSeconds());
+            body.put("updatedAt", snap.updatedAt());
+        }
+        return ResponseEntity.ok(body);
+    }
+
+    /**
+     * Yêu cầu hủy job. 202 nếu đã ghi nhận (solver sẽ dừng ở ranh giới vòng kế),
+     * 404 nếu không tồn tại, 409 nếu job đã kết thúc.
+     */
+    @PostMapping("/{jobId}/cancel")
+    public ResponseEntity<Map<String, Object>> cancel(@PathVariable Long jobId) {
+        boolean accepted = jobRegistry.requestCancel(jobId);
+        Map<String, Object> body = new HashMap<>();
+        body.put("jobId", jobId);
+
+        if (accepted) {
+            body.put("status", "CANCEL_REQUESTED");
+            return ResponseEntity.accepted().body(body);
+        }
+
+        JobRegistry.JobHandle h = jobRegistry.get(jobId);
+        if (h == null) {
+            return ResponseEntity.notFound().build();
+        }
+        body.put("status", h.status());
+        body.put("message", "Job đã kết thúc, không thể hủy");
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
     }
 
     @GetMapping("/health")

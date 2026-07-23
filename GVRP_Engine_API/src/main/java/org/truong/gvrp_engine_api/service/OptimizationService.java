@@ -2,18 +2,18 @@ package org.truong.gvrp_engine_api.service;
 
 import com.graphhopper.jsprit.core.algorithm.VehicleRoutingAlgorithm;
 import com.graphhopper.jsprit.core.algorithm.box.Jsprit;
-import com.graphhopper.jsprit.core.algorithm.listener.AlgorithmStartsListener;
 import com.graphhopper.jsprit.core.algorithm.listener.IterationStartsListener;
 import com.graphhopper.jsprit.core.algorithm.state.StateManager;
-import com.graphhopper.jsprit.core.algorithm.termination.TimeTermination;
 import com.graphhopper.jsprit.core.problem.Location;
 import com.graphhopper.jsprit.core.problem.VehicleRoutingProblem;
 import com.graphhopper.jsprit.core.problem.constraint.ConstraintManager;
+import com.graphhopper.jsprit.core.problem.constraint.HardActivityConstraint;
 import com.graphhopper.jsprit.core.problem.constraint.HardRouteConstraint;
 import com.graphhopper.jsprit.core.problem.cost.VehicleRoutingTransportCosts;
 import com.graphhopper.jsprit.core.problem.job.Service;
 import com.graphhopper.jsprit.core.problem.misc.JobInsertionContext;
 import com.graphhopper.jsprit.core.problem.solution.VehicleRoutingProblemSolution;
+import com.graphhopper.jsprit.core.problem.solution.route.VehicleRoute;
 import com.graphhopper.jsprit.core.problem.solution.route.activity.TimeWindow;
 import com.graphhopper.jsprit.core.problem.solution.route.activity.TourActivity;
 import com.graphhopper.jsprit.core.problem.vehicle.VehicleImpl;
@@ -24,14 +24,13 @@ import com.graphhopper.jsprit.core.util.VehicleRoutingTransportCostsMatrix;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
-import org.truong.gvrp_engine_api.distance_matrix.DistanceMatrix;
-import org.truong.gvrp_engine_api.distance_matrix.DistanceMatrixEntry;
-import org.truong.gvrp_engine_api.distance_matrix.DistanceMatrixService;
-import org.truong.gvrp_engine_api.distance_matrix.OptCoordinates;
+import org.truong.gvrp_engine_api.distance_matrix.*;
 import org.truong.gvrp_engine_api.model.*;
 import org.truong.gvrp_engine_api.clustering.ClusterMergeService;
 import org.truong.gvrp_engine_api.clustering.KMeansClusterer;
 import org.truong.gvrp_engine_api.clustering.VehicleClusterAssigner;
+import org.truong.gvrp_engine_api.job.JobCancelledException;
+import org.truong.gvrp_engine_api.job.JobRegistry;
 
 import static org.truong.gvrp_engine_api.utils.AppConstant.CLUSTER_FIRST_ORDER_THRESHOLD;
 import static org.truong.gvrp_engine_api.utils.AppConstant.CLUSTER_TARGET_SIZE;
@@ -72,8 +71,17 @@ import static org.truong.gvrp_engine_api.utils.AppConstant.DEMAND_SCALE;
 public class OptimizationService {
 
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm:ss");
+
+    /**
+     * Ngưỡng nhận diện cạnh SENTINEL (cặp bị prune hoặc route lỗi trong ma trận).
+     * Đặt ở nửa PRUNED_METERS: mọi cạnh THẬT (dù vòng cả nước) đều << ngưỡng này,
+     * còn cạnh sentinel (1e9 m) thì > ngưỡng — tách bạch tuyệt đối, không nhầm.
+     */
+    private static final double SENTINEL_DISTANCE_THRESHOLD = MatrixMask.PRUNED_METERS / 2.0;
+
     private final DistanceMatrixService distanceMatrixService;
     private final CallbackService callbackService;
+    private final JobRegistry jobRegistry;
 
     // ==================== ASYNC ENTRY POINT ====================
 
@@ -82,11 +90,12 @@ public class OptimizationService {
      */
     @Async
     public CompletableFuture<Void> optimizeAsync(EngineOptimizationRequest request) {
+        JobRegistry.JobHandle handle = jobRegistry.register(request.getJobId());
         try {
             log.info("🚀 Starting optimization for job #{}", request.getJobId());
 
             LocalDateTime startTime = LocalDateTime.now();
-            OptimizationResult result = optimize(request);
+            OptimizationResult result = optimize(request, handle);
             LocalDateTime endTime = LocalDateTime.now();
 
             java.time.Duration d = java.time.Duration.between(startTime, endTime);
@@ -95,12 +104,21 @@ public class OptimizationService {
                     d.toMinutesPart(),
                     d.toSecondsPart());
 
+            jobRegistry.markTerminal(handle, JobRegistry.Status.COMPLETED);
             callbackService.sendCompletionCallback(request.getJobId(), result);
+
+            return CompletableFuture.completedFuture(null);
+
+        } catch (JobCancelledException ce) {
+            log.warn("🛑 Optimization cancelled for job #{}: {}", request.getJobId(), ce.getMessage());
+            jobRegistry.markTerminal(handle, JobRegistry.Status.CANCELLED);
+            callbackService.sendCancelledCallback(request.getJobId(), ce.getMessage());
 
             return CompletableFuture.completedFuture(null);
 
         } catch (Exception e) {
             log.error("❌ Optimization failed for job #{}", request.getJobId(), e);
+            jobRegistry.markTerminal(handle, JobRegistry.Status.FAILED);
             callbackService.sendFailureCallback(request.getJobId(), e.getMessage());
 
             return CompletableFuture.failedFuture(e);
@@ -120,26 +138,23 @@ public class OptimizationService {
      * 5. Solve
      * 6. Extract results
      */
-    public OptimizationResult optimize(EngineOptimizationRequest request) {
-
-        // STEP 1: Prepare Context
+    // OptimizationService.optimize() — reorder
+    public OptimizationResult optimize(EngineOptimizationRequest request, JobRegistry.JobHandle handle) {
         OptimizationContext context = prepareContext(request);
-
-        // STEP 2: Calculate Distance Matrix
-        DistanceTimeMatrix matrix = calculateDistanceMatrix(context);
-
-        // STEP 3: Validate Config
         OptimizationConfig config = request.getConfig();
         validateConfig(config);
 
-        // STEP 4: Choose optimization mode
-        if (config.getEnableParetoAnalysis() != null && config.getEnableParetoAnalysis()) {
-            // ADVANCED MODE: Multi-objective Pareto analysis
-            return optimizeMultiObjective(context, matrix, config, request);
+        if (Boolean.TRUE.equals(config.getEnableParetoAnalysis())) {
+            // Pareto: chưa cluster → full matrix (mask = null). Job Pareto thường nhỏ nên chấp nhận.
+            DistanceTimeMatrix matrix = calculateDistanceMatrix(context, null, handle);
+            return optimizeMultiObjective(context, matrix, config, request, handle);
         } else {
-            // DEFAULT MODE: Single weighted optimization
+            // 1) Cluster TRƯỚC (chỉ cần toạ độ order)
             Map<String, Integer> clusterAssignment = buildClusterAssignmentIfEligible(context);
-            return optimizeSingleObjective(context, matrix, config, request, clusterAssignment);
+            // 2) Dựng mask từ cluster, rồi build matrix thưa
+            MatrixMask mask = MatrixMask.fromClusters(context, clusterAssignment);
+            DistanceTimeMatrix matrix = calculateDistanceMatrix(context, mask, handle);
+            return optimizeSingleObjective(context, matrix, config, request, clusterAssignment, handle);
         }
     }
 
@@ -264,17 +279,28 @@ public class OptimizationService {
             DistanceTimeMatrix matrix,
             OptimizationConfig config,
             EngineOptimizationRequest request,
-            Map<String, Integer> clusterAssignment) {
+            Map<String, Integer> clusterAssignment,
+            JobRegistry.JobHandle handle) {
 
         // Build GREEN VRP
         VehicleRoutingProblem vrp = buildGreenVRP(context, matrix, config);
 
         // Create and run algorithm
-        VehicleRoutingAlgorithm algorithm = createAlgorithm(vrp, context, config, clusterAssignment);
-        addProgressListener(algorithm, request.getJobId(), config);
+        VehicleRoutingAlgorithm algorithm = createAlgorithm(vrp, context, config, clusterAssignment, handle);
+        addProgressListener(algorithm, request.getJobId(), config, handle);
 
+        handle.setPhase(JobRegistry.Phase.SOLVING);
         Collection<VehicleRoutingProblemSolution> solutions = algorithm.searchSolutions();
         VehicleRoutingProblemSolution bestSolution = Solutions.bestOf(solutions);
+
+        // Solver dừng "êm" qua PrematureAlgorithmTermination — kiểm cờ để phân biệt
+        // hoàn tất bình thường với bị hủy.
+        if (handle.isCancelRequested()) {
+            throw new JobCancelledException("Job bị hủy trong lúc solve");
+        }
+
+        // FAIL-LOUD: chặn kết quả rác (cạnh sentinel lọt vào route) trước khi tính metric/gửi callback
+        assertNoSentinelEdgeTraversed(bestSolution, matrix, context, request.getJobId());
 
         // Calculate real metrics
         SolutionMetrics metrics = SolutionMetricsCalculator.calculate(
@@ -325,7 +351,8 @@ public class OptimizationService {
             OptimizationContext context,
             DistanceTimeMatrix matrix,
             OptimizationConfig config,
-            EngineOptimizationRequest request) {
+            EngineOptimizationRequest request,
+            JobRegistry.JobHandle handle) {
 
         log.info("🎯 Running MULTI-OBJECTIVE optimization (Pareto analysis)");
         log.info("   This will run {} optimization scenarios", ObjectivePreset.values().length);
@@ -347,9 +374,18 @@ public class OptimizationService {
             // Cluster-first CHƯA áp dụng cho nhánh Pareto (quyết định đã chốt) — truyền
             // null tường minh, KHÔNG phải quên set. Mỗi weight-point trong Pareto vẫn
             // giải trên toàn bộ order set, không phân vùng cluster.
-            VehicleRoutingAlgorithm algorithm = createAlgorithm(vrp, context, presetConfig, null);
+            VehicleRoutingAlgorithm algorithm = createAlgorithm(vrp, context, presetConfig, null, handle);
+            addProgressListener(algorithm, request.getJobId(), presetConfig, handle);
+            handle.setPhase(JobRegistry.Phase.SOLVING);
             Collection<VehicleRoutingProblemSolution> solutions = algorithm.searchSolutions();
             VehicleRoutingProblemSolution bestSolution = Solutions.bestOf(solutions);
+
+            if (handle.isCancelRequested()) {
+                throw new JobCancelledException("Job bị hủy trong lúc solve (Pareto)");
+            }
+
+            // FAIL-LOUD: chặn kết quả rác (cạnh sentinel lọt vào route)
+            assertNoSentinelEdgeTraversed(bestSolution, matrix, context, request.getJobId());
 
             // Calculate metrics
             SolutionMetrics metrics = SolutionMetricsCalculator.calculate(
@@ -563,7 +599,8 @@ public class OptimizationService {
             VehicleRoutingProblem vrp,
             OptimizationContext context,
             OptimizationConfig config,
-            Map<String, Integer> clusterAssignment
+            Map<String, Integer> clusterAssignment,
+            JobRegistry.JobHandle handle
             ) {
 
         // Build vehicle max distance constraints
@@ -584,29 +621,39 @@ public class OptimizationService {
                 .setProperty(Jsprit.Parameter.FAST_REGRET, "true")
                 .setProperty(Jsprit.Parameter.CONSTRUCTION, String.valueOf(Jsprit.Construction.REGRET_INSERTION));
 
-        boolean needsConstraintManager = !vehicleMaxDistances.isEmpty() || clusterAssignment != null;
+        // LUÔN cần constraint manager: NoPrunedEdge phải áp cho MỌI job (kể cả
+        // nhánh không cluster / không maxDistance) để chặn cạnh sentinel gây route rác.
+        StateManager stateManager = new StateManager(vrp);
+        ConstraintManager constraintManager = new ConstraintManager(vrp, stateManager);
 
-        if (needsConstraintManager) {
-            StateManager stateManager = new StateManager(vrp);
-            ConstraintManager constraintManager = new ConstraintManager(vrp, stateManager);
+        // (BẮT BUỘC) Chặn mọi cạnh sentinel (cặp bị prune hoặc route lỗi). Không cho
+        // solver chèn job nếu cạnh tới/đi của nó là sentinel → order không tới được
+        // sẽ thành UNASSIGNED (đúng ngữ nghĩa), thay vì tạo route triệu km.
+        constraintManager.addConstraint(
+                new NoPrunedEdgeConstraint(vrp.getTransportCosts(), SENTINEL_DISTANCE_THRESHOLD),
+                ConstraintManager.Priority.CRITICAL);
+        log.info("✅ Applied NoPrunedEdge constraint (threshold {} m)", SENTINEL_DISTANCE_THRESHOLD);
 
-            if (!vehicleMaxDistances.isEmpty()) {
-                constraintManager.addConstraint(new MaxDistanceConstraint(
-                        vrp.getTransportCosts(),
-                        vehicleMaxDistances
-                ));
-                log.info("✅ Applied MaxDistance constraints for {} vehicles", vehicleMaxDistances.size());
-            }
-
-            if (clusterAssignment != null) {
-                constraintManager.addConstraint(new ClusterRouteConstraint(clusterAssignment));
-                log.info("✅ Applied ClusterRoute constraint ({} vehicle/job entries)", clusterAssignment.size());
-            }
-
-            builder.setStateAndConstraintManager(stateManager, constraintManager);
+        if (!vehicleMaxDistances.isEmpty()) {
+            constraintManager.addConstraint(new MaxDistanceConstraint(
+                    vrp.getTransportCosts(),
+                    vehicleMaxDistances
+            ));
+            log.info("✅ Applied MaxDistance constraints for {} vehicles", vehicleMaxDistances.size());
         }
 
+        if (clusterAssignment != null) {
+            constraintManager.addConstraint(new ClusterRouteConstraint(clusterAssignment));
+            log.info("✅ Applied ClusterRoute constraint ({} vehicle/job entries)", clusterAssignment.size());
+        }
+
+        builder.setStateAndConstraintManager(stateManager, constraintManager);
+
         VehicleRoutingAlgorithm algorithm = builder.buildAlgorithm();
+
+        // Cancel hợp tác: solver kiểm mỗi vòng, dừng "êm" ở ranh giới vòng kế tiếp
+        // khi có yêu cầu hủy (không interrupt cưỡng bức để tránh hỏng trạng thái).
+        algorithm.setPrematureAlgorithmTermination(solution -> handle.isCancelRequested());
 
         // Set timeout
         if (config.getTimeoutSeconds() != null && config.getTimeoutSeconds() > 0) {
@@ -738,8 +785,10 @@ public class OptimizationService {
         );
     }
 
-    private DistanceTimeMatrix calculateDistanceMatrix(OptimizationContext context) {
+    private DistanceTimeMatrix calculateDistanceMatrix(OptimizationContext context, MatrixMask mask,
+                                                       JobRegistry.JobHandle handle) {
         log.info("Calculating distance matrix...");
+        handle.setPhase(JobRegistry.Phase.BUILDING_MATRIX);
 
         List<OptCoordinates> coordinates = context.allLocations().stream()
                 .map(loc -> new OptCoordinates(
@@ -748,7 +797,9 @@ public class OptimizationService {
                 ))
                 .toList();
 
-        DistanceMatrix ghMatrix = distanceMatrixService.createDistanceMatrix(coordinates);
+        // truyền cờ cancel để hủy được ngay trong lúc dựng ma trận (có thể nhiều phút)
+        DistanceMatrix ghMatrix = distanceMatrixService.createDistanceMatrix(
+                coordinates, mask, handle::isCancelRequested);
 
         int n = coordinates.size();
         double[][] distanceMatrix = new double[n][n];
@@ -789,19 +840,32 @@ public class OptimizationService {
                 co2Weight);
     }
 
-    private void addProgressListener(VehicleRoutingAlgorithm algorithm, Long jobId, OptimizationConfig config) {
+    private void addProgressListener(VehicleRoutingAlgorithm algorithm, Long jobId,
+                                     OptimizationConfig config, JobRegistry.JobHandle handle) {
+        int maxIter = config.getMaxIterations() != null ? config.getMaxIterations() : 2000;
         algorithm.addListener(new IterationStartsListener() {
             private final long algorithmStartTime = System.currentTimeMillis();
 
             @Override
             public void informIterationStarts(int i, VehicleRoutingProblem problem,
                                               Collection<VehicleRoutingProblemSolution> solutions) {
-                if (i % 500 == 0 || i == 1) {
-                    VehicleRoutingProblemSolution best = Solutions.bestOf(solutions);
-                    long elapsed = (System.currentTimeMillis() - algorithmStartTime) / 1000;
+                boolean logTick  = (i % 500 == 0 || i == 1);   // log ra console (thưa)
+                boolean snapTick = (i % 50 == 0 || i == 1);    // cập nhật snapshot cho poll (dày hơn)
+                if (!logTick && !snapTick) return;
 
+                VehicleRoutingProblemSolution best = Solutions.bestOf(solutions);
+                long elapsed = (System.currentTimeMillis() - algorithmStartTime) / 1000;
+
+                if (snapTick) {
+                    handle.updateSnapshot(new JobRegistry.ProgressSnapshot(
+                            i, maxIter, best.getCost(),
+                            best.getRoutes().size(), best.getUnassignedJobs().size(),
+                            elapsed, JobRegistry.Phase.SOLVING, java.time.Instant.now()));
+                }
+
+                if (logTick) {
                     log.info("--- Job #{} Progress ---", jobId);
-                    log.info("Iteration: {} / {}", i, config.getMaxIterations());
+                    log.info("Iteration: {} / {}", i, maxIter);
                     log.info("Elapsed Time: {}s / {}s (Timeout)", elapsed, config.getTimeoutSeconds());
                     log.info("Current Best Cost: {}", String.format("%.2f", best.getCost()));
                     log.info("Routes: {}", best.getRoutes().size());
@@ -810,6 +874,44 @@ public class OptimizationService {
                 }
             }
         });
+    }
+
+    /**
+     * FAIL-LOUD: quét mọi cạnh THỰC SỰ đi qua trong lời giải; nếu có cạnh sentinel
+     * (>= ngưỡng) thì ném lỗi — KHÔNG cho kết quả rác chảy xuống metric/DB/callback.
+     * Với NoPrunedEdgeConstraint đã bật, điều này về lý thuyết không bao giờ xảy ra;
+     * đây là lưới an toàn cuối cùng để phát hiện regression prune/route.
+     */
+    private void assertNoSentinelEdgeTraversed(
+            VehicleRoutingProblemSolution solution,
+            DistanceTimeMatrix matrix,
+            OptimizationContext context,
+            Long jobId) {
+
+        double[][] dist = matrix.distanceMatrix();
+        List<Location> locs = context.allLocations();
+
+        for (VehicleRoute route : solution.getRoutes()) {
+            TourActivity prev = route.getStart();
+            for (TourActivity act : route.getActivities()) {
+                checkSentinelEdge(prev.getLocation(), act.getLocation(), locs, dist, jobId);
+                prev = act;
+            }
+            checkSentinelEdge(prev.getLocation(), route.getEnd().getLocation(), locs, dist, jobId);
+        }
+    }
+
+    private void checkSentinelEdge(Location from, Location to,
+                                   List<Location> locs, double[][] dist, Long jobId) {
+        int i = locs.indexOf(from);
+        int j = locs.indexOf(to);
+        if (i < 0 || j < 0) return;
+        if (dist[i][j] >= SENTINEL_DISTANCE_THRESHOLD) {
+            throw new IllegalStateException(String.format(
+                    "Job #%d: lời giải đi qua cạnh SENTINEL %s -> %s (%.0f m) — kết quả " +
+                            "KHÔNG hợp lệ, hủy để tránh gửi cost rác. Kiểm tra prune cluster / route lỗi.",
+                    jobId, from.getId(), to.getId(), dist[i][j]));
+        }
     }
 
     private long parseTimeToSeconds(String timeStr) {
@@ -859,6 +961,52 @@ public class OptimizationService {
             }
 
             return jobCluster.equals(vehicleCluster);
+        }
+    }
+
+    // ==================== NO PRUNED EDGE CONSTRAINT ====================
+
+    /**
+     * Chặn solver chèn job nếu cạnh nối tới nó (prev→job HOẶC job→next) là cạnh
+     * SENTINEL — tức cặp đã bị prune theo cluster, hoặc GraphHopper route lỗi và
+     * bị điền ∞ hữu hạn trong ma trận.
+     * <p>
+     * VÌ SAO CẦN: sentinel là số HỮU HẠN (1e9 m) nên nếu chỉ để trong ma trận chi
+     * phí, solver VẪN có thể chọn nó (đặc biệt khi penalty cho job chưa gán bị
+     * "thổi phồng" bởi chính giá trị sentinel trong ma trận) → sinh route triệu km.
+     * Constraint này biến cạnh sentinel thành BẤT KHẢ THI, nên order không tới được
+     * sẽ rơi về UNASSIGNED thay vì tạo lời giải rác.
+     */
+    static class NoPrunedEdgeConstraint implements HardActivityConstraint {
+        private final VehicleRoutingTransportCosts costs;
+        private final double threshold;
+
+        NoPrunedEdgeConstraint(VehicleRoutingTransportCosts costs, double threshold) {
+            this.costs = costs;
+            this.threshold = threshold;
+        }
+
+        @Override
+        public ConstraintsStatus fulfilled(JobInsertionContext iFacts,
+                                           TourActivity prevAct,
+                                           TourActivity newAct,
+                                           TourActivity nextAct,
+                                           double prevActDepTime) {
+            var vehicle = iFacts.getNewVehicle();
+
+            double dPrevNew = costs.getDistance(
+                    prevAct.getLocation(), newAct.getLocation(), prevActDepTime, vehicle);
+            if (dPrevNew >= threshold) {
+                return ConstraintsStatus.NOT_FULFILLED; // cạnh vào job là sentinel
+            }
+
+            double dNewNext = costs.getDistance(
+                    newAct.getLocation(), nextAct.getLocation(), prevActDepTime, vehicle);
+            if (dNewNext >= threshold) {
+                return ConstraintsStatus.NOT_FULFILLED; // cạnh ra khỏi job là sentinel
+            }
+
+            return ConstraintsStatus.FULFILLED;
         }
     }
 

@@ -12,6 +12,7 @@ import org.truong.gvrp_entry_api.security.CurrentUserUtil;
 import org.truong.gvrp_entry_api.service.OptimizationJobService;
 
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @RestController
@@ -84,6 +85,21 @@ public class OptimizationJobController {
         OptimizationJobDTO job = jobService.getJobById(id, branchId);
 
         return ResponseEntity.ok(job);
+    }
+
+    /**
+     * Get real-time progress of a running job (poll) — proxy xuống engine.
+     * GET /api/v1/jobs/{id}/progress
+     * 200 kèm tiến độ; 204 nếu engine không còn giữ job (chưa chạy / đã kết thúc & evict).
+     */
+    @GetMapping("/{id}/progress")
+    public ResponseEntity<Map<String, Object>> getJobProgress(@PathVariable Long id) {
+        Long branchId = CurrentUserUtil.getCurrentBranchId();
+        Map<String, Object> progress = jobService.getJobProgress(id, branchId);
+        if (progress == null) {
+            return ResponseEntity.noContent().build();
+        }
+        return ResponseEntity.ok(progress);
     }
 
     /**

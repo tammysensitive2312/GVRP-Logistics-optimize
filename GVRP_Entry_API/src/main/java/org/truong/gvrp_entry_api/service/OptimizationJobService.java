@@ -185,7 +185,41 @@ public class OptimizationJobService {
         job.setCancelledAt(LocalDateTime.now());
         jobRepository.save(job);
 
+        // Báo engine dừng tiến trình đang chạy (best-effort). Engine sẽ dừng ở
+        // ranh giới vòng kế / hàng ma trận kế và gửi cancelled callback — callback
+        // đó sẽ bị bỏ qua vì job đã ở trạng thái CANCELLED (idempotent).
+        engineApiClient.requestCancel(jobId);
+
         log.info("Job #{} cancelled successfully", jobId);
+    }
+
+    /**
+     * Lấy tiến độ real-time của job (proxy xuống engine). Verify quyền branch
+     * trước, rồi hỏi engine. Trả null nếu engine không còn giữ job (chưa chạy /
+     * đã kết thúc & evict) — controller sẽ trả 404/204 tương ứng.
+     */
+    @Transactional(readOnly = true)
+    public java.util.Map<String, Object> getJobProgress(Long jobId, Long branchId) {
+        OptimizationJob job = jobRepository.findById(jobId)
+                .orElseThrow(() -> new DataInvalidException(List.of(
+                        ErrorDetail.builder()
+                                .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
+                                .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
+                                .resource(AppConstant.JOB)
+                                .build()
+                )));
+
+        if (!job.getBranch().getId().equals(branchId)) {
+            throw new DataInvalidException(List.of(
+                    ErrorDetail.builder()
+                            .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
+                            .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
+                            .resource(AppConstant.JOB)
+                            .build()
+            ));
+        }
+
+        return engineApiClient.getProgress(jobId);
     }
 
     /**

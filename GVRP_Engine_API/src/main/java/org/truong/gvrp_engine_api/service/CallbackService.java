@@ -95,6 +95,38 @@ public class CallbackService {
         }
     }
 
+    /**
+     * Send cancelled callback to Entry API — job bị hủy theo yêu cầu, KHÔNG kèm lời giải.
+     */
+    public void sendCancelledCallback(Long jobId, String reason) {
+        String url = entryApiBaseUrl + "/solutions/callbacks/cancelled";
+
+        log.info("📤 Sending cancelled callback for job #{} to {}", jobId, url);
+
+        try {
+            HttpHeaders headers = createHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+
+            Map<String, Object> payload = new HashMap<>();
+            payload.put("job_id", jobId);
+            payload.put("reason", reason);
+
+            HttpEntity<Map<String, Object>> request = new HttpEntity<>(payload, headers);
+
+            ResponseEntity<String> response = restTemplate.postForEntity(url, request, String.class);
+
+            if (response.getStatusCode() == HttpStatus.OK) {
+                log.info("✅ Cancelled callback sent successfully for job #{}", jobId);
+            } else {
+                log.warn("⚠️  Unexpected callback response: {}", response.getStatusCode());
+            }
+
+        } catch (Exception e) {
+            log.error("❌ Failed to send cancelled callback for job #{}: {}",
+                    jobId, e.getMessage(), e);
+        }
+    }
+
     private HttpHeaders createHeaders() {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
