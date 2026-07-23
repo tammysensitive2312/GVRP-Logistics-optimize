@@ -1,0 +1,52 @@
+2026-07-23T07:47:27.086+07:00  INFO 11308 --- [GVRP_Engine_API] [         task-1] o.t.g.service.OptimizationService        : 🚀 Starting optimization for job #17
+2026-07-23T07:47:27.086+07:00  INFO 11308 --- [GVRP_Engine_API] [         task-1] o.t.g.service.OptimizationService        : ✅ Config validated | Mode: WEIGHTED | Weights: cost=1.0, CO2=0.0
+2026-07-23T07:47:27.086+07:00  INFO 11308 --- [GVRP_Engine_API] [         task-1] o.t.g.service.OptimizationService        : 🔀 Cluster-first ĐƯỢC BẬT: 6183 orders, C=42 cluster, 1000 vehicle
+2026-07-23T07:47:27.157+07:00  INFO 11308 --- [GVRP_Engine_API] [         task-1] o.t.g.clustering.KMeansClusterer         : ✅ K-means hội tụ sau 26 iterations (6183 orders → 42 cụm yêu cầu)
+2026-07-23T07:47:27.167+07:00  INFO 11308 --- [GVRP_Engine_API] [         task-1] o.t.g.clustering.ClusterMergeService     : 🔗 Merge cụm 27 (demand=69.46 < ngưỡng=1000.0) vào cụm 15 — demand cụm gộp mới: 21007.66
+2026-07-23T07:47:27.167+07:00  INFO 11308 --- [GVRP_Engine_API] [         task-1] o.t.g.clustering.ClusterMergeService     : ✅ Hoàn tất merge: 42 cụm ban đầu -> 41 cụm sau merge (1 lần merge)
+2026-07-23T07:47:27.203+07:00  INFO 11308 --- [GVRP_Engine_API] [         task-1] o.t.g.clustering.VehicleClusterAssigner  : ✅ Gán 1000 vehicle vào 41/41 cluster (quota theo demand)
+2026-07-23T07:47:27.207+07:00  INFO 11308 --- [GVRP_Engine_API] [         task-1] o.t.g.service.OptimizationService        : Calculating distance matrix...
+2026-07-23T07:47:27.212+07:00  INFO 11308 --- [GVRP_Engine_API] [         task-1] o.t.g.d.DistanceMatrixService            : [Matrix] Bắt đầu dựng 6186x6186 = 38260410 cặp | mask=ON (cluster-block) | threads=11 (pool riêng)
+2026-07-23T07:47:58.678+07:00  INFO 11308 --- [GVRP_Engine_API] [Pool-2-worker-4] o.t.g.d.DistanceMatrixService            : [Matrix] Tiến độ 618/6186 hàng (9%) | computed=113604 pruned=3735953 failed=0 | 31466 ms
+2026-07-23T07:48:32.832+07:00  INFO 11308 --- [GVRP_Engine_API] [Pool-2-worker-4] o.t.g.d.DistanceMatrixService            : [Matrix] Tiến độ 1236/6186 hàng (19%) | computed=223137 pruned=7449484 failed=0 | 65620 ms
+2026-07-23T07:49:09.361+07:00  INFO 11308 --- [GVRP_Engine_API] [Pool-2-worker-7] o.t.g.d.DistanceMatrixService            : [Matrix] Tiến độ 1854/6186 hàng (29%) | computed=332218 pruned=11171274 failed=0 | 102149 ms
+2026-07-23T07:49:52.939+07:00  INFO 11308 --- [GVRP_Engine_API] [Pool-2-worker-2] o.t.g.d.DistanceMatrixService            : [Matrix] Tiến độ 2472/6186 hàng (39%) | computed=442136 pruned=14871347 failed=0 | 145726 ms
+Exception in thread "http-nio-8081-Poller" java.lang.OutOfMemoryError: Java heap space
+	at java.base/java.util.Collections$UnmodifiableCollection.iterator(Collections.java:1074)
+	at org.apache.tomcat.util.net.NioEndpoint$Poller.timeout(NioEndpoint.java:1016)
+	at org.apache.tomcat.util.net.NioEndpoint$Poller.run(NioEndpoint.java:817)
+	at java.base/java.lang.Thread.runWith(Thread.java:1596)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+Exception in thread "ForkJoinPool-2-worker-5" java.lang.OutOfMemoryError: Java heap space
+Exception in thread "ForkJoinPool-2-worker-4" java.lang.OutOfMemoryError: Java heap space
+Exception in thread "ForkJoinPool-2-worker-11" java.lang.OutOfMemoryError: Java heap space
+Exception in thread "File Watcher" java.lang.OutOfMemoryError: Java heap space
+2026-07-23T08:00:06.143+07:00 ERROR 11308 --- [GVRP_Engine_API] [alina-utility-2] o.apache.catalina.core.StandardServer    : Error sending periodic event
+
+java.util.concurrent.ExecutionException: java.lang.OutOfMemoryError: Java heap space
+	at java.base/java.util.concurrent.FutureTask.report(FutureTask.java:122) ~[na:na]
+	at java.base/java.util.concurrent.FutureTask.get(FutureTask.java:191) ~[na:na]
+	at org.apache.catalina.core.StandardServer.startPeriodicLifecycleEvent(StandardServer.java:879) ~[tomcat-embed-core-11.0.14.jar:11.0.14]
+	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:572) ~[na:na]
+	at java.base/java.util.concurrent.FutureTask.runAndReset(FutureTask.java:358) ~[na:na]
+	at java.base/java.util.concurrent.ScheduledThreadPoolExecutor$ScheduledFutureTask.run(ScheduledThreadPoolExecutor.java:305) ~[na:na]
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144) ~[na:na]
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642) ~[na:na]
+	at org.apache.tomcat.util.threads.TaskThread$WrappingRunnable.run(TaskThread.java:57) ~[tomcat-embed-core-11.0.14.jar:11.0.14]
+	at java.base/java.lang.Thread.run(Thread.java:1583) ~[na:na]
+Caused by: java.lang.OutOfMemoryError: Java heap space
+
+2026-07-23T08:00:06.143+07:00 ERROR 11308 --- [GVRP_Engine_API] [alina-utility-1] o.a.coyote.http11.Http11NioProtocol      : Error processing async timeouts
+
+java.util.concurrent.ExecutionException: java.lang.OutOfMemoryError: Java heap space
+	at java.base/java.util.concurrent.FutureTask.report(FutureTask.java:122) ~[na:na]
+	at java.base/java.util.concurrent.FutureTask.get(FutureTask.java:191) ~[na:na]
+	at org.apache.coyote.AbstractProtocol.startAsyncTimeout(AbstractProtocol.java:658) ~[tomcat-embed-core-11.0.14.jar:11.0.14]
+	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:572) ~[na:na]
+	at java.base/java.util.concurrent.FutureTask.runAndReset(FutureTask.java:358) ~[na:na]
+	at java.base/java.util.concurrent.ScheduledThreadPoolExecutor$ScheduledFutureTask.run(ScheduledThreadPoolExecutor.java:305) ~[na:na]
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144) ~[na:na]
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642) ~[na:na]
+	at org.apache.tomcat.util.threads.TaskThread$WrappingRunnable.run(TaskThread.java:57) ~[tomcat-embed-core-11.0.14.jar:11.0.14]
+	at java.base/java.lang.Thread.run(Thread.java:1583) ~[na:na]
+Caused by: java.lang.OutOfMemoryError: Java heap space
