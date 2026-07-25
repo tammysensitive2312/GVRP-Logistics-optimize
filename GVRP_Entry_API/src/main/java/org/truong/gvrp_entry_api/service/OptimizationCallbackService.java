@@ -59,8 +59,26 @@ public class OptimizationCallbackService {
                             ))
                     );
 
-            if (job.getStatus() != OptimizationJobStatus.PROCESSING) {
-                log.warn("⚠️ Job #{} is not in PROCESSING state (current: {}). Ignoring callback.", job.getId(), job.getStatus());
+            // ===== Idempotency =====
+            // Engine có outbox và sẽ phát lại cùng một payload trong 2 tình huống:
+            //   (a) lần trước Entry trả 5xx;
+            //   (b) lần trước Entry xử lý XONG nhưng phản hồi về sau read timeout —
+            //       engine tưởng thất bại dù DB đã có dữ liệu (đúng ca job #23).
+            // Trường hợp (b) là lý do bắt buộc phải có chốt này: không có nó thì mỗi
+            // lần retry sẽ nhân đôi solution/routes/route_stops.
+            // Trả về lặng lẽ (200) để engine đánh dấu đã giao và ngừng retry.
+            if (solutionRepository.findByJobId(job.getId()).isPresent()) {
+                log.warn("⚠️ Job #{} đã có solution — bỏ qua callback lặp (idempotent).", job.getId());
+                return;
+            }
+
+            // Chấp nhận cả FAILED, không chỉ PROCESSING.
+            // Khối catch cuối phương thức này đánh dấu job FAILED khi xử lý lỗi. Nếu
+            // guard chỉ cho PROCESSING thì bản phát lại vĩnh viễn không vào được và
+            // outbox thành vô dụng — đúng kịch bản job #21 (tràn total_cost).
+            if (job.getStatus() != OptimizationJobStatus.PROCESSING
+                    && job.getStatus() != OptimizationJobStatus.FAILED) {
+                log.warn("⚠️ Job #{} ở trạng thái {} — bỏ qua callback.", job.getId(), job.getStatus());
                 return;
             }
 

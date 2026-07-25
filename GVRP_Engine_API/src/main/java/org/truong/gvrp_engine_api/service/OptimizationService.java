@@ -20,7 +20,6 @@ import com.graphhopper.jsprit.core.problem.vehicle.VehicleImpl;
 import com.graphhopper.jsprit.core.problem.vehicle.VehicleTypeImpl;
 import com.graphhopper.jsprit.core.util.Coordinate;
 import com.graphhopper.jsprit.core.util.Solutions;
-import com.graphhopper.jsprit.core.util.VehicleRoutingTransportCostsMatrix;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
@@ -166,8 +165,8 @@ public class OptimizationService {
      * ĐIỀU KIỆN BẬT (TẤT CẢ phải đúng):
      * 1. Số order >= CLUSTER_FIRST_ORDER_THRESHOLD.
      * 2. C = min(ceil(N/S_target), numVehicles) > 1 — nếu <= 1, phân cụm vô
-     *    nghĩa (không có gì để partition), bỏ qua để tránh tốn preprocessing
-     *    vô ích.
+     * nghĩa (không có gì để partition), bỏ qua để tránh tốn preprocessing
+     * vô ích.
      * <p>
      * TRẢ VỀ null (KHÔNG throw) khi không đủ điều kiện — đây là nhánh BÌNH
      * THƯỜNG của luồng xử lý (đa số job nhỏ), không phải lỗi.
@@ -485,7 +484,7 @@ public class OptimizationService {
         }
 
         // 3. Set Physical Cost Matrix (ONLY distance + time)
-        VehicleRoutingTransportCostsMatrix costs = GreenVRPCostCalculator.buildPhysicalCostMatrix(
+        VehicleRoutingTransportCosts costs = GreenVRPCostCalculator.buildPhysicalCostMatrix(
                 matrix.distanceMatrix(),
                 matrix.timeMatrix(),
                 context.allLocations()
@@ -545,7 +544,12 @@ public class OptimizationService {
         double maxDurationHours = vt.getMaxDuration() != null ? vt.getMaxDuration() : 12.0;
         long maxDurationSeconds = (long) (maxDurationHours * 3600);
         long latestArrival = earliestStart + maxDurationSeconds;
-
+        if (maxDurationHours > 24.0) {
+            throw new IllegalStateException(String.format(
+                    "VehicleType %d: maxDuration=%.1f h vượt 24h — nghi lệch đơn vị (phút lưu vào cột giờ?). " +
+                            "Ràng buộc ca làm sẽ bị vô hiệu nếu bỏ qua.",
+                    vt.getId(), maxDurationHours));
+        }
         vehicleBuilder
                 .setEarliestStart(earliestStart)
                 .setLatestArrival(latestArrival);
@@ -601,7 +605,7 @@ public class OptimizationService {
             OptimizationConfig config,
             Map<String, Integer> clusterAssignment,
             JobRegistry.JobHandle handle
-            ) {
+    ) {
 
         // Build vehicle max distance constraints
         Map<String, Double> vehicleMaxDistances = new HashMap<>();
@@ -757,10 +761,14 @@ public class OptimizationService {
         request.getVehicles().forEach(v -> vehicleDTOs.put(v.getId(), v));
 
         List<Location> allLocations = new ArrayList<>();
+        // Index PHẢI khớp index hàng/cột ma trận (depot trước, order sau) — adapter
+        // MatrixBasedTransportCosts tra ma trận bằng Location.getIndex() (O(1)).
+        int locIndex = 0;
 
         for (var depot : request.getDepots()) {
             Location loc = Location.Builder.newInstance()
                     .setId("depot-" + depot.getId())
+                    .setIndex(locIndex++)
                     .setCoordinate(Coordinate.newInstance(depot.getLongitude(), depot.getLatitude()))
                     .setName(depot.getName())
                     .build();
@@ -770,6 +778,7 @@ public class OptimizationService {
         for (var order : request.getOrders()) {
             Location loc = Location.Builder.newInstance()
                     .setId("order-" + order.getId())
+                    .setIndex(locIndex++)
                     .setCoordinate(Coordinate.newInstance(order.getLongitude(), order.getLatitude()))
                     .setName(order.getOrderCode())
                     .build();
@@ -801,21 +810,12 @@ public class OptimizationService {
         DistanceMatrix ghMatrix = distanceMatrixService.createDistanceMatrix(
                 coordinates, mask, handle::isCancelRequested);
 
-        int n = coordinates.size();
-        double[][] distanceMatrix = new double[n][n];
-        double[][] timeMatrix = new double[n][n];
-
-        for (int i = 0; i < n; i++) {
-            for (int j = 0; j < n; j++) {
-                DistanceMatrixEntry entry = ghMatrix.get(i, j);
-                distanceMatrix[i][j] = entry.distanceMeters();
-                timeMatrix[i][j] = entry.timeSeconds();
-            }
-        }
-
         log.info("✅ Distance matrix calculated successfully");
 
-        return new DistanceTimeMatrix(distanceMatrix, timeMatrix, context.allLocations());
+        // Trao thẳng mảng double[][] (chia sẻ tham chiếu, chỉ đọc) — không copy,
+        // không dựng lại ~n² object trung gian (tránh OOM ở quy mô lớn).
+        return new DistanceTimeMatrix(
+                ghMatrix.distanceMeters(), ghMatrix.timeSeconds(), context.allLocations());
     }
 
     private void validateConfig(OptimizationConfig config) {
@@ -849,7 +849,7 @@ public class OptimizationService {
             @Override
             public void informIterationStarts(int i, VehicleRoutingProblem problem,
                                               Collection<VehicleRoutingProblemSolution> solutions) {
-                boolean logTick  = (i % 500 == 0 || i == 1);   // log ra console (thưa)
+                boolean logTick = (i % 500 == 0 || i == 1);   // log ra console (thưa)
                 boolean snapTick = (i % 50 == 0 || i == 1);    // cập nhật snapshot cho poll (dày hơn)
                 if (!logTick && !snapTick) return;
 
@@ -903,8 +903,10 @@ public class OptimizationService {
 
     private void checkSentinelEdge(Location from, Location to,
                                    List<Location> locs, double[][] dist, Long jobId) {
-        int i = locs.indexOf(from);
-        int j = locs.indexOf(to);
+        // O(1) nhờ index đã set ở prepareContext (trước đây indexOf() quét tuyến tính
+        // → ~n² phép so sánh cho mỗi lần kiểm lời giải).
+        int i = from.getIndex();
+        int j = to.getIndex();
         if (i < 0 || j < 0) return;
         if (dist[i][j] >= SENTINEL_DISTANCE_THRESHOLD) {
             throw new IllegalStateException(String.format(

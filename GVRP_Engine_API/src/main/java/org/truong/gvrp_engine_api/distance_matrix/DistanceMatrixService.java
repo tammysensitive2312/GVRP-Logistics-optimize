@@ -7,11 +7,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.truong.gvrp_engine_api.job.JobCancelledException;
 
-import java.time.Duration;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BooleanSupplier;
@@ -72,7 +68,8 @@ public class DistanceMatrixService {
                 (mask == null ? "OFF (full)" : "ON (cluster-block)"),
                 matrixPool.getParallelism());
 
-        DistanceMatrixEntry[][] m = new DistanceMatrixEntry[n][n];
+        double[][] dist = new double[n][n];           // primitive — không tạo object mỗi ô
+        double[][] time = new double[n][n];
         AtomicInteger pruned   = new AtomicInteger(); // cặp bị bỏ qua theo mask
         AtomicInteger computed = new AtomicInteger(); // cặp gọi GraphHopper thật
         AtomicInteger failed   = new AtomicInteger(); // cặp route lỗi -> sentinel
@@ -87,18 +84,23 @@ public class DistanceMatrixService {
                 }
                 for (int j = 0; j < n; j++) {
                     if (i == j) {
-                        m[i][j] = DistanceMatrixEntry.ZERO;
+                        dist[i][j] = 0.0;
+                        time[i][j] = 0.0;
                     } else if (mask != null && !mask.needed(i, j)) {
-                        m[i][j] = sentinel();                             // SENTINEL, không phải ZERO
+                        dist[i][j] = MatrixMask.PRUNED_METERS;   // sentinel double — KHÔNG tạo object
+                        time[i][j] = MatrixMask.PRUNED_SECONDS;
                         pruned.incrementAndGet();
                     } else {
                         try {
-                            m[i][j] = primaryProvider.fetch(coordinates.get(i), coordinates.get(j));
+                            DistanceMatrixEntry e = primaryProvider.fetch(coordinates.get(i), coordinates.get(j));
+                            dist[i][j] = e.distanceMeters();
+                            time[i][j] = e.timeSeconds();
                             computed.incrementAndGet();
                         } catch (Exception e) {
                             log.warn("[Matrix] Route {}->{} lỗi, điền SENTINEL (KHÔNG dùng ZERO để tránh route rác): {}",
                                     i, j, e.getMessage());
-                            m[i][j] = sentinel();
+                            dist[i][j] = MatrixMask.PRUNED_METERS;
+                            time[i][j] = MatrixMask.PRUNED_SECONDS;
                             failed.incrementAndGet();
                         }
                     }
@@ -131,18 +133,7 @@ public class DistanceMatrixService {
             log.warn("[Matrix] mask BẬT nhưng prune=0 — cluster có thể chưa gán đúng, nên kiểm tra");
         }
 
-        Map<String, DistanceMatrixEntry> entries = new HashMap<>(n * n);
-        for (int i = 0; i < n; i++)
-            for (int j = 0; j < n; j++)
-                entries.put(i + "-" + j, m[i][j]);
-        return new DistanceMatrix(coordinates, entries);
-    }
-
-    /** ∞ hữu hạn cho cặp bị prune / route lỗi — KHÔNG dùng ZERO. */
-    private static DistanceMatrixEntry sentinel() {
-        return new DistanceMatrixEntry(
-                Duration.ofSeconds((long) MatrixMask.PRUNED_SECONDS),
-                Distance.ofMeters(MatrixMask.PRUNED_METERS));
+        return new DistanceMatrix(coordinates, dist, time);
     }
 
 }

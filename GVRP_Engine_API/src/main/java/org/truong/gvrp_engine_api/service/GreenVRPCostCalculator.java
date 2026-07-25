@@ -1,9 +1,10 @@
 package org.truong.gvrp_engine_api.service;
 
 import com.graphhopper.jsprit.core.problem.Location;
+import com.graphhopper.jsprit.core.problem.cost.VehicleRoutingTransportCosts;
 import com.graphhopper.jsprit.core.problem.vehicle.VehicleTypeImpl;
-import com.graphhopper.jsprit.core.util.VehicleRoutingTransportCostsMatrix;
 import lombok.extern.slf4j.Slf4j;
+import org.truong.gvrp_engine_api.distance_matrix.MatrixBasedTransportCosts;
 import org.truong.gvrp_engine_api.model.VehicleType;
 
 import java.util.List;
@@ -44,29 +45,16 @@ public class GreenVRPCostCalculator {
      * @param locations                 List of all locations (depots + orders)
      * @return Jsprit cost matrix (physical only)
      */
-    public static VehicleRoutingTransportCostsMatrix buildPhysicalCostMatrix(
+    public static VehicleRoutingTransportCosts buildPhysicalCostMatrix(
             double[][] distanceMatrix,
             double[][] timeMatrix,
             List<Location> locations
     ) {
-        VehicleRoutingTransportCostsMatrix.Builder matrixBuilder =
-                VehicleRoutingTransportCostsMatrix.Builder.newInstance(true);
-
-        for (int i = 0; i < locations.size(); i++) {
-            for (int j = 0; j < locations.size(); j++) {
-                Location from = locations.get(i);
-                Location to = locations.get(j);
-
-                double distanceMeters = distanceMatrix[i][j];
-                double timeSeconds = timeMatrix[i][j];
-
-                matrixBuilder.addTransportDistance(from.getId(), to.getId(), distanceMeters);
-                matrixBuilder.addTransportTime(from.getId(), to.getId(), timeSeconds);
-            }
-        }
-
-        log.info("✅ Built physical cost matrix: {} locations", locations.size());
-        return matrixBuilder.build();
+        // KHÔNG nạp n² cặp vào VehicleRoutingTransportCostsMatrix (n=6186 → 38M
+        // HashMap entry, build() treo / GC-thrash). Adapter đọc thẳng mảng đã có.
+        log.info("✅ Transport costs adapter ready: {} locations (zero-copy, index-based)",
+                locations.size());
+        return new MatrixBasedTransportCosts(distanceMatrix, timeMatrix);
     }
 
     /**

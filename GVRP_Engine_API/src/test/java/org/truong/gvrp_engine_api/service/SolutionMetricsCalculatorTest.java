@@ -34,18 +34,23 @@ class SolutionMetricsCalculatorTest {
         // ===== ARRANGE =====
 
         // TimeTerminationBugTest.java. Depot tại (0,0), hai order tại (0,TimeTerminationBugTest.java) và (0,2) — đơn giản hóa khoảng cách
+        // setIndex BẮT BUỘC: SolutionMetricsCalculator tra ma trận qua Location.getIndex()
+        // (O(1)), index phải khớp thứ tự trong allLocations bên dưới.
         Location depotLoc = Location.Builder.newInstance()
                 .setId("depot-TimeTerminationBugTest.java")
+                .setIndex(0)
                 .setCoordinate(Coordinate.newInstance(0, 0))
                 .build();
 
         Location order1Loc = Location.Builder.newInstance()
                 .setId("order-TimeTerminationBugTest.java")
+                .setIndex(1)
                 .setCoordinate(Coordinate.newInstance(0, 1))
                 .build();
 
         Location order2Loc = Location.Builder.newInstance()
                 .setId("order-2")
+                .setIndex(2)
                 .setCoordinate(Coordinate.newInstance(0, 2))
                 .build();
 

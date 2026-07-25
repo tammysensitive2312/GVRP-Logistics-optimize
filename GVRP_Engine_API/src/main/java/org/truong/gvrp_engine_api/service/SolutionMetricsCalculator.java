@@ -11,10 +11,10 @@ import static org.truong.gvrp_engine_api.utils.AppConstant.DEMAND_SCALE;
 
 /**
  * Solution Metrics Calculator
- *
+ * <p>
  * Calculates REAL metrics after Jsprit optimization
  * Separates solver cost from business metrics
- *
+ * <p>
  * WHY SEPARATE:
  * - Jsprit cost is for optimization (weighted, normalized)
  * - Business metrics are for reporting (real cost, real CO2)
@@ -163,11 +163,12 @@ public class SolutionMetricsCalculator {
         log.info("   Cost: {} VND (Fuel: {}, Time: {}, Fixed: {})",
                 (long) totalCost, (long) totalFuelCost, (long) totalTimeCost, (long) totalFixedCost);
         log.info("   CO2: {} kg (Cost: {} VND)", totalCO2, (long) co2CostVnd);
-        log.info("   Vehicles: {} | Orders: {} / {} | Utilization: {}%",
+        log.info("   Vehicles: {} | Orders: {} / {} | Load util: {}% | Time util: {}%",
                 vehiclesUsed,
                 ordersServed,
                 ordersServed + solution.getUnassignedJobs().size(),
-                avgLoadUtil);
+                String.format("%.1f", avgLoadUtil),
+                String.format("%.1f", avgTimeUtil));
 
         return metrics;
     }
@@ -181,8 +182,9 @@ public class SolutionMetricsCalculator {
             DistanceTimeMatrix matrix,
             OptimizationContext context) {
 
-        int fromIndex = context.allLocations().indexOf(from);
-        int toIndex = context.allLocations().indexOf(to);
+        // O(1) nhờ index set ở prepareContext (trước đây indexOf() quét tuyến tính)
+        int fromIndex = from.getIndex();
+        int toIndex = to.getIndex();
 
         if (fromIndex == -1 || toIndex == -1) {
             log.warn("Location not found in matrix: {} -> {}", from.getId(), to.getId());
@@ -201,8 +203,9 @@ public class SolutionMetricsCalculator {
             DistanceTimeMatrix matrix,
             OptimizationContext context) {
 
-        int fromIndex = context.allLocations().indexOf(from);
-        int toIndex = context.allLocations().indexOf(to);
+        // O(1) nhờ index set ở prepareContext (trước đây indexOf() quét tuyến tính)
+        int fromIndex = from.getIndex();
+        int toIndex = to.getIndex();
 
         if (fromIndex == -1 || toIndex == -1) {
             log.warn("Location not found in matrix: {} -> {}", from.getId(), to.getId());

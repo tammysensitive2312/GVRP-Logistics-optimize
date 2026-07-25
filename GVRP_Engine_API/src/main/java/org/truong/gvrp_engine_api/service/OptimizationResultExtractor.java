@@ -447,8 +447,9 @@ public class OptimizationResultExtractor {
             DistanceTimeMatrix matrix,
             OptimizationContext context) {
 
-        int fromIndex = context.allLocations().indexOf(from);
-        int toIndex = context.allLocations().indexOf(to);
+        // O(1) nhờ index set ở prepareContext (trước đây indexOf() quét tuyến tính)
+        int fromIndex = from.getIndex();
+        int toIndex = to.getIndex();
 
         if (fromIndex == -1 || toIndex == -1) {
             log.warn("Location not found in matrix: {} -> {}", from.getId(), to.getId());
@@ -464,8 +465,9 @@ public class OptimizationResultExtractor {
             DistanceTimeMatrix matrix,
             OptimizationContext context) {
 
-        int fromIndex = context.allLocations().indexOf(from);
-        int toIndex = context.allLocations().indexOf(to);
+        // O(1) nhờ index set ở prepareContext (trước đây indexOf() quét tuyến tính)
+        int fromIndex = from.getIndex();
+        int toIndex = to.getIndex();
 
         if (fromIndex == -1 || toIndex == -1) {
             log.warn("Location not found in matrix: {} -> {}", from.getId(), to.getId());

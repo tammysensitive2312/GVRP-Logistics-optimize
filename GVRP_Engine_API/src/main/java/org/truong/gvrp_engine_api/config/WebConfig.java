@@ -1,5 +1,6 @@
 package org.truong.gvrp_engine_api.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
@@ -38,13 +39,26 @@ public class WebConfig {
                 .build();
     }
 
+    /**
+     * Read timeout phải đủ cho Entry ghi xong toàn bộ solution.
+     *
+     * <p>Mốc 10 giây cũ là nguyên nhân lỗi job #23: Entry nhận và lưu thành công
+     * 10k orders, nhưng mất hơn 10s nên engine bỏ cuộc với {@code Read timed out}
+     * và tưởng là thất bại. Ghi vài chục nghìn dòng route_stops mất hàng chục giây
+     * là chuyện bình thường, không phải sự cố.
+     *
+     * <p>Override được bằng {@code entry.callback.read-timeout-ms} nếu cần.
+     */
     @Bean
-    RestTemplate restTemplate(JsonMapper objectMapper) {
+    RestTemplate restTemplate(
+            JsonMapper objectMapper,
+            @Value("${entry.callback.connect-timeout-ms:5000}") int connectTimeoutMs,
+            @Value("${entry.callback.read-timeout-ms:300000}") int readTimeoutMs) {
         RestTemplate restTemplate = new RestTemplate();
 
         SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
-        requestFactory.setConnectTimeout(5000);
-        requestFactory.setReadTimeout(10000);
+        requestFactory.setConnectTimeout(connectTimeoutMs);
+        requestFactory.setReadTimeout(readTimeoutMs);
         restTemplate.setRequestFactory(requestFactory);
 
         JacksonJsonHttpMessageConverter jacksonConverter =

@@ -9,10 +9,13 @@ import org.springframework.web.bind.annotation.*;
 import org.truong.gvrp_engine_api.job.JobRegistry;
 import org.truong.gvrp_engine_api.model.EngineOptimizationRequest;
 import org.truong.gvrp_engine_api.model.EngineOptimizationResponse;
+import org.truong.gvrp_engine_api.service.CallbackService;
 import org.truong.gvrp_engine_api.service.OptimizationService;
+import org.truong.gvrp_engine_api.service.ResultSpool;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 @Slf4j
 @RestController
@@ -21,6 +24,8 @@ import java.util.Map;
 public class OptimizationController {
     private final OptimizationService optimizationService;
     private final JobRegistry jobRegistry;
+    private final ResultSpool resultSpool;
+    private final CallbackService callbackService;
 
     @PostMapping
     public ResponseEntity<EngineOptimizationResponse> optimize(
@@ -154,6 +159,41 @@ public class OptimizationController {
         body.put("status", h.status());
         body.put("message", "Job đã kết thúc, không thể hủy");
         return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
+    }
+
+    /**
+     * Kéo kết quả đã lưu trong spool — dùng khi callback thất bại vĩnh viễn, hoặc để
+     * đối chiếu với dữ liệu Entry đã ghi. Tìm cả trong pending/, poison/ và sent/.
+     *
+     * <p>Khác với {@code /progress} (đọc JobRegistry trong RAM, mất sau restart),
+     * endpoint này đọc từ đĩa nên sống sót qua restart.
+     */
+    @GetMapping("/{jobId}/result")
+    public ResponseEntity<Map<String, Object>> result(@PathVariable Long jobId) {
+        return resultSpool.load(jobId)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    /**
+     * Ép gửi lại callback ngay, không chờ sweeper. Dùng sau khi vừa vá xong Entry
+     * và muốn nạp lại kết quả mà không phải chạy lại job.
+     */
+    @PostMapping("/{jobId}/resend")
+    public ResponseEntity<Map<String, Object>> resend(@PathVariable Long jobId) {
+        Optional<Map<String, Object>> payload = resultSpool.load(jobId);
+        if (payload.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        boolean delivered = callbackService.deliver(jobId, payload.get());
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("jobId", jobId);
+        body.put("delivered", delivered);
+        return ResponseEntity
+                .status(delivered ? HttpStatus.OK : HttpStatus.BAD_GATEWAY)
+                .body(body);
     }
 
     @GetMapping("/health")

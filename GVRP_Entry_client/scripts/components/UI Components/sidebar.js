@@ -193,7 +193,7 @@ export class Sidebar {
 
         try {
 
-            const data = await getVehicle(0, 1000);
+            const data = await getVehicle(0, 10000);
 
             const allVehiclesInDb = data.content || data;
 

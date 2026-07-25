@@ -232,7 +232,7 @@ create table solutions
     branch_id           bigint                                                       not null,
     status              enum ('INFEASIBLE', 'INITIAL', 'PARTIAL_SUCCESS', 'SUCCESS') not null,
     type                enum ('ENGINE_GENERATED', 'FILE_IMPORTED')                   not null,
-    total_cost          decimal(10, 2)                                               null,
+    total_cost          decimal(18, 2)                                               null,
     total_distance      decimal(10, 2)                                               null comment 'Total distance in km',
     total_co2           decimal(10, 2)                                               null comment 'Total CO2 emission in kg',
     total_time          decimal(10, 2)                                               null comment 'Total service time in hours',

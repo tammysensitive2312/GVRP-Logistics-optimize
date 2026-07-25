@@ -547,7 +547,7 @@ export class OrdersTable {
             }
 
             // Fetch all orders with a large page size
-            const response = await getOrders(date, 0, 10000); // Max 10k orders
+            const response = await getOrders(date, 0, 100000); // Max 100k orders
 
             if (response.content && response.content.length > 0) {
                 response.content.forEach(order => {

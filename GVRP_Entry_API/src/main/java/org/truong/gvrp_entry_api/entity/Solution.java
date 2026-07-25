@@ -44,7 +44,7 @@ public class Solution {
     @Column(nullable = false, length = 20)
     private SolutionType type;
 
-    @Column(name = "total_cost", precision = 10, scale = 2)
+    @Column(name = "total_cost", precision = 18, scale = 2)
     private BigDecimal totalCost;
 
     @Column(name = "total_distance", precision = 10, scale = 2)

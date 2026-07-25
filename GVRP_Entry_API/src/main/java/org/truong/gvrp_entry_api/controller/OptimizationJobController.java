@@ -28,19 +28,10 @@ public class OptimizationJobController {
     public ResponseEntity<OptimizationJobDTO> submitRoutePlanning(
             @Valid @RequestBody RoutePlanningRequest request) {
 
-//        log.info("=== Route Planning Request ===");
-//        log.info("User: {}", CurrentUserUtil.getCurrentUsername());
-//        log.info("Orders: {}, Vehicles: {}",
-//                request.getOrderIds().size(),
-//                request.getVehicleIds().size());
-
         Long userId = CurrentUserUtil.getCurrentUserId();
         Long branchId = CurrentUserUtil.getCurrentBranchId();
 
         OptimizationJobDTO job = jobService.submitJob(request, branchId, userId);
-
-//        log.info("✓ Job #{} submitted", job.getId());
-
         return ResponseEntity.accepted().body(job);
     }
 
