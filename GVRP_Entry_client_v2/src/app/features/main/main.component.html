@@ -12,19 +12,24 @@
   <!-- Main Content Area (70%) -->
   <main class="main-content">
     <!-- Map Section (60vh) -->
-    <div class="map-section">
+    <div class="map-section" #mapSection>
       <app-map
         [depots]="depots"
         [orders]="orders"
-        [solution]="solution"
+        [solution]="solution()"
         [highlightedOrderId]="highlightedOrderId"
-        (orderClicked)="onOrderClicked($event)">
+        (orderClicked)="onOrderClicked($event)"
+        (orderEditRequested)="onOrderEditRequested($event)">
       </app-map>
     </div>
 
     <!-- Resize Divider -->
-    <div class="resize-divider"
-         (mousedown)="onResizeStart($event)">
+    <div
+      class="resize-divider"
+      appResizableDivider
+      [appResizableTarget]="mapSection"
+      (resized)="onMapSectionResized()"
+      (resizeEnd)="onMapSectionResized()">
       <div class="resize-handle">
         <span class="resize-icon">⋮</span>
       </div>

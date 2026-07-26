@@ -1,0 +1,46 @@
+<header class="admin-content-header">
+  <h1>Depots Management</h1>
+  <p>Manage warehouse locations</p>
+</header>
+
+<div class="admin-content-body">
+  @if (loading()) {
+    <div class="loading-message">Loading depots...</div>
+  } @else if (isEmpty()) {
+    <div class="empty-state">
+      <div class="empty-icon">🏢</div>
+      <div class="empty-text">No depots yet</div>
+      <div class="empty-hint">Create your first depot to get started.</div>
+      <a class="btn btn-primary" routerLink="/setup/depot">+ Add Depot</a>
+    </div>
+  } @else {
+    <div class="items-grid">
+      @for (depot of depots(); track depot.id) {
+        <article class="item-card">
+          <div class="card-header">
+            <div class="card-title">🏢 {{ depot.name }}</div>
+          </div>
+          <div class="card-details">
+            <div class="detail-row">
+              <span class="detail-label">Address:</span>
+              <span class="detail-value">{{ depot.address }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Latitude:</span>
+              <span class="detail-value">{{ depot.latitude.toFixed(6) }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Longitude:</span>
+              <span class="detail-value">{{ depot.longitude.toFixed(6) }}</span>
+            </div>
+          </div>
+        </article>
+      }
+    </div>
+
+    <p class="section-note">
+      Editing and deleting depots needs PUT / DELETE <code>/depots</code> on the backend —
+      not wired up yet.
+    </p>
+  }
+</div>

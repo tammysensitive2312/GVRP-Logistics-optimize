@@ -1,0 +1,226 @@
+@import '../../../../../assets/styles/variables';
+
+// Ported from V1 styles/components/view.css (.timeline-view-container ... .driving-bar).
+// Difference: time-header markers are absolutely positioned inside a
+// percentage-width track so they stay aligned with the bars at any zoom level.
+
+:host {
+  display: block;
+  height: 100%;
+  overflow: hidden;
+  font-family: $font-family;
+}
+
+.timeline-view-container {
+  padding: 0.5rem;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  font-size: 0.85rem;
+  box-sizing: border-box;
+}
+
+.timeline-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+
+  h3 {
+    margin: 0;
+    font-size: 1rem;
+    color: $text-dark;
+  }
+}
+
+.timeline-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.btn {
+  border: 1px solid $border-color;
+  background: $white;
+  border-radius: $radius-md;
+  cursor: pointer;
+  font-family: $font-family;
+
+  &:hover:not(:disabled) {
+    background: $bg-light;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.btn-sm {
+  padding: 4px 10px;
+  font-size: $font-size-sm;
+}
+
+.zoom-level {
+  font-size: $font-size-sm;
+  color: $text-gray;
+  min-width: 28px;
+  text-align: right;
+}
+
+.timeline-legend {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 0.5rem 0 0.75rem;
+  padding: 0.5rem;
+  background: $bg-light;
+  border-radius: $radius-sm;
+  flex-wrap: wrap;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+}
+
+.legend-color {
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+}
+
+.legend-range {
+  margin-left: auto;
+  font-size: 0.75rem;
+  color: $text-gray;
+}
+
+.timeline-warnings {
+  margin-bottom: 0.5rem;
+}
+
+.timeline-warning {
+  font-size: 0.75rem;
+  color: $warning-orange;
+}
+
+.gantt-chart-container {
+  flex: 1;
+  min-height: 300px;
+  background: $white;
+  border: 1px solid $border-color;
+  border-radius: $radius-md;
+  overflow: hidden;
+}
+
+.gantt-grid {
+  display: flex;
+  height: 100%;
+}
+
+.gantt-sidebar {
+  width: 150px;
+  flex-shrink: 0;
+  background: $bg-light;
+  border-right: 2px solid $border-color;
+}
+
+// Keeps row labels aligned with the rows, which sit below the time header.
+.gantt-sidebar-spacer {
+  height: 30px;
+  border-bottom: 2px solid $border-color;
+}
+
+.gantt-row-label {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0.5rem;
+  border-bottom: 1px solid $border-color;
+  height: 60px;
+  box-sizing: border-box;
+
+  strong {
+    font-size: 0.8rem;
+    margin-bottom: 0.15rem;
+  }
+
+  small {
+    font-size: 0.7rem;
+    color: $text-gray;
+  }
+}
+
+.gantt-timeline-scroll {
+  flex: 1;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.gantt-timeline {
+  position: relative;
+  min-width: 100%;
+}
+
+.gantt-time-header {
+  position: relative;
+  background: $bg-light;
+  border-bottom: 2px solid $border-color;
+  height: 30px;
+}
+
+.time-marker {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  padding-left: 4px;
+  font-size: 0.7rem;
+  font-weight: $font-weight-semibold;
+  color: $text-gray;
+  border-left: 1px solid $border-color;
+  white-space: nowrap;
+  transform: translateX(-1px);
+}
+
+.gantt-rows {
+  position: relative;
+}
+
+.gantt-row {
+  position: relative;
+  border-bottom: 1px solid $border-color;
+  height: 60px;
+}
+
+.gantt-bar {
+  position: absolute;
+  height: 22px;
+  top: 50%;
+  transform: translateY(-50%);
+  border-radius: 3px;
+  cursor: pointer;
+  transition: opacity $transition-base;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  font-size: 0.7rem;
+
+  &:hover {
+    opacity: 0.8;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  }
+}
+
+.service-bar {
+  height: 18px;
+  z-index: 2;
+}
+
+.driving-bar {
+  height: 15px;
+  opacity: 0.8;
+}

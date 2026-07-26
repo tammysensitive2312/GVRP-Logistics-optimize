@@ -1,14 +1,16 @@
-import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, ViewChild } from '@angular/core';
 import {forkJoin, Subject} from 'rxjs';
 import {finalize, takeUntil} from 'rxjs/operators';
 
-import {DepotDTO, OrderDTO, VehicleDTO, SolutionDTO, Stats, OrderFilter} from '@core/models';
+import {DepotDTO, OrderDTO, VehicleDTO, Stats, OrderFilter} from '@core/models';
 import {SidebarComponent} from '@features/main/components/sidebar/sidebar.component';
 import {MapComponent} from '@shared/components/map/map.component';
+import {ResizableDividerDirective} from '@shared/directives/resizable-divider.directive';
 import {OrdersSectionComponent} from '@features/main/orders/orders-section-view/orders-section.component';
 import {ToastService} from '@shared/services/toast.service';
 import {ApiService} from '@core/services/api.service';
 import {MapService} from '@shared/services/map.service';
+import {SolutionStore} from '@core/services/solution.store';
 
 interface PaginationState {
   page: number;
@@ -25,7 +27,8 @@ interface PaginationState {
 
     SidebarComponent,
     MapComponent,
-    OrdersSectionComponent
+    OrdersSectionComponent,
+    ResizableDividerDirective
   ],
   styleUrls: ['./main.component.scss']
 })
@@ -34,9 +37,18 @@ export class MainComponent implements OnInit, OnDestroy {
   depots: DepotDTO[] = [];
   vehicles: VehicleDTO[] = [];
   orders: OrderDTO[] = [];
-  solution: SolutionDTO | null = null;
+
+  /**
+   * Read from SolutionStore instead of a local field: the previous local
+   * `solution` was never assigned, so `<app-map [solution]>` stayed null and no
+   * optimized route was ever drawn on the map.
+   */
+  private solutionStore = inject(SolutionStore);
+  readonly solution = this.solutionStore.solution;
 
   isSidebarCollapsed = false;
+
+  @ViewChild(OrdersSectionComponent) private ordersSection?: OrdersSectionComponent;
 
   // Stats
   stats: Stats = {
@@ -57,11 +69,6 @@ export class MainComponent implements OnInit, OnDestroy {
 
   // UI State
   highlightedOrderId: number | null = null;
-
-  // Resize
-  private isResizing = false;
-  private startY = 0;
-  private startHeight = 0;
 
   private currentFilter: OrderFilter = {
     date: new Date().toISOString().split('T')[0]
@@ -144,17 +151,9 @@ export class MainComponent implements OnInit, OnDestroy {
     this.calculateStats();
   }
 
-  // Resize handlers
-  onResizeStart(event: MouseEvent): void {
-    this.isResizing = true;
-    this.startY = event.clientY;
-
-    const mapSection = document.querySelector('.map-section') as HTMLElement;
-    if (mapSection) {
-      this.startHeight = mapSection.offsetHeight;
-    }
-
-    event.preventDefault();
+  /** Resizing lives in ResizableDividerDirective now; the map just re-measures. */
+  onMapSectionResized(): void {
+    this.map.invalidateSize();
   }
 
   onDepotClick(depot: DepotDTO): void {
@@ -167,35 +166,6 @@ export class MainComponent implements OnInit, OnDestroy {
 
   onOrderClick(order: OrderDTO): void {
     this.map.highlightOrder(order.id);
-  }
-
-  @HostListener('document:mousemove', ['$event'])
-  onResize(event: MouseEvent): void {
-    if (!this.isResizing) return;
-
-    const deltaY = event.clientY - this.startY;
-    const newHeight = this.startHeight + deltaY;
-
-    const mapSection = document.querySelector('.map-section') as HTMLElement;
-    const mainContent = document.querySelector('.main-content') as HTMLElement;
-
-    if (mapSection && mainContent) {
-      const mainHeight = mainContent.offsetHeight;
-      const minHeight = mainHeight * 0.05;
-      const maxHeight = mainHeight * 0.95;
-
-      if (newHeight >= minHeight && newHeight <= maxHeight) {
-        mapSection.style.height = `${newHeight}px`;
-      }
-    }
-  }
-
-  @HostListener('document:mouseup')
-  onResizeEnd(): void {
-    if (this.isResizing) {
-      this.isResizing = false;
-      this.map.invalidateSize();
-    }
   }
 
   // Event handlers
@@ -216,6 +186,11 @@ export class MainComponent implements OnInit, OnDestroy {
   }
 
   onOrderClicked(orderId: number): void {
-    // TODO
+    this.map.highlightOrder(orderId);
+  }
+
+  /** "Edit" inside a map order popup (V1 called EditOrderModal.open directly). */
+  onOrderEditRequested(orderId: number): void {
+    this.ordersSection?.editOrderById(orderId);
   }
 }

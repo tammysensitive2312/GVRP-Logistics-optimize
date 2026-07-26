@@ -1,0 +1,299 @@
+// Shared styles for admin section pages (vehicle types / vehicles / depots).
+// Ported from V1 styles/screens/admin-settings.css.
+// Requires 'assets/styles/variables' to be imported first.
+
+:host {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  font-family: $font-family;
+}
+
+.admin-content-header {
+  background: $white;
+  padding: $space-xl $space-2xl;
+  border-bottom: 1px solid $border-color;
+
+  h1 {
+    font-size: $font-size-2xl;
+    color: $text-dark;
+    margin: 0 0 $space-sm;
+  }
+
+  p {
+    color: $text-gray;
+    font-size: $font-size-base;
+    margin: 0;
+  }
+}
+
+.admin-content-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: $space-2xl;
+}
+
+.section-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: $space-md;
+  margin-bottom: $space-xl;
+}
+
+.search-box {
+  position: relative;
+  width: 300px;
+  max-width: 100%;
+
+  input {
+    width: 100%;
+    padding: 10px $space-lg 10px 40px;
+    border: 2px solid $border-color;
+    border-radius: $radius-lg;
+    font-size: $font-size-base;
+    font-family: $font-family;
+    box-sizing: border-box;
+    transition: border-color $transition-base;
+
+    &:focus {
+      outline: none;
+      border-color: $primary-blue;
+      box-shadow: 0 0 0 3px $primary-blue-light;
+    }
+  }
+
+  .icon {
+    position: absolute;
+    left: $space-md;
+    top: 50%;
+    transform: translateY(-50%);
+    color: $text-gray;
+    font-size: $font-size-lg;
+  }
+}
+
+.btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: $radius-md;
+  font-size: $font-size-base;
+  font-weight: $font-weight-semibold;
+  font-family: $font-family;
+  cursor: pointer;
+  transition: background-color $transition-base, box-shadow $transition-base;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.btn-primary {
+  background: $primary-blue;
+  color: $white;
+
+  &:hover:not(:disabled) {
+    background: $primary-blue-hover;
+    box-shadow: $shadow-md;
+  }
+}
+
+.btn-icon {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: $bg-light;
+  border-radius: $radius-md;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color $transition-base, color $transition-base;
+  font-size: $font-size-base;
+
+  &:hover {
+    background: $primary-blue;
+    color: $white;
+  }
+
+  &.danger:hover {
+    background: $danger-red;
+    color: $white;
+  }
+}
+
+.items-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 20px;
+
+  @media (max-width: 968px) {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  }
+}
+
+.item-card {
+  background: $white;
+  border: 2px solid $border-color;
+  border-radius: $radius-xl;
+  padding: 20px;
+  transition: border-color $transition-base, box-shadow $transition-base,
+    transform $transition-base;
+
+  &:hover {
+    border-color: $primary-blue;
+    box-shadow: 0 4px 12px rgba(74, 144, 226, 0.2);
+    transform: translateY(-2px);
+  }
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: $space-sm;
+  margin-bottom: $space-lg;
+}
+
+.card-title {
+  font-size: 18px;
+  font-weight: $font-weight-bold;
+  color: $text-dark;
+  display: flex;
+  align-items: center;
+  gap: $space-sm;
+}
+
+.card-actions {
+  display: flex;
+  gap: $space-sm;
+}
+
+.card-details {
+  display: flex;
+  flex-direction: column;
+  gap: $space-md;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  gap: $space-sm;
+  padding: $space-sm 0;
+  border-bottom: 1px solid $bg-light;
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.detail-label {
+  color: $text-gray;
+  font-size: $font-size-base;
+}
+
+.detail-value {
+  font-weight: $font-weight-semibold;
+  color: $text-dark;
+  font-size: $font-size-base;
+  text-align: right;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 80px 20px;
+
+  .empty-icon {
+    font-size: 64px;
+    margin-bottom: $space-lg;
+    opacity: 0.5;
+  }
+
+  .empty-text {
+    font-size: 18px;
+    font-weight: $font-weight-semibold;
+    color: $text-gray;
+    margin-bottom: $space-sm;
+  }
+
+  .empty-hint {
+    font-size: $font-size-base;
+    color: $text-gray;
+    margin-bottom: $space-xl;
+  }
+}
+
+.loading-message {
+  padding: $space-2xl;
+  text-align: center;
+  color: $text-gray;
+}
+
+.table-responsive {
+  max-height: 65vh;
+  overflow: auto;
+  border: 1px solid $border-color;
+  border-radius: $radius-lg;
+  background: $white;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 800px;
+
+  thead th {
+    position: sticky;
+    top: 0;
+    z-index: $z-base;
+    background-color: #f8f9fa;
+    box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.1);
+    text-align: left;
+    padding: $space-md $space-lg;
+    font-size: $font-size-sm;
+    color: $text-gray;
+    text-transform: uppercase;
+  }
+
+  tbody td {
+    padding: $space-md $space-lg;
+    border-bottom: 1px solid $border-color;
+    font-size: $font-size-base;
+    color: $text-dark;
+  }
+
+  tbody tr:last-child td {
+    border-bottom: none;
+  }
+}
+
+.text-center {
+  text-align: center;
+}
+
+.text-muted {
+  color: $text-light;
+}
+
+.badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: $radius-sm;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-semibold;
+  color: $white;
+}
+
+.badge-success {
+  background: $success-green;
+}
+
+.badge-warning {
+  background: $warning-orange;
+}
+
+.badge-danger {
+  background: $danger-red;
+}

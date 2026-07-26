@@ -1,5 +1,5 @@
 // src/app/shared/components/map/map.component.ts
-import { Component, OnInit, OnDestroy, Input, Output, EventEmitter, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, OnInit, OnDestroy, Input, Output, EventEmitter, OnChanges, SimpleChanges, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { LeafletModule } from '@asymmetrik/ngx-leaflet';
 import * as L from 'leaflet';
@@ -23,6 +23,8 @@ export class MapComponent implements OnInit, OnDestroy, OnChanges {
   @Input() highlightedOrderId: number | null = null;
 
   @Output() orderClicked = new EventEmitter<number>();
+  /** Raised by the "Edit" button inside an order popup (V1 EditOrderModal.open). */
+  @Output() orderEditRequested = new EventEmitter<number>();
   @Output() mapReady = new EventEmitter<L.Map>();
 
   mapOptions!: L.MapOptions;
@@ -43,7 +45,7 @@ export class MapComponent implements OnInit, OnDestroy, OnChanges {
     }
 
     if (changes['orders']) {
-      this.mapService.loadOrders(this.orders, (id) => this.orderClicked.emit(id));
+      this.loadOrderMarkers();
     }
 
     if (changes['solution']) {
@@ -87,10 +89,27 @@ export class MapComponent implements OnInit, OnDestroy, OnChanges {
 
     // Load initial data
     this.mapService.loadDepots(this.depots);
-    this.mapService.loadOrders(this.orders, (id) => this.orderClicked.emit(id));
+    this.loadOrderMarkers();
 
     this.mapReady.emit(map);
     setTimeout(() => this.mapService.invalidateSize(), 100);
+  }
+
+  private loadOrderMarkers(): void {
+    this.mapService.loadOrders(
+      this.orders,
+      id => this.orderClicked.emit(id),
+      id => this.orderEditRequested.emit(id)
+    );
+  }
+
+  /**
+   * Leaflet mis-measures itself after entering or leaving fullscreen
+   * (V1 main-map.js registered the same handler).
+   */
+  @HostListener('document:fullscreenchange')
+  onFullscreenChange(): void {
+    this.mapService.invalidateSize();
   }
 
   // UI Event Handlers

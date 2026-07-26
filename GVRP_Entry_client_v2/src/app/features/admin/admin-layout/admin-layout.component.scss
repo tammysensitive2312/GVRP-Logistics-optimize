@@ -1,0 +1,176 @@
+@import '../../../../assets/styles/variables';
+
+// Ported from V1 styles/screens/admin-settings.css + layout/navbar.css basics.
+
+:host {
+  display: block;
+  height: 100%;
+  background: $bg-light;
+  font-family: $font-family;
+}
+
+.navbar {
+  height: $navbar-height;
+  background: $white;
+  border-bottom: 1px solid $border-color;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 $space-xl;
+  box-sizing: border-box;
+}
+
+.navbar-left {
+  display: flex;
+  align-items: center;
+  gap: $space-md;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: $space-sm;
+}
+
+.brand-icon {
+  font-size: $font-size-xl;
+}
+
+.brand-name {
+  font-weight: $font-weight-bold;
+  color: $text-dark;
+}
+
+.btn-icon {
+  background: transparent;
+  border: 1px solid $border-color;
+  padding: $space-sm;
+  border-radius: $radius-sm;
+  font-size: $font-size-xl;
+  cursor: pointer;
+
+  &:hover {
+    background: $bg-light;
+  }
+}
+
+.btn {
+  padding: 10px 20px;
+  border-radius: $radius-md;
+  font-size: $font-size-base;
+  font-weight: $font-weight-semibold;
+  font-family: $font-family;
+  cursor: pointer;
+  border: none;
+}
+
+.btn-secondary {
+  background: $white;
+  color: $text-dark;
+  border: 1px solid $border-color;
+
+  &:hover {
+    background: $bg-light;
+    border-color: $neutral-gray;
+  }
+}
+
+.full-width {
+  width: 100%;
+}
+
+.admin-settings-layout {
+  display: flex;
+  height: calc(100vh - #{$navbar-height});
+  background: $bg-light;
+}
+
+.admin-sidebar {
+  width: 280px;
+  background: $white;
+  border-right: 1px solid $border-color;
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-sidebar-header {
+  padding: $space-xl;
+  border-bottom: 1px solid $border-color;
+
+  h2 {
+    font-size: 18px;
+    font-weight: $font-weight-bold;
+    color: $text-dark;
+    display: flex;
+    align-items: center;
+    gap: $space-sm;
+    margin: 0;
+  }
+}
+
+.admin-menu {
+  flex: 1;
+  overflow-y: auto;
+  padding: $space-lg 0;
+}
+
+.admin-menu-item {
+  display: flex;
+  align-items: center;
+  gap: $space-md;
+  padding: $space-md $space-xl;
+  color: $text-gray;
+  text-decoration: none;
+  transition: background-color $transition-base, color $transition-base;
+  cursor: pointer;
+  border-left: 3px solid transparent;
+
+  &:hover {
+    background: $bg-light;
+    color: $text-dark;
+  }
+
+  &.active {
+    background: $primary-blue-light;
+    color: $primary-blue;
+    border-left-color: $primary-blue;
+    font-weight: $font-weight-semibold;
+  }
+
+  .icon {
+    font-size: $font-size-xl;
+    width: 24px;
+    text-align: center;
+  }
+
+  .label {
+    flex: 1;
+  }
+}
+
+.admin-sidebar-footer {
+  padding: $space-lg $space-xl;
+  border-top: 1px solid $border-color;
+}
+
+.admin-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+@media (max-width: 968px) {
+  .admin-sidebar {
+    position: fixed;
+    left: -280px;
+    top: $navbar-height;
+    height: calc(100vh - #{$navbar-height});
+    z-index: $z-sidebar;
+    transition: left $transition-slow;
+
+    &.show {
+      left: 0;
+    }
+  }
+}

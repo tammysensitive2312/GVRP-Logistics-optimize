@@ -1,0 +1,239 @@
+@import '../../../../../assets/styles/variables';
+
+// Ported from V1 styles/components/view.css (.route-summary ... .stop-connector).
+
+:host {
+  display: block;
+  height: 100%;
+  overflow: auto;
+  font-family: $font-family;
+}
+
+.route-view {
+  padding: 0.5rem;
+}
+
+.route-summary {
+  background: $bg-light;
+  padding: 0.75rem;
+  border-radius: $radius-md;
+  margin-bottom: 0.75rem;
+
+  h3 {
+    margin: 0 0 0.5rem;
+    color: $text-dark;
+    font-size: 1rem;
+  }
+}
+
+.summary-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.5rem;
+}
+
+.stat-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.4rem 0.6rem;
+  background: $white;
+  border-radius: $radius-sm;
+  border-left: 3px solid $primary-blue;
+  font-size: 0.8rem;
+}
+
+.stat-label {
+  color: $text-gray;
+}
+
+.stat-value {
+  font-weight: $font-weight-semibold;
+  color: $text-dark;
+}
+
+.routes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.route-card {
+  background: $white;
+  border: 1px solid $border-color;
+  border-radius: $radius-md;
+  overflow: hidden;
+  transition: box-shadow $transition-slow;
+
+  &:hover {
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  }
+}
+
+.route-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: $bg-light;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid $primary-blue;
+    outline-offset: -2px;
+  }
+}
+
+.route-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.route-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  color: $white;
+  flex-shrink: 0;
+}
+
+.btn-expand {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem;
+  font-size: 0.8rem;
+  transition: transform $transition-slow;
+
+  &:hover {
+    transform: scale(1.1);
+  }
+}
+
+.route-card-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-top: 1px solid $border-color;
+}
+
+.route-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+
+  .label {
+    font-size: 0.7rem;
+    color: $text-gray;
+  }
+
+  .value {
+    font-weight: $font-weight-semibold;
+    font-size: 0.85rem;
+    color: $text-dark;
+  }
+}
+
+.route-card-details {
+  padding: 0.75rem;
+  background: #fafafa;
+  border-top: 1px solid $border-color;
+}
+
+.route-timeline {
+  background: $white;
+  padding: 0.5rem;
+  border-radius: $radius-sm;
+}
+
+.timeline-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.85rem;
+
+  .time-range {
+    color: $text-gray;
+    font-size: 0.75rem;
+  }
+}
+
+.timeline-stop {
+  position: relative;
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.stop-marker {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: $white;
+  font-weight: $font-weight-bold;
+  font-size: 0.75rem;
+  flex-shrink: 0;
+}
+
+.stop-content {
+  flex: 1;
+  padding: 0.25rem 0;
+  font-size: 0.8rem;
+}
+
+.stop-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+  font-size: 0.85rem;
+}
+
+.stop-badge {
+  font-size: 0.65rem;
+  padding: 0.15rem 0.35rem;
+  background: #e3f2fd;
+  color: #1976d2;
+  border-radius: 3px;
+}
+
+.stop-times {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  font-size: 0.75rem;
+  color: $text-gray;
+  margin: 0.25rem 0;
+}
+
+.stop-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  font-size: 0.7rem;
+  color: $text-gray;
+  margin-top: 0.25rem;
+}
+
+.stop-connector {
+  position: absolute;
+  left: 14px;
+  top: 28px;
+  bottom: -15px;
+  width: 2px;
+  border-left: 2px dashed $border-color-dark;
+}

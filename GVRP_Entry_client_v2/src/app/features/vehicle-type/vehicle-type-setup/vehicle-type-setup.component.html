@@ -1,0 +1,198 @@
+<div class="setup-container">
+  <header class="setup-header">
+    <h1>🚚 Thiết lập Loại xe</h1>
+    <p>Thêm các loại xe mà đội của bạn sử dụng</p>
+  </header>
+
+  <!-- Existing vehicle types -->
+  <section class="existing-types-section">
+    <h3>Các loại xe hiện có</h3>
+
+    @if (listLoading()) {
+      <div class="loading-message">Đang tải...</div>
+    } @else if (vehicleTypes().length === 0) {
+      <div class="empty-state">
+        <div class="empty-icon">🚚</div>
+        <div class="empty-text">Chưa có loại xe nào</div>
+        <div class="empty-hint">Thêm loại xe đầu tiên bằng form bên dưới</div>
+      </div>
+    } @else {
+      <div class="vehicle-types-grid">
+        @for (type of vehicleTypes(); track type.id) {
+          <article class="vehicle-type-card">
+            <div class="type-header">
+              <h4>🚚 {{ type.name }}</h4>
+            </div>
+            <div class="type-details">
+              <div class="detail-row">
+                <span class="label">Tải trọng:</span>
+                <span class="value">{{ type.capacity }} kg</span>
+              </div>
+              <div class="detail-row">
+                <span class="label">Chi phí cố định:</span>
+                <span class="value">{{ type.fixed_cost | vnd }}</span>
+              </div>
+              <div class="detail-row">
+                <span class="label">Chi phí/km:</span>
+                <span class="value">{{ type.cost_per_km | vnd }}</span>
+              </div>
+              <div class="detail-row">
+                <span class="label">Chi phí/giờ:</span>
+                <span class="value">{{ type.cost_per_hour | vnd }}</span>
+              </div>
+              @if (type.max_distance) {
+                <div class="detail-row">
+                  <span class="label">Quãng đường tối đa:</span>
+                  <span class="value">{{ type.max_distance }} km</span>
+                </div>
+              }
+              @if (type.max_duration) {
+                <div class="detail-row">
+                  <span class="label">Thời gian tối đa:</span>
+                  <span class="value">{{ type.max_duration }} phút</span>
+                </div>
+              }
+            </div>
+          </article>
+        }
+      </div>
+    }
+  </section>
+
+  <div class="divider"></div>
+
+  <h3>Thêm loại xe mới</h3>
+
+  <form class="setup-form" [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+    <div class="form-group">
+      <label for="vtype-name">Tên loại xe <span class="required">*</span></label>
+      <input
+        id="vtype-name"
+        type="text"
+        formControlName="typeName"
+        placeholder="VD: Xe tải 5 tấn"
+        autocomplete="off"/>
+      @if (form.controls.typeName.touched && form.controls.typeName.invalid) {
+        <p class="form-error">Vui lòng nhập tên loại xe</p>
+      }
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label for="vtype-capacity">Tải trọng (kg) <span class="required">*</span></label>
+        <input id="vtype-capacity" type="number" formControlName="capacity" min="1" placeholder="5000"/>
+        @if (form.controls.capacity.touched && form.controls.capacity.invalid) {
+          <p class="form-error">Tải trọng phải lớn hơn 0</p>
+        }
+      </div>
+
+      <div class="form-group">
+        <label for="vtype-emission-factor">Emission Factor</label>
+        <input
+          id="vtype-emission-factor"
+          type="number"
+          formControlName="emissionFactor"
+          step="0.1"
+          placeholder="12.3"/>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label for="vtype-fixed-cost">Chi phí cố định (VND) <span class="required">*</span></label>
+        <input
+          id="vtype-fixed-cost"
+          type="number"
+          formControlName="fixedCost"
+          min="0"
+          step="1000"
+          placeholder="50000"/>
+        @if (form.controls.fixedCost.touched && form.controls.fixedCost.invalid) {
+          <p class="form-error">Chi phí cố định không được âm</p>
+        }
+      </div>
+
+      <div class="form-group">
+        <label for="vtype-cost-per-km">Chi phí/km (VND) <span class="required">*</span></label>
+        <input
+          id="vtype-cost-per-km"
+          type="number"
+          formControlName="costPerKm"
+          min="0"
+          step="100"
+          placeholder="5000"/>
+        @if (form.controls.costPerKm.touched && form.controls.costPerKm.invalid) {
+          <p class="form-error">Chi phí/km không được âm</p>
+        }
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label for="vtype-cost-per-hour">Chi phí/giờ (VND) <span class="required">*</span></label>
+        <input
+          id="vtype-cost-per-hour"
+          type="number"
+          formControlName="costPerHour"
+          min="0"
+          step="1000"
+          placeholder="4000"/>
+        @if (form.controls.costPerHour.touched && form.controls.costPerHour.invalid) {
+          <p class="form-error">Chi phí/giờ không được âm</p>
+        }
+      </div>
+
+      <div class="form-group">
+        <label for="vtype-max-distance">Quãng đường tối đa (km)</label>
+        <input
+          id="vtype-max-distance"
+          type="number"
+          formControlName="maxDistance"
+          min="0"
+          step="1"
+          placeholder="300"/>
+        @if (form.controls.maxDistance.touched && form.controls.maxDistance.invalid) {
+          <p class="form-error">Quãng đường tối đa phải lớn hơn 0</p>
+        }
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label for="vtype-max-duration">Thời gian tối đa (phút)</label>
+        <input
+          id="vtype-max-duration"
+          type="number"
+          formControlName="maxDuration"
+          min="0"
+          step="1"
+          placeholder="480"/>
+        @if (form.controls.maxDuration.touched && form.controls.maxDuration.invalid) {
+          <p class="form-error">Thời gian tối đa phải lớn hơn 0</p>
+        }
+      </div>
+      <div class="form-group"><!-- spacer, mirrors V1 layout --></div>
+    </div>
+
+    <div class="form-actions">
+      <button type="button" class="btn btn-secondary" [disabled]="saving()" (click)="onBack()">
+        ← Quay lại
+      </button>
+      <button type="submit" class="btn btn-primary" [disabled]="saving()">
+        @if (saving()) {
+          <mat-spinner class="btn-spinner" diameter="16"/>
+          <span>Đang tạo loại xe…</span>
+        } @else {
+          <span>+ Thêm loại xe</span>
+        }
+      </button>
+      <button
+        type="button"
+        class="btn btn-success"
+        [disabled]="saving() || !hasVehicleTypes()"
+        (click)="onContinue()">
+        Tiếp tục →
+      </button>
+    </div>
+  </form>
+</div>

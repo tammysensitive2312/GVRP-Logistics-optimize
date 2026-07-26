@@ -1,0 +1,182 @@
+// Shared styles for the setup wizard screens (depot / vehicle type / fleet).
+// Ported from V1 styles/screens/depot-setup.css + components/forms.css
+// + components/buttons.css. Imported into component stylesheets, so the rules
+// stay scoped to the component that imports them - no global leakage.
+//
+// Requires 'assets/styles/variables' to be imported first.
+
+:host {
+  display: block;
+  width: 100%;
+  min-height: 100%;
+  background: $bg-light;
+  font-family: $font-family;
+}
+
+.setup-container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: $space-2xl;
+
+  @include respond-to(md) {
+    padding: $space-lg;
+  }
+}
+
+.setup-header {
+  text-align: center;
+  margin-bottom: $space-2xl;
+
+  h1 {
+    font-size: $font-size-2xl;
+    color: $text-dark;
+    margin-bottom: $space-md;
+  }
+
+  p {
+    color: $text-gray;
+    font-size: $font-size-lg;
+    margin: 0;
+  }
+}
+
+.setup-form {
+  background: $white;
+  padding: $space-2xl;
+  border-radius: $radius-xl;
+  box-shadow: $shadow-md;
+}
+
+.form-group {
+  margin-bottom: $space-xl;
+
+  label {
+    display: block;
+    font-weight: $font-weight-semibold;
+    margin-bottom: $space-sm;
+    color: $text-dark;
+  }
+
+  input {
+    width: 100%;
+    padding: $space-md;
+    border: 1px solid $border-color;
+    border-radius: $radius-md;
+    font-size: $font-size-base;
+    font-family: $font-family;
+    transition: border-color $transition-base;
+    box-sizing: border-box;
+
+    &:focus {
+      outline: none;
+      border-color: $primary-blue;
+      box-shadow: 0 0 0 3px $primary-blue-light;
+    }
+
+    &[readonly] {
+      background: $bg-light;
+      cursor: not-allowed;
+    }
+  }
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: $space-lg;
+
+  @include respond-to(md) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.required {
+  color: $danger-red;
+}
+
+.form-hint {
+  font-size: $font-size-sm;
+  color: $text-gray;
+  margin: $space-sm 0 0;
+}
+
+.form-error {
+  font-size: $font-size-sm;
+  color: $danger-red;
+  margin: $space-sm 0 0;
+}
+
+.form-label-note {
+  margin-left: $space-sm;
+  font-weight: $font-weight-normal;
+  font-size: $font-size-sm;
+  color: $text-light;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: $space-md;
+  margin-top: $space-2xl;
+  padding-top: $space-xl;
+  border-top: 1px solid $border-color;
+}
+
+.divider {
+  height: 1px;
+  background: $border-color;
+  margin: $space-lg 0;
+}
+
+.btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: $radius-md;
+  font-size: $font-size-base;
+  font-weight: $font-weight-semibold;
+  font-family: $font-family;
+  cursor: pointer;
+  transition: background-color $transition-base, box-shadow $transition-base;
+  display: inline-flex;
+  align-items: center;
+  gap: $space-sm;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.btn-primary {
+  background: $primary-blue;
+  color: $white;
+
+  &:hover:not(:disabled) {
+    background: $primary-blue-hover;
+    box-shadow: $shadow-md;
+  }
+}
+
+.btn-secondary {
+  background: $white;
+  color: $text-dark;
+  border: 1px solid $border-color;
+
+  &:hover:not(:disabled) {
+    background: $bg-light;
+    border-color: $neutral-gray;
+  }
+}
+
+.btn-success {
+  background: $success-green;
+  color: $white;
+
+  &:hover:not(:disabled) {
+    background: $success-green-hover;
+  }
+}
+
+.btn-spinner ::ng-deep circle {
+  stroke: currentColor;
+}

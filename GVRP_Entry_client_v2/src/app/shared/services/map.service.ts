@@ -1,6 +1,8 @@
 // src/app/shared/services/map.service.ts
 import { Injectable } from '@angular/core';
 import * as L from 'leaflet';
+// Side-effect import: registers L.polylineDecorator / L.Symbol.arrowHead.
+import 'leaflet-polylinedecorator';
 import { BehaviorSubject, Observable, firstValueFrom } from 'rxjs';
 
 import { DepotDTO, OrderDTO, SolutionDTO, RouteDTO } from '@core/models';
@@ -58,11 +60,15 @@ export class MapService {
     this.depotMarkers = [];
   }
 
-  loadOrders(orders: OrderDTO[], onOrderClick?: (orderId: number) => void): void {
+  loadOrders(
+    orders: OrderDTO[],
+    onOrderClick?: (orderId: number) => void,
+    onOrderEdit?: (orderId: number) => void
+  ): void {
     this.clearOrderMarkers();
 
     orders.forEach(order => {
-      const marker = this.markerService.createOrderMarker(order, onOrderClick);
+      const marker = this.markerService.createOrderMarker(order, onOrderClick, onOrderEdit);
       marker.addTo(this.map);
       this.orderMarkers.push(marker);
     });
@@ -141,8 +147,11 @@ export class MapService {
         const polyline = L.polyline(routeGeometry.coordinates, {
           color,
           weight: 5,
-          opacity: 0.8
+          opacity: 0.8,
+          smoothFactor: 1
         }).addTo(this.routeLayers);
+
+        this.addDirectionArrows(polyline, color);
 
         polyline.bindTooltip(
           `<div style="font-weight: bold;">🚚 ${route.vehicle_license_plate}</div>` +
@@ -173,6 +182,38 @@ export class MapService {
       `🚚 ${route.vehicle_license_plate} (Approximate route)`,
       { sticky: true }
     );
+  }
+
+  /**
+   * Direction arrows along a route.
+   *
+   * Ported 1:1 from V1 `MainMap.#addDirectionArrows` (offset 50, repeat 120,
+   * 14px filled arrow heads with a white outline). The decorator is added to
+   * `routeLayers`, so `clearRoutes()` removes the arrows with the polylines.
+   *
+   * `leaflet-polylinedecorator` is imported for its side effect - it registers
+   * L.polylineDecorator and L.Symbol on the Leaflet namespace.
+   */
+  private addDirectionArrows(polyline: L.Polyline, color: string): void {
+    L.polylineDecorator(polyline, {
+      patterns: [
+        {
+          offset: 50,
+          repeat: 120,
+          symbol: L.Symbol.arrowHead({
+            pixelSize: 14,
+            polygon: true,
+            pathOptions: {
+              fillOpacity: 1,
+              fillColor: color,
+              stroke: true,
+              color: '#ffffff',
+              weight: 1
+            }
+          })
+        }
+      ]
+    }).addTo(this.routeLayers);
   }
 
   private clearRoutes(): void {

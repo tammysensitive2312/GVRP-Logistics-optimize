@@ -69,7 +69,7 @@ export class NavbarComponent {
   }
 
   onAdminClick(): void {
-    this.showComingSoon('Administrator');
+    this.router.navigate(['/admin']);
   }
 
   onLogout(): void {

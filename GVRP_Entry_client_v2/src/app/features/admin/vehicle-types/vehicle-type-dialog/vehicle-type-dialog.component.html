@@ -1,0 +1,78 @@
+<h2 mat-dialog-title>{{ title }}</h2>
+
+<mat-dialog-content>
+  <form class="vtype-form" [formGroup]="form" (ngSubmit)="onSave()" novalidate>
+    <div class="form-group">
+      <label for="admin-vtype-name">Vehicle type name <span class="required">*</span></label>
+      <input id="admin-vtype-name" type="text" formControlName="typeName" autocomplete="off"/>
+      @if (form.controls.typeName.touched && form.controls.typeName.invalid) {
+        <p class="form-error">Vui lòng nhập tên loại xe</p>
+      }
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label for="admin-vtype-capacity">Capacity (kg) <span class="required">*</span></label>
+        <input id="admin-vtype-capacity" type="number" formControlName="capacity" min="1"/>
+        @if (form.controls.capacity.touched && form.controls.capacity.invalid) {
+          <p class="form-error">Tải trọng phải lớn hơn 0</p>
+        }
+      </div>
+      <div class="form-group">
+        <label for="admin-vtype-emission-factor">Emission Factor</label>
+        <input
+          id="admin-vtype-emission-factor"
+          type="number"
+          formControlName="emissionFactor"
+          step="0.1"/>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label for="admin-vtype-fixed-cost">Fixed Cost (VND) <span class="required">*</span></label>
+        <input id="admin-vtype-fixed-cost" type="number" formControlName="fixedCost" min="0"/>
+        @if (form.controls.fixedCost.touched && form.controls.fixedCost.invalid) {
+          <p class="form-error">Chi phí cố định không được âm</p>
+        }
+      </div>
+      <div class="form-group">
+        <label for="admin-vtype-cost-per-km">Cost/Km (VND) <span class="required">*</span></label>
+        <input id="admin-vtype-cost-per-km" type="number" formControlName="costPerKm" min="0"/>
+        @if (form.controls.costPerKm.touched && form.controls.costPerKm.invalid) {
+          <p class="form-error">Chi phí/km không được âm</p>
+        }
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label for="admin-vtype-cost-per-hour">Cost/hours (VND) <span class="required">*</span></label>
+        <input id="admin-vtype-cost-per-hour" type="number" formControlName="costPerHour" min="0"/>
+        @if (form.controls.costPerHour.touched && form.controls.costPerHour.invalid) {
+          <p class="form-error">Chi phí/giờ không được âm</p>
+        }
+      </div>
+      <div class="form-group">
+        <label for="admin-vtype-max-distance">Max Distance (km)</label>
+        <input id="admin-vtype-max-distance" type="number" formControlName="maxDistance" min="0"/>
+        @if (form.controls.maxDistance.touched && form.controls.maxDistance.invalid) {
+          <p class="form-error">Quãng đường tối đa phải lớn hơn 0</p>
+        }
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="admin-vtype-max-duration">Max Duration (minutes)</label>
+      <input id="admin-vtype-max-duration" type="number" formControlName="maxDuration" min="0"/>
+      @if (form.controls.maxDuration.touched && form.controls.maxDuration.invalid) {
+        <p class="form-error">Thời gian tối đa phải lớn hơn 0</p>
+      }
+    </div>
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button type="button" (click)="dialogRef.close()">Cancel</button>
+  <button mat-raised-button color="primary" type="button" (click)="onSave()">Save</button>
+</mat-dialog-actions>

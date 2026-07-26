@@ -68,12 +68,16 @@ export class MarkerService {
   // ORDER MARKERS
   // ============================================
 
-  createOrderMarker(order: OrderDTO, onClick?: (orderId: number) => void): L.Marker {
+  createOrderMarker(
+    order: OrderDTO,
+    onClick?: (orderId: number) => void,
+    onEdit?: (orderId: number) => void
+  ): L.Marker {
     const markerColor = this.STATUS_COLORS[order.status] || '#D0021B';
     const icon = this.createOrderIcon(markerColor);
 
     const marker = L.marker([order.latitude, order.longitude], { icon });
-    marker.bindPopup(this.createOrderPopup(order, markerColor));
+    marker.bindPopup(this.createOrderPopup(order, markerColor, !!onEdit));
 
     // Store order ID
     (marker as any)._orderId = order.id;
@@ -81,6 +85,26 @@ export class MarkerService {
     // Handle click
     if (onClick) {
       marker.on('click', () => onClick(order.id));
+    }
+
+    // V1's popup had inline `onclick="EditOrderModal.open(id)"`. Angular has no
+    // globals to call, so the button is wired on popupopen instead.
+    if (onEdit) {
+      marker.on('popupopen', event => {
+        const popupElement = (event as L.PopupEvent).popup.getElement();
+        const button = popupElement?.querySelector<HTMLButtonElement>(
+          '[data-order-edit]'
+        );
+
+        button?.addEventListener(
+          'click',
+          () => {
+            marker.closePopup();
+            onEdit(order.id);
+          },
+          { once: true }
+        );
+      });
     }
 
     return marker;
@@ -111,7 +135,23 @@ export class MarkerService {
     });
   }
 
-  private createOrderPopup(order: OrderDTO, markerColor: string): string {
+  private createOrderPopup(
+    order: OrderDTO,
+    markerColor: string,
+    withEditAction: boolean
+  ): string {
+    const editAction = withEditAction
+      ? `
+        <div style="margin-top: 12px;">
+          <button type="button" data-order-edit
+                  style="width: 100%; padding: 6px; background: #4A90E2; color: white;
+                         border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">
+            Edit
+          </button>
+        </div>
+      `
+      : '';
+
     return `
       <div style="min-width: 200px;">
         <strong style="font-size: 16px; color: #333;">${order.order_code}</strong>
@@ -124,6 +164,7 @@ export class MarkerService {
           ${order.time_window_start ? `<strong>Time:</strong> ${order.time_window_start} - ${order.time_window_end}<br>` : ''}
           <strong>Status:</strong> <span style="color: ${markerColor};">${order.status}</span>
         </div>
+        ${editAction}
       </div>
     `;
   }
@@ -212,6 +253,7 @@ export class MarkerService {
           <strong>Arrival:</strong> ${stop.arrival_time}<br>
           <strong>Departure:</strong> ${stop.departure_time}<br>
           ${stop.demand ? `<strong>Demand:</strong> ${stop.demand} kg<br>` : ''}
+          ${stop.wait_time > 0 ? `<strong>Wait time:</strong> ${stop.wait_time} min<br>` : ''}
           <strong>Load after:</strong> ${stop.load_after.toFixed(1)} kg
         </div>
       `;

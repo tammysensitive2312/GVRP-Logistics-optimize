@@ -1,0 +1,80 @@
+@import '../../../../../assets/styles/variables';
+
+// Ported from V1 #modal-background-job markup + styles/components/modals.css.
+
+.success-icon-large {
+  font-size: 56px;
+  text-align: center;
+  margin-top: $space-sm;
+}
+
+.bg-job-headline {
+  text-align: center;
+  margin: $space-xl 0;
+
+  h3 {
+    margin: 0;
+    font-size: $font-size-lg;
+    color: $text-dark;
+  }
+
+  p {
+    color: $text-gray;
+    margin-top: $space-sm;
+    font-size: $font-size-base;
+  }
+}
+
+.info-box {
+  display: flex;
+  gap: $space-md;
+  padding: $space-lg;
+  border-radius: $radius-lg;
+}
+
+.info-box-blue {
+  background: $primary-blue-light;
+  border: 1px solid rgba(74, 144, 226, 0.35);
+}
+
+.info-icon {
+  font-size: $font-size-xl;
+  line-height: 1;
+}
+
+.info-content {
+  font-size: $font-size-sm;
+  color: $text-dark;
+
+  p {
+    margin: $space-sm 0 0;
+    color: $text-gray;
+  }
+
+  ul {
+    margin: $space-sm 0;
+    padding-left: 1.5rem;
+    color: $text-gray;
+  }
+}
+
+.divider {
+  height: 1px;
+  background: $border-color;
+  margin: $space-lg 0;
+}
+
+.bg-job-footnote {
+  text-align: center;
+  color: $text-gray;
+
+  p {
+    margin: 0 0 $space-sm;
+    font-size: $font-size-base;
+
+    &:last-child {
+      font-size: $font-size-sm;
+      margin-bottom: 0;
+    }
+  }
+}

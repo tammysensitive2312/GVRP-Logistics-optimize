@@ -1,0 +1,44 @@
+<h2 mat-dialog-title>📧 Job Running in Background</h2>
+
+<mat-dialog-content>
+  <div class="success-icon-large">✅</div>
+
+  <div class="bg-job-headline">
+    <h3>Optimization Job #{{ job.id }} Created Successfully!</h3>
+    <p>Your optimization job is now running in the background.</p>
+  </div>
+
+  <div class="info-box info-box-blue">
+    <div class="info-icon">📧</div>
+    <div class="info-content">
+      <strong>Email Notification</strong>
+      <p>
+        You will receive an email at <strong>{{ notificationTarget }}</strong>
+        when the optimization is complete.
+      </p>
+      <p>The email will contain:</p>
+      <ul>
+        <li>Optimization results summary</li>
+        <li>Direct link to view detailed solution</li>
+        <li>Download links for route data</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="bg-job-footnote">
+    <p>⏱️ Estimated completion time: <strong>5-15 minutes</strong></p>
+    <p>
+      You can safely close this tab and continue working.
+      Check <strong>Job History</strong> to monitor all your jobs.
+    </p>
+  </div>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button type="button" (click)="dialogRef.close(null)">Close</button>
+  <button mat-raised-button color="primary" type="button" (click)="onViewHistory()">
+    📜 View Job History
+  </button>
+</mat-dialog-actions>

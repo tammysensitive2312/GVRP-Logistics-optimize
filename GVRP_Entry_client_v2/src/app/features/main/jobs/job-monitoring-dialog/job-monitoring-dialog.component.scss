@@ -1,5 +1,60 @@
 @import '../../../../../assets/styles/variables';
 
+// Added with the job-dialog fixes: timestamps, degraded-polling notice and the
+// alert banners (V1 #unassigned-warning / solution-fetch retry box).
+.job-timestamps {
+  margin: $space-md 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.timestamp-row {
+  display: flex;
+  gap: $space-sm;
+  font-size: $font-size-sm;
+  color: $text-gray;
+
+  dt {
+    min-width: 84px;
+    margin: 0;
+  }
+
+  dd {
+    margin: 0;
+    color: $text-dark;
+  }
+}
+
+.polling-warning {
+  margin: $space-sm 0 0;
+  font-size: $font-size-sm;
+  color: $warning-orange;
+}
+
+.alert {
+  display: flex;
+  align-items: center;
+  gap: $space-sm;
+  flex-wrap: wrap;
+  margin-top: $space-md;
+  padding: $space-md;
+  border-radius: $radius-md;
+  font-size: $font-size-sm;
+}
+
+.alert-warning {
+  background: rgba(245, 166, 35, 0.08);
+  border: 1px solid rgba(245, 166, 35, 0.35);
+  color: #8a5300;
+}
+
+.alert-danger {
+  background: rgba(208, 2, 27, 0.06);
+  border: 1px solid rgba(208, 2, 27, 0.25);
+  color: $danger-red;
+}
+
 .dialog-header {
   display: flex;
   justify-content: space-between;

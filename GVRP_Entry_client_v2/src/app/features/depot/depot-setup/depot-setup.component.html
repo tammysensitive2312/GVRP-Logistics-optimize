@@ -1,0 +1,96 @@
+<div class="setup-container">
+  <header class="setup-header">
+    <h1>🏢 Thiết lập Depot - Kho hàng</h1>
+    <p>Vui lòng chọn vị trí kho hàng của bạn trên bản đồ</p>
+  </header>
+
+  <form class="setup-form" [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+    <!-- Tên Depot -->
+    <div class="form-group">
+      <label for="depot-name">Tên Depot <span class="required">*</span></label>
+      <input
+        id="depot-name"
+        type="text"
+        formControlName="name"
+        placeholder="Ví dụ: Kho Hà Nội"
+        [maxlength]="maxNameLength"
+        autocomplete="off"/>
+
+      @if (form.controls.name.touched && form.controls.name.invalid) {
+        <p class="form-error">Vui lòng nhập tên depot</p>
+      }
+    </div>
+
+    <!-- Vị trí trên bản đồ -->
+    <div class="form-group">
+      <label id="depot-location-label">Vị trí Depot <span class="required">*</span></label>
+
+      <app-location-picker
+        aria-labelledby="depot-location-label"
+        [latitude]="pickedLatitude()"
+        [longitude]="pickedLongitude()"
+        [disabled]="saving()"
+        height="400px"
+        (locationPicked)="onLocationPicked($event)"/>
+
+      <p class="form-hint">💡 Click vào bản đồ để chọn vị trí kho hàng của bạn</p>
+
+      @if (form.touched && form.hasError('requiredLocation')) {
+        <p class="form-error">Vui lòng chọn vị trí trên bản đồ</p>
+      }
+    </div>
+
+    <!-- Địa chỉ (tự động điền, vẫn cho phép sửa) -->
+    <div class="form-group">
+      <label for="depot-address">
+        Địa chỉ
+        @if (geocodingInProgress()) {
+          <span class="form-label-note">đang tra cứu địa chỉ…</span>
+        }
+      </label>
+      <input
+        id="depot-address"
+        type="text"
+        formControlName="address"
+        placeholder="Click vào bản đồ để tự động điền địa chỉ"
+        autocomplete="off"/>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label for="depot-lat">Latitude</label>
+        <input
+          id="depot-lat"
+          type="text"
+          [value]="latitudeText()"
+          placeholder="21.028511"
+          readonly
+          tabindex="-1"/>
+      </div>
+      <div class="form-group">
+        <label for="depot-lng">Longitude</label>
+        <input
+          id="depot-lng"
+          type="text"
+          [value]="longitudeText()"
+          placeholder="105.804817"
+          readonly
+          tabindex="-1"/>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button type="button" class="btn btn-secondary" [disabled]="saving()" (click)="onReset()">
+        Hủy
+      </button>
+      <button type="submit" class="btn btn-primary" [disabled]="saving()">
+        @if (saving()) {
+          <mat-spinner class="btn-spinner" diameter="16"/>
+          <span>Đang lưu depot…</span>
+        } @else {
+          <span>Lưu Depot</span>
+        }
+      </button>
+    </div>
+  </form>
+</div>

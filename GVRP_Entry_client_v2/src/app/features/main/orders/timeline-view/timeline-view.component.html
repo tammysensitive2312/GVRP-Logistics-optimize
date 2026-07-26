@@ -1,1 +1,89 @@
-<p>timeline-view works!</p>
+<div class="timeline-view-container">
+  <div class="timeline-header">
+    <h3>📅 Route Timeline - Gantt Chart</h3>
+    <div class="timeline-controls">
+      <button type="button" class="btn btn-sm" [disabled]="!canZoomIn()" (click)="zoomIn()">
+        🔍 Zoom In
+      </button>
+      <button type="button" class="btn btn-sm" [disabled]="!canZoomOut()" (click)="zoomOut()">
+        🔍 Zoom Out
+      </button>
+      <button type="button" class="btn btn-sm" [disabled]="!canZoomOut()" (click)="resetZoom()">
+        ↻ Reset
+      </button>
+      <span class="zoom-level">{{ zoom() }}x</span>
+    </div>
+  </div>
+
+  <div class="timeline-legend">
+    <div class="legend-item">
+      <span class="legend-color" style="background: #4A90E2;"></span>
+      <span>Depot</span>
+    </div>
+    <div class="legend-item">
+      <span class="legend-color" style="background: #2ecc71;"></span>
+      <span>Driving</span>
+    </div>
+    <div class="legend-item">
+      <span class="legend-color" style="background: #e74c3c;"></span>
+      <span>Service</span>
+    </div>
+    <div class="legend-item">
+      <span class="legend-color" style="background: #f1c40f;"></span>
+      <span>Waiting</span>
+    </div>
+    <span class="legend-range">{{ bounds().startTime }} – {{ bounds().endTime }}</span>
+  </div>
+
+  @if (warnings().length > 0) {
+    <div class="timeline-warnings" role="status">
+      @for (warning of warnings(); track $index) {
+        <div class="timeline-warning">⚠️ {{ warning }}</div>
+      }
+    </div>
+  }
+
+  <div class="gantt-chart-container">
+    <div class="gantt-grid">
+      <div class="gantt-sidebar">
+        <div class="gantt-sidebar-spacer"></div>
+        @for (row of rows(); track row.index) {
+          <div class="gantt-row-label">
+            <strong>🚚 {{ row.licensePlate }}</strong>
+            <small>{{ row.orderCount }} orders</small>
+          </div>
+        }
+      </div>
+
+      <div class="gantt-timeline-scroll">
+        <div class="gantt-timeline" [style.width.%]="timelineWidthPercent()">
+          <div class="gantt-time-header">
+            @for (marker of timeMarkers(); track marker.label) {
+              <div class="time-marker" [style.left.%]="marker.leftPercent">
+                {{ marker.label }}
+              </div>
+            }
+          </div>
+
+          <div class="gantt-rows">
+            @for (row of rows(); track row.index) {
+              <div class="gantt-row">
+                @for (bar of row.bars; track $index) {
+                  <div
+                    class="gantt-bar"
+                    [class.service-bar]="bar.kind === 'service'"
+                    [class.driving-bar]="bar.kind === 'driving'"
+                    [style.left.%]="bar.leftPercent"
+                    [style.width.%]="bar.widthPercent"
+                    [style.background]="bar.color"
+                    [title]="bar.title">
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

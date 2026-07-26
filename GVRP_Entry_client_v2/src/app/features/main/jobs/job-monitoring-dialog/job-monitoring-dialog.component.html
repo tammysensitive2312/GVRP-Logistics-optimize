@@ -1,79 +1,139 @@
-<h2 mat-dialog-title>🔄 Optimization Job #{{ currentJob.id }}</h2>
+<h2 mat-dialog-title>🔄 Optimization Job #{{ currentJob().id }}</h2>
 
 <mat-dialog-content>
 
   <div class="status-section">
     <div class="status-row">
       <span class="status-label">Status:</span>
-      <span class="status-badge" [ngClass]="'status-' + currentJob.status.toLowerCase()">
-        {{ statusText }}
-      </span>
+      <span class="status-badge" [class]="statusClass()">{{ statusText() }}</span>
     </div>
 
-    <div class="progress-section" *ngIf="isRunning || fakeProgress === 100">
-      <div class="progress-header">
-        <span class="progress-hint">
-          {{ fakeProgress === 100 ? 'Finalizing results...' : 'Processing your optimization request...' }}
-        </span>
-        <span class="progress-percent">{{ fakeProgress | number:'1.0-0' }}%</span>
+    @if (isRunning() || isCompleted()) {
+      <div class="progress-section">
+        <div class="progress-header">
+          <span class="progress-hint">
+            @if (isCompleted()) {
+              Finalizing results...
+            } @else {
+              Processing your optimization request...
+            }
+          </span>
+          <span class="progress-percent">{{ progress() | number: '1.0-0' }}%</span>
+        </div>
+        <mat-progress-bar mode="determinate" [value]="progress()" color="primary"/>
       </div>
-      <mat-progress-bar mode="determinate" [value]="fakeProgress" color="primary"></mat-progress-bar>
-    </div>
+    }
 
+    @if (pollingDegraded()) {
+      <p class="polling-warning">
+        ⚠️ Cannot reach the server right now — status may be out of date. Still retrying.
+      </p>
+    }
+
+    <!-- Timestamps (V1 job-created-at / job-started-at / job-completed-at) -->
+    <dl class="job-timestamps">
+      <div class="timestamp-row">
+        <dt>Created:</dt>
+        <dd>{{ currentJob().created_at | date: 'dd/MM/yyyy HH:mm:ss' }}</dd>
+      </div>
+      @if (currentJob().started_at) {
+        <div class="timestamp-row">
+          <dt>Started:</dt>
+          <dd>{{ currentJob().started_at | date: 'dd/MM/yyyy HH:mm:ss' }}</dd>
+        </div>
+      }
+      @if (currentJob().completed_at) {
+        <div class="timestamp-row">
+          <dt>Completed:</dt>
+          <dd>{{ currentJob().completed_at | date: 'dd/MM/yyyy HH:mm:ss' }}</dd>
+        </div>
+      }
+    </dl>
   </div>
 
   <!-- Result (when completed) -->
-  <div class="result-section" *ngIf="currentJob.status === 'COMPLETED'">
+  @if (isCompleted()) {
+    <div class="result-section">
+      @if (isLoadingSolution()) {
+        <div class="loading-solution">
+          <mat-progress-bar mode="indeterminate"/>
+          <p>Loading solution details...</p>
+        </div>
+      }
 
-    <div class="loading-solution" *ngIf="isLoadingSolution">
-      <mat-progress-bar mode="indeterminate"></mat-progress-bar>
-      <p>Loading solution details...</p>
-    </div>
+      @if (solutionError()) {
+        <div class="alert alert-danger">
+          <strong>Error:</strong> Failed to load solution details.
+          <button mat-button type="button" (click)="retryFetchSolution()">Retry</button>
+        </div>
+      }
 
-    <div class="solution-summary" *ngIf="solution">
-      <h3 class="section-title">📊 Results</h3>
-      <div class="result-grid">
-        <div class="result-card">
-          <div class="result-label">💰 Total Cost</div>
-          <div class="result-value">{{ solution.total_cost | number }} VND</div>
+      @if (solution(); as result) {
+        <div class="solution-summary">
+          <h3 class="section-title">📊 Results</h3>
+          <div class="result-grid">
+            <div class="result-card">
+              <div class="result-label">💰 Total Cost</div>
+              <div class="result-value">{{ result.total_cost | number }} VND</div>
+            </div>
+            <div class="result-card">
+              <div class="result-label">🛣️ Distance</div>
+              <div class="result-value">{{ result.total_distance | number: '1.2-2' }} km</div>
+            </div>
+            <div class="result-card">
+              <div class="result-label">⏱️ Total Time</div>
+              <div class="result-value">{{ result.total_time | number: '1.2-2' }} h</div>
+            </div>
+            <div class="result-card">
+              <div class="result-label">🌱 CO₂</div>
+              <div class="result-value">{{ result.total_co2 | number: '1.2-2' }} kg</div>
+            </div>
+            <div class="result-card">
+              <div class="result-label">🚚 Routes</div>
+              <div class="result-value">{{ result.total_vehicles_used }}</div>
+            </div>
+            <div class="result-card result-success">
+              <div class="result-label">✅ Served</div>
+              <div class="result-value">{{ result.served_orders }}</div>
+            </div>
+            <div class="result-card" [class.result-warning]="unservedOrders() > 0">
+              <div class="result-label">❌ Unserved</div>
+              <div class="result-value">{{ result.unserved_orders }}</div>
+            </div>
+          </div>
+
+          @if (unservedOrders() > 0) {
+            <div class="alert alert-warning">
+              ⚠️ {{ unservedOrders() }} order(s) could not be assigned to any vehicle.
+              Check capacity, time windows and the number of selected vehicles.
+            </div>
+          }
         </div>
-        <div class="result-card">
-          <div class="result-label">🛣️ Distance</div>
-          <div class="result-value">{{ solution.total_distance | number:'1.1-1' }} km</div>
-        </div>
-        <div class="result-card">
-          <div class="result-label">🚚 Routes</div>
-          <div class="result-value">{{ solution.total_vehicles_used }}</div>
-        </div>
-        <div class="result-card result-success">
-          <div class="result-label">✅ Served</div>
-          <div class="result-value">{{ solution.served_orders }}</div>
-        </div>
-        <div class="result-card" [class.result-warning]="solution.unserved_orders > 0">
-          <div class="result-label">❌ Unserved</div>
-          <div class="result-value">{{ solution.unserved_orders }}</div>
-        </div>
-      </div>
+      }
     </div>
-  </div>
+  }
 
   <!-- Error -->
-  <div class="error-section" *ngIf="currentJob.status === 'FAILED'">
-    <p class="error-text">{{ currentJob.error_message || 'Optimization failed. Please try again.' }}</p>
-  </div>
+  @if (isFailed()) {
+    <div class="error-section">
+      <p class="error-text">
+        {{ currentJob().error_message || 'Optimization failed. Please try again.' }}
+      </p>
+    </div>
+  }
 
 </mat-dialog-content>
 
 <mat-dialog-actions align="end">
-  <button mat-button
-          *ngIf="isRunning"
-          (click)="onCancelJob()">
-    Cancel Job
-  </button>
-  <button mat-button (click)="onClose()">Close</button>
-  <button mat-raised-button color="primary"
-          *ngIf="canViewResult"
-          (click)="onViewResult()">
-    View Result
-  </button>
+  @if (isRunning()) {
+    <button mat-button type="button" [disabled]="cancelling()" (click)="onCancelJob()">
+      Cancel Job
+    </button>
+  }
+  <button mat-button type="button" (click)="onClose()">Close</button>
+  @if (canViewResult()) {
+    <button mat-raised-button color="primary" type="button" (click)="onViewResult()">
+      View Result
+    </button>
+  }
 </mat-dialog-actions>

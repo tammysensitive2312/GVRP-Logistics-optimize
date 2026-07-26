@@ -2,14 +2,20 @@ import {inject, Injectable} from '@angular/core';
 import {HttpClient, HttpParams} from '@angular/common/http';
 import {environment} from '@environments/environment';
 import {
-  DepotDTO, JobDTO,
+  DepotDTO,
+  DepotInputDTO,
+  FleetDTO,
+  FleetInputDTO,
+  JobDTO,
   OrderDTO,
   OrderFilter,
   OrderInputDTO,
   PaginatedResponse,
   RoutePlanningRequest,
   SolutionDTO,
-  VehicleDTO
+  VehicleDTO,
+  VehicleTypeDTO,
+  VehicleTypeInputDTO
 } from '@core/models';
 import {Observable} from 'rxjs';
 import {map} from 'rxjs/operators';
@@ -46,6 +52,54 @@ export class ApiService {
     return this.http.get<DepotDTO[]>(`${this.apiUrl}/depots`);
   }
 
+  createDepot(depot: DepotInputDTO): Observable<DepotDTO> {
+    return this.http.post<DepotDTO>(`${this.apiUrl}/depots`, depot);
+  }
+
+  // ============================================
+  // VEHICLE TYPES
+  // ============================================
+
+  getVehicleTypes(): Observable<VehicleTypeDTO[]> {
+    return this.http.get<VehicleTypeDTO[]>(`${this.apiUrl}/vehicle-types`);
+  }
+
+  createVehicleType(vehicleType: VehicleTypeInputDTO): Observable<VehicleTypeDTO> {
+    return this.http.post<VehicleTypeDTO>(`${this.apiUrl}/vehicle-types`, vehicleType);
+  }
+
+  updateVehicleType(
+    typeId: number,
+    vehicleType: VehicleTypeInputDTO
+  ): Observable<VehicleTypeDTO> {
+    return this.http.put<VehicleTypeDTO>(
+      `${this.apiUrl}/vehicle-types/${typeId}`,
+      vehicleType
+    );
+  }
+
+  /**
+   * V1's admin screen called a global `deleteVehicleType()` that was never
+   * defined in scripts/api/api.js, so its delete button always threw. This
+   * follows the REST shape of the other vehicle-type endpoints - confirm the
+   * backend actually exposes DELETE /vehicle-types/{id}.
+   */
+  deleteVehicleType(typeId: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/vehicle-types/${typeId}`);
+  }
+
+  // ============================================
+  // FLEETS
+  // ============================================
+
+  getFleets(): Observable<FleetDTO[]> {
+    return this.http.get<FleetDTO[]>(`${this.apiUrl}/fleets`);
+  }
+
+  createFleet(fleet: FleetInputDTO): Observable<FleetDTO> {
+    return this.http.post<FleetDTO>(`${this.apiUrl}/fleets`, fleet);
+  }
+
   updateOrder(orderId: number, updateData: OrderInputDTO): Observable<OrderDTO> {
     return this.http.put<OrderDTO>(
       `${this.apiUrl}/orders/${orderId}`,
@@ -72,6 +126,25 @@ export class ApiService {
 
   getJobById(jobId: number): Observable<JobDTO> {
     return this.http.get<JobDTO>(`${this.apiUrl}/jobs/${jobId}`);
+  }
+
+  /**
+   * V1 `getCurrentRunningJob()`: GET /jobs/current answers 204 when nothing is
+   * running, so an empty body maps to null instead of an error.
+   */
+  getCurrentRunningJob(): Observable<JobDTO | null> {
+    return this.http
+      .get<JobDTO>(`${this.apiUrl}/jobs/current`, { observe: 'response' })
+      .pipe(map(response => (response.status === 204 ? null : response.body)));
+  }
+
+  /**
+   * V1 `getJobHistory(limit)` accepted a limit but never sent it - it just
+   * called GET /jobs. The parameter is passed through here.
+   */
+  getJobHistory(limit = 10): Observable<JobDTO[]> {
+    const params = new HttpParams().set('limit', limit.toString());
+    return this.http.get<JobDTO[]>(`${this.apiUrl}/jobs`, { params });
   }
 
   cancelJob(jobId: number): Observable<void> {

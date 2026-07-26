@@ -1,0 +1,43 @@
+@import '../../../../assets/styles/variables';
+
+// Ported from V1 `.setup-map` (styles/screens/depot-setup.css)
+.location-picker {
+  display: block;
+  width: 100%;
+  border: 2px solid $border-color;
+  border-radius: $radius-lg;
+  overflow: hidden;
+  cursor: crosshair;
+
+  &--disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+    pointer-events: none;
+  }
+
+  &--placeholder {
+    background: $bg-light;
+    cursor: default;
+  }
+}
+
+// Teardrop pin, ported from V1 DepotMap.#createDepotIcon.
+// ::ng-deep is required: Leaflet injects the icon outside this component's view.
+:host ::ng-deep .location-picker-marker .location-pin {
+  background: $primary-blue;
+  color: $text-white;
+  width: 40px;
+  height: 40px;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: $shadow-md;
+}
+
+:host ::ng-deep .location-picker-marker .location-pin__glyph {
+  transform: rotate(45deg);
+  font-size: $font-size-xl;
+  line-height: 1;
+}

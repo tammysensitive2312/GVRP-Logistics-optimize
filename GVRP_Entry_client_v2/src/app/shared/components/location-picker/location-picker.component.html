@@ -1,0 +1,14 @@
+@if (isBrowser) {
+  <div
+    class="location-picker"
+    [class.location-picker--disabled]="disabled()"
+    [style.height]="height()"
+    leaflet
+    [leafletOptions]="mapOptions()"
+    (leafletMapReady)="onMapReady($event)"
+    (leafletClick)="onMapClick($event)">
+  </div>
+} @else {
+  <!-- SSR / non-browser platforms: Leaflet needs a real DOM. -->
+  <div class="location-picker location-picker--placeholder" [style.height]="height()"></div>
+}

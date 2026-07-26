@@ -1,0 +1,96 @@
+<header class="admin-content-header">
+  <h1>Vehicle Types Management</h1>
+  <p>Manage your fleet's vehicle types and specifications</p>
+</header>
+
+<div class="admin-content-body">
+  <div class="section-toolbar">
+    <div class="toolbar-left">
+      <div class="search-box">
+        <span class="icon" aria-hidden="true">🔍</span>
+        <label class="visually-hidden" for="search-vehicle-types">Search vehicle types</label>
+        <input
+          id="search-vehicle-types"
+          type="text"
+          placeholder="Search vehicle types..."
+          [value]="searchTerm()"
+          (input)="onSearch($any($event.target).value)"/>
+      </div>
+    </div>
+    <button type="button" class="btn btn-primary" (click)="openAdd()">
+      + Add Vehicle Type
+    </button>
+  </div>
+
+  @if (loading()) {
+    <div class="loading-message">Loading vehicle types...</div>
+  } @else if (filteredTypes().length === 0) {
+    <div class="empty-state">
+      <div class="empty-icon">🚚</div>
+      <div class="empty-text">No vehicle types found</div>
+      <div class="empty-hint">Add your first vehicle type to get started</div>
+      <button type="button" class="btn btn-primary" (click)="openAdd()">
+        + Add Vehicle Type
+      </button>
+    </div>
+  } @else {
+    <div class="items-grid">
+      @for (type of filteredTypes(); track type.id) {
+        <article class="item-card">
+          <div class="card-header">
+            <div class="card-title">🚚 {{ type.name }}</div>
+            <div class="card-actions">
+              <button
+                type="button"
+                class="btn-icon"
+                title="Edit"
+                [attr.aria-label]="'Edit ' + type.name"
+                (click)="openEdit(type)">
+                ✏️
+              </button>
+              <button
+                type="button"
+                class="btn-icon danger"
+                title="Delete"
+                [attr.aria-label]="'Delete ' + type.name"
+                (click)="remove(type)">
+                🗑️
+              </button>
+            </div>
+          </div>
+
+          <div class="card-details">
+            <div class="detail-row">
+              <span class="detail-label">Capacity:</span>
+              <span class="detail-value">{{ type.capacity }} kg</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Fixed Cost:</span>
+              <span class="detail-value">{{ type.fixed_cost | vnd }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Cost/km:</span>
+              <span class="detail-value">{{ type.cost_per_km | vnd }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Cost/hour:</span>
+              <span class="detail-value">{{ type.cost_per_hour | vnd }}</span>
+            </div>
+            @if (type.max_distance) {
+              <div class="detail-row">
+                <span class="detail-label">Max Distance:</span>
+                <span class="detail-value">{{ type.max_distance }} km</span>
+              </div>
+            }
+            @if (type.max_duration) {
+              <div class="detail-row">
+                <span class="detail-label">Max Duration:</span>
+                <span class="detail-value">{{ type.max_duration }} phút</span>
+              </div>
+            }
+          </div>
+        </article>
+      }
+    </div>
+  }
+</div>

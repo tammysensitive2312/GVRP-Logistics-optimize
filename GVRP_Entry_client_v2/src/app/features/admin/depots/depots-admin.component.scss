@@ -1,0 +1,13 @@
+@import '../../../../assets/styles/variables';
+@import '../../../../assets/styles/admin-content';
+
+.btn-primary {
+  display: inline-block;
+  text-decoration: none;
+}
+
+.section-note {
+  margin-top: $space-xl;
+  font-size: $font-size-sm;
+  color: $text-gray;
+}

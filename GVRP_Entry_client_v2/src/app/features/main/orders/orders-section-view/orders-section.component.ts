@@ -12,6 +12,12 @@ import { ToastService } from '@shared/services/toast.service';
 import { StorageService } from '@core/services/storage.service';
 
 import {OrderDTO, OrderFilter, RoutePlanningRequest, SolutionDTO} from '@core/models';
+import {SolutionStore} from '@core/services/solution.store';
+import {
+  BackgroundJobDialogComponent,
+  BackgroundJobDialogData,
+  BackgroundJobDialogResult
+} from '@features/main/jobs/background-job-dialog/background-job-dialog.component';
 import { PageEvent } from '@angular/material/paginator';
 
 import { OrdersActionToolbarComponent } from '../components/orders-action-toolbar/orders-action-toolbar.component';
@@ -66,7 +72,9 @@ export class OrdersSectionComponent implements OnInit, OnDestroy {
   orders: OrderDTO[] = [];
   selectedOrders: OrderDTO[] = [];
 
-  solution: SolutionDTO | null = null;
+  /** Shared with the map and the route/timeline views via SolutionStore. */
+  private solutionStore = inject(SolutionStore);
+  readonly solution = this.solutionStore.solution;
 
   totalElements = 0;
   pageSize = 5;
@@ -187,15 +195,35 @@ export class OrdersSectionComponent implements OnInit, OnDestroy {
                 data: { job }
               });
 
-              monitoringDialog.afterClosed().subscribe((monitorResult) => {
-                if (monitorResult?.solution) {
-                  this.solution = monitorResult.solution;
-                  this.selectedTabIndex = 1;
-                }
-              });
+              monitoringDialog.afterClosed()
+                .pipe(takeUntil(this.destroy$))
+                .subscribe((monitorResult) => {
+                  if (monitorResult?.solution) {
+                    this.setSolution(monitorResult.solution);
+                  }
+                });
 
             } else {
-              this.toastService.info(`Job #${job.id} is running in background. You will be notified when complete.`);
+              // V1 opened #modal-background-job for NORMAL / HIGH_QUALITY runs.
+              this.dialog
+                .open<
+                  BackgroundJobDialogComponent,
+                  BackgroundJobDialogData,
+                  BackgroundJobDialogResult
+                >(BackgroundJobDialogComponent, {
+                  width: '560px',
+                  maxWidth: '90vw',
+                  data: { job }
+                })
+                .afterClosed()
+                .pipe(takeUntil(this.destroy$))
+                .subscribe(action => {
+                  if (action === 'view-history') {
+                    // No job-history screen exists yet in V2 (V1's
+                    // `viewJobHistory()` was never defined either).
+                    this.toastService.info('Job history is not available yet');
+                  }
+                });
             }
           },
           error: (err) => {
@@ -306,6 +334,11 @@ export class OrdersSectionComponent implements OnInit, OnDestroy {
     this.openEditDialog(orderId);
   }
 
+  /** Entry point for the map's order popup "Edit" button. */
+  editOrderById(orderId: number): void {
+    this.openEditDialog(orderId);
+  }
+
   private openEditDialog(orderId?: number): void {
     const dialogRef = this.dialog.open(EditOrderDialogComponent, {
       width: '600px',
@@ -346,45 +379,40 @@ export class OrdersSectionComponent implements OnInit, OnDestroy {
         this.selectedTabIndex = 2;
       }
 
-      // Restore active solution if exists
+      // Restore the solution the user was looking at before the reload
+      // (V1: PersistenceManager.#restoreSolution).
       if (appState.activeSolutionId) {
-        // TODO: Load solution by ID
-        // this.loadSolution(appState.activeSolutionId);
+        this.loadSolution(appState.activeSolutionId, { silent: true });
       }
     }
   }
 
   /**
-   * Load solution by ID (called from job monitoring or history)
+   * Load a solution by id (job monitoring, history, or state restore).
+   * `silent` keeps a failed restore quiet, as V1 did on boot.
    */
-  loadSolution(solutionId: number): void {
-    this.isLoading = true;
-
-    // TODO: Call API to get solution
-    // this.apiService.getSolution(solutionId)
-    //   .pipe(takeUntil(this.destroy$))
-    //   .subscribe({
-    //     next: (solution) => {
-    //       this.solution = solution;
-    //       this.selectedTabIndex = 1; // Switch to Routes tab
-    //       this.isLoading = false;
-    //     },
-    //     error: (err) => {
-    //       console.error('Failed to load solution:', err);
-    //       this.toastService.error('Failed to load solution');
-    //       this.isLoading = false;
-    //     }
-    //   });
-
-    console.log('Load solution:', solutionId);
-    this.isLoading = false;
+  loadSolution(solutionId: number, options: { silent?: boolean } = {}): void {
+    this.solutionStore
+      .loadById(solutionId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          this.selectedTabIndex = 1;
+        },
+        error: (err: unknown) => {
+          console.error('Failed to load solution:', err);
+          if (!options.silent) {
+            this.toastService.error('Failed to load solution');
+          }
+        }
+      });
   }
 
   /**
    * Clear current solution
    */
   clearSolution(): void {
-    this.solution = null;
+    this.solutionStore.clear();
     this.selectedTabIndex = 0; // Back to Orders tab
   }
 
@@ -392,7 +420,7 @@ export class OrdersSectionComponent implements OnInit, OnDestroy {
    * Set solution from external source (e.g., job monitoring)
    */
   setSolution(solution: SolutionDTO): void {
-    this.solution = solution;
+    this.solutionStore.setSolution(solution);
     this.selectedTabIndex = 1; // Switch to Routes tab
     this.toastService.success('Solution loaded successfully');
   }
@@ -408,6 +436,6 @@ export class OrdersSectionComponent implements OnInit, OnDestroy {
    * Get current solution (for external use)
    */
   getSolution(): SolutionDTO | null {
-    return this.solution;
+    return this.solution();
   }
 }

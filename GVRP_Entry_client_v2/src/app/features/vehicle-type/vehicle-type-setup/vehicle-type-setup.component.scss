@@ -1,0 +1,96 @@
+@import '../../../../assets/styles/variables';
+@import '../../../../assets/styles/setup-form';
+
+// Ported from V1 styles/components/cards.css (.vehicle-types-grid,
+// .vehicle-type-card, .type-header, .type-details, .detail-row) and
+// styles/screens/vehicle-type-setup.css (empty state).
+
+.existing-types-section {
+  h3 {
+    margin: 0 0 $space-lg;
+    color: $text-dark;
+    font-size: $font-size-lg;
+  }
+}
+
+h3 {
+  color: $text-dark;
+  font-size: $font-size-lg;
+}
+
+.vehicle-types-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: $space-lg;
+  margin-bottom: $space-xl;
+}
+
+.vehicle-type-card {
+  background: $white;
+  border: 1px solid $border-color;
+  border-radius: $radius-lg;
+  padding: $space-lg;
+  transition: border-color $transition-base, box-shadow $transition-base;
+
+  &:hover {
+    border-color: $primary-blue;
+    box-shadow: 0 2px 8px rgba(74, 144, 226, 0.1);
+  }
+}
+
+.type-header h4 {
+  margin: 0 0 $space-md;
+  color: $text-dark;
+  font-size: $font-size-lg;
+}
+
+.type-details {
+  display: flex;
+  flex-direction: column;
+  gap: $space-sm;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  gap: $space-sm;
+  font-size: 13px;
+
+  .label {
+    color: $text-gray;
+  }
+
+  .value {
+    font-weight: $font-weight-medium;
+    color: $text-dark;
+    text-align: right;
+  }
+}
+
+.loading-message {
+  padding: $space-xl;
+  text-align: center;
+  color: $text-gray;
+  font-size: $font-size-base;
+}
+
+.empty-state {
+  padding: 40px 20px;
+  text-align: center;
+
+  .empty-icon {
+    font-size: 48px;
+    margin-bottom: $space-md;
+  }
+
+  .empty-text {
+    font-size: $font-size-lg;
+    color: $text-dark;
+    margin-bottom: $space-sm;
+  }
+
+  .empty-hint {
+    font-size: 13px;
+    color: $text-light;
+  }
+}

@@ -47,50 +47,48 @@
     </mat-tab>
 
 
-    <mat-tab [disabled]="!solution">
+    <mat-tab [disabled]="!solution()">
       <!-- Tab Label -->
       <ng-template mat-tab-label>
         <mat-icon class="tab-icon">alt_route</mat-icon>
         <span>Route</span>
-        <mat-icon class="lock-icon" *ngIf="!solution">lock</mat-icon>
+        <mat-icon class="lock-icon" *ngIf="!solution()">lock</mat-icon>
       </ng-template>
 
       <!-- Tab Content -->
       <div class="routes-tab-content">
-        <app-route-view
-          *ngIf="solution"
-          [solution]="solution">
-        </app-route-view>
-
-        <div class="empty-state" *ngIf="!solution">
-          <mat-icon>route</mat-icon>
-          <p>No route solution available</p>
-          <small>Select orders and vehicles, then click "Plan Routes"</small>
-        </div>
+        @if (solution(); as activeSolution) {
+          <app-route-view [solution]="activeSolution"></app-route-view>
+        } @else {
+          <div class="empty-state">
+            <mat-icon>route</mat-icon>
+            <p>No route solution available</p>
+            <small>Select orders and vehicles, then click "Plan Routes"</small>
+          </div>
+        }
       </div>
     </mat-tab>
 
 
-    <mat-tab [disabled]="!solution">
+    <mat-tab [disabled]="!solution()">
       <!-- Tab Label -->
       <ng-template mat-tab-label>
         <mat-icon class="tab-icon">timeline</mat-icon>
         <span>Timeline</span>
-        <mat-icon class="lock-icon" *ngIf="!solution">lock</mat-icon>
+        <mat-icon class="lock-icon" *ngIf="!solution()">lock</mat-icon>
       </ng-template>
 
       <!-- Tab Content -->
       <div class="timeline-tab-content">
-        <app-timeline-view
-          *ngIf="solution"
-          [solution]="solution">
-        </app-timeline-view>
-
-        <div class="empty-state" *ngIf="!solution">
-          <mat-icon>access_time</mat-icon>
-          <p>No timeline available</p>
-          <small>Run optimization to see timeline</small>
-        </div>
+        @if (solution(); as activeSolution) {
+          <app-timeline-view [solution]="activeSolution"></app-timeline-view>
+        } @else {
+          <div class="empty-state">
+            <mat-icon>access_time</mat-icon>
+            <p>No timeline available</p>
+            <small>Run optimization to see timeline</small>
+          </div>
+        }
       </div>
     </mat-tab>
 

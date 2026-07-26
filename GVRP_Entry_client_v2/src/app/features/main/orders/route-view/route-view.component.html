@@ -1,1 +1,121 @@
-<p>route-view works!</p>
+<div class="route-view">
+  <!-- Summary header -->
+  <section class="route-summary">
+    <h3>📊 Solution Summary</h3>
+    <div class="summary-stats">
+      <div class="stat-item">
+        <span class="stat-label">Total Routes:</span>
+        <span class="stat-value">{{ summary().totalRoutes }}</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">Total Distance:</span>
+        <span class="stat-value">{{ summary().totalDistanceText }}</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">Total Time:</span>
+        <span class="stat-value">{{ summary().totalTimeText }}</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">Total Cost:</span>
+        <span class="stat-value">{{ summary().totalCostText }}</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Routes list -->
+  <div class="routes-container">
+    <div class="routes-list">
+      @for (route of routeCards(); track route.index) {
+        <article class="route-card">
+          <div
+            class="route-card-header"
+            [style.border-left]="'4px solid ' + route.color"
+            (click)="onRouteHeaderClick(route.index)"
+            (keydown.enter)="onRouteHeaderClick(route.index)"
+            tabindex="0"
+            role="button"
+            [attr.aria-label]="'Route ' + route.licensePlate">
+            <div class="route-title">
+              <span class="route-icon" [style.background]="route.color">🚚</span>
+              <strong>{{ route.licensePlate }}</strong>
+            </div>
+            <button
+              type="button"
+              class="btn-expand"
+              [attr.aria-expanded]="isExpanded(route.index)"
+              [attr.aria-label]="
+                (isExpanded(route.index) ? 'Collapse ' : 'Expand ') + route.licensePlate
+              "
+              (click)="toggleRoute(route.index); $event.stopPropagation()">
+              <span class="expand-icon">{{ isExpanded(route.index) ? '▲' : '▼' }}</span>
+            </button>
+          </div>
+
+          <div class="route-card-summary">
+            <div class="route-stat">
+              <span class="label">Orders:</span>
+              <span class="value">{{ route.orderCount }}</span>
+            </div>
+            <div class="route-stat">
+              <span class="label">Distance:</span>
+              <span class="value">{{ route.distanceText }}</span>
+            </div>
+            <div class="route-stat">
+              <span class="label">Time:</span>
+              <span class="value">{{ route.timeText }}</span>
+            </div>
+            <div class="route-stat">
+              <span class="label">Load:</span>
+              <span class="value">{{ route.loadText }}</span>
+            </div>
+          </div>
+
+          @if (isExpanded(route.index)) {
+            <div class="route-card-details">
+              <div class="route-timeline">
+                <div class="timeline-header">
+                  <strong>Route Timeline</strong>
+                  <span class="time-range">{{ route.timeRange }}</span>
+                </div>
+
+                @for (stop of route.stops; track $index) {
+                  <div class="timeline-stop">
+                    <div class="stop-marker" [style.background]="stop.markerColor">
+                      {{ stop.markerLabel }}
+                    </div>
+                    <div class="stop-content">
+                      <div class="stop-header">
+                        <strong>{{ stop.locationName }}</strong>
+                        @if (!stop.isDepot) {
+                          <span class="stop-badge">Order</span>
+                        }
+                      </div>
+                      <div class="stop-times">
+                        <span>⏰ Arrival: {{ stop.arrivalTime }}</span>
+                        @if (stop.departureTime) {
+                          <span>🚀 Departure: {{ stop.departureTime }}</span>
+                        }
+                      </div>
+                      @if (!stop.isDepot) {
+                        <div class="stop-details">
+                          <span>📦 Demand: {{ stop.demand ?? 0 }} kg</span>
+                          <span>📊 Load after: {{ stop.loadAfterText }} kg</span>
+                          @if (stop.waitTime > 0) {
+                            <span>⏳ Wait: {{ stop.waitTime }} min</span>
+                          }
+                        </div>
+                      }
+                    </div>
+                    @if (stop.showConnector) {
+                      <div class="stop-connector" [style.border-color]="route.color"></div>
+                    }
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        </article>
+      }
+    </div>
+  </div>
+</div>

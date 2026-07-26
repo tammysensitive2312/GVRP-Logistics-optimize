@@ -1,0 +1,66 @@
+<header class="admin-content-header">
+  <h1>Vehicles Management</h1>
+  <p>Manage your fleet vehicles</p>
+</header>
+
+<div class="admin-content-body">
+  <div class="section-toolbar">
+    <div class="toolbar-left">
+      <div class="search-box">
+        <span class="icon" aria-hidden="true">🔍</span>
+        <label class="visually-hidden" for="search-vehicles">Search vehicles</label>
+        <input
+          id="search-vehicles"
+          type="text"
+          placeholder="Search vehicles..."
+          [value]="searchTerm()"
+          (input)="onSearch($any($event.target).value)"/>
+      </div>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="loading-message">Loading vehicles...</div>
+  } @else if (filteredVehicles().length === 0) {
+    <div class="empty-state">
+      <div class="empty-icon">🚗</div>
+      <div class="empty-text">No vehicles found</div>
+      <div class="empty-hint">Vehicles are created together with a fleet in Fleet setup.</div>
+    </div>
+  } @else {
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th scope="col">#</th>
+            <th scope="col">Vehicle License Plate</th>
+            <th scope="col">Type</th>
+            <th scope="col">Capacity</th>
+            <th scope="col">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (vehicle of filteredVehicles(); track vehicle.id; let index = $index) {
+            <tr>
+              <td>{{ index + 1 }}</td>
+              <td><strong>{{ vehicle.vehicle_license_plate }}</strong></td>
+              <td>
+                @if (vehicle.vehicle_type_name) {
+                  {{ vehicle.vehicle_type_name }}
+                } @else {
+                  <span class="text-muted">N/A</span>
+                }
+              </td>
+              <td>{{ vehicle.capacity }} kg</td>
+              <td>
+                <span [class]="statusBadgeClass(vehicle.status)">
+                  {{ statusLabel(vehicle.status) }}
+                </span>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

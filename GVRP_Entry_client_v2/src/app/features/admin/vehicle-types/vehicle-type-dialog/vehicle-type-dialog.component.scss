@@ -1,0 +1,57 @@
+@import '../../../../../assets/styles/variables';
+
+// Ported from V1 modal form styles (styles/components/forms.css inside
+// #vehicle-type-modal), scoped to this dialog.
+
+.vtype-form {
+  padding-top: $space-sm;
+}
+
+.form-group {
+  margin-bottom: $space-lg;
+
+  label {
+    display: block;
+    font-weight: $font-weight-semibold;
+    margin-bottom: $space-sm;
+    color: $text-dark;
+    font-size: $font-size-base;
+  }
+
+  input {
+    width: 100%;
+    padding: $space-md;
+    border: 1px solid $border-color;
+    border-radius: $radius-md;
+    font-size: $font-size-base;
+    font-family: $font-family;
+    box-sizing: border-box;
+    transition: border-color $transition-base;
+
+    &:focus {
+      outline: none;
+      border-color: $primary-blue;
+      box-shadow: 0 0 0 3px $primary-blue-light;
+    }
+  }
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: $space-lg;
+
+  @include respond-to(sm) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.required {
+  color: $danger-red;
+}
+
+.form-error {
+  font-size: $font-size-sm;
+  color: $danger-red;
+  margin: $space-xs 0 0;
+}
