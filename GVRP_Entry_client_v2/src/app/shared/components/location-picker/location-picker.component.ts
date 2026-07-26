@@ -12,6 +12,7 @@ import {
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { LeafletModule } from '@asymmetrik/ngx-leaflet';
+import { TranslocoService } from '@jsverse/transloco';
 import * as L from 'leaflet';
 
 export interface PickedLocation {
@@ -24,7 +25,7 @@ export interface PickedLocation {
  *
  * Inline Leaflet map where a single click places / moves one marker.
  * Ports V1 `scripts/components/Map Components/depot-map.js` (teardrop divIcon,
- * "Vị trí đã chọn" popup) without the global window.* wiring.
+ * "selected location" popup) without the global window.* wiring.
  *
  * Reverse geocoding is intentionally NOT done here - the parent owns that, so
  * this component stays reusable for any coordinate picking (depot, order, ...).
@@ -52,6 +53,8 @@ export class LocationPickerComponent implements OnDestroy {
   readonly locationPicked = output<PickedLocation>();
 
   readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
+
+  private readonly i18n = inject(TranslocoService);
 
   /**
    * Computed, not a field initializer: signal inputs still hold their defaults
@@ -138,10 +141,10 @@ export class LocationPickerComponent implements OnDestroy {
         zIndexOffset: 1000
       })
         .addTo(this.map)
-        .bindPopup(LocationPickerComponent.createPopupHtml(latlng));
+        .bindPopup(this.createPopupHtml(latlng));
     }
 
-    this.marker.setPopupContent(LocationPickerComponent.createPopupHtml(latlng));
+    this.marker.setPopupContent(this.createPopupHtml(latlng));
     if (openPopup) {
       this.marker.openPopup();
     }
@@ -164,11 +167,11 @@ export class LocationPickerComponent implements OnDestroy {
     });
   }
 
-  private static createPopupHtml(latlng: L.LatLng): string {
+  private createPopupHtml(latlng: L.LatLng): string {
     return (
-      '<strong>Vị trí đã chọn</strong><br>' +
-      `Lat: ${latlng.lat.toFixed(6)}<br>` +
-      `Lng: ${latlng.lng.toFixed(6)}`
+      `<strong>${this.i18n.translate('map.selectedLocation')}</strong><br>` +
+      `${this.i18n.translate('map.latitude')}: ${latlng.lat.toFixed(6)}<br>` +
+      `${this.i18n.translate('map.longitude')}: ${latlng.lng.toFixed(6)}`
     );
   }
 }

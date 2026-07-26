@@ -124,7 +124,7 @@ export class MainComponent implements OnInit, OnDestroy {
         },
         error: (err) => {
           console.error('Error loading data', err);
-          this.toast.error('Không thể tải dữ liệu');
+          this.toast.error('Failed to load dashboard data');
         }
       });
   }

@@ -7,16 +7,18 @@ import {
   OnInit,
   signal
 } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { MatDialog } from '@angular/material/dialog';
-import { switchMap } from 'rxjs/operators';
-import { EMPTY, Observable } from 'rxjs';
+import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
+import {MatDialog} from '@angular/material/dialog';
+import {switchMap} from 'rxjs/operators';
+import {EMPTY, Observable} from 'rxjs';
 
-import { VehicleTypeDTO, VehicleTypeInputDTO } from '@core/models';
-import { VehicleTypeStore } from '@core/services/vehicle-type.store';
-import { VndPipe } from '@shared/pipes/vnd.pipe';
-import { ConfirmService } from '@shared/services/confirm.service';
-import { ToastService } from '@shared/services/toast.service';
+import {VehicleTypeDTO, VehicleTypeInputDTO} from '@core/models';
+import {VehicleTypeStore} from '@core/services/vehicle-type.store';
+import {TranslocoPipe} from '@jsverse/transloco';
+
+import {VndPipe} from '@shared/pipes/vnd.pipe';
+import {ConfirmService} from '@shared/services/confirm.service';
+import {ToastService} from '@shared/services/toast.service';
 
 import {
   VehicleTypeDialogComponent,
@@ -25,15 +27,11 @@ import {
 
 /**
  * Vehicle Types management
- *
- * Migrated from V1 `components/Admin/vehicle-type-manager.js` +
- * `#vehicle-types-section`. Search filters the cached list client-side, exactly
- * as V1 did.
  */
 @Component({
   selector: 'app-vehicle-types-admin',
   standalone: true,
-  imports: [VndPipe],
+  imports: [VndPipe, TranslocoPipe],
   templateUrl: './vehicle-types-admin.component.html',
   styleUrl: './vehicle-types-admin.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -74,7 +72,7 @@ export class VehicleTypesAdminComponent implements OnInit {
   }
 
   openEdit(vehicleType: VehicleTypeDTO): void {
-    this.openDialog({ vehicleType })
+    this.openDialog({vehicleType})
       .pipe(
         switchMap(payload => this.store.update(vehicleType.id, payload)),
         takeUntilDestroyed(this.destroyRef)
@@ -110,7 +108,7 @@ export class VehicleTypesAdminComponent implements OnInit {
     return this.dialog
       .open<VehicleTypeDialogComponent, VehicleTypeDialogData, VehicleTypeInputDTO>(
         VehicleTypeDialogComponent,
-        { data, width: '640px', maxWidth: '95vw', autoFocus: 'first-tabbable' }
+        {data, width: '640px', maxWidth: '95vw', autoFocus: 'first-tabbable'}
       )
       .afterClosed()
       .pipe(

@@ -30,7 +30,7 @@ export function longitudeRange(): ValidatorFn {
 
 /**
  * Group-level validator: both coordinates must be present.
- * V1 raised "Vui lòng chọn vị trí trên bản đồ" when either was missing.
+ * V1 raised a "pick a location on the map" error when either was missing.
  */
 export function requiredLocation(
   latitudeKey = 'latitude',

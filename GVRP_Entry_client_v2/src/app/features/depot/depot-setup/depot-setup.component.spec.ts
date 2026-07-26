@@ -1,4 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+
+import { translocoTesting } from '../../../../testing/transloco-testing';
 import { Router } from '@angular/router';
 import { of, throwError } from 'rxjs';
 
@@ -49,7 +51,7 @@ describe('DepotSetupComponent', () => {
     router.navigate.and.resolveTo(true);
 
     await TestBed.configureTestingModule({
-      imports: [DepotSetupComponent],
+      imports: [DepotSetupComponent, translocoTesting()],
       providers: [
         { provide: DepotStore, useValue: depotStore },
         { provide: GeocodingService, useValue: geocoding },
@@ -86,7 +88,7 @@ describe('DepotSetupComponent', () => {
     component.onSubmit();
 
     expect(depotStore.create).not.toHaveBeenCalled();
-    expect(toast.error).toHaveBeenCalledWith('Vui lòng nhập tên depot');
+    expect(toast.error).toHaveBeenCalledWith('depotSetup.errors.nameRequired');
   });
 
   it('blocks submit when no location was picked', () => {
@@ -95,7 +97,7 @@ describe('DepotSetupComponent', () => {
     component.onSubmit();
 
     expect(depotStore.create).not.toHaveBeenCalled();
-    expect(toast.error).toHaveBeenCalledWith('Vui lòng chọn vị trí trên bản đồ');
+    expect(toast.error).toHaveBeenCalledWith('depotSetup.errors.locationRequired');
   });
 
   it('rejects a whitespace-only name', () => {
@@ -105,7 +107,7 @@ describe('DepotSetupComponent', () => {
     component.onSubmit();
 
     expect(depotStore.create).not.toHaveBeenCalled();
-    expect(toast.error).toHaveBeenCalledWith('Vui lòng nhập tên depot');
+    expect(toast.error).toHaveBeenCalledWith('depotSetup.errors.nameRequired');
   });
 
   it('posts a trimmed payload and navigates to the next setup step on success', () => {
@@ -124,7 +126,7 @@ describe('DepotSetupComponent', () => {
     };
 
     expect(depotStore.create).toHaveBeenCalledWith(expected);
-    expect(toast.success).toHaveBeenCalledWith('Depot đã được tạo thành công!');
+    expect(toast.success).toHaveBeenCalledWith('depotSetup.created');
     expect(router.navigate).toHaveBeenCalledWith(['/setup/vehicle-types']);
     expect(component.saving()).toBeFalse();
   });
@@ -155,6 +157,6 @@ describe('DepotSetupComponent', () => {
     expect(component.form.controls.name.value).toBe('');
     expect(component.picked()).toBeNull();
     expect(component.pickedLatitude()).toBeNull();
-    expect(toast.info).toHaveBeenCalledWith('Form đã được reset');
+    expect(toast.info).toHaveBeenCalledWith('depotSetup.formReset');
   });
 });

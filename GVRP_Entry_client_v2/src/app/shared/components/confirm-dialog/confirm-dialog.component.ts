@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
+import { TranslocoPipe } from '@jsverse/transloco';
 
 export interface ConfirmDialogData {
   title: string;
@@ -19,7 +20,7 @@ export interface ConfirmDialogData {
 @Component({
   selector: 'app-confirm-dialog',
   standalone: true,
-  imports: [MatDialogModule, MatButtonModule],
+  imports: [MatDialogModule, MatButtonModule, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <h2 mat-dialog-title>{{ data.title }}</h2>
@@ -32,14 +33,14 @@ export interface ConfirmDialogData {
 
     <mat-dialog-actions align="end">
       <button mat-button type="button" (click)="dialogRef.close(false)">
-        {{ data.cancelText ?? 'Hủy' }}
+        {{ data.cancelText ?? ('common.cancel' | transloco) }}
       </button>
       <button
         mat-raised-button
         type="button"
         [color]="data.danger ? 'warn' : 'primary'"
         (click)="dialogRef.close(true)">
-        {{ data.confirmText ?? 'Xác nhận' }}
+        {{ data.confirmText ?? ('common.confirm' | transloco) }}
       </button>
     </mat-dialog-actions>
   `,

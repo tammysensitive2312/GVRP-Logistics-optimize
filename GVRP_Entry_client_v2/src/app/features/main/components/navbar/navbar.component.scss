@@ -188,3 +188,10 @@
     display: none;
   }
 }
+
+// Language switcher: flag only, one click flips EN <-> VI
+.language-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}

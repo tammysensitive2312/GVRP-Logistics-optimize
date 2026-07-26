@@ -17,6 +17,8 @@ export class MapService {
   private depotMarkers: L.Marker[] = [];
   private orderMarkers: L.Marker[] = [];
   private routeLayers!: L.FeatureGroup;
+  /** True while a solution is drawn, so late-arriving orders don't steal the view. */
+  private solutionDisplayed = false;
 
   private readonly ROUTE_COLORS = ['#3498db', '#e74c3c', '#2ecc71', '#f1c40f', '#9b59b6', '#34495e'];
 
@@ -28,11 +30,21 @@ export class MapService {
     private routingService: RoutingService
   ) {}
 
+  /**
+   * Binds the service to a Leaflet map.
+   *
+   * This service is a root singleton while <app-map> is recreated on every visit
+   * to /main, so state from the previous map has to be dropped here - otherwise
+   * marker arrays keep pointing at destroyed layers and a new scale control is
+   * stacked on top of the map each time.
+   */
   initializeMap(map: L.Map): void {
     this.map = map;
+    this.depotMarkers = [];
+    this.orderMarkers = [];
+    this.solutionDisplayed = false;
     this.routeLayers = L.featureGroup().addTo(this.map);
 
-    // Add scale control
     L.control.scale({
       position: 'bottomleft',
       imperial: false
@@ -73,7 +85,9 @@ export class MapService {
       this.orderMarkers.push(marker);
     });
 
-    if (orders.length > 0) {
+    // Orders load asynchronously and used to arrive after a solution was drawn,
+    // yanking the viewport away from the routes. The solution wins.
+    if (orders.length > 0 && !this.solutionDisplayed) {
       this.fitBoundsToMarkers();
     }
   }
@@ -98,6 +112,7 @@ export class MapService {
   async displaySolution(solution: SolutionDTO): Promise<void> {
     this.clearRoutes();
     this.clearOrderMarkers();
+    this.solutionDisplayed = true;
 
     for (let index = 0; index < solution.routes.length; index++) {
       const route = solution.routes[index];
@@ -217,6 +232,7 @@ export class MapService {
   }
 
   private clearRoutes(): void {
+    this.solutionDisplayed = false;
     if (this.routeLayers) {
       this.routeLayers.clearLayers();
     }

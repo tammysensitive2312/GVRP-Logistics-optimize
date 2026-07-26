@@ -1,0 +1,263 @@
+@import '../../../../assets/styles/variables';
+
+:host {
+  display: block;
+  height: 100%;
+  overflow: auto;
+  background: $bg-light;
+  font-family: $font-family;
+}
+
+.jobs-screen {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: $space-xl;
+}
+
+.jobs-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: $space-md;
+  margin-bottom: $space-xl;
+
+  h1 {
+    margin: 0 0 $space-xs;
+    font-size: $font-size-2xl;
+    color: $text-dark;
+  }
+
+  p {
+    margin: 0;
+    color: $text-gray;
+    font-size: $font-size-base;
+  }
+}
+
+.btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: $radius-md;
+  font-size: $font-size-base;
+  font-weight: $font-weight-semibold;
+  font-family: $font-family;
+  cursor: pointer;
+  transition: background-color $transition-base, box-shadow $transition-base;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.btn-sm {
+  padding: 4px 10px;
+  font-size: $font-size-sm;
+}
+
+.btn-primary {
+  background: $primary-blue;
+  color: $white;
+
+  &:hover:not(:disabled) {
+    background: $primary-blue-hover;
+  }
+}
+
+.btn-secondary {
+  background: $white;
+  color: $text-dark;
+  border: 1px solid $border-color;
+
+  &:hover:not(:disabled) {
+    background: $bg-light;
+  }
+}
+
+.btn-text {
+  background: transparent;
+  color: $primary-blue;
+  padding: 4px 10px;
+}
+
+.job-detail {
+  background: $white;
+  border: 1px solid $border-color;
+  border-radius: $radius-lg;
+  padding: $space-lg;
+  margin-bottom: $space-lg;
+  box-shadow: $shadow-sm;
+}
+
+.job-detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  h2 {
+    margin: 0;
+    font-size: $font-size-lg;
+    color: $text-dark;
+  }
+}
+
+.job-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: $space-md;
+  margin: $space-lg 0;
+}
+
+.detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: $space-xs;
+}
+
+.detail-label {
+  font-size: $font-size-sm;
+  color: $text-gray;
+}
+
+.detail-value {
+  font-weight: $font-weight-medium;
+  color: $text-dark;
+  font-size: $font-size-base;
+}
+
+.job-error {
+  margin: 0 0 $space-md;
+  color: $danger-red;
+  font-size: $font-size-sm;
+}
+
+.table-responsive {
+  background: $white;
+  border: 1px solid $border-color;
+  border-radius: $radius-lg;
+  overflow: auto;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 720px;
+
+  thead th {
+    text-align: left;
+    padding: $space-md $space-lg;
+    background: $bg-light;
+    font-size: $font-size-sm;
+    color: $text-gray;
+    text-transform: uppercase;
+    border-bottom: 1px solid $border-color;
+  }
+
+  tbody td {
+    padding: $space-md $space-lg;
+    border-bottom: 1px solid $border-color;
+    font-size: $font-size-base;
+    color: $text-dark;
+  }
+
+  tbody tr:last-child td {
+    border-bottom: none;
+  }
+}
+
+.job-row {
+  cursor: pointer;
+
+  &:hover {
+    background: $bg-light;
+  }
+
+  &.selected {
+    background: $primary-blue-light;
+  }
+
+  &:focus-visible {
+    outline: 2px solid $primary-blue;
+    outline-offset: -2px;
+  }
+}
+
+.text-right {
+  text-align: right;
+}
+
+.text-muted {
+  color: $text-light;
+}
+
+.badge {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: $radius-sm;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-semibold;
+  color: $white;
+}
+
+.badge-success {
+  background: $success-green;
+}
+
+.badge-info {
+  background: $primary-blue;
+}
+
+.badge-danger {
+  background: $danger-red;
+}
+
+.badge-neutral {
+  background: $neutral-gray;
+}
+
+.loading-message {
+  padding: $space-2xl;
+  text-align: center;
+  color: $text-gray;
+}
+
+.alert {
+  display: flex;
+  align-items: center;
+  gap: $space-sm;
+  padding: $space-md;
+  border-radius: $radius-md;
+  font-size: $font-size-sm;
+}
+
+.alert-danger {
+  background: rgba(208, 2, 27, 0.06);
+  border: 1px solid rgba(208, 2, 27, 0.25);
+  color: $danger-red;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 64px 20px;
+  background: $white;
+  border: 1px solid $border-color;
+  border-radius: $radius-lg;
+
+  .empty-icon {
+    font-size: 56px;
+    margin-bottom: $space-md;
+    opacity: 0.6;
+  }
+
+  .empty-text {
+    font-size: $font-size-lg;
+    font-weight: $font-weight-semibold;
+    color: $text-gray;
+    margin-bottom: $space-sm;
+  }
+
+  .empty-hint {
+    font-size: $font-size-base;
+    color: $text-gray;
+  }
+}

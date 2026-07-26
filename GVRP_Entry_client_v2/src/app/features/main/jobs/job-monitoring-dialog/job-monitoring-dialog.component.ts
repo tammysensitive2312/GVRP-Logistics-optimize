@@ -8,24 +8,25 @@ import {
   OnInit,
   signal
 } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { DatePipe, DecimalPipe } from '@angular/common';
-import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
-import { MatButtonModule } from '@angular/material/button';
-import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { MatIconModule } from '@angular/material/icon';
-import { switchMap } from 'rxjs/operators';
-import { EMPTY } from 'rxjs';
+import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
+import {DatePipe, DecimalPipe} from '@angular/common';
+import {MAT_DIALOG_DATA, MatDialogModule, MatDialogRef} from '@angular/material/dialog';
+import {MatButtonModule} from '@angular/material/button';
+import {MatProgressBarModule} from '@angular/material/progress-bar';
+import {MatIconModule} from '@angular/material/icon';
+import {switchMap} from 'rxjs/operators';
+import {EMPTY} from 'rxjs';
 
-import { JobDTO, SolutionDTO } from '@core/models';
-import { ApiService } from '@core/services/api.service';
-import { JobPollingService } from '@core/services/job-polling.service';
-import { ConfirmService } from '@shared/services/confirm.service';
-import { ToastService } from '@shared/services/toast.service';
+import {JobDTO, JobProgressDTO, SolutionDTO} from '@core/models';
+import {ApiService} from '@core/services/api.service';
+import {JobPollingService} from '@core/services/job-polling.service';
+import {TranslocoService} from '@jsverse/transloco';
+
+import {ConfirmService} from '@shared/services/confirm.service';
+import {ToastService} from '@shared/services/toast.service';
 
 export interface JobMonitoringDialogData {
   job: JobDTO;
-  /** V1 `open(job, { enablePolling })`: history entries opened read-only. */
   enablePolling?: boolean;
   pollingIntervalMs?: number;
 }
@@ -42,18 +43,6 @@ const STATUS_TEXT: Record<JobDTO['status'], string> = {
   CANCELLED: '🚫 Cancelled'
 };
 
-/**
- * Job Monitoring dialog (V1 FAST mode modal).
- *
- * Fixes carried over from `job-monitoring-modal.js`:
- * - Progress is `job.progress` from the API. The previous version fabricated a
- *   random curve with setInterval and never read the real value.
- * - A job that is already COMPLETED when the dialog opens now loads its solution,
- *   so "View Result" appears (V1 did this inside `update()`).
- * - Cancel asks for confirmation and refreshes the job instead of closing blind.
- * - Solution fetch has a re-entry guard and a Retry action on failure.
- * - CANCELLED no longer renders as "Optimization failed!".
- */
 @Component({
   selector: 'app-job-monitoring-dialog',
   standalone: true,
@@ -79,9 +68,12 @@ export class JobMonitoringDialogComponent implements OnInit, OnDestroy {
   private readonly polling = inject(JobPollingService);
   private readonly confirm = inject(ConfirmService);
   private readonly toast = inject(ToastService);
+  private readonly i18n = inject(TranslocoService);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly currentJob = signal<JobDTO>(this.data.job);
+  /** Live solver telemetry from GET /jobs/{id}/progress. */
+  readonly progressInfo = signal<JobProgressDTO | null>(null);
   readonly solution = signal<SolutionDTO | null>(null);
   readonly isLoadingSolution = signal(false);
   readonly solutionError = signal(false);
@@ -93,7 +85,39 @@ export class JobMonitoringDialogComponent implements OnInit, OnDestroy {
   readonly statusClass = computed(
     () => `status-${this.currentJob().status.toLowerCase()}`
   );
-  readonly progress = computed(() => clampProgress(this.currentJob().progress));
+  /**
+   * Real percentage: the progress endpoint while the solver runs, the job record
+   * once it is done. No fabricated numbers.
+   */
+  readonly progress = computed(() => {
+    const live = this.progressInfo();
+    if (live?.percent != null) return clampProgress(live.percent);
+    if (this.isCompleted()) return 100;
+    return clampProgress(this.currentJob().progress);
+  });
+
+  /** 'BUILDING_MATRIX' -> 'Building matrix'. */
+  readonly phaseLabel = computed(() => {
+    const phase = this.progressInfo()?.phase;
+    if (!phase) return null;
+
+    const words = phase.toLowerCase().split('_');
+    return words[0].charAt(0).toUpperCase() + words[0].slice(1) + (words.length > 1 ? ' ' + words.slice(1).join(' ') : '');
+  });
+
+  readonly solverStats = computed(() => {
+    const live = this.progressInfo();
+    if (!live || live.iteration == null) return null;
+
+    return {
+      iteration: live.iteration,
+      maxIterations: live.maxIterations ?? null,
+      routes: live.routes ?? null,
+      unassigned: live.unassigned ?? null,
+      bestCost: live.bestCost ?? null,
+      elapsedSeconds: live.elapsedSeconds ?? null
+    };
+  });
   readonly isRunning = computed(() => {
     const status = this.currentJob().status;
     return status === 'PENDING' || status === 'PROCESSING';
@@ -108,9 +132,6 @@ export class JobMonitoringDialogComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.subscribeToPolling();
-
-    // V1 called update(job) on open, which fetched the solution for a job that
-    // had already finished before the dialog was shown.
     this.applyJob(this.data.job);
 
     if (this.data.enablePolling !== false && this.isRunning()) {
@@ -137,7 +158,7 @@ export class JobMonitoringDialogComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.dialogRef.close({ solution });
+    this.dialogRef.close({solution});
   }
 
   onCancelJob(): void {
@@ -145,10 +166,10 @@ export class JobMonitoringDialogComponent implements OnInit, OnDestroy {
 
     this.confirm
       .ask({
-        title: 'Bạn có chắc chắn muốn hủy job này?',
+        title: this.i18n.translate('jobMonitoring.cancelConfirmTitle'),
         message: `Job #${this.currentJob().id}`,
-        confirmText: 'Hủy job',
-        cancelText: 'Không',
+        confirmText: this.i18n.translate('jobMonitoring.cancelConfirmButton'),
+        cancelText: this.i18n.translate('jobMonitoring.cancelKeepRunning'),
         danger: true
       })
       .pipe(
@@ -158,7 +179,6 @@ export class JobMonitoringDialogComponent implements OnInit, OnDestroy {
           this.cancelling.set(true);
           return this.api.cancelJob(this.currentJob().id);
         }),
-        // V1 refreshed the job after cancelling instead of closing immediately.
         switchMap(() => this.api.getJobById(this.currentJob().id)),
         takeUntilDestroyed(this.destroyRef)
       )
@@ -166,13 +186,13 @@ export class JobMonitoringDialogComponent implements OnInit, OnDestroy {
         next: job => {
           this.cancelling.set(false);
           this.polling.stopPolling();
-          this.toast.success('Đã hủy job');
+          this.toast.success(this.i18n.translate('jobMonitoring.cancelled'));
           this.applyJob(job);
         },
         error: (error: unknown) => {
           this.cancelling.set(false);
           console.error('Failed to cancel job:', error);
-          this.toast.error('Không thể hủy job');
+          this.toast.error(this.i18n.translate('jobMonitoring.cancelFailed'));
         }
       });
   }
@@ -182,6 +202,13 @@ export class JobMonitoringDialogComponent implements OnInit, OnDestroy {
   }
 
   private subscribeToPolling(): void {
+    this.polling.jobProgress$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(progress => {
+        this.pollingDegraded.set(false);
+        this.progressInfo.set(progress);
+      });
+
     this.polling.jobUpdated$
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(job => {

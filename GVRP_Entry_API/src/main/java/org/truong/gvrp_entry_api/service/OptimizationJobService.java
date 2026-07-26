@@ -143,24 +143,21 @@ public class OptimizationJobService {
 
     /**
      * Cancel running job
-     * @param jobId Job ID
+     * @param jobIds list request Job ID
      * @param branchId Branch ID
      */
     @Transactional
-    public void cancelJob(Long jobId, Long branchId) {
-        log.info("Cancelling job #{} for branch {}", jobId, branchId);
+    public void cancelJobs(List<Long> jobIds, Long branchId) {
+        if (jobIds == null || jobIds.isEmpty()) {
+            return;
+        }
 
-        OptimizationJob job = jobRepository.findById(jobId)
-                .orElseThrow(() -> new DataInvalidException(List.of(
-                        ErrorDetail.builder()
-                                .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
-                                .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
-                                .resource(AppConstant.JOB)
-                                .build()
-                )));
+        log.info("Cancelling jobs {} for branch {}", jobIds, branchId);
 
-        // Verify branch ownership
-        if (!job.getBranch().getId().equals(branchId)) {
+        List<OptimizationJob> jobs = jobRepository.findAllById(jobIds);
+
+
+        if (jobs.size() != jobIds.size()) {
             throw new DataInvalidException(List.of(
                     ErrorDetail.builder()
                             .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
@@ -170,27 +167,36 @@ public class OptimizationJobService {
             ));
         }
 
-        // Check if can be cancelled
-        if (!job.canBeCancelled()) {
-            throw new DataInvalidException(List.of(
-                    ErrorDetail.builder()
-                            .code(ErrorCode.RESOURCE_CONFLICT.getCode())
-                            .message("Job can't be cancelled")
-                            .resource(AppConstant.JOB)
-                            .build()
-            ));
+        LocalDateTime cancelledAt = LocalDateTime.now();
+
+        for (OptimizationJob job : jobs) {
+            if (!job.getBranch().getId().equals(branchId)) {
+                throw new DataInvalidException(List.of(
+                        ErrorDetail.builder()
+                                .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
+                                .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
+                                .resource(AppConstant.JOB)
+                                .build()
+                ));
+            }
+
+            if (!job.canBeCancelled()) {
+                throw new DataInvalidException(List.of(
+                        ErrorDetail.builder()
+                                .code(ErrorCode.RESOURCE_CONFLICT.getCode())
+                                .message("Job can't be cancelled")
+                                .resource(AppConstant.JOB)
+                                .build()
+                ));
+            }
+
+            job.setStatus(OptimizationJobStatus.CANCELLED);
+            job.setCancelledAt(cancelledAt);
         }
 
-        job.setStatus(OptimizationJobStatus.CANCELLED);
-        job.setCancelledAt(LocalDateTime.now());
-        jobRepository.save(job);
-
-        // Báo engine dừng tiến trình đang chạy (best-effort). Engine sẽ dừng ở
-        // ranh giới vòng kế / hàng ma trận kế và gửi cancelled callback — callback
-        // đó sẽ bị bỏ qua vì job đã ở trạng thái CANCELLED (idempotent).
-        engineApiClient.requestCancel(jobId);
-
-        log.info("Job #{} cancelled successfully", jobId);
+        jobRepository.saveAll(jobs);
+        jobs.forEach(job -> engineApiClient.requestCancel(job.getId()));
+        log.info("Cancelled {} jobs successfully", jobs.size());
     }
 
     /**
@@ -220,18 +226,6 @@ public class OptimizationJobService {
         }
 
         return engineApiClient.getProgress(jobId);
-    }
-
-    /**
-     * Get current running job
-     * @param branchId Branch ID
-     * @return Optional OptimizationJobDTO
-     */
-    @Transactional(readOnly = true)
-    public Optional<OptimizationJobDTO> getCurrentRunningJob(Long branchId) {
-        return jobRepository
-                .findFirstByBranchIdAndStatusOrderByCreatedAtDesc(branchId, OptimizationJobStatus.PROCESSING)
-                .map(jobMapper::toDTO);
     }
 
     /**

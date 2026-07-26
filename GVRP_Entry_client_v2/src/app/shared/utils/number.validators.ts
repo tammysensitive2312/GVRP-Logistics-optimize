@@ -19,7 +19,7 @@ export function greaterThanZeroWhenPresent(): ValidatorFn {
   };
 }
 
-/** Rejects negative numbers but accepts 0 and empty (V1: costs "không được âm"). */
+/** Rejects negative numbers but accepts 0 and empty (V1: costs must not be negative). */
 export function nonNegative(): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
     const value = control.value;

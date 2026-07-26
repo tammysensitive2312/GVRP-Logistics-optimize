@@ -20,20 +20,17 @@ export interface AuthSession {
   loginTime: number; // timestamp
 }
 
-// App state structure
+/**
+ * Persisted app state.
+ *
+ * Only `lastUrl` is written today (auth guard / interceptor / auth service, to
+ * bounce back after login). The former `activeSolutionId` / `activeJobId` /
+ * `currentScreen` / selection / filter fields were dropped: nothing wrote them
+ * any more, and persisting an active solution meant a reload silently redrew a
+ * solution the user never asked for. Re-opening a run is an explicit action on
+ * the /jobs screen now.
+ */
 export interface AppState {
-  currentScreen?: string;
-  selectedOrders?: number[];
-  selectedVehicles?: number[];
-  filters?: {
-    date: string;
-    status: string;
-    priority: string;
-    search: string;
-  };
-  activeSolutionId?: number;
-  activeJobId?: number;
-  sidebarCollapsed?: boolean;
   lastUrl?: string;
 }
 
@@ -45,8 +42,29 @@ export class StorageService {
   // Consolidated storage keys
   private readonly KEYS = {
     AUTH_SESSION: 'vrp_auth_session',  // Consolidated auth data
-    APP_STATE: 'vrp_app_state'         // Consolidated app state
+    APP_STATE: 'vrp_app_state',        // Consolidated app state
+    LANGUAGE: 'vrp_language'           // UI language (en / vi)
   };
+
+  // ============================================
+  // UI Language
+  // ============================================
+
+  getLanguage(): string | null {
+    try {
+      return localStorage.getItem(this.KEYS.LANGUAGE);
+    } catch {
+      return null;
+    }
+  }
+
+  setLanguage(language: string): void {
+    try {
+      localStorage.setItem(this.KEYS.LANGUAGE, language);
+    } catch (error) {
+      console.error('Storage error:', error);
+    }
+  }
 
   constructor() { }
 

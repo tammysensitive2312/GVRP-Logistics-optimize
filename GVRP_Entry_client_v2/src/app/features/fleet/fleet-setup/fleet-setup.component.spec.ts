@@ -1,4 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+
+import { translocoTesting } from '../../../../testing/transloco-testing';
 import { Router } from '@angular/router';
 import { of, throwError } from 'rxjs';
 
@@ -93,7 +95,7 @@ describe('FleetSetupComponent', () => {
     confirm.ask.and.returnValue(of(true));
 
     await TestBed.configureTestingModule({
-      imports: [FleetSetupComponent],
+      imports: [FleetSetupComponent, translocoTesting()],
       providers: [
         { provide: ApiService, useValue: api },
         { provide: DepotStore, useValue: depotStore },
@@ -117,7 +119,7 @@ describe('FleetSetupComponent', () => {
     createComponent();
 
     expect(toast.error).toHaveBeenCalledWith(
-      'No depots found. Please create a depot first.'
+      'fleetSetup.noDepots'
     );
     expect(router.navigate).toHaveBeenCalledWith(['/setup/depot']);
     expect(component.totalVehicles()).toBe(0);
@@ -129,7 +131,7 @@ describe('FleetSetupComponent', () => {
     createComponent();
 
     expect(toast.error).toHaveBeenCalledWith(
-      'No vehicle types found. Please create a vehicle type first.'
+      'fleetSetup.noVehicleTypes'
     );
     expect(router.navigate).toHaveBeenCalledWith(['/setup/vehicle-types']);
   });
@@ -139,7 +141,7 @@ describe('FleetSetupComponent', () => {
 
     component.removeVehicle(0);
 
-    expect(toast.error).toHaveBeenCalledWith('Phải có ít nhất 1 xe');
+    expect(toast.error).toHaveBeenCalledWith('fleetSetup.atLeastOneVehicle');
     expect(component.totalVehicles()).toBe(1);
     expect(confirm.ask).not.toHaveBeenCalled();
   });
@@ -152,7 +154,7 @@ describe('FleetSetupComponent', () => {
 
     expect(confirm.ask).toHaveBeenCalled();
     expect(component.totalVehicles()).toBe(1);
-    expect(toast.success).toHaveBeenCalledWith('Đã xóa xe #2');
+    expect(toast.success).toHaveBeenCalledWith('fleetSetup.removed');
   });
 
   it('keeps the vehicle when the confirmation is dismissed', () => {
@@ -172,7 +174,7 @@ describe('FleetSetupComponent', () => {
     component.onSubmit();
 
     expect(api.createFleet).not.toHaveBeenCalled();
-    expect(toast.error).toHaveBeenCalledWith('Xe #1: Vui lòng nhập biển số xe');
+    expect(toast.error).toHaveBeenCalledWith('fleetSetup.errors.plateRequired');
   });
 
   it('reports a missing fleet name before any vehicle error', () => {
@@ -180,7 +182,7 @@ describe('FleetSetupComponent', () => {
 
     component.onSubmit();
 
-    expect(toast.error).toHaveBeenCalledWith('Vui lòng nhập tên đội xe');
+    expect(toast.error).toHaveBeenCalledWith('fleetSetup.errors.nameRequired');
   });
 
   it('posts a trimmed payload and goes to /main on success', () => {
@@ -201,7 +203,7 @@ describe('FleetSetupComponent', () => {
         }
       ]
     });
-    expect(toast.success).toHaveBeenCalledWith('Đội xe đã được tạo thành công!');
+    expect(toast.success).toHaveBeenCalledWith('fleetSetup.created');
     expect(router.navigate).toHaveBeenCalledWith(['/main']);
   });
 

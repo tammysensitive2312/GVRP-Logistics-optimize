@@ -1,4 +1,4 @@
-import { Observable, of, throwError } from 'rxjs';
+import { Observable, Subject, of, throwError } from 'rxjs';
 
 import { CollectionCache } from './collection-cache';
 
@@ -15,54 +15,60 @@ describe('CollectionCache', () => {
   let response: Observable<readonly Item[]>;
   let cache: CollectionCache<Item>;
 
-  const build = (staleTimeMs = 10_000) =>
-    new CollectionCache<Item>({
+  beforeEach(() => {
+    fetchCalls = 0;
+    response = of([itemA]);
+    cache = new CollectionCache<Item>({
       fetch: () => {
         fetchCalls++;
         return response;
       },
-      staleTimeMs,
       fallbackError: 'fallback message'
     });
-
-  beforeEach(() => {
-    fetchCalls = 0;
-    response = of([itemA]);
-    cache = build();
   });
 
-  it('fetches on first load and exposes the items', done => {
+  it('fetches and exposes the items', done => {
     cache.load().subscribe(items => {
       expect(items).toEqual([itemA]);
       expect(cache.items()).toEqual([itemA]);
       expect(cache.count()).toBe(1);
       expect(cache.isEmpty()).toBeFalse();
-      expect(fetchCalls).toBe(1);
       done();
     });
   });
 
-  it('serves the cache while fresh instead of refetching', done => {
+  it('refetches on every load - there is no freshness window', done => {
     cache.load().subscribe(() => {
       cache.load().subscribe(() => {
-        expect(fetchCalls).toBe(1);
-        done();
-      });
-    });
-  });
-
-  it('refetches when forced', done => {
-    cache.load().subscribe(() => {
-      cache.load(true).subscribe(() => {
         expect(fetchCalls).toBe(2);
         done();
       });
     });
   });
 
-  it('refetches after invalidate', done => {
+  it('shares a request that is still in flight', () => {
+    const pending = new Subject<readonly Item[]>();
+    response = pending.asObservable();
+
+    let firstEmissions = 0;
+    let secondEmissions = 0;
+
+    cache.load().subscribe(() => firstEmissions++);
+    cache.load().subscribe(() => secondEmissions++);
+
+    expect(fetchCalls).toBe(1);
+
+    pending.next([itemA]);
+    pending.complete();
+
+    expect(firstEmissions).toBe(1);
+    expect(secondEmissions).toBe(1);
+  });
+
+  it('starts a new request once the previous one settled', done => {
     cache.load().subscribe(() => {
-      cache.invalidate();
+      expect(cache.loading()).toBeFalse();
+
       cache.load().subscribe(() => {
         expect(fetchCalls).toBe(2);
         done();
@@ -125,17 +131,13 @@ describe('CollectionCache', () => {
     });
   });
 
-  it('reset clears items and freshness', done => {
+  it('reset clears the items', done => {
     cache.load().subscribe(() => {
       cache.reset();
 
       expect(cache.items()).toEqual([]);
       expect(cache.isEmpty()).toBeTrue();
-
-      cache.load().subscribe(() => {
-        expect(fetchCalls).toBe(2);
-        done();
-      });
+      done();
     });
   });
 });

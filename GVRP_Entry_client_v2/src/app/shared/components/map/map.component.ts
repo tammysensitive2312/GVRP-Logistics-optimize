@@ -50,7 +50,7 @@ export class MapComponent implements OnInit, OnDestroy, OnChanges {
 
     if (changes['solution']) {
       if (this.solution) {
-        this.mapService.displaySolution(this.solution);
+        void this.mapService.displaySolution(this.solution);
       } else {
         this.mapService.clearAll();
       }
@@ -90,6 +90,16 @@ export class MapComponent implements OnInit, OnDestroy, OnChanges {
     // Load initial data
     this.mapService.loadDepots(this.depots);
     this.loadOrderMarkers();
+
+    // Render a solution that was already set before Leaflet finished booting.
+    //
+    // This was the "solution never drawn" bug: arriving on /main from /jobs, the
+    // solution is already in SolutionStore, so the only `solution` change fires
+    // before `onMapReady` - and ngOnChanges bails out while `this.map` is
+    // undefined. No further change ever arrived, so nothing was ever drawn.
+    if (this.solution) {
+      void this.mapService.displaySolution(this.solution);
+    }
 
     this.mapReady.emit(map);
     setTimeout(() => this.mapService.invalidateSize(), 100);

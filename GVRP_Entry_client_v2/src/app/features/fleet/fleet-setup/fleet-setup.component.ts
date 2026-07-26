@@ -20,6 +20,8 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { forkJoin } from 'rxjs';
 import { finalize } from 'rxjs/operators';
 
+import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+
 import { DepotDTO, FleetInputDTO, VehicleInputDTO, VehicleTypeDTO } from '@core/models';
 import { ApiService } from '@core/services/api.service';
 import { DepotStore } from '@core/services/depot.store';
@@ -53,7 +55,7 @@ const MAIN_SCREEN = '/main';
  * FormArray instead of DOM nodes queried with `document.querySelectorAll`.
  *
  * Deliberate differences from V1:
- * - "← Quay lại" goes to the vehicle type step. V1 jumped back to depot setup,
+ * - "Back" goes to the vehicle type step. V1 jumped back to depot setup,
  *   skipping a step of its own wizard - that looks like an oversight.
  * - Removing a vehicle uses the shared confirm dialog instead of `confirm()`.
  * - Create errors are surfaced and the form is preserved.
@@ -61,7 +63,7 @@ const MAIN_SCREEN = '/main';
 @Component({
   selector: 'app-fleet-setup',
   standalone: true,
-  imports: [ReactiveFormsModule, MatProgressSpinnerModule, VndPipe],
+  imports: [ReactiveFormsModule, MatProgressSpinnerModule, TranslocoPipe, VndPipe],
   templateUrl: './fleet-setup.component.html',
   styleUrl: './fleet-setup.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -73,6 +75,7 @@ export class FleetSetupComponent implements OnInit {
   private readonly toast = inject(ToastService);
   private readonly confirm = inject(ConfirmService);
   private readonly router = inject(Router);
+  private readonly i18n = inject(TranslocoService);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly depots = this.depotStore.depots;
@@ -108,9 +111,8 @@ export class FleetSetupComponent implements OnInit {
   }
 
   removeVehicle(index: number): void {
-    // V1: "Phải có ít nhất 1 xe"
     if (this.form.controls.vehicles.length <= 1) {
-      this.toast.error('Phải có ít nhất 1 xe');
+      this.toast.error(this.i18n.translate('fleetSetup.atLeastOneVehicle'));
       return;
     }
 
@@ -118,8 +120,9 @@ export class FleetSetupComponent implements OnInit {
 
     this.confirm
       .ask({
-        title: `Xóa xe #${vehicleNumber}?`,
-        confirmText: 'Xóa',
+        title: this.i18n.translate('fleetSetup.removeConfirmTitle', { number: vehicleNumber }),
+        confirmText: this.i18n.translate('common.delete'),
+        cancelText: this.i18n.translate('common.cancel'),
         danger: true
       })
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -128,7 +131,7 @@ export class FleetSetupComponent implements OnInit {
 
         this.form.controls.vehicles.removeAt(index);
         this.vehicleRevision.update(revision => revision + 1);
-        this.toast.success(`Đã xóa xe #${vehicleNumber}`);
+        this.toast.success(this.i18n.translate('fleetSetup.removed', { number: vehicleNumber }));
       });
   }
 
@@ -163,13 +166,13 @@ export class FleetSetupComponent implements OnInit {
       )
       .subscribe({
         next: () => {
-          this.toast.success('Đội xe đã được tạo thành công!');
+          this.toast.success(this.i18n.translate('fleetSetup.created'));
           void this.router.navigate([MAIN_SCREEN]);
         },
         error: (error: unknown) => {
           console.error('Failed to create fleet:', error);
           this.toast.error(
-            extractMessage(error) ?? 'Không thể tạo đội xe. Vui lòng thử lại.'
+            extractMessage(error) ?? this.i18n.translate('fleetSetup.createFailed')
           );
         }
       });
@@ -183,7 +186,7 @@ export class FleetSetupComponent implements OnInit {
     this.form.reset({ fleetName: '' });
     this.form.controls.vehicles.clear();
     this.addVehicle();
-    this.toast.info('Form đã được reset');
+    this.toast.info(this.i18n.translate('fleetSetup.formReset'));
   }
 
   private loadSetupData(): void {
@@ -207,7 +210,7 @@ export class FleetSetupComponent implements OnInit {
         },
         error: (error: unknown) => {
           console.error('Failed to load data:', error);
-          this.toast.error(extractMessage(error) ?? 'Failed to load data');
+          this.toast.error(extractMessage(error) ?? this.i18n.translate('fleetSetup.loadFailed'));
         }
       });
   }
@@ -218,13 +221,13 @@ export class FleetSetupComponent implements OnInit {
     vehicleTypes: readonly VehicleTypeDTO[]
   ): boolean {
     if (depots.length === 0) {
-      this.toast.error('No depots found. Please create a depot first.');
+      this.toast.error(this.i18n.translate('fleetSetup.noDepots'));
       void this.router.navigate([DEPOT_SETUP]);
       return false;
     }
 
     if (vehicleTypes.length === 0) {
-      this.toast.error('No vehicle types found. Please create a vehicle type first.');
+      this.toast.error(this.i18n.translate('fleetSetup.noVehicleTypes'));
       void this.router.navigate([PREVIOUS_SETUP_STEP]);
       return false;
     }
@@ -279,28 +282,30 @@ export class FleetSetupComponent implements OnInit {
   }
 
   /**
-   * Error order and wording match V1 `FleetForm.handleSubmit`
-   * + `Validator.validateVehicle` (per-vehicle messages are prefixed "Xe #n").
+   * Error order matches V1 `FleetForm.handleSubmit` + `Validator.validateVehicle`
+   * (per-vehicle messages carry the vehicle number); wording lives in i18n.
    */
   private firstErrorMessage(): string | null {
     if (this.form.controls.fleetName.invalid) {
-      return 'Vui lòng nhập tên đội xe';
+      return this.i18n.translate('fleetSetup.errors.nameRequired');
     }
 
     const rows = this.form.controls.vehicles.controls;
 
     for (let index = 0; index < rows.length; index++) {
-      const prefix = `Xe #${index + 1}: `;
+      const number = index + 1;
       const row = rows[index].controls;
+      const t = (key: string) =>
+        this.i18n.translate(`fleetSetup.errors.${key}`, { number });
 
-      if (row.licensePlate.invalid) return `${prefix}Vui lòng nhập biển số xe`;
-      if (row.vehicleTypeId.invalid) return `${prefix}Vui lòng chọn loại xe`;
-      if (row.startDepotId.invalid) return `${prefix}Vui lòng chọn điểm xuất phát`;
-      if (row.endDepotId.invalid) return `${prefix}Vui lòng chọn điểm kết thúc`;
+      if (row.licensePlate.invalid) return t('plateRequired');
+      if (row.vehicleTypeId.invalid) return t('typeRequired');
+      if (row.startDepotId.invalid) return t('startDepotRequired');
+      if (row.endDepotId.invalid) return t('endDepotRequired');
     }
 
     if (rows.length === 0) {
-      return 'Vui lòng thêm ít nhất 1 xe';
+      return this.i18n.translate('fleetSetup.errors.noVehicles');
     }
 
     return null;

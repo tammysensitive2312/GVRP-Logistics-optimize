@@ -44,6 +44,29 @@ export const routes: Routes = [
     ]
   },
   {
+    // Job history. New screen - V1 had no job list at all. Shares MainLayout so
+    // the navbar stays put, and /jobs/:id deep links to a single run.
+    path: 'jobs',
+    loadComponent: () =>
+      import('./layouts/main-layout/main-layout.component')
+        .then(m => m.MainLayoutComponent),
+    canActivate: [AuthGuard, setupGuard],
+    children: [
+      {
+        path: '',
+        loadComponent: () =>
+          import('./features/jobs/job-history/job-history.component')
+            .then(m => m.JobHistoryComponent)
+      },
+      {
+        path: ':id',
+        loadComponent: () =>
+          import('./features/jobs/job-history/job-history.component')
+            .then(m => m.JobHistoryComponent)
+      }
+    ]
+  },
+  {
     path: 'admin',
     canActivate: [AuthGuard, setupGuard],
     loadComponent: () =>

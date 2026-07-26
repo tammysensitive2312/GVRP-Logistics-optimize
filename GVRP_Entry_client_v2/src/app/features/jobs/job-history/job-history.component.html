@@ -1,0 +1,129 @@
+<div class="jobs-screen">
+  <header class="jobs-header">
+    <div>
+      <h1>📜 Job History</h1>
+      <p>Optimization runs for your branch, newest first.</p>
+    </div>
+    <button type="button" class="btn btn-secondary" [disabled]="loading()" (click)="reload()">
+      🔄 Refresh
+    </button>
+  </header>
+
+  @if (selectedJob(); as job) {
+    <section class="job-detail">
+      <div class="job-detail-header">
+        <h2>Job #{{ job.id }}</h2>
+        <button type="button" class="btn btn-text" (click)="clearSelection()">✕ Close</button>
+      </div>
+
+      <div class="job-detail-grid">
+        <div class="detail-item">
+          <span class="detail-label">Status</span>
+          <span [class]="statusClass(job.status)">{{ job.status }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Progress</span>
+          <span class="detail-value">{{ progressOf(job) | number: '1.0-0' }}%</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Created</span>
+          <span class="detail-value">{{ job.created_at | date: 'dd/MM/yyyy HH:mm:ss' }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Started</span>
+          <span class="detail-value">
+            {{ job.started_at ? (job.started_at | date: 'dd/MM/yyyy HH:mm:ss') : '—' }}
+          </span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Completed</span>
+          <span class="detail-value">
+            {{ job.completed_at ? (job.completed_at | date: 'dd/MM/yyyy HH:mm:ss') : '—' }}
+          </span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Solution</span>
+          <span class="detail-value">{{ job.solution_id ?? '—' }}</span>
+        </div>
+      </div>
+
+      @if (job.error_message) {
+        <p class="job-error">⚠️ {{ job.error_message }}</p>
+      }
+
+      @if (canViewSolution(job)) {
+        <button
+          type="button"
+          class="btn btn-primary"
+          [disabled]="openingSolutionFor() !== null"
+          (click)="viewSolution(job)">
+          🗺️ View solution on dashboard
+        </button>
+      }
+    </section>
+  }
+
+  @if (loading()) {
+    <div class="loading-message">Loading jobs...</div>
+  } @else if (error()) {
+    <div class="alert alert-danger">
+      {{ error() }}
+      <button type="button" class="btn btn-text" (click)="reload()">Retry</button>
+    </div>
+  } @else if (isEmpty()) {
+    <div class="empty-state">
+      <div class="empty-icon">📭</div>
+      <div class="empty-text">No optimization jobs yet</div>
+      <div class="empty-hint">Select orders and vehicles on the dashboard, then Plan Routes.</div>
+    </div>
+  } @else {
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th scope="col">Job</th>
+            <th scope="col">Status</th>
+            <th scope="col">Progress</th>
+            <th scope="col">Created</th>
+            <th scope="col">Completed</th>
+            <th scope="col" class="text-right">Solution</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (job of jobs(); track job.id) {
+            <tr
+              class="job-row"
+              [class.selected]="selectedJob()?.id === job.id"
+              (click)="select(job)"
+              (keydown.enter)="select(job)"
+              tabindex="0"
+              [attr.aria-label]="'Job ' + job.id">
+              <td><strong>#{{ job.id }}</strong></td>
+              <td><span [class]="statusClass(job.status)">{{ job.status }}</span></td>
+              <td>{{ progressOf(job) | number: '1.0-0' }}%</td>
+              <td>{{ job.created_at | date: 'dd/MM HH:mm' }}</td>
+              <td>{{ job.completed_at ? (job.completed_at | date: 'dd/MM HH:mm') : '—' }}</td>
+              <td class="text-right">
+                @if (canViewSolution(job)) {
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-primary"
+                    [disabled]="openingSolutionFor() !== null"
+                    (click)="viewSolution(job); $event.stopPropagation()">
+                    @if (openingSolutionFor() === job.id) {
+                      Loading…
+                    } @else {
+                      View solution
+                    }
+                  </button>
+                } @else {
+                  <span class="text-muted">—</span>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

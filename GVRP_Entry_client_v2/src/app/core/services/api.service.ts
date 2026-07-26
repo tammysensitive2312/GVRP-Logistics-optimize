@@ -7,6 +7,7 @@ import {
   FleetDTO,
   FleetInputDTO,
   JobDTO,
+  JobProgressDTO,
   OrderDTO,
   OrderFilter,
   OrderInputDTO,
@@ -129,26 +130,35 @@ export class ApiService {
   }
 
   /**
-   * V1 `getCurrentRunningJob()`: GET /jobs/current answers 204 when nothing is
-   * running, so an empty body maps to null instead of an error.
+   * Live solver telemetry (phase, percent, iteration, best cost).
+   * Answers 204 when no progress record exists, which maps to null rather than
+   * an error - the caller treats that as "not running any more".
    */
-  getCurrentRunningJob(): Observable<JobDTO | null> {
+  getJobProgress(jobId: number): Observable<JobProgressDTO | null> {
     return this.http
-      .get<JobDTO>(`${this.apiUrl}/jobs/current`, { observe: 'response' })
+      .get<JobProgressDTO>(`${this.apiUrl}/jobs/${jobId}/progress`, {
+        observe: 'response'
+      })
       .pipe(map(response => (response.status === 204 ? null : response.body)));
   }
 
-  /**
-   * V1 `getJobHistory(limit)` accepted a limit but never sent it - it just
-   * called GET /jobs. The parameter is passed through here.
-   */
+  // getJobProgress(jobId: number): Observable<any> {
+  //
+  // }
+
   getJobHistory(limit = 10): Observable<JobDTO[]> {
     const params = new HttpParams().set('limit', limit.toString());
-    return this.http.get<JobDTO[]>(`${this.apiUrl}/jobs`, { params });
+    return this.http.get<JobDTO[]>(`${this.apiUrl}/jobs`, {params});
   }
 
   cancelJob(jobId: number): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/jobs/${jobId}`);
+    const payload = {
+      ids : [jobId]
+    }
+    return this.http.put<void>(
+      `${this.apiUrl}/jobs`,
+      payload
+    );
   }
 
   getSolutionById(solutionId: number): Observable<SolutionDTO> {

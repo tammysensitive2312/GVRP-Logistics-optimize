@@ -18,6 +18,8 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { Subject } from 'rxjs';
 import { finalize, switchMap } from 'rxjs/operators';
 
+import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+
 import { DepotInputDTO } from '@core/models';
 import { DepotStore } from '@core/services/depot.store';
 import {
@@ -55,14 +57,19 @@ const MAX_NAME_LENGTH = 100;
  * Behaviour differences from V1, all deliberate:
  * - Errors from POST /depots are surfaced and the form stays open. V1 wrapped
  *   the call in `handleApiError`, which swallowed failures and still showed
- *   "Depot đã được tạo thành công!" before navigating away.
+ *   a success toast before navigating away.
  * - The address field is editable. V1 kept it readonly, so a wrong Nominatim
  *   result could not be corrected before saving.
  */
 @Component({
   selector: 'app-depot-setup',
   standalone: true,
-  imports: [ReactiveFormsModule, MatProgressSpinnerModule, LocationPickerComponent],
+  imports: [
+    ReactiveFormsModule,
+    MatProgressSpinnerModule,
+    TranslocoPipe,
+    LocationPickerComponent
+  ],
   templateUrl: './depot-setup.component.html',
   styleUrl: './depot-setup.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -72,6 +79,7 @@ export class DepotSetupComponent {
   private readonly geocoding = inject(GeocodingService);
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
+  private readonly i18n = inject(TranslocoService);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly maxNameLength = MAX_NAME_LENGTH;
@@ -159,23 +167,23 @@ export class DepotSetupComponent {
       )
       .subscribe({
         next: () => {
-          this.toast.success('Depot đã được tạo thành công!');
+          this.toast.success(this.i18n.translate('depotSetup.created'));
           void this.router.navigate([NEXT_SETUP_STEP]);
         },
         error: (error: unknown) => {
           console.error('Failed to create depot:', error);
           this.toast.error(
-            extractMessage(error) ?? 'Không thể tạo depot. Vui lòng thử lại.'
+            extractMessage(error) ?? this.i18n.translate('depotSetup.createFailed')
           );
         }
       });
   }
 
-  /** V1 "Hủy" button: clears the form and removes the map marker. */
+  /** V1 "Cancel" button: clears the form and removes the map marker. */
   onReset(): void {
     this.form.reset({ name: '', address: '', latitude: null, longitude: null });
     this.picked.set(null);
-    this.toast.info('Form đã được reset');
+    this.toast.info(this.i18n.translate('depotSetup.formReset'));
   }
 
   private buildPayload(): DepotInputDTO | null {
@@ -191,26 +199,26 @@ export class DepotSetupComponent {
     };
   }
 
-  /** Error order and wording match V1 `Validator.validateDepot`. */
+  /** Error order matches V1 `Validator.validateDepot`; wording lives in i18n. */
   private firstErrorMessage(): string {
     const { name, latitude, longitude } = this.form.controls;
 
     if (name.hasError('required') || name.hasError('notBlank')) {
-      return 'Vui lòng nhập tên depot';
+      return this.i18n.translate('depotSetup.errors.nameRequired');
     }
     if (name.hasError('maxlength')) {
-      return `Tên depot không được vượt quá ${MAX_NAME_LENGTH} ký tự`;
+      return this.i18n.translate('depotSetup.errors.nameTooLong', { max: MAX_NAME_LENGTH });
     }
     if (this.form.hasError('requiredLocation')) {
-      return 'Vui lòng chọn vị trí trên bản đồ';
+      return this.i18n.translate('depotSetup.errors.locationRequired');
     }
     if (latitude.hasError('latitudeRange')) {
-      return 'Latitude phải nằm trong khoảng -90 đến 90';
+      return this.i18n.translate('depotSetup.errors.latitudeRange');
     }
     if (longitude.hasError('longitudeRange')) {
-      return 'Longitude phải nằm trong khoảng -180 đến 180';
+      return this.i18n.translate('depotSetup.errors.longitudeRange');
     }
-    return 'Vui lòng kiểm tra lại thông tin depot';
+    return this.i18n.translate('depotSetup.errors.generic');
   }
 }
 

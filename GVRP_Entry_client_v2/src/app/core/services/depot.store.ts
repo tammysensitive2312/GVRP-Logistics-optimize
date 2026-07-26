@@ -3,16 +3,14 @@ import { Observable, tap } from 'rxjs';
 
 import { DepotDTO, DepotInputDTO } from '@core/models';
 import { ApiService } from '@core/services/api.service';
-import {
-  CollectionCache,
-  DEFAULT_STALE_TIME_MS
-} from '@core/services/collection-cache';
+import { CollectionCache } from '@core/services/collection-cache';
 
 /**
  * Depot Store
  *
- * Replaces V1's `QueryKeys.depots.all` cache entry (staleTime 10 minutes,
- * "depots rarely change") with a signal-based cache.
+ * Shared depot list for the sidebar, the fleet form, the admin screen and the
+ * setup guard. No time-based caching: `load()` always refetches, concurrent
+ * callers just share the pending request.
  */
 @Injectable({ providedIn: 'root' })
 export class DepotStore {
@@ -20,8 +18,7 @@ export class DepotStore {
 
   private readonly cache = new CollectionCache<DepotDTO>({
     fetch: () => this.api.getDepots(),
-    staleTimeMs: DEFAULT_STALE_TIME_MS,
-    fallbackError: 'Không thể tải danh sách depot.'
+    fallbackError: 'Could not load depots'
   });
 
   readonly depots = this.cache.items;
@@ -30,12 +27,12 @@ export class DepotStore {
   readonly depotCount = this.cache.count;
   readonly hasDepots = computed(() => !this.cache.isEmpty());
 
-  load(force = false): Observable<readonly DepotDTO[]> {
-    return this.cache.load(force);
+  load(): Observable<readonly DepotDTO[]> {
+    return this.cache.load();
   }
 
   /**
-   * Create a depot and merge the result into the cache.
+   * Create a depot and merge the result into the shared list.
    * Unlike V1 (`createDepot` swallowed failures inside `handleApiError`),
    * errors propagate so callers can keep the form open.
    */
@@ -44,16 +41,9 @@ export class DepotStore {
       tap(created => {
         if (created && created.id != null) {
           this.cache.add(created);
-        } else {
-          // Unexpected shape - drop freshness so the next read refetches.
-          this.cache.invalidate();
         }
       })
     );
-  }
-
-  invalidate(): void {
-    this.cache.invalidate();
   }
 
   reset(): void {

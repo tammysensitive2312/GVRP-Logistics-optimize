@@ -1,29 +1,29 @@
 <div class="setup-container">
   <header class="setup-header">
-    <h1>🏢 Thiết lập Depot - Kho hàng</h1>
-    <p>Vui lòng chọn vị trí kho hàng của bạn trên bản đồ</p>
+    <h1>{{ 'depotSetup.title' | transloco }}</h1>
+    <p>{{ 'depotSetup.subtitle' | transloco }}</p>
   </header>
 
   <form class="setup-form" [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
-    <!-- Tên Depot -->
+    <!-- Depot name -->
     <div class="form-group">
-      <label for="depot-name">Tên Depot <span class="required">*</span></label>
+      <label for="depot-name">{{ 'depotSetup.nameLabel' | transloco }} <span class="required">*</span></label>
       <input
         id="depot-name"
         type="text"
         formControlName="name"
-        placeholder="Ví dụ: Kho Hà Nội"
+        [placeholder]="'depotSetup.namePlaceholder' | transloco"
         [maxlength]="maxNameLength"
         autocomplete="off"/>
 
       @if (form.controls.name.touched && form.controls.name.invalid) {
-        <p class="form-error">Vui lòng nhập tên depot</p>
+        <p class="form-error">{{ 'depotSetup.errors.nameRequired' | transloco }}</p>
       }
     </div>
 
-    <!-- Vị trí trên bản đồ -->
+    <!-- Location on the map -->
     <div class="form-group">
-      <label id="depot-location-label">Vị trí Depot <span class="required">*</span></label>
+      <label id="depot-location-label">{{ 'depotSetup.locationLabel' | transloco }} <span class="required">*</span></label>
 
       <app-location-picker
         aria-labelledby="depot-location-label"
@@ -33,32 +33,32 @@
         height="400px"
         (locationPicked)="onLocationPicked($event)"/>
 
-      <p class="form-hint">💡 Click vào bản đồ để chọn vị trí kho hàng của bạn</p>
+      <p class="form-hint">{{ 'depotSetup.mapHint' | transloco }}</p>
 
       @if (form.touched && form.hasError('requiredLocation')) {
-        <p class="form-error">Vui lòng chọn vị trí trên bản đồ</p>
+        <p class="form-error">{{ 'depotSetup.errors.locationRequired' | transloco }}</p>
       }
     </div>
 
-    <!-- Địa chỉ (tự động điền, vẫn cho phép sửa) -->
+    <!-- Address: auto-filled, still editable -->
     <div class="form-group">
       <label for="depot-address">
-        Địa chỉ
+        {{ 'depotSetup.addressLabel' | transloco }}
         @if (geocodingInProgress()) {
-          <span class="form-label-note">đang tra cứu địa chỉ…</span>
+          <span class="form-label-note">{{ 'depotSetup.addressLookup' | transloco }}</span>
         }
       </label>
       <input
         id="depot-address"
         type="text"
         formControlName="address"
-        placeholder="Click vào bản đồ để tự động điền địa chỉ"
+        [placeholder]="'depotSetup.addressPlaceholder' | transloco"
         autocomplete="off"/>
     </div>
 
     <div class="form-row">
       <div class="form-group">
-        <label for="depot-lat">Latitude</label>
+        <label for="depot-lat">{{ 'depotSetup.latitudeLabel' | transloco }}</label>
         <input
           id="depot-lat"
           type="text"
@@ -68,7 +68,7 @@
           tabindex="-1"/>
       </div>
       <div class="form-group">
-        <label for="depot-lng">Longitude</label>
+        <label for="depot-lng">{{ 'depotSetup.longitudeLabel' | transloco }}</label>
         <input
           id="depot-lng"
           type="text"
@@ -81,14 +81,14 @@
 
     <div class="form-actions">
       <button type="button" class="btn btn-secondary" [disabled]="saving()" (click)="onReset()">
-        Hủy
+        {{ 'common.cancel' | transloco }}
       </button>
       <button type="submit" class="btn btn-primary" [disabled]="saving()">
         @if (saving()) {
           <mat-spinner class="btn-spinner" diameter="16"/>
-          <span>Đang lưu depot…</span>
+          <span>{{ 'depotSetup.saving' | transloco }}</span>
         } @else {
-          <span>Lưu Depot</span>
+          <span>{{ 'depotSetup.saveButton' | transloco }}</span>
         }
       </button>
     </div>

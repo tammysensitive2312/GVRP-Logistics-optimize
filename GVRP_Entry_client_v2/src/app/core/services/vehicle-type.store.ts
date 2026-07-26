@@ -3,16 +3,13 @@ import { Observable, tap } from 'rxjs';
 
 import { VehicleTypeDTO, VehicleTypeInputDTO } from '@core/models';
 import { ApiService } from '@core/services/api.service';
-import {
-  CollectionCache,
-  DEFAULT_STALE_TIME_MS
-} from '@core/services/collection-cache';
+import { CollectionCache } from '@core/services/collection-cache';
 
 /**
  * Vehicle Type Store
  *
- * Replaces V1's `QueryKeys.vehicleTypes.all` cache entry. V1 invalidated that
- * key after every create/update; here the cache is updated in place instead.
+ * Shared vehicle-type list. Mutations update the list in place instead of
+ * refetching (V1 invalidated its query key after every create/update).
  */
 @Injectable({ providedIn: 'root' })
 export class VehicleTypeStore {
@@ -20,8 +17,7 @@ export class VehicleTypeStore {
 
   private readonly cache = new CollectionCache<VehicleTypeDTO>({
     fetch: () => this.api.getVehicleTypes(),
-    staleTimeMs: DEFAULT_STALE_TIME_MS,
-    fallbackError: 'Không thể tải danh sách loại xe'
+    fallbackError: 'Failed to load vehicle types'
   });
 
   readonly vehicleTypes = this.cache.items;
@@ -31,8 +27,8 @@ export class VehicleTypeStore {
   readonly isEmpty = this.cache.isEmpty;
   readonly hasVehicleTypes = computed(() => !this.cache.isEmpty());
 
-  load(force = false): Observable<readonly VehicleTypeDTO[]> {
-    return this.cache.load(force);
+  load(): Observable<readonly VehicleTypeDTO[]> {
+    return this.cache.load();
   }
 
   create(payload: VehicleTypeInputDTO): Observable<VehicleTypeDTO> {
@@ -40,8 +36,6 @@ export class VehicleTypeStore {
       tap(created => {
         if (created && created.id != null) {
           this.cache.add(created);
-        } else {
-          this.cache.invalidate();
         }
       })
     );
@@ -52,8 +46,6 @@ export class VehicleTypeStore {
       tap(updated => {
         if (updated && updated.id != null) {
           this.cache.replace(updated, candidate => candidate.id === typeId);
-        } else {
-          this.cache.invalidate();
         }
       })
     );
@@ -63,10 +55,6 @@ export class VehicleTypeStore {
     return this.api.deleteVehicleType(typeId).pipe(
       tap(() => this.cache.remove(candidate => candidate.id === typeId))
     );
-  }
-
-  invalidate(): void {
-    this.cache.invalidate();
   }
 
   reset(): void {

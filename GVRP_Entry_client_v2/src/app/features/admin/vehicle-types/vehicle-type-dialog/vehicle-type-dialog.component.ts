@@ -7,6 +7,7 @@ import {
 } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
+import { TranslocoPipe } from '@jsverse/transloco';
 
 import { VehicleFeatures, VehicleTypeDTO, VehicleTypeInputDTO } from '@core/models';
 import { notBlank } from '@shared/utils/geo.validators';
@@ -45,7 +46,7 @@ interface VehicleTypeDialogControls {
 @Component({
   selector: 'app-vehicle-type-dialog',
   standalone: true,
-  imports: [ReactiveFormsModule, MatDialogModule, MatButtonModule],
+  imports: [ReactiveFormsModule, MatDialogModule, MatButtonModule, TranslocoPipe],
   templateUrl: './vehicle-type-dialog.component.html',
   styleUrl: './vehicle-type-dialog.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush

@@ -1,5 +1,28 @@
 @import '../../../../../assets/styles/variables';
 
+.solver-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+  gap: $space-sm $space-md;
+  margin: $space-md 0 0;
+}
+
+.solver-stat {
+  dt {
+    font-size: $font-size-xs;
+    color: $text-gray;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+  }
+
+  dd {
+    margin: 2px 0 0;
+    font-size: $font-size-base;
+    font-weight: $font-weight-semibold;
+    color: $text-dark;
+  }
+}
+
 // Added with the job-dialog fixes: timestamps, degraded-polling notice and the
 // alert banners (V1 #unassigned-warning / solution-fetch retry box).
 .job-timestamps {

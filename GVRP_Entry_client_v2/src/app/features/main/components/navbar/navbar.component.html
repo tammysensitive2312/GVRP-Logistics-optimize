@@ -23,21 +23,21 @@
   <div class="navbar-center">
     <button mat-button
             class="nav-menu-item"
-            [class.active]="activeTab === 'dashboard'"
+            [class.active]="activeTab() === 'dashboard'"
             (click)="onTabClick('dashboard')">
       Dashboard
     </button>
 
     <button mat-button
             class="nav-menu-item"
-            [class.active]="activeTab === 'analysis'"
+            [class.active]="activeTab() === 'analysis'"
             (click)="onTabClick('analysis')">
       Analysis
     </button>
 
     <button mat-button
             class="nav-menu-item"
-            [class.active]="activeTab === 'history'"
+            [class.active]="activeTab() === 'history'"
             (click)="onTabClick('history')">
       History
     </button>
@@ -45,6 +45,17 @@
 
   <!-- Right Section -->
   <div class="navbar-right">
+    <!-- Language toggle: one click flips EN <-> VI -->
+    <button
+      mat-icon-button
+      type="button"
+      class="language-button"
+      [attr.aria-label]="('common.language' | transloco) + ': ' + language.nextOption().label"
+      [matTooltip]="language.nextOption().label"
+      (click)="onLanguageToggle()">
+      <app-flag-icon [country]="language.currentOption().flag"/>
+    </button>
+
     <!-- User Info (Optional - show username) -->
     <span class="user-info" *ngIf="currentUser">
       <mat-icon>person</mat-icon>

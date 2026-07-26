@@ -4,12 +4,12 @@ import { MatTabsModule } from '@angular/material/tabs';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDialog } from '@angular/material/dialog';
+import { Router } from '@angular/router';
 import {Subject} from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
 import { ApiService } from '@core/services/api.service';
 import { ToastService } from '@shared/services/toast.service';
-import { StorageService } from '@core/services/storage.service';
 
 import {OrderDTO, OrderFilter, RoutePlanningRequest, SolutionDTO} from '@core/models';
 import {SolutionStore} from '@core/services/solution.store';
@@ -64,8 +64,8 @@ export class OrdersSectionComponent implements OnInit, OnDestroy {
 
   private apiService = inject(ApiService);
   private toastService = inject(ToastService);
-  private storageService = inject(StorageService);
   private dialog = inject(MatDialog);
+  private router = inject(Router);
 
   selectedTabIndex = 0;
 
@@ -92,7 +92,6 @@ export class OrdersSectionComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.loadOrders();
-    this.restoreAppState();
     this.subscribeToVehicleSelection();
   }
 
@@ -134,7 +133,7 @@ export class OrdersSectionComponent implements OnInit, OnDestroy {
     dialogRef.afterClosed().subscribe((result: ImportDialogResult | null) => {
       if (!result) return;
 
-      // Build FormData và call API
+      // Build FormData and call the API
       const formData = new FormData();
       if (result.method === 'file' && result.file) {
         formData.append('file', result.file);
@@ -219,9 +218,7 @@ export class OrdersSectionComponent implements OnInit, OnDestroy {
                 .pipe(takeUntil(this.destroy$))
                 .subscribe(action => {
                   if (action === 'view-history') {
-                    // No job-history screen exists yet in V2 (V1's
-                    // `viewJobHistory()` was never defined either).
-                    this.toastService.info('Job history is not available yet');
+                    void this.router.navigate(['/jobs']);
                   }
                 });
             }
@@ -365,27 +362,11 @@ export class OrdersSectionComponent implements OnInit, OnDestroy {
       });
   }
 
-  /**
-   * Restore app state from storage
-   */
-  private restoreAppState(): void {
-    const appState = this.storageService.getAppState();
-
-    if (appState) {
-      // Restore selected tab if applicable
-      if (appState.lastUrl?.includes('routes')) {
-        this.selectedTabIndex = 1;
-      } else if (appState.lastUrl?.includes('timeline')) {
-        this.selectedTabIndex = 2;
-      }
-
-      // Restore the solution the user was looking at before the reload
-      // (V1: PersistenceManager.#restoreSolution).
-      if (appState.activeSolutionId) {
-        this.loadSolution(appState.activeSolutionId, { silent: true });
-      }
-    }
-  }
+  // Removed: restoreAppState().
+  // It matched `lastUrl` against 'routes' / 'timeline', substrings this app's
+  // URLs never contain, so the tab restore never fired - dead code. The other
+  // half restored a solution from localStorage, which is now an explicit action
+  // on the /jobs screen instead of hidden state.
 
   /**
    * Load a solution by id (job monitoring, history, or state restore).

@@ -1,4 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+
+import { translocoTesting } from '../../../../testing/transloco-testing';
 import { Router } from '@angular/router';
 import { of, throwError } from 'rxjs';
 
@@ -52,7 +54,7 @@ describe('VehicleTypeSetupComponent', () => {
     Object.defineProperty(store, 'hasVehicleTypes', { value: () => false, writable: true });
 
     await TestBed.configureTestingModule({
-      imports: [VehicleTypeSetupComponent],
+      imports: [VehicleTypeSetupComponent, translocoTesting()],
       providers: [
         { provide: VehicleTypeStore, useValue: store },
         { provide: ToastService, useValue: toast },
@@ -73,7 +75,7 @@ describe('VehicleTypeSetupComponent', () => {
     component.onSubmit();
 
     expect(store.create).not.toHaveBeenCalled();
-    expect(toast.error).toHaveBeenCalledWith('Vui lòng nhập tên loại xe');
+    expect(toast.error).toHaveBeenCalledWith('vehicleTypeSetup.errors.nameRequired');
   });
 
   it('rejects a non-positive capacity', () => {
@@ -83,7 +85,7 @@ describe('VehicleTypeSetupComponent', () => {
     component.onSubmit();
 
     expect(store.create).not.toHaveBeenCalled();
-    expect(toast.error).toHaveBeenCalledWith('Tải trọng phải lớn hơn 0');
+    expect(toast.error).toHaveBeenCalledWith('vehicleTypeSetup.errors.capacityPositive');
   });
 
   it('rejects negative costs', () => {
@@ -92,7 +94,7 @@ describe('VehicleTypeSetupComponent', () => {
 
     component.onSubmit();
 
-    expect(toast.error).toHaveBeenCalledWith('Chi phí cố định không được âm');
+    expect(toast.error).toHaveBeenCalledWith('vehicleTypeSetup.errors.fixedCostNonNegative');
   });
 
   it('accepts zero costs, as V1 did', () => {
@@ -111,7 +113,7 @@ describe('VehicleTypeSetupComponent', () => {
 
     component.form.controls.maxDistance.setValue(0);
     component.onSubmit();
-    expect(toast.error).toHaveBeenCalledWith('Quãng đường tối đa phải lớn hơn 0');
+    expect(toast.error).toHaveBeenCalledWith('vehicleTypeSetup.errors.maxDistancePositive');
 
     component.form.controls.maxDistance.setValue(null);
     component.onSubmit();
@@ -138,7 +140,7 @@ describe('VehicleTypeSetupComponent', () => {
     };
 
     expect(store.create).toHaveBeenCalledWith(expected);
-    expect(toast.success).toHaveBeenCalledWith('Loại xe đã được tạo thành công!');
+    expect(toast.success).toHaveBeenCalledWith('vehicleTypeSetup.created');
   });
 
   it('omits optional keys and sends an empty feature bag when unset', () => {

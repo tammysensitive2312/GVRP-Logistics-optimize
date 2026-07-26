@@ -1,38 +1,38 @@
 <div class="setup-container">
   <header class="setup-header">
-    <h1>🚚 Thiết lập Đội xe</h1>
-    <p>Thêm thông tin về đội xe và phương tiện của bạn</p>
+    <h1>{{ 'fleetSetup.title' | transloco }}</h1>
+    <p>{{ 'fleetSetup.subtitle' | transloco }}</p>
   </header>
 
   <form class="setup-form" [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
     <div class="form-group">
-      <label for="fleet-name">Tên đội xe <span class="required">*</span></label>
+      <label for="fleet-name">{{ 'fleetSetup.nameLabel' | transloco }} <span class="required">*</span></label>
       <input
         id="fleet-name"
         type="text"
         formControlName="fleetName"
-        placeholder="Ví dụ: Đội xe giao hàng nội thành"
+        [placeholder]="'fleetSetup.namePlaceholder' | transloco"
         autocomplete="off"/>
       @if (form.controls.fleetName.touched && form.controls.fleetName.invalid) {
-        <p class="form-error">Vui lòng nhập tên đội xe</p>
+        <p class="form-error">{{ 'fleetSetup.errors.nameRequired' | transloco }}</p>
       }
     </div>
 
     <div class="form-group">
       <div class="section-header">
-        <label id="vehicles-label">Danh sách Xe <span class="required">*</span></label>
+        <label id="vehicles-label">{{ 'fleetSetup.vehiclesLabel' | transloco }} <span class="required">*</span></label>
         <button
           type="button"
           class="btn btn-sm btn-success"
           [disabled]="loadingData() || saving()"
           (click)="addVehicle()">
-          + Thêm xe
+          {{ 'fleetSetup.addVehicle' | transloco }}
         </button>
       </div>
 
       @if (depots().length > 0) {
         <div class="depots-info-box">
-          <strong>📍 Depots có sẵn:</strong>
+          <strong>{{ 'fleetSetup.availableDepots' | transloco }}</strong>
           @for (depot of depots(); track depot.id) {
             <div class="depot-info-item">
               <strong>{{ depot.name }}</strong> - {{ depot.address }}
@@ -43,7 +43,7 @@
 
       @if (vehicleTypes().length > 0) {
         <div class="vehicle-types-info-box">
-          <strong>🚚 Các loại xe có sẵn:</strong>
+          <strong>{{ 'fleetSetup.availableVehicleTypes' | transloco }}</strong>
           @for (type of vehicleTypes(); track type.id) {
             <div class="vehicle-type-info-item">
               <strong>🚚 {{ type.name }}</strong> - {{ type.capacity }}kg
@@ -53,27 +53,27 @@
       }
 
       @if (loadingData()) {
-        <div class="loading-message">Loading data...</div>
+        <div class="loading-message">{{ 'fleetSetup.loadingData' | transloco }}</div>
       }
 
       <div class="vehicles-container" formArrayName="vehicles" aria-labelledby="vehicles-label">
         @for (row of vehicleRows(); track $index) {
           <div class="vehicle-card" [formGroupName]="$index">
             <div class="vehicle-header">
-              <span class="vehicle-number">Xe #{{ $index + 1 }}</span>
+              <span class="vehicle-number">{{ 'fleetSetup.vehicleNumber' | transloco: { number: $index + 1 } }}</span>
               <button
                 type="button"
                 class="btn-remove-vehicle"
                 [disabled]="saving()"
                 (click)="removeVehicle($index)">
-                ✕ Xóa
+                {{ 'fleetSetup.removeVehicle' | transloco }}
               </button>
             </div>
 
             <div class="vehicle-fields">
               <div class="form-group">
                 <label [for]="'vehicle-plate-' + $index">
-                  Biển số <span class="required">*</span>
+                  {{ 'fleetSetup.plateLabel' | transloco }} <span class="required">*</span>
                 </label>
                 <input
                   [id]="'vehicle-plate-' + $index"
@@ -82,18 +82,18 @@
                   placeholder="29A-12345"
                   autocomplete="off"/>
                 @if (row.controls.licensePlate.touched && row.controls.licensePlate.invalid) {
-                  <p class="form-error">Vui lòng nhập biển số xe</p>
+                  <p class="form-error">{{ 'fleetSetup.errors.plateRequired' | transloco: { number: $index + 1 } }}</p>
                 }
               </div>
 
               <div class="form-group">
                 <label [for]="'vehicle-type-' + $index">
-                  Loại xe <span class="required">*</span>
+                  {{ 'fleetSetup.vehicleTypeLabel' | transloco }} <span class="required">*</span>
                 </label>
                 <select
                   [id]="'vehicle-type-' + $index"
                   formControlName="vehicleTypeId">
-                  <option [ngValue]="null">-- Chọn loại xe --</option>
+                  <option [ngValue]="null">{{ 'fleetSetup.vehicleTypePlaceholder' | transloco }}</option>
                   @for (type of vehicleTypes(); track type.id) {
                     <option [ngValue]="type.id">{{ type.name }} ({{ type.capacity }}kg)</option>
                   }
@@ -101,43 +101,45 @@
 
                 @if (selectedTypeInfo(row); as type) {
                   <div class="type-info">
-                    📦 {{ type.capacity }}kg |
-                    💰 {{ type.fixed_cost | vnd }} cố định |
-                    🛣️ {{ type.cost_per_km | vnd }}/km
+                    {{ 'fleetSetup.typeInfo' | transloco: {
+                      capacity: type.capacity,
+                      fixedCost: (type.fixed_cost | vnd),
+                      costPerKm: (type.cost_per_km | vnd)
+                    } }}
                   </div>
                 }
                 @if (row.controls.vehicleTypeId.touched && row.controls.vehicleTypeId.invalid) {
-                  <p class="form-error">Vui lòng chọn loại xe</p>
+                  <p class="form-error">{{ 'fleetSetup.errors.typeRequired' | transloco: { number: $index + 1 } }}</p>
                 }
               </div>
 
               <div class="form-group">
                 <label [for]="'vehicle-start-' + $index">
-                  Điểm xuất phát <span class="required">*</span>
+                  {{ 'fleetSetup.startDepotLabel' | transloco }} <span class="required">*</span>
                 </label>
                 <select [id]="'vehicle-start-' + $index" formControlName="startDepotId">
-                  <option [ngValue]="null">-- Chọn depot --</option>
+                  <option [ngValue]="null">{{ 'fleetSetup.depotPlaceholder' | transloco }}</option>
                   @for (depot of depots(); track depot.id) {
                     <option [ngValue]="depot.id">{{ depot.name }}</option>
                   }
                 </select>
                 @if (row.controls.startDepotId.touched && row.controls.startDepotId.invalid) {
-                  <p class="form-error">Vui lòng chọn điểm xuất phát</p>
+                  <p class="form-error">{{ 'fleetSetup.errors.startDepotRequired' | transloco: { number: $index + 1 } }}</p>
                 }
               </div>
 
               <div class="form-group">
                 <label [for]="'vehicle-end-' + $index">
-                  Điểm kết thúc <span class="required">*</span>
+                  {{ 'fleetSetup.endDepotLabel' | transloco }} <span class="required">*</span>
                 </label>
                 <select [id]="'vehicle-end-' + $index" formControlName="endDepotId">
-                  <option [ngValue]="null">-- Chọn depot --</option>
+                  <option [ngValue]="null">{{ 'fleetSetup.depotPlaceholder' | transloco }}</option>
                   @for (depot of depots(); track depot.id) {
                     <option [ngValue]="depot.id">{{ depot.name }}</option>
                   }
                 </select>
                 @if (row.controls.endDepotId.touched && row.controls.endDepotId.invalid) {
-                  <p class="form-error">Vui lòng chọn điểm kết thúc</p>
+                  <p class="form-error">{{ 'fleetSetup.errors.endDepotRequired' | transloco: { number: $index + 1 } }}</p>
                 }
               </div>
             </div>
@@ -148,24 +150,24 @@
 
     <div class="fleet-summary">
       <div class="summary-item">
-        <span class="summary-label">📊 Tổng số xe:</span>
+        <span class="summary-label">{{ 'fleetSetup.totalVehicles' | transloco }}</span>
         <span class="summary-value">{{ totalVehicles() }}</span>
       </div>
     </div>
 
     <div class="form-actions">
       <button type="button" class="btn btn-secondary" [disabled]="saving()" (click)="onBack()">
-        ← Quay lại
+        {{ 'common.back' | transloco }}
       </button>
       <button type="button" class="btn btn-secondary" [disabled]="saving()" (click)="onReset()">
-        Hủy
+        {{ 'common.cancel' | transloco }}
       </button>
       <button type="submit" class="btn btn-primary" [disabled]="saving() || loadingData()">
         @if (saving()) {
           <mat-spinner class="btn-spinner" diameter="16"/>
-          <span>Đang lưu đội xe…</span>
+          <span>{{ 'fleetSetup.saving' | transloco }}</span>
         } @else {
-          <span>Lưu Đội xe</span>
+          <span>{{ 'fleetSetup.saveButton' | transloco }}</span>
         }
       </button>
     </div>

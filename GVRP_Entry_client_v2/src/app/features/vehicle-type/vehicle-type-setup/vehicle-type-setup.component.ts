@@ -12,6 +12,8 @@ import { Router } from '@angular/router';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { finalize } from 'rxjs/operators';
 
+import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+
 import { VehicleFeatures, VehicleTypeInputDTO } from '@core/models';
 import { VehicleTypeStore } from '@core/services/vehicle-type.store';
 import { VndPipe } from '@shared/pipes/vnd.pipe';
@@ -47,13 +49,13 @@ const NEXT_SETUP_STEP = '/setup/fleet';
  *   `handleApiError` swallowed them and only logged).
  * - The new type is merged into the cached list instead of refetching the whole
  *   list after every create.
- * - "Tiếp tục →" is disabled until at least one vehicle type exists. V1 let you
+ * - The "Continue" button is disabled until at least one vehicle type exists. V1 let you
  *   skip ahead, and `app.js checkSetupStatus` then bounced you straight back.
  */
 @Component({
   selector: 'app-vehicle-type-setup',
   standalone: true,
-  imports: [ReactiveFormsModule, MatProgressSpinnerModule, VndPipe],
+  imports: [ReactiveFormsModule, MatProgressSpinnerModule, TranslocoPipe, VndPipe],
   templateUrl: './vehicle-type-setup.component.html',
   styleUrl: './vehicle-type-setup.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -62,6 +64,7 @@ export class VehicleTypeSetupComponent implements OnInit {
   private readonly store = inject(VehicleTypeStore);
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
+  private readonly i18n = inject(TranslocoService);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly vehicleTypes = this.store.vehicleTypes;
@@ -122,13 +125,13 @@ export class VehicleTypeSetupComponent implements OnInit {
       )
       .subscribe({
         next: () => {
-          this.toast.success('Loại xe đã được tạo thành công!');
+          this.toast.success(this.i18n.translate('vehicleTypeSetup.created'));
           this.form.reset();
         },
         error: (error: unknown) => {
           console.error('Failed to create vehicle type:', error);
           this.toast.error(
-            extractMessage(error) ?? 'Không thể tạo loại xe. Vui lòng thử lại.'
+            extractMessage(error) ?? this.i18n.translate('vehicleTypeSetup.createFailed')
           );
         }
       });
@@ -153,7 +156,7 @@ export class VehicleTypeSetupComponent implements OnInit {
         error: (error: unknown) => {
           console.error('Failed to load vehicle types:', error);
           this.toast.error(
-            extractMessage(error) ?? 'Không thể tải danh sách loại xe'
+            extractMessage(error) ?? this.i18n.translate('vehicleTypeSetup.loadFailed')
           );
         }
       });
@@ -186,19 +189,21 @@ export class VehicleTypeSetupComponent implements OnInit {
     return payload;
   }
 
-  /** Error order and wording match V1 `Validator.validateVehicleType`. */
+  /** Error order matches V1 `Validator.validateVehicleType`; wording lives in i18n. */
   private firstErrorMessage(): string {
     const c = this.form.controls;
 
-    if (c.typeName.invalid) return 'Vui lòng nhập tên loại xe';
-    if (c.capacity.invalid) return 'Tải trọng phải lớn hơn 0';
-    if (c.fixedCost.invalid) return 'Chi phí cố định không được âm';
-    if (c.costPerKm.invalid) return 'Chi phí/km không được âm';
-    if (c.costPerHour.invalid) return 'Chi phí/giờ không được âm';
-    if (c.maxDistance.invalid) return 'Quãng đường tối đa phải lớn hơn 0';
-    if (c.maxDuration.invalid) return 'Thời gian tối đa phải lớn hơn 0';
+    const t = (key: string) => this.i18n.translate(`vehicleTypeSetup.errors.${key}`);
 
-    return 'Vui lòng kiểm tra lại thông tin loại xe';
+    if (c.typeName.invalid) return t('nameRequired');
+    if (c.capacity.invalid) return t('capacityPositive');
+    if (c.fixedCost.invalid) return t('fixedCostNonNegative');
+    if (c.costPerKm.invalid) return t('costPerKmNonNegative');
+    if (c.costPerHour.invalid) return t('costPerHourNonNegative');
+    if (c.maxDistance.invalid) return t('maxDistancePositive');
+    if (c.maxDuration.invalid) return t('maxDurationPositive');
+
+    return t('generic');
   }
 }
 

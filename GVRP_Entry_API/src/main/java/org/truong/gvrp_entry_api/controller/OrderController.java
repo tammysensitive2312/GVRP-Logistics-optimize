@@ -49,9 +49,7 @@ public class OrderController {
             @RequestParam(defaultValue = "10") int size
     ) {
         Long branchId = CurrentUserUtil.getCurrentBranchId();
-
         PageResponse<OrderDTO> result = orderService.getAllOrdersPaginated(branchId, page, size);
-
         return ResponseEntity.ok(result);
     }
 

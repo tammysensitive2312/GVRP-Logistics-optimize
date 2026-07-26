@@ -14,6 +14,8 @@
           <span class="progress-hint">
             @if (isCompleted()) {
               Finalizing results...
+            } @else if (phaseLabel()) {
+              {{ phaseLabel() }}...
             } @else {
               Processing your optimization request...
             }
@@ -21,6 +23,44 @@
           <span class="progress-percent">{{ progress() | number: '1.0-0' }}%</span>
         </div>
         <mat-progress-bar mode="determinate" [value]="progress()" color="primary"/>
+
+        <!-- Live solver telemetry (GET /jobs/{id}/progress) -->
+        @if (solverStats(); as stats) {
+          <dl class="solver-stats">
+            <div class="solver-stat">
+              <dt>Iteration</dt>
+              <dd>
+                {{ stats.iteration | number }}@if (stats.maxIterations) {
+                  / {{ stats.maxIterations | number }}
+                }
+              </dd>
+            </div>
+            @if (stats.routes !== null) {
+              <div class="solver-stat">
+                <dt>Routes</dt>
+                <dd>{{ stats.routes }}</dd>
+              </div>
+            }
+            @if (stats.unassigned !== null) {
+              <div class="solver-stat">
+                <dt>Unassigned</dt>
+                <dd>{{ stats.unassigned }}</dd>
+              </div>
+            }
+            @if (stats.bestCost !== null) {
+              <div class="solver-stat">
+                <dt>Best cost</dt>
+                <dd>{{ stats.bestCost | number: '1.0-0' }}</dd>
+              </div>
+            }
+            @if (stats.elapsedSeconds !== null) {
+              <div class="solver-stat">
+                <dt>Elapsed</dt>
+                <dd>{{ stats.elapsedSeconds }}s</dd>
+              </div>
+            }
+          </dl>
+        }
       </div>
     }
 
