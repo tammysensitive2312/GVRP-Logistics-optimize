@@ -1,0 +1,142 @@
+bang	so_ban_ghi
+branches	13
+depots	28
+fleets	12
+vehicle_types	16
+vehicles	100192
+orders	990265
+tong_order	tong_demand	demand_min	demand_max	demand_tb	co_time_window	pct_co_tw	thieu_service_time	ngay_som_nhat	ngay_muon_nhat	so_ngay_khac_nhau
+990265	101484721.13	1.50	499.70	102.48	791842	80.0	0	2024-01-01	2026-01-30	372
+delivery_date	so_order	demand
+2024-02-26	2842	296078.50
+2024-10-09	2839	289585.90
+2024-08-16	2827	287112.80
+2024-12-29	2814	289481.40
+2024-11-20	2814	285609.70
+2024-02-01	2810	287681.80
+2024-06-10	2808	291145.20
+2024-04-03	2800	286659.20
+2024-05-15	2799	284953.10
+2024-04-24	2794	288407.50
+2024-09-06	2791	289366.80
+2024-11-26	2788	286997.00
+2024-04-05	2787	284179.80
+2024-02-03	2787	285916.80
+2024-08-02	2786	281913.10
+2024-06-30	2786	287544.90
+2024-10-14	2784	284834.50
+2024-02-05	2784	293692.70
+2024-07-28	2784	289306.40
+2024-07-14	2784	285066.60
+status	so_order
+COMPLETED	186835
+ON_ROUTE	93238
+SCHEDULED	710107
+UNASSIGNED	85
+truc1_min	truc1_max	truc2_min	truc2_max
+20.946201	21.68859634773018	104.87303174521314	105.895218
+id	name	truc1	truc2
+1	?i?m Ti?p V?n ??ng ?a	21.0008	105.8375
+17	Kho V?n ?i?n	20.934034	105.851709
+19	Kho H� ?�ng	20.972921	105.784181
+100	Depot Dong Da Test	21.042454	105.757318
+300	Depot Large 1	21.029223	105.821506
+301	Depot Large 2	21.011129	105.824538
+302	Depot Large 3	21.033952	105.774001
+303	Depot Large 4	21.045004	105.792732
+304	Depot Large 5	21.053324	105.77222
+305	Depot Large 6	21.035422	105.795425
+1000	Depot Huge 1-1	21.054002	105.881804
+1001	Depot Huge 1-2	21.001183	105.793601
+1002	Depot Huge 1-3	21.043937	105.884364
+1010	Depot Huge 2-1	21.046358	105.879773
+1011	Depot Huge 2-2	21.027973	105.805086
+1012	Depot Huge 2-3	21.027155	105.800352
+1020	Depot Huge 3-1	21.009123	105.788301
+1021	Depot Huge 3-2	21.018896	105.76064
+1022	Depot Huge 3-3	20.991899	105.867411
+1030	Depot Huge 4-1	20.991861	105.859826
+1031	Depot Huge 4-2	20.985479	105.835943
+1032	Depot Huge 4-3	21.009297	105.82406
+1040	Depot Huge 5-1	21.036716	105.80024
+1041	Depot Huge 5-2	21.052123	105.815293
+1042	Depot Huge 5-3	21.007892	105.794839
+9001	Kho My Dinh (Main)	21.022238	105.76646
+9002	Kho Time City	20.995733	105.864987
+9003	Kho Long Bien	21.047117	105.877728
+id	type_name	capacity	fixed_cost	cost_per_km	cost_per_hour	max_distance	max_duration	so_xe
+1	truck	5000	50000.00	5000.00	4000.00	300.00	8.00	3
+3	Xe t?i 5 t?n	5000	5000.00	5000.00	4000.00	300.00	8.00	1
+100	Truck 5T Small	100	50000.00	5000.00	4000.00	300.00	8.00	3
+300	Truck 10T Large	500	50000.00	5000.00	4000.00	500.00	10.00	25
+1001	Van 1T	1000	30000.00	3000.00	2000.00	200.00	8.00	30
+1002	Truck 5T	5000	100000.00	8000.00	5000.00	500.00	10.00	99970
+1011	Van 1T	1000	30000.00	3000.00	2000.00	200.00	8.00	15
+1012	Truck 5T	5000	100000.00	8000.00	5000.00	500.00	10.00	5
+1021	Van 1T	1000	30000.00	3000.00	2000.00	200.00	8.00	15
+1022	Truck 5T	5000	100000.00	8000.00	5000.00	500.00	10.00	5
+1031	Van 1T	1000	30000.00	3000.00	2000.00	200.00	8.00	15
+1032	Truck 5T	5000	100000.00	8000.00	5000.00	500.00	10.00	5
+1041	Van 1T	1000	30000.00	3000.00	2000.00	200.00	8.00	15
+1042	Truck 5T	5000	100000.00	8000.00	5000.00	500.00	10.00	5
+9001	City Van 500kg	500	20000.00	2000.00	1500.00	150.00	8.00	60
+9002	Truck 2T	2000	80000.00	6000.00	4000.00	400.00	10.00	20
+tong_capacity	tong_demand
+500142800	101484721.13
+id	type_name	max_duration	chan_doan
+1	truck	8.00	ok (đơn vị giờ)
+3	Xe t?i 5 t?n	8.00	ok (đơn vị giờ)
+100	Truck 5T Small	8.00	ok (đơn vị giờ)
+300	Truck 10T Large	10.00	ok (đơn vị giờ)
+1001	Van 1T	8.00	ok (đơn vị giờ)
+1002	Truck 5T	10.00	ok (đơn vị giờ)
+1011	Van 1T	8.00	ok (đơn vị giờ)
+1012	Truck 5T	10.00	ok (đơn vị giờ)
+1021	Van 1T	8.00	ok (đơn vị giờ)
+1022	Truck 5T	10.00	ok (đơn vị giờ)
+1031	Van 1T	8.00	ok (đơn vị giờ)
+1032	Truck 5T	10.00	ok (đơn vị giờ)
+1041	Van 1T	8.00	ok (đơn vị giờ)
+1042	Truck 5T	10.00	ok (đơn vị giờ)
+9001	City Van 500kg	8.00	ok (đơn vị giờ)
+9002	Truck 2T	10.00	ok (đơn vị giờ)
+id	type_name	capacity
+100	Truck 5T Small	100
+300	Truck 10T Large	500
+9001	City Van 500kg	500
+1001	Van 1T	1000
+1011	Van 1T	1000
+1021	Van 1T	1000
+1031	Van 1T	1000
+1041	Van 1T	1000
+9002	Truck 2T	2000
+1	truck	5000
+3	Xe t?i 5 t?n	5000
+1002	Truck 5T	5000
+1012	Truck 5T	5000
+1022	Truck 5T	5000
+1032	Truck 5T	5000
+1042	Truck 5T	5000
+id	name	webhook
+1	Hanoi	rỗng — an toàn
+2	Gemadept	rỗng — an toàn
+3	ICEL	rỗng — an toàn
+100	Test Branch Small	rỗng — an toàn
+300	Branch Large 1	rỗng — an toàn
+301	Branch Large 2	rỗng — an toàn
+302	Branch Large 3	rỗng — an toàn
+1000	Branch Huge 1	CÓ GIÁ TRỊ — phải scrub trước khi commit
+1001	Branch Huge 2	rỗng — an toàn
+1002	Branch Huge 3	rỗng — an toàn
+1003	Branch Huge 4	rỗng — an toàn
+1004	Branch Huge 5	rỗng — an toàn
+9000	Very Buge Branch	rỗng — an toàn
+bang	next_val	max_id_hien_tai
+route_sequence	11601	11531
+route_stop_sequence	56701	56615
+unassigned_order_sequence	301	224
+TABLE_NAME	COLUMN_NAME	COLUMN_TYPE
+solutions	total_cost	decimal(18,2)
+solutions	total_distance	decimal(10,2)
+solutions	total_co2	decimal(10,2)
+solutions	total_time	decimal(10,2)

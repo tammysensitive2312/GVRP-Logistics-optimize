@@ -1,0 +1,1 @@
+run_id,timestamp,git_commit,git_dirty,dataset_id,dataset_sha256,algorithm,config_id,seed,cost_weight,co2_weight,max_iterations,timeout_s,threads,cluster_enabled,cluster_target_size,matrix_mode,total_cost_vnd,total_distance_km,total_co2_kg,vehicles_used,served_orders,unassigned_orders,load_utilization_pct,matrix_build_s,solve_s,total_elapsed_s,peak_heap_mb,prune_pct,jsprit_cost

@@ -25,9 +25,15 @@ target/
 /dist/
 /nbdist/
 /.nb-gradle/
-build/
-!**/src/main/**/build/
-!**/src/test/**/build/
+
+### Build output — loại trừ nội dung, TRỪ báo cáo thí nghiệm.
+### Dùng "/build/*" chứ KHÔNG dùng "build/": git không cho tái bao gồm file
+### khi thư mục cha đã bị loại trừ, nên phải để chính thư mục build/ "mở".
+### Lưu ý: mẫu này neo ở gốc repo, nên thư mục build/ lồng sâu (nếu sau này
+### xuất hiện) sẽ KHÔNG còn được tự động loại trừ.
+/build/*
+!/build/benchmark-reports/
+!/build/circuity-reports/
 
 ### VS Code ###
 .vscode/
@@ -35,3 +41,9 @@ build/
 .data/
 .cache/
 *.osm.pbf
+
+### Secrets — KHÔNG BAO GIỜ commit
+application-local.properties
+application-*.local.properties
+.env
+*.env

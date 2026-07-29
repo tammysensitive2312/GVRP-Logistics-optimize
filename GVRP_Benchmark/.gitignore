@@ -1,0 +1,31 @@
+### GVRP_Benchmark — quy tắc riêng
+###
+### Nguyên tắc: KẾT QUẢ và CẤU HÌNH luôn được commit. Chỉ file nặng hoặc
+### tái sinh được mới bị loại trừ.
+
+# ---------------------------------------------------------------------
+# CORPUS: dump đầy đủ 990.265 orders = 241 MB. KHÔNG commit vào git thường.
+# Chỉ commit checksum + đặc tả. Slice tự chứa của từng instance thì commit.
+# ---------------------------------------------------------------------
+datasets/vn6183/data.sql
+!datasets/vn6183/data.sql.sha256
+!datasets/vn6183/schema.sql
+!datasets/vn6183/branches_scrubbed.sql
+
+# Slice của instance thì PHẢI commit — không loại trừ datasets/instances/
+
+# Instance chuẩn tải từ nguồn ngoài — tái tải được, chỉ cần giữ checksum.
+# Bỏ comment nếu không muốn commit file gốc.
+# datasets/solomon/raw/
+# datasets/homberger/raw/
+# datasets/schneider_evrptw/raw/
+
+# Cấu hình kết nối DB — chứa mật khẩu. Bản mẫu 00_env.example.bat thì commit.
+scripts/00_env.bat
+
+# Rác tạm khi phân tích
+analysis/**/__pycache__/
+analysis/**/.ipynb_checkpoints/
+*.tmp
+
+# TUYỆT ĐỐI KHÔNG loại trừ results/ — đó là toàn bộ giá trị của thư mục này.

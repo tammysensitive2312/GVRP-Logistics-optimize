@@ -31,3 +31,8 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Secrets — KHÔNG BAO GIỜ commit
+application-local.properties
+.env
+*.env

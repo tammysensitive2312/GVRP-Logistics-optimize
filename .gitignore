@@ -1,0 +1,110 @@
+### GVRP-Logistics_Optimize — .gitignore ở thư mục tổng
+###
+### Nguyên tắc: chỉ loại trừ thứ TÁI SINH ĐƯỢC (build output, cache, state runtime)
+### hoặc RIÊNG TƯ (cấu hình máy, mật khẩu). Mọi source, tài liệu, dataset slice và
+### kết quả benchmark đều PHẢI được commit.
+###
+### File này BỔ SUNG cho .gitignore của từng repo con, không thay thế:
+###   GVRP_Engine_API/.gitignore      target/, .idea, *.iml, STS, NetBeans
+###   GVRP_Entry_API/.gitignore       tương tự
+###   GVRP_Entry_client_v2/.gitignore /node_modules, Angular cache
+###   GVRP_Benchmark/.gitignore       corpus 241 MB, scripts/00_env.bat (chứa mật khẩu)
+### GVRP_Entry_client CHƯA có .gitignore riêng — các quy tắc dưới đây phủ cho nó.
+
+# ---------------------------------------------------------------------
+# 1. IDE — rác thay đổi liên tục, không mang thông tin
+# ---------------------------------------------------------------------
+# LƯU Ý: 19 file .idea/ đang được TRACK từ trước. .gitignore không tự bỏ chúng ra —
+# phải chạy `git rm -r --cached .idea ...` một lần (xem hướng dẫn kèm theo).
+.idea/
+*.iml
+*.iws
+*.ipr
+
+.vscode/
+*.code-workspace
+
+# Eclipse / STS
+.classpath
+.project
+.settings/
+.apt_generated/
+.factorypath
+.springBeans
+.sts4-cache/
+
+# NetBeans
+/nbproject/private/
+/nbbuild/
+
+# ---------------------------------------------------------------------
+# 2. Build output — tái sinh bằng ./mvnw hoặc ng build
+# ---------------------------------------------------------------------
+target/
+build/
+out/
+bin/
+*.class
+*.jar
+*.war
+!.mvn/wrapper/maven-wrapper.jar
+
+# Angular (GVRP_Entry_client_v2)
+node_modules/
+dist/
+.angular/
+
+# ---------------------------------------------------------------------
+# 3. State runtime của engine — KHÔNG phải source
+# ---------------------------------------------------------------------
+# ResultSpool ghi payload kết quả job xuống đây (pending/ sent/ poison/).
+# Là trạng thái của một lần chạy cụ thể, có thể nặng, và chứa dữ liệu đơn hàng.
+.data/
+
+# ---------------------------------------------------------------------
+# 4. Log và file tạm
+# ---------------------------------------------------------------------
+*.log
+logs/
+*.tmp
+*.bak
+*.orig
+*.rej
+hs_err_pid*.log
+replay_pid*.log
+
+# Python (nếu thêm script phân tích)
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+.venv/
+venv/
+
+# ---------------------------------------------------------------------
+# 5. Cấu hình chứa bí mật — CHỈ commit bản mẫu .example
+# ---------------------------------------------------------------------
+.env
+.env.local
+*.local.properties
+application-local.yml
+application-local.properties
+application-secret.yml
+
+# ---------------------------------------------------------------------
+# 6. Hệ điều hành
+# ---------------------------------------------------------------------
+.DS_Store
+Thumbs.db
+desktop.ini
+$RECYCLE.BIN/
+
+# ---------------------------------------------------------------------
+# KHÔNG được thêm vào file này (đã cân nhắc, ghi lại để khỏi phải suy nghĩ lại):
+#
+#   *.sql        — GVRP_Benchmark commit schema.sql + slice dataset
+#   results/     — GVRP_Benchmark/results là toàn bộ giá trị của thư mục đó
+#   *.txt        — profile_out.txt là kết quả profiling cần giữ
+#   *.png        — GVRP_Document/source chứa sơ đồ thiết kế
+#   *.md         — tài liệu là sản phẩm chính
+#   package-lock.json — cần cho build tái lập được
+# ---------------------------------------------------------------------

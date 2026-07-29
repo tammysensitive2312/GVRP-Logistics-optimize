@@ -1,0 +1,13 @@
+INSERT INTO branches (id, name, branch_webhook_url) VALUES (1000, 'Branch Huge 1', NULL);
+INSERT INTO branches (id, name, branch_webhook_url) VALUES (1001, 'Branch Huge 2', NULL);
+INSERT INTO branches (id, name, branch_webhook_url) VALUES (1002, 'Branch Huge 3', NULL);
+INSERT INTO branches (id, name, branch_webhook_url) VALUES (1003, 'Branch Huge 4', NULL);
+INSERT INTO branches (id, name, branch_webhook_url) VALUES (1004, 'Branch Huge 5', NULL);
+INSERT INTO branches (id, name, branch_webhook_url) VALUES (300, 'Branch Large 1', NULL);
+INSERT INTO branches (id, name, branch_webhook_url) VALUES (301, 'Branch Large 2', NULL);
+INSERT INTO branches (id, name, branch_webhook_url) VALUES (302, 'Branch Large 3', NULL);
+INSERT INTO branches (id, name, branch_webhook_url) VALUES (2, 'Gemadept', NULL);
+INSERT INTO branches (id, name, branch_webhook_url) VALUES (1, 'Hanoi', NULL);
+INSERT INTO branches (id, name, branch_webhook_url) VALUES (3, 'ICEL', NULL);
+INSERT INTO branches (id, name, branch_webhook_url) VALUES (100, 'Test Branch Small', NULL);
+INSERT INTO branches (id, name, branch_webhook_url) VALUES (9000, 'Very Buge Branch', NULL);
