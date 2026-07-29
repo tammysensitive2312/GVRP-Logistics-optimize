@@ -456,7 +456,7 @@ public class OptimizationResultExtractor {
             return 0.0;
         }
 
-        return matrix.distanceMatrix()[fromIndex][toIndex];
+        return matrix.distance(fromIndex, toIndex);
     }
 
     private static double getTransportTime(
@@ -474,7 +474,7 @@ public class OptimizationResultExtractor {
             return 0.0;
         }
 
-        return matrix.timeMatrix()[fromIndex][toIndex];
+        return matrix.time(fromIndex, toIndex);
     }
 
     private static String formatTime(double seconds) {

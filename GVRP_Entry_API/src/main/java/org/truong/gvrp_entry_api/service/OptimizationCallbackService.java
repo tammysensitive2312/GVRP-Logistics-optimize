@@ -12,6 +12,7 @@ import org.truong.gvrp_entry_api.entity.*;
 import org.truong.gvrp_entry_api.entity.enums.*;
 import org.truong.gvrp_entry_api.exception.DataInvalidException;
 import org.truong.gvrp_entry_api.exception.ErrorDetail;
+import org.truong.gvrp_entry_api.exception.JobNotReadyException;
 import org.truong.gvrp_entry_api.mapper.GeometryMapper;
 import org.truong.gvrp_entry_api.repository.*;
 import org.truong.gvrp_entry_api.service.orders.OrderStatusTransitionService;
@@ -78,6 +79,20 @@ public class OptimizationCallbackService {
             // outbox thành vô dụng — đúng kịch bản job #21 (tràn total_cost).
             if (job.getStatus() != OptimizationJobStatus.PROCESSING
                     && job.getStatus() != OptimizationJobStatus.FAILED) {
+
+                // PENDING = "chưa tới lúc", KHÔNG phải "bỏ qua vĩnh viễn".
+                // Race: submitJob tạo job ở PENDING và chỉ set PROCESSING sau khi
+                // engine trả 202; job nhỏ giải xong trước thời điểm đó nên callback
+                // về khi DB còn PENDING. Trả 200 ở đây thì engine markSent và không
+                // bao giờ retry → kết quả vĩnh viễn không vào DB dù log báo thành
+                // công. Ném để thành 503, engine giữ payload trong pending/ và gửi
+                // lại sau ~60s, lúc đó job đã sang PROCESSING.
+                if (job.getStatus() == OptimizationJobStatus.PENDING) {
+                    throw new JobNotReadyException(
+                            "Job #" + job.getId() + " còn PENDING — engine gửi callback quá sớm");
+                }
+
+                // COMPLETED / CANCELLED: trạng thái cuối, bỏ qua thật.
                 log.warn("⚠️ Job #{} ở trạng thái {} — bỏ qua callback.", job.getId(), job.getStatus());
                 return;
             }
@@ -89,6 +104,13 @@ public class OptimizationCallbackService {
             job.setSolution(solution);
             jobRepository.save(job);
             eventPublisher.publishEvent(buildCompletionEvent(job, solution));
+
+        } catch (JobNotReadyException e) {
+            // KHÔNG markAsFailed: job không hỏng, chỉ là callback tới sớm. Đánh dấu
+            // FAILED ở đây sẽ ghi đè trạng thái đúng và làm nhiễu báo cáo. Chỉ để nó
+            // nổi lên GlobalExceptionHandler thành 503 cho engine retry.
+            // Phải bắt TRƯỚC catch(Exception) bên dưới, nếu không sẽ bị nuốt mất.
+            throw e;
 
         } catch (Exception e) {
             log.error("❌ Failed to process completion callback for job #{}: {}", callback.getJobId(), e.getMessage(), e);

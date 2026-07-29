@@ -124,8 +124,6 @@ public class OptimizationService {
         }
     }
 
-    // ==================== MAIN OPTIMIZATION METHOD ====================
-
     /**
      * Main optimization method
      * <p>
@@ -137,7 +135,6 @@ public class OptimizationService {
      * 5. Solve
      * 6. Extract results
      */
-    // OptimizationService.optimize() — reorder
     public OptimizationResult optimize(EngineOptimizationRequest request, JobRegistry.JobHandle handle) {
         OptimizationContext context = prepareContext(request);
         OptimizationConfig config = request.getConfig();
@@ -195,8 +192,7 @@ public class OptimizationService {
 
         // ===== Bước 1: build order coordinates + demands theo thứ tự ID cố định =====
         // BẮT BUỘC sort theo orderId để đảm bảo index nhất quán xuyên suốt toàn bộ
-        // pipeline (KMeans -> merge -> map ngược về jobId) — xem thảo luận trước
-        // về rủi ro lệch index nếu duyệt trực tiếp HashMap.values().
+        // pipeline (KMeans -> merge -> map ngược về jobId)
         List<Long> orderIds = context.orderDTOs().keySet().stream().sorted().toList();
 
         List<OptCoordinates> orderCoords = orderIds.stream()
@@ -265,7 +261,6 @@ public class OptimizationService {
         return combined;
     }
 
-    // ==================== SINGLE OBJECTIVE OPTIMIZATION (DEFAULT) ====================
 
     /**
      * Single-run weighted optimization - PRODUCTION DEFAULT
@@ -292,8 +287,6 @@ public class OptimizationService {
         Collection<VehicleRoutingProblemSolution> solutions = algorithm.searchSolutions();
         VehicleRoutingProblemSolution bestSolution = Solutions.bestOf(solutions);
 
-        // Solver dừng "êm" qua PrematureAlgorithmTermination — kiểm cờ để phân biệt
-        // hoàn tất bình thường với bị hủy.
         if (handle.isCancelRequested()) {
             throw new JobCancelledException("Job bị hủy trong lúc solve");
         }
@@ -485,8 +478,7 @@ public class OptimizationService {
 
         // 3. Set Physical Cost Matrix (ONLY distance + time)
         VehicleRoutingTransportCosts costs = GreenVRPCostCalculator.buildPhysicalCostMatrix(
-                matrix.distanceMatrix(),
-                matrix.timeMatrix(),
+                matrix.costs(),
                 context.allLocations()
         );
         vrpBuilder.setRoutingCost(costs);
@@ -607,7 +599,6 @@ public class OptimizationService {
             JobRegistry.JobHandle handle
     ) {
 
-        // Build vehicle max distance constraints
         Map<String, Double> vehicleMaxDistances = new HashMap<>();
         for (Vehicle v : context.vehicleDTOs().values()) {
             VehicleType vt = context.vehicleTypeDTOs().get(v.getVehicleTypeId());
@@ -625,14 +616,10 @@ public class OptimizationService {
                 .setProperty(Jsprit.Parameter.FAST_REGRET, "true")
                 .setProperty(Jsprit.Parameter.CONSTRUCTION, String.valueOf(Jsprit.Construction.REGRET_INSERTION));
 
-        // LUÔN cần constraint manager: NoPrunedEdge phải áp cho MỌI job (kể cả
-        // nhánh không cluster / không maxDistance) để chặn cạnh sentinel gây route rác.
+
         StateManager stateManager = new StateManager(vrp);
         ConstraintManager constraintManager = new ConstraintManager(vrp, stateManager);
 
-        // (BẮT BUỘC) Chặn mọi cạnh sentinel (cặp bị prune hoặc route lỗi). Không cho
-        // solver chèn job nếu cạnh tới/đi của nó là sentinel → order không tới được
-        // sẽ thành UNASSIGNED (đúng ngữ nghĩa), thay vì tạo route triệu km.
         constraintManager.addConstraint(
                 new NoPrunedEdgeConstraint(vrp.getTransportCosts(), SENTINEL_DISTANCE_THRESHOLD),
                 ConstraintManager.Priority.CRITICAL);
@@ -652,11 +639,7 @@ public class OptimizationService {
         }
 
         builder.setStateAndConstraintManager(stateManager, constraintManager);
-
         VehicleRoutingAlgorithm algorithm = builder.buildAlgorithm();
-
-        // Cancel hợp tác: solver kiểm mỗi vòng, dừng "êm" ở ranh giới vòng kế tiếp
-        // khi có yêu cầu hủy (không interrupt cưỡng bức để tránh hỏng trạng thái).
         algorithm.setPrematureAlgorithmTermination(solution -> handle.isCancelRequested());
 
         // Set timeout
@@ -679,7 +662,6 @@ public class OptimizationService {
         return algorithm;
     }
 
-    // ==================== PARETO FRONTIER ====================
 
     /**
      * Build Pareto frontier from candidates
@@ -744,7 +726,6 @@ public class OptimizationService {
                 .orElseThrow(() -> new RuntimeException("No solution in Pareto frontier"));
     }
 
-    // ==================== HELPER METHODS ====================
 
     private OptimizationContext prepareContext(EngineOptimizationRequest request) {
 
@@ -761,8 +742,6 @@ public class OptimizationService {
         request.getVehicles().forEach(v -> vehicleDTOs.put(v.getId(), v));
 
         List<Location> allLocations = new ArrayList<>();
-        // Index PHẢI khớp index hàng/cột ma trận (depot trước, order sau) — adapter
-        // MatrixBasedTransportCosts tra ma trận bằng Location.getIndex() (O(1)).
         int locIndex = 0;
 
         for (var depot : request.getDepots()) {
@@ -806,16 +785,11 @@ public class OptimizationService {
                 ))
                 .toList();
 
-        // truyền cờ cancel để hủy được ngay trong lúc dựng ma trận (có thể nhiều phút)
         DistanceMatrix ghMatrix = distanceMatrixService.createDistanceMatrix(
                 coordinates, mask, handle::isCancelRequested);
 
         log.info("✅ Distance matrix calculated successfully");
-
-        // Trao thẳng mảng double[][] (chia sẻ tham chiếu, chỉ đọc) — không copy,
-        // không dựng lại ~n² object trung gian (tránh OOM ở quy mô lớn).
-        return new DistanceTimeMatrix(
-                ghMatrix.distanceMeters(), ghMatrix.timeSeconds(), context.allLocations());
+        return new DistanceTimeMatrix(ghMatrix.costs(), context.allLocations());
     }
 
     private void validateConfig(OptimizationConfig config) {
@@ -849,8 +823,8 @@ public class OptimizationService {
             @Override
             public void informIterationStarts(int i, VehicleRoutingProblem problem,
                                               Collection<VehicleRoutingProblemSolution> solutions) {
-                boolean logTick = (i % 500 == 0 || i == 1);   // log ra console (thưa)
-                boolean snapTick = (i % 50 == 0 || i == 1);    // cập nhật snapshot cho poll (dày hơn)
+                boolean logTick = (i % 500 == 0 || i == 1);
+                boolean snapTick = (i % 50 == 0 || i == 1);
                 if (!logTick && !snapTick) return;
 
                 VehicleRoutingProblemSolution best = Solutions.bestOf(solutions);
@@ -888,31 +862,31 @@ public class OptimizationService {
             OptimizationContext context,
             Long jobId) {
 
-        double[][] dist = matrix.distanceMatrix();
         List<Location> locs = context.allLocations();
 
         for (VehicleRoute route : solution.getRoutes()) {
             TourActivity prev = route.getStart();
             for (TourActivity act : route.getActivities()) {
-                checkSentinelEdge(prev.getLocation(), act.getLocation(), locs, dist, jobId);
+                checkSentinelEdge(prev.getLocation(), act.getLocation(), locs, matrix, jobId);
                 prev = act;
             }
-            checkSentinelEdge(prev.getLocation(), route.getEnd().getLocation(), locs, dist, jobId);
+            checkSentinelEdge(prev.getLocation(), route.getEnd().getLocation(), locs, matrix, jobId);
         }
     }
 
     private void checkSentinelEdge(Location from, Location to,
-                                   List<Location> locs, double[][] dist, Long jobId) {
+                                   List<Location> locs, DistanceTimeMatrix matrix, Long jobId) {
         // O(1) nhờ index đã set ở prepareContext (trước đây indexOf() quét tuyến tính
         // → ~n² phép so sánh cho mỗi lần kiểm lời giải).
         int i = from.getIndex();
         int j = to.getIndex();
         if (i < 0 || j < 0) return;
-        if (dist[i][j] >= SENTINEL_DISTANCE_THRESHOLD) {
+        double d = matrix.distance(i, j);
+        if (d >= SENTINEL_DISTANCE_THRESHOLD) {
             throw new IllegalStateException(String.format(
                     "Job #%d: lời giải đi qua cạnh SENTINEL %s -> %s (%.0f m) — kết quả " +
                             "KHÔNG hợp lệ, hủy để tránh gửi cost rác. Kiểm tra prune cluster / route lỗi.",
-                    jobId, from.getId(), to.getId(), dist[i][j]));
+                    jobId, from.getId(), to.getId(), d));
         }
     }
 

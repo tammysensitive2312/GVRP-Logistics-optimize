@@ -9,11 +9,9 @@ import org.truong.gvrp_engine_api.service.GreenVRPCostCalculator;
 @NoArgsConstructor
 public class OptimizationConfig {
 
-    // Weight configuration
     private Double costWeight;
     private Double co2Weight;
 
-    // Algorithm configuration
     private Integer maxIterations;     // Jsprit iterations (default: 2000)
     private Integer numThreads;        // Parallel threads (default: 4)
     private Integer timeoutSeconds;    // Max execution time

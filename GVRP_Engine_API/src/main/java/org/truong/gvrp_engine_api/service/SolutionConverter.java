@@ -125,14 +125,8 @@ public class SolutionConverter {
                 int toIdx = locationIndex(matrix, next.getLocationId());
 
                 if (fromIdx >= 0 && toIdx >= 0) {
-                    stopData.put(
-                            "distance_to_next",
-                            matrix.distanceMatrix()[fromIdx][toIdx]
-                    );
-                    stopData.put(
-                            "time_to_next",
-                            matrix.timeMatrix()[fromIdx][toIdx]
-                    );
+                    stopData.put("distance_to_next", matrix.distance(fromIdx, toIdx));
+                    stopData.put("time_to_next", matrix.time(fromIdx, toIdx));
                 } else {
                     // fallback safety
                     stopData.put("distance_to_next", 0.0);

@@ -4,33 +4,40 @@ import java.time.Duration;
 import java.util.List;
 
 /**
- * Ma trận khoảng cách/thời gian lưu dạng PRIMITIVE double[][] thay cho
- * Map<String,Entry> — để KHÔNG tạo ~n² object + chuỗi key ở quy mô lớn
- * (nguyên nhân OOM ở 6000+ orders). Ô bị prune / route lỗi mang giá trị
- * sentinel (MatrixMask.PRUNED_*), KHÔNG phải 0.
+ * Ma trận khoảng cách/thời gian. Việc LƯU TRỮ được uỷ cho {@link CostMatrix}:
+ * <ul>
+ *   <li>{@link BlockDiagonalCostMatrix} — O(N·S), dùng khi có cluster-first;</li>
+ *   <li>{@link DenseCostMatrix} — O(n²), chỉ cho job nhỏ / nhánh Pareto.</li>
+ * </ul>
+ * Ô bị prune / route lỗi mang giá trị sentinel ({@link MatrixMask#PRUNED_METERS} /
+ * {@link MatrixMask#PRUNED_SECONDS}), KHÔNG phải 0 — để {@code NoPrunedEdgeConstraint}
+ * chặn được cạnh xuyên cụm thay vì coi nó là cạnh miễn phí.
  */
 public record DistanceMatrix(
         List<OptCoordinates> coordinates,
-        double[][] distanceMeters,
-        double[][] timeSeconds
+        CostMatrix costs
 ) {
     /** Khoảng cách (m) từ i -> j. */
     public double distanceMeters(int fromIndex, int toIndex) {
-        return distanceMeters[fromIndex][toIndex];
+        return costs.distanceMeters(fromIndex, toIndex);
     }
 
     /** Thời gian (s) từ i -> j. */
     public double timeSeconds(int fromIndex, int toIndex) {
-        return timeSeconds[fromIndex][toIndex];
+        return costs.timeSeconds(fromIndex, toIndex);
+    }
+
+    public int size() {
+        return costs.size();
     }
 
     /**
      * Tương thích ngược: dựng một DistanceMatrixEntry TẠM (không lưu trữ).
-     * Đường nóng nên đọc thẳng distanceMeters()/timeSeconds() thay vì gọi hàm này.
+     * Đường nóng nên đọc thẳng distanceMeters(i,j)/timeSeconds(i,j) thay vì gọi hàm này.
      */
     public DistanceMatrixEntry get(int fromIndex, int toIndex) {
         return new DistanceMatrixEntry(
-                Duration.ofSeconds((long) timeSeconds[fromIndex][toIndex]),
-                Distance.ofMeters(distanceMeters[fromIndex][toIndex]));
+                Duration.ofSeconds((long) costs.timeSeconds(fromIndex, toIndex)),
+                Distance.ofMeters(costs.distanceMeters(fromIndex, toIndex)));
     }
 }

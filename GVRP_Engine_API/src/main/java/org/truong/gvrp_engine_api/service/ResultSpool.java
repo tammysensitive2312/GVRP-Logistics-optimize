@@ -74,7 +74,7 @@ public class ResultSpool {
         log.info("💾 Result spool tại {}", base.toAbsolutePath());
     }
 
-    /**
+      /**
      * Ghi payload xuống {@code pending/}.
      *
      * <p>Ghi ra {@code .tmp} rồi ATOMIC_MOVE: nếu process chết giữa chừng thì không

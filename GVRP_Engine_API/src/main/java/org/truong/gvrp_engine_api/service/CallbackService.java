@@ -33,13 +33,7 @@ public class CallbackService {
         payload.put("job_id", jobId);
         payload.put("solution", solutionConverter.convertToSolutionData(result));
 
-        // (1) BỀN VỮNG TRƯỚC KHI GỬI.
-        // store() cố tình ném nếu ghi hỏng: mất kết quả nghiêm trọng hơn nhiều so với
-        // callback fail, nên không được nuốt lặng lẽ.
         resultSpool.store(jobId, payload);
-
-        // (2) Thử giao ngay. Fail cũng không sao — payload đã an toàn trên đĩa và
-        // CallbackRetryScheduler sẽ gửi lại.
         deliver(jobId, payload);
     }
 

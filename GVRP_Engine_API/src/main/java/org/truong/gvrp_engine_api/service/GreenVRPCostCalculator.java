@@ -4,7 +4,9 @@ import com.graphhopper.jsprit.core.problem.Location;
 import com.graphhopper.jsprit.core.problem.cost.VehicleRoutingTransportCosts;
 import com.graphhopper.jsprit.core.problem.vehicle.VehicleTypeImpl;
 import lombok.extern.slf4j.Slf4j;
+import org.truong.gvrp_engine_api.distance_matrix.CostMatrix;
 import org.truong.gvrp_engine_api.distance_matrix.MatrixBasedTransportCosts;
+import org.truong.gvrp_engine_api.distance_matrix.MatrixMemory;
 import org.truong.gvrp_engine_api.model.VehicleType;
 
 import java.util.List;
@@ -41,20 +43,20 @@ public class GreenVRPCostCalculator {
      * IMPORTANT: Do NOT put money calculation here!
      * Money calculation is in vehicleType.costPerDistance
      *
-     * @param distanceMatrix/timeMatrix Pre-calculated distance/time matrix
-     * @param locations                 List of all locations (depots + orders)
+     * @param costs     Ma trận đã dựng (block-diagonal hoặc dày) — chỉ giữ tham chiếu
+     * @param locations List of all locations (depots + orders)
      * @return Jsprit cost matrix (physical only)
      */
     public static VehicleRoutingTransportCosts buildPhysicalCostMatrix(
-            double[][] distanceMatrix,
-            double[][] timeMatrix,
+            CostMatrix costs,
             List<Location> locations
     ) {
         // KHÔNG nạp n² cặp vào VehicleRoutingTransportCostsMatrix (n=6186 → 38M
-        // HashMap entry, build() treo / GC-thrash). Adapter đọc thẳng mảng đã có.
-        log.info("✅ Transport costs adapter ready: {} locations (zero-copy, index-based)",
-                locations.size());
-        return new MatrixBasedTransportCosts(distanceMatrix, timeMatrix);
+        // HashMap entry, build() treo / GC-thrash). Adapter đọc thẳng ma trận đã có.
+        log.info("✅ Transport costs adapter ready: {} locations | layout={} | {} (zero-copy, index-based)",
+                locations.size(), costs.layout(),
+                MatrixMemory.humanBytes(costs.allocatedBytes()));
+        return new MatrixBasedTransportCosts(costs);
     }
 
     /**

@@ -12,22 +12,30 @@ import java.util.Map;
  */
 public final class MatrixMask {
 
-    /** ∞ hữu hạn: đủ lớn để solver không bao giờ chọn, đủ nhỏ để không overflow khi cộng dồn. */
-    public static final double PRUNED_METERS  = 1e9;
+    /**
+     * ∞ hữu hạn: đủ lớn để solver không bao giờ chọn, đủ nhỏ để không overflow khi cộng dồn.
+     */
+    public static final double PRUNED_METERS = 1e9;
     public static final double PRUNED_SECONDS = 1e7;
 
-    private static final int DEPOT       = -1; // location là depot
-    private static final int UNCLUSTERED = -2; // order chưa gán cụm (an toàn: coi như cần tính)
+    /**
+     * Nhãn depot: nối tới mọi thứ, không bao giờ prune.
+     * PUBLIC vì BlockDiagonalCostMatrix phải phân loại được nhãn để cấp phát dải rộng —
+     * hai lớp buộc phải đồng thuận về nhãn, nếu lệch thì đọc lệch slot.
+     */
+    public static final int DEPOT = -1;
 
-    private final int[] clusterByLoc; // theo index trong context.allLocations()
-    private final boolean full;       // true => tính tất cả (không cluster)
+    /** Nhãn order chưa được gán cụm: xử lý y như depot (an toàn thì tính). */
+    public static final int UNCLUSTERED = -2;
+
+    private final int[] clusterByLoc;
+    private final boolean full;
 
     private MatrixMask(int[] clusterByLoc, boolean full) {
         this.clusterByLoc = clusterByLoc;
         this.full = full;
     }
 
-    /** clusterAssignment key: "order-{id}" / "vehicle-{id}" -> clusterId (từ buildClusterAssignmentIfEligible). */
     public static MatrixMask fromClusters(OptimizationContext context, Map<String, Integer> clusterAssignment) {
         if (clusterAssignment == null || clusterAssignment.isEmpty()) {
             return new MatrixMask(null, true); // full
@@ -45,7 +53,36 @@ public final class MatrixMask {
         return new MatrixMask(clusterByLoc, false);
     }
 
-    /** Có cần gọi GraphHopper cho cặp (i -> j) không? (i != j giả định đã xử lý riêng). */
+    /**
+     * Dựng mask trực tiếp từ nhãn cụm — CHỈ dùng cho test, để kiểm bất biến
+     * "tập needed() == tập ô block lưu được" mà không cần cả OptimizationContext.
+     */
+    public static MatrixMask forTesting(int[] clusterByLoc) {
+        return new MatrixMask(clusterByLoc, false);
+    }
+
+    /** Mask "đầy" = không prune gì cả (nhánh Pareto / job nhỏ) → phải lưu dày. */
+    public boolean isFull() {
+        return full;
+    }
+
+    /**
+     * Nhãn cụm theo index location. Trả về mảng NỘI BỘ (không clone) vì nó có thể dài
+     * 50 000 phần tử và chỉ được đọc; clone ở đây là 200 KB rác mỗi lần gọi.
+     *
+     * @return null nếu mask đầy
+     */
+    public int[] clusterByLoc() {
+        return clusterByLoc;
+    }
+
+    /**
+     * Có cần gọi GraphHopper cho cặp (i -> j) không? (i != j giả định đã xử lý riêng).
+     * <p>
+     * BẤT BIẾN: tập {(i,j) : needed(i,j)} phải TRÙNG KHỚP tập ô mà
+     * {@link BlockDiagonalCostMatrix} có chỗ lưu. Sửa hàm này thì phải sửa cả bố cục
+     * block, nếu không sẽ có ô được tính nhưng bị ném đi im lặng.
+     */
     public boolean needed(int i, int j) {
         if (full) return true;
         int ci = clusterByLoc[i], cj = clusterByLoc[j];

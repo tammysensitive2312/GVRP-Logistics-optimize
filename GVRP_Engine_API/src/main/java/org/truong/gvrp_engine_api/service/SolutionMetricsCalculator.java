@@ -191,7 +191,7 @@ public class SolutionMetricsCalculator {
             return 0.0;
         }
 
-        return matrix.distanceMatrix()[fromIndex][toIndex];
+        return matrix.distance(fromIndex, toIndex);
     }
 
     /**
@@ -212,6 +212,6 @@ public class SolutionMetricsCalculator {
             return 0.0;
         }
 
-        return matrix.timeMatrix()[fromIndex][toIndex];
+        return matrix.time(fromIndex, toIndex);
     }
 }

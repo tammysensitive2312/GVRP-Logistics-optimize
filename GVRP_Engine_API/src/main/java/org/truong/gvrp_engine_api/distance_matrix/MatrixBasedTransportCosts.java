@@ -25,12 +25,15 @@ import com.graphhopper.jsprit.core.problem.vehicle.VehicleTypeImpl;
  */
 public class MatrixBasedTransportCosts extends AbstractForwardVehicleRoutingTransportCosts {
 
-    private final double[][] distanceMeters;
-    private final double[][] timeSeconds;
+    private final CostMatrix costs;
 
+    public MatrixBasedTransportCosts(CostMatrix costs) {
+        this.costs = costs;
+    }
+
+    /** Tương thích ngược cho test dựng ma trận dày thủ công. */
     public MatrixBasedTransportCosts(double[][] distanceMeters, double[][] timeSeconds) {
-        this.distanceMeters = distanceMeters;
-        this.timeSeconds = timeSeconds;
+        this(new DenseCostMatrix(distanceMeters, timeSeconds));
     }
 
     private static int idx(Location loc) {
@@ -44,21 +47,22 @@ public class MatrixBasedTransportCosts extends AbstractForwardVehicleRoutingTran
 
     @Override
     public double getDistance(Location from, Location to, double departureTime, Vehicle vehicle) {
-        return distanceMeters[idx(from)][idx(to)];
+        return costs.distanceMeters(idx(from), idx(to));
     }
 
     @Override
     public double getTransportTime(Location from, Location to, double departureTime,
                                    Driver driver, Vehicle vehicle) {
-        return timeSeconds[idx(from)][idx(to)];
+        return costs.timeSeconds(idx(from), idx(to));
     }
 
     @Override
     public double getTransportCost(Location from, Location to, double departureTime,
                                    Driver driver, Vehicle vehicle) {
         int i = idx(from), j = idx(to);
-        if (vehicle == null) return distanceMeters[i][j];
+        double d = costs.distanceMeters(i, j);
+        if (vehicle == null) return d;
         VehicleTypeImpl.VehicleCostParams p = vehicle.getType().getVehicleCostParams();
-        return p.perDistanceUnit * distanceMeters[i][j] + p.perTransportTimeUnit * timeSeconds[i][j];
+        return p.perDistanceUnit * d + p.perTransportTimeUnit * costs.timeSeconds(i, j);
     }
 }
