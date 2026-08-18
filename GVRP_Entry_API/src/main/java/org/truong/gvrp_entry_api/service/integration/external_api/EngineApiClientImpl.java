@@ -109,7 +109,6 @@ public class EngineApiClientImpl implements EngineApiClient{
             ResponseEntity<Map> resp = restTemplate.getForEntity(url, Map.class);
             return (Map<String, Object>) resp.getBody();
         } catch (HttpClientErrorException.NotFound nf) {
-            // Engine không có job này (chưa chạy / đã evict sau TTL)
             return null;
         } catch (Exception e) {
             log.warn("Không lấy được progress job #{} từ engine: {}", jobId, e.getMessage());

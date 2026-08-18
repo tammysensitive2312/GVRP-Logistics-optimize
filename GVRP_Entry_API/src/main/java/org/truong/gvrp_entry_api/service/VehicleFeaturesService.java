@@ -8,6 +8,12 @@ import org.mapstruct.Named;
 import org.springframework.stereotype.Service;
 import org.truong.gvrp_entry_api.dto.request.VehicleFeaturesDTO;
 import org.truong.gvrp_entry_api.entity.VehicleType;
+import org.truong.gvrp_entry_api.exception.DataInvalidException;
+import org.truong.gvrp_entry_api.exception.ErrorDetail;
+import org.truong.gvrp_entry_api.util.AppConstant;
+import org.truong.gvrp_entry_api.util.ErrorCode;
+
+import java.util.List;
 
 /**
  * Helper service to parse vehicle features JSON
@@ -25,14 +31,29 @@ public class VehicleFeaturesService {
      */
     public VehicleFeaturesDTO parseFeatures(String featuresJson) {
         if (featuresJson == null || featuresJson.isEmpty()) {
-            return VehicleFeaturesDTO.defaultFeatures();
+            throw new DataInvalidException(
+                    List.of(
+                            ErrorDetail.builder()
+                                    .code(ErrorCode.EMPTY_FIELD_ERROR.getCode())
+                                    .message(ErrorCode.EMPTY_FIELD_ERROR.getMessage())
+                                    .resource(AppConstant.VEHICLE_FEATURES)
+                                    .build()
+                    )
+            );
         }
-
         try {
             return objectMapper.readValue(featuresJson, VehicleFeaturesDTO.class);
         } catch (JsonProcessingException e) {
-            log.warn("Failed to parse vehicle features: {}", e.getMessage());
-            return VehicleFeaturesDTO.defaultFeatures();
+            log.error("Corrupted vehicle features JSON: {}", e.getMessage());
+            throw new DataInvalidException(
+                    List.of(
+                            ErrorDetail.builder()
+                                    .code(ErrorCode.BACKEND_SERVER_ERROR.getCode())
+                                    .message(ErrorCode.BACKEND_SERVER_ERROR.getMessage())
+                                    .resource(AppConstant.VEHICLE_FEATURES)
+                                    .build()
+                    )
+            );
         }
     }
 
@@ -55,20 +76,9 @@ public class VehicleFeaturesService {
         }
     }
 
-    /**
-     * Update vehicle features
-     */
-    public void updateVehicleFeatures(VehicleType type, VehicleFeaturesDTO features) {
-        type.setVehicleFeatures(toJson(features));
-    }
-
     @Named("getEmissionFactor")
     public Double getEmissionFactor(VehicleType type) {
         VehicleFeaturesDTO features = parseFeatures(type);
-
-        if (features != null && features.getEmissionFactor() != null) {
-            return features.getEmissionFactor();
-        }
-        return 0.0;
+        return features != null ? features.getEmissionFactor() : null;
     }
 }

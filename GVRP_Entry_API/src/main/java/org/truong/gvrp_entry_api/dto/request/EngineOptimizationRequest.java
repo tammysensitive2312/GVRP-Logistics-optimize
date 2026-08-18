@@ -5,10 +5,6 @@ import lombok.Data;
 
 import java.util.List;
 
-/**
- * Request gửi tới Engine API
- * Chứa technical configuration mà engine cần
- */
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class EngineOptimizationRequest {
@@ -30,7 +26,7 @@ public class EngineOptimizationRequest {
         // Algorithm parameters
         private Integer maxIterations;      // e.g., 500, 2000, 5000
         private Integer timeoutSeconds;     // e.g., 180, 480, 900
-        private Integer numThreads = 1;         // Parallel processing threads
+        private Integer numThreads;         // Parallel processing threads
 
 
         @Deprecated

@@ -98,8 +98,9 @@ public class OptimizationService {
             LocalDateTime endTime = LocalDateTime.now();
 
             java.time.Duration d = java.time.Duration.between(startTime, endTime);
-            log.info("✅ Optimization completed for job #{} in {}m {}s",
+            log.info("✅ Optimization completed for job #{} in {} h {}m {}s",
                     request.getJobId(),
+                    d.toHoursPart(),
                     d.toMinutesPart(),
                     d.toSecondsPart());
 
@@ -141,7 +142,6 @@ public class OptimizationService {
         validateConfig(config);
 
         if (Boolean.TRUE.equals(config.getEnableParetoAnalysis())) {
-            // Pareto: chưa cluster → full matrix (mask = null). Job Pareto thường nhỏ nên chấp nhận.
             DistanceTimeMatrix matrix = calculateDistanceMatrix(context, null, handle);
             return optimizeMultiObjective(context, matrix, config, request, handle);
         } else {
@@ -810,7 +810,7 @@ public class OptimizationService {
         log.info("✅ Config validated | Mode: {} | Weights: cost={}, CO2={}",
                 config.getEnableParetoAnalysis() != null && config.getEnableParetoAnalysis()
                         ? "PARETO" : "WEIGHTED",
-                costWeight,
+                costWeight, 
                 co2Weight);
     }
 

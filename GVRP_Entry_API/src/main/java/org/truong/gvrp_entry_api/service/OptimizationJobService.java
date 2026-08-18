@@ -27,7 +27,6 @@ import org.truong.gvrp_entry_api.util.ErrorCode;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -199,11 +198,6 @@ public class OptimizationJobService {
         log.info("Cancelled {} jobs successfully", jobs.size());
     }
 
-    /**
-     * Lấy tiến độ real-time của job (proxy xuống engine). Verify quyền branch
-     * trước, rồi hỏi engine. Trả null nếu engine không còn giữ job (chưa chạy /
-     * đã kết thúc & evict) — controller sẽ trả 404/204 tương ứng.
-     */
     @Transactional(readOnly = true)
     public java.util.Map<String, Object> getJobProgress(Long jobId, Long branchId) {
         OptimizationJob job = jobRepository.findById(jobId)

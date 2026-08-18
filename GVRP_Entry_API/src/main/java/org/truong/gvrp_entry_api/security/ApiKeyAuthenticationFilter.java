@@ -28,7 +28,7 @@ import java.util.List;
 public class ApiKeyAuthenticationFilter extends OncePerRequestFilter {
 
     private static final String API_KEY_HEADER = "X-API-Key";
-    private static final String CALLBACK_PATH_PREFIX = "/api/solutions/callbacks/";
+    private static final String CALLBACK_PATH_PREFIX = "/api/v1/solutions/callbacks/";
 
     @Value("${engine.api.key}")
     private String engineApiKey;

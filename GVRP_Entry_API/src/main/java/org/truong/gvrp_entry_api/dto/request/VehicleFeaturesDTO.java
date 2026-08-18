@@ -1,85 +1,27 @@
 package org.truong.gvrp_entry_api.dto.request;
 
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
-import java.util.ArrayList;
-import java.util.List;
+import org.truong.gvrp_entry_api.entity.enums.VehicleCategory;
+import org.truong.gvrp_entry_api.entity.enums.VehicleSkill;
 
-/**
- * Vehicle features stored as JSON
- */
+import java.util.HashSet;
+import java.util.Set;
+
+
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class VehicleFeaturesDTO {
 
-    private String vehicleType;
+    private VehicleCategory category;
+
+    @NotNull(message = "Emission factor is required")
+    @DecimalMin(value = "0.0", message = "Emission factor must be non-negative")
     private Double emissionFactor;
-    private String fuelType;
 
-    // Optional capabilities
-    private Boolean isRefrigerated;
-    private Boolean isFragileCapable;
-    private Boolean canAccessUrbanZone;
-
-    public Double getEmissionFactor() {
-        if (emissionFactor != null) {
-            return emissionFactor;
-        }
-        return getDefaultEmissionFactor(vehicleType);
-    }
-
-    public boolean isElectric() {
-        return "ELECTRIC".equalsIgnoreCase(fuelType);
-    }
-
-    /**
-     * Get skills for Jsprit
-     */
-    public List<String> getSkills() {
-        List<String> skills = new ArrayList<>();
-
-        if (isElectric()) {
-            skills.add("electric");
-        }
-        if (Boolean.TRUE.equals(isRefrigerated)) {
-            skills.add("refrigerated");
-        }
-        if (Boolean.TRUE.equals(isFragileCapable)) {
-            skills.add("fragile");
-        }
-        if (Boolean.TRUE.equals(canAccessUrbanZone)) {
-            skills.add("urban-access");
-        }
-
-        return skills;
-    }
-
-    /**
-     * Default emission factors
-     */
-    private static Double getDefaultEmissionFactor(String vehicleType) {
-        if (vehicleType == null) return 150.0;
-
-        return switch (vehicleType) {
-            case "ELECTRIC_MOTORCYCLE", "ELECTRIC_CAR", "ELECTRIC_VAN" -> 0.0;
-            case "HYBRID_CAR" -> 95.0;
-            case "PETROL_MOTORCYCLE" -> 120.0;
-            case "PETROL_CAR" -> 180.0;
-            case "PETROL_VAN" -> 220.0;
-            case "DIESEL_TRUCK" -> 280.0;
-            default -> 150.0;
-        };
-    }
-
-    public static VehicleFeaturesDTO defaultFeatures() {
-        return VehicleFeaturesDTO.builder()
-                .vehicleType("PETROL_CAR")
-                .emissionFactor(180.0)
-                .fuelType("PETROL")
-                .isRefrigerated(false)
-                .isFragileCapable(false)
-                .canAccessUrbanZone(true)
-                .build();
-    }
+    @Builder.Default
+    private Set<VehicleSkill> skills = new HashSet<>();
 }

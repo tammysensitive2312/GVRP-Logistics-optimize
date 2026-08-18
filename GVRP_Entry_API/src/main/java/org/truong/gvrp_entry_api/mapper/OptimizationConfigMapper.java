@@ -55,22 +55,22 @@ public class OptimizationConfigMapper {
         switch (speed) {
             case FAST:
                 config.setMaxIterations(800);
-                config.setTimeoutSeconds(180);  // 3 minutes
+                config.setTimeoutSeconds(480);  // 3 minutes
                 config.setNumThreads(4);
                 break;
             case NORMAL:
                 config.setMaxIterations(2000);
-                config.setTimeoutSeconds(480);  // 8 minutes
+                config.setTimeoutSeconds(900);  // 8 minutes
                 config.setNumThreads(4);
                 break;
             case HIGH_QUALITY:
                 config.setMaxIterations(5000);
-                config.setTimeoutSeconds(900);  // 15 minutes
+                config.setTimeoutSeconds(3600);  // 15 minutes
                 config.setNumThreads(4);
                 break;
             default:
                 config.setMaxIterations(2000);
-                config.setTimeoutSeconds(480);
+                config.setTimeoutSeconds(900);
                 config.setNumThreads(4);
         }
     }
@@ -120,8 +120,8 @@ public class OptimizationConfigMapper {
 
             default:
                 // Default: Cost-focused (traditional VRP)
-                config.setCostWeight(0.7);
-                config.setCo2Weight(0.3);
+                config.setCostWeight(0.5);
+                config.setCo2Weight(0.5);
         }
     }
 
@@ -133,10 +133,10 @@ public class OptimizationConfigMapper {
                 new EngineOptimizationRequest.OptimizationConfig();
 
         config.setMaxIterations(2000);
-        config.setTimeoutSeconds(480);
+        config.setTimeoutSeconds(900);
         config.setNumThreads(4);
-        config.setCostWeight(0.7);
-        config.setCo2Weight(0.3);
+        config.setCostWeight(0.5);
+        config.setCo2Weight(0.5);
         config.setStrictTimeWindows(true);
         config.setUnassignedJobPenalty(10000.0);
         config.setEnableParetoAnalysis(false);

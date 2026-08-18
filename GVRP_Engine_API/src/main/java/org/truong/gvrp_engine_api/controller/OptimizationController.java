@@ -104,10 +104,6 @@ public class OptimizationController {
         }
     }
 
-    /**
-     * Lấy tiến độ hiện tại của job (poll). Trả 404 nếu job không tồn tại
-     * (chưa chạy / đã bị evict sau TTL).
-     */
     @GetMapping("/{jobId}/progress")
     public ResponseEntity<Map<String, Object>> progress(@PathVariable Long jobId) {
         JobRegistry.JobHandle h = jobRegistry.get(jobId);

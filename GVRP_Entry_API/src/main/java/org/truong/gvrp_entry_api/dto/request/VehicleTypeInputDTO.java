@@ -1,5 +1,6 @@
 package org.truong.gvrp_entry_api.dto.request;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
@@ -12,8 +13,9 @@ public class VehicleTypeInputDTO {
 
     @NotNull(message = "Type name is required")
     private String typeName;
-    private VehicleFeaturesDTO vehicleFeatures;
     private String description;
+    @Valid
+    private VehicleFeaturesDTO features;
 
     @NotNull(message = "Capacity is required")
     @Min(value = 1, message = "Capacity must be at least 1")

@@ -39,7 +39,7 @@ public class VehicleTypeService {
 
         var vehicleTypeEntity = typeMapper.toEntity(dto);
         vehicleTypeEntity.setVehicleFeatures(
-                featuresService.toJson(dto.getVehicleFeatures())
+                featuresService.toJson(dto.getFeatures())
         );
         vehicleTypeEntity.setBranch(branch);
         var savedEntity = typeRepository.save(vehicleTypeEntity);
@@ -64,7 +64,7 @@ public class VehicleTypeService {
 
         existingType.setTypeName(input.getTypeName());
         existingType.setVehicleFeatures(
-                featuresService.toJson(input.getVehicleFeatures())
+                featuresService.toJson(input.getFeatures())
         );
         existingType.setDescription(input.getDescription());
         existingType.setCapacity(input.getCapacity());
