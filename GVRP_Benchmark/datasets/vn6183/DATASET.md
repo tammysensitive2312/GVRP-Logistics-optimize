@@ -4,7 +4,7 @@
 > phải 6183 — con số 6183 là quy mô của *một instance* (job #21). Đổi tên khi thuận tiện:
 > `move ..\vn6183 ..\corpus_vn_hanoi` rồi sửa đường dẫn trong `.gitignore` và các script.
 
-Số liệu dưới đây lấy từ `scripts/01_profile_dataset.sql`, chạy **2026-07-27**.
+Số liệu dưới đây lấy từ `scripts/01_profile_dataset.sql`, chạy **2026-08-21**.
 
 ## Định danh
 
@@ -12,7 +12,7 @@ Số liệu dưới đây lấy từ `scripts/01_profile_dataset.sql`, chạy **
 |---|---|
 | `dataset_id` | `vn_hanoi_corpus` |
 | Nguồn | MySQL `gvrp_db` trong container Docker trên máy phát triển |
-| Ngày export | 2026-07-27 |
+| Ngày export | 2026-08-21 |
 | Commit lúc export | `1517108` (`git rev-parse --short HEAD`) |
 | File | `schema.sql` (23 KB), `data.sql` (**241 MB**), `branches_scrubbed.sql` (1,1 KB) |
 | SHA256 | xem các file `.sha256` cùng thư mục |
@@ -28,7 +28,7 @@ tự chứa của từng instance** (xem `../instances/`).
 | branches | 13 |
 | depots | 28 |
 | fleets | 12 |
-| vehicle_types | 16 |
+| vehicle_types | 18 |
 | vehicles | **100.192** |
 | orders | **990.265** |
 
@@ -50,9 +50,9 @@ Con số 80% khớp với ghi chú "20% orders không có time window" trong CLA
 
 | Status | Số đơn |
 |---|---|
-| SCHEDULED | 710.107 |
+| SCHEDULED | 689415 |
 | COMPLETED | 186.835 |
-| ON_ROUTE | 93.238 |
+| ON_ROUTE | 116773 |
 | UNASSIGNED | 85 |
 
 > **Chỉ `SCHEDULED` được dùng để dựng instance.** `COMPLETED` và `ON_ROUTE` đã qua lập
@@ -78,8 +78,6 @@ Hà Nội và phụ cận, nên hai trục **không** bị đảo.
 | 3 | Xe tải 5 tấn | 5000 | 5.000 | 5.000 | 4.000 | 300 | 8 | 1 |
 | 100 | Truck 5T Small | **100** | 50.000 | 5.000 | 4.000 | 300 | 8 | 3 |
 | 300 | Truck 10T Large | **500** | 50.000 | 5.000 | 4.000 | 500 | 10 | 25 |
-| 1001 | Van 1T | 1000 | 30.000 | 3.000 | 2.000 | 200 | 8 | 30 |
-| 1002 | Truck 5T | 5000 | 100.000 | 8.000 | 5.000 | 500 | 10 | **99.970** |
 | 1011 | Van 1T | 1000 | 30.000 | 3.000 | 2.000 | 200 | 8 | 15 |
 | 1012 | Truck 5T | 5000 | 100.000 | 8.000 | 5.000 | 500 | 10 | 5 |
 | 1021 | Van 1T | 1000 | 30.000 | 3.000 | 2.000 | 200 | 8 | 15 |
@@ -90,8 +88,10 @@ Hà Nội và phụ cận, nên hai trục **không** bị đảo.
 | 1042 | Truck 5T | 5000 | 100.000 | 8.000 | 5.000 | 500 | 10 | 5 |
 | 9001 | City Van 500kg | 500 | 20.000 | 2.000 | 1.500 | 150 | 8 | 60 |
 | 9002 | Truck 2T | 2000 | 80.000 | 6.000 | 4.000 | 400 | 10 | 20 |
-
-| | |
+| 9003 | xe tai 5 tan | 5000 | 50000.00 | 5000 | 4000 | 300 | 480 | 98000 |
+| 9004 | Xe may dien giao hang | 200 | 15000.00 | 800 | 1500 | 195 | 480 | 663 |
+| 9005 | Xe may xang giao hang | 30 | 10000.00 | 1200 | 1500 | 150 | 480 | 644 |
+| 9006 | Xe tai van Ford Transit | 874 | 35000.00 | 4500 | 3500 | 300 | 480 | 693 |
 |---|---|
 | Tổng capacity đội xe | 500.142.800 |
 | Tổng demand | 101.484.721 |

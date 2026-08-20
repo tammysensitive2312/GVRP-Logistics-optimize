@@ -105,7 +105,7 @@ CREATE TABLE `optimization_jobs` (
   KEY `idx_job_created` (`created_at`),
   CONSTRAINT `optimization_jobs_ibfk_1` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`) ON DELETE CASCADE,
   CONSTRAINT `optimization_jobs_ibfk_2` FOREIGN KEY (`created_by_user_id`) REFERENCES `users` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=32 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Optimization job tracking and lifecycle management';
+) ENGINE=InnoDB AUTO_INCREMENT=37 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Optimization job tracking and lifecycle management';
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!50003 SET @saved_cs_client      = @@character_set_client */ ;
 /*!50003 SET @saved_cs_results     = @@character_set_results */ ;
@@ -318,7 +318,7 @@ CREATE TABLE `solutions` (
   KEY `idx_solution_created` (`created_at`),
   CONSTRAINT `solutions_ibfk_1` FOREIGN KEY (`job_id`) REFERENCES `optimization_jobs` (`id`) ON DELETE CASCADE,
   CONSTRAINT `solutions_ibfk_2` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=16 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Optimization solution results linked to jobs';
+) ENGINE=InnoDB AUTO_INCREMENT=23 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Optimization solution results linked to jobs';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -409,7 +409,7 @@ CREATE TABLE `vehicle_types` (
   CONSTRAINT `vehicle_types_ibfk_1` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`) ON DELETE CASCADE,
   CONSTRAINT `chk_vehicle_capacity` CHECK ((`capacity` > 0)),
   CONSTRAINT `chk_vehicle_costs` CHECK (((`fixed_cost` >= 0) and (`cost_per_km` >= 0) and (`cost_per_hour` >= 0)))
-) ENGINE=InnoDB AUTO_INCREMENT=9003 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Chuẩn hóa thông số kỹ thuật và chi phí của các loại xe';
+) ENGINE=InnoDB AUTO_INCREMENT=9007 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Chuẩn hóa thông số kỹ thuật và chi phí của các loại xe';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -455,4 +455,4 @@ CREATE TABLE `vehicles` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-07-27 15:48:42
+-- Dump completed on 2026-08-20 16:37:04
