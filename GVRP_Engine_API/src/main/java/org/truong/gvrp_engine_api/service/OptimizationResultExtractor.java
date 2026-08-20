@@ -24,7 +24,7 @@ public class OptimizationResultExtractor {
 
     /**
      * Extract unassigned orders from solution
-     *
+     * <p>
      * Simple extraction with warning logs
      */
     public static List<UnassignedOrder> extractUnassignedOrders(
@@ -479,7 +479,7 @@ public class OptimizationResultExtractor {
 
     private static String formatTime(double seconds) {
         long totalSeconds = (long) seconds;
-        long hours = totalSeconds / 3600;
+        long hours = (totalSeconds / 3600) % 24;
         long minutes = (totalSeconds % 3600) / 60;
         long secs = totalSeconds % 60;
         return String.format("%02d:%02d:%02d", hours, minutes, secs);

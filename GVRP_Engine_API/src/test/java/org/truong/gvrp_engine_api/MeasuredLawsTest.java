@@ -148,7 +148,7 @@ class MeasuredLawsTest {
                     "job " + j.id() + ": CO2/km phải là 0.180 = emissionFactor 180 g/km. "
                             + "180.0 là hardcode VehicleFeaturesDTO.defaultFeatures() (PETROL_CAR), "
                             + "KHÔNG phải giá trị DB (12.3) hay DIESEL_TRUCK (280) — bug đã biết.");
-            assertEquals(AppConstant.CARBON_PRICE_PER_KG, j.co2CostVnd() / j.co2Kg(), 1.0,
+            assertEquals(AppConstant.CARBON_PRICE_PER_TON, j.co2CostVnd() / j.co2Kg(), 1.0,
                     "job " + j.id() + ": giá carbon suy ra phải khớp AppConstant");
         }
 
@@ -431,7 +431,7 @@ class MeasuredLawsTest {
 
         // ...còn distance nhân CẢ HAI (fuel×w_c + co2×w_e):
         double fuelPerM = 8_000.0 / 1_000.0;
-        double co2PerM = (180.0 / 1e6) * AppConstant.CARBON_PRICE_PER_KG;
+        double co2PerM = (180.0 / 1e6) * AppConstant.CARBON_PRICE_PER_TON;
         assertEquals(fuelPerM * wc + co2PerM * we, p.perDistanceUnit, 1e-9,
                 "distance nhân cả costWeight và co2Weight — chính đây là chỗ bất đối xứng");
 
@@ -562,7 +562,7 @@ class MeasuredLawsTest {
                         + "Đổi giá trị này thì phải cập nhật toàn bộ những con số đó.");
         assertEquals(1_000, AppConstant.CLUSTER_FIRST_ORDER_THRESHOLD);
         assertEquals(10, AppConstant.DEMAND_SCALE);
-        assertEquals(100_000.0, AppConstant.CARBON_PRICE_PER_KG,
+        assertEquals(100_000.0, AppConstant.CARBON_PRICE_PER_TON,
                 "SỐ GIẢ do người dùng đặt tạm. Nếu bạn cố ý đổi sang giá thật, hãy cập nhật "
                         + "bảng break-even trong CLAUDE.md rồi sửa kỳ vọng ở test này — "
                         + "đừng chỉ tắt assertion.");

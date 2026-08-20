@@ -5,14 +5,13 @@ public class AppConstant {
     public static final int DEMAND_SCALE = 10;
 
     /**
-     * Carbon pricing (VND per kg CO2)
+     * Carbon pricing (VND per ton CO2)
      * Can be adjusted based on:
      * - Government carbon tax
      * - Company ESG policy
      * - International carbon market price
      */
-
-    public static final double CARBON_PRICE_PER_KG = 100000.0;
+    public static final double CARBON_PRICE_PER_TON = 150000.0;
 
     /**
      * Epsilon weight để tránh costWeight=0.0 tuyệt đối.

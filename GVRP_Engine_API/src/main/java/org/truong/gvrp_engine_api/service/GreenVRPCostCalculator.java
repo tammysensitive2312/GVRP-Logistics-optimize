@@ -11,7 +11,7 @@ import org.truong.gvrp_engine_api.model.VehicleType;
 
 import java.util.List;
 
-import static org.truong.gvrp_engine_api.utils.AppConstant.CARBON_PRICE_PER_KG;
+import static org.truong.gvrp_engine_api.utils.AppConstant.CARBON_PRICE_PER_TON;
 import static org.truong.gvrp_engine_api.utils.AppConstant.DEMAND_SCALE;
 
 /**
@@ -104,17 +104,10 @@ public class GreenVRPCostCalculator {
         double fixedCost = vehicleTypeDTO.getFixedCost();
         // ========== STEP 2: Calculate CO2 cost ==========
 
-        // Emission factor (g CO2 per km) - default 200 if null
-        double emissionFactorGramPerKm = vehicleTypeDTO.getEmissionFactor() != null
-                ? vehicleTypeDTO.getEmissionFactor()
-                : 200.0;
-
-        // Convert to kg CO2 per meter
-        double co2GramPerMeter = emissionFactorGramPerKm / 1000.0;
-        double co2KgPerMeter = co2GramPerMeter / 1000.0;
-
-        // CO2 cost (VND per meter) = kg/m × VND/kg
-        double co2CostPerMeter = co2KgPerMeter * CARBON_PRICE_PER_KG;
+        // Emission factor (g CO2 per km)
+        double emissionFactorGramPerKm = vehicleTypeDTO.getEmissionFactor();
+        // g/km → tấn/km (÷1e6) → VND/km (×giá) → VND/m (÷1000) = tổng ÷1e9
+        double co2CostPerMeter = emissionFactorGramPerKm * CARBON_PRICE_PER_TON / 1_000_000_000.0;
 
         // ========== STEP 3: Weighted multi-objective cost ==========
 
@@ -132,6 +125,7 @@ public class GreenVRPCostCalculator {
                 .addCapacityDimension(0, scaledCapacity)
                 .setCostPerDistance(totalCostPerMeter)
                 .setCostPerTransportTime(weightedTimeCost)
+                .setCostPerWaitingTime(weightedTimeCost)
                 .setFixedCost(weightedFixedCost);
 
         return typeBuilder.build();
@@ -156,29 +150,6 @@ public class GreenVRPCostCalculator {
 
         // CO2 (kg) = distance (km) × emission (g/km) ÷ 1000
         return (distanceKm * emissionFactor) / 1000.0;
-    }
-
-    /**
-     * Calculate real monetary cost for a route (for reporting)
-     * <p>
-     * Used after optimization to report actual costs
-     * Separate from Jsprit's optimization cost
-     *
-     * @param distanceKm Route distance in kilometers
-     * @param durationHours Route duration in hours
-     * @param vehicleType Vehicle type with cost parameters
-     * @return Total cost in VND
-     */
-    public static double calculateRouteCost(
-            double distanceKm,
-            double durationHours,
-            VehicleType vehicleType) {
-
-        double distanceCost = distanceKm * vehicleType.getCostPerKm();
-        double timeCost = durationHours * vehicleType.getCostPerHour();
-        double fixedCost = vehicleType.getFixedCost();
-
-        return fixedCost + distanceCost + timeCost;
     }
 
     /**
@@ -209,27 +180,10 @@ public class GreenVRPCostCalculator {
     }
 
     /**
-     * Calculate carbon price impact comparison
-     * <p>
-     * Shows how carbon pricing affects vehicle selection
-     * Useful for policy analysis and reporting
-     */
-    public static void logCarbonPriceImpact(VehicleType highEmission, VehicleType lowEmission) {
-        double highFactor = highEmission.getEmissionFactor() != null
-                ? highEmission.getEmissionFactor() : 250.0;
-        double lowFactor = lowEmission.getEmissionFactor() != null
-                ? lowEmission.getEmissionFactor() : 50.0;
-
-        double highCO2CostPerKm = (highFactor / 1000.0) * CARBON_PRICE_PER_KG;
-        double lowCO2CostPerKm = (lowFactor / 1000.0) * CARBON_PRICE_PER_KG;
-        double savings = highCO2CostPerKm - lowCO2CostPerKm;
-    }
-
-    /**
      * Get current carbon price
      */
     public static double getCarbonPrice() {
-        return CARBON_PRICE_PER_KG;
+        return CARBON_PRICE_PER_TON;
     }
 
 }

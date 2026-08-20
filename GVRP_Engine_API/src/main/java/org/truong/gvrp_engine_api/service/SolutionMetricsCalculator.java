@@ -137,7 +137,7 @@ public class SolutionMetricsCalculator {
         double totalCost = totalFixedCost + totalFuelCost + totalTimeCost;
 
         // ========== Calculate CO2 cost (for reporting) ==========
-        double co2CostVnd = totalCO2 * GreenVRPCostCalculator.getCarbonPrice();
+        double co2CostVnd = totalCO2 / 1000 * GreenVRPCostCalculator.getCarbonPrice();
 
         // ========== Build metrics object ==========
         SolutionMetrics metrics = SolutionMetrics.builder()

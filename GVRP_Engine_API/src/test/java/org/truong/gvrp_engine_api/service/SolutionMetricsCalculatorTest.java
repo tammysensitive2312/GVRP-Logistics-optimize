@@ -37,13 +37,13 @@ class SolutionMetricsCalculatorTest {
         // setIndex BẮT BUỘC: SolutionMetricsCalculator tra ma trận qua Location.getIndex()
         // (O(1)), index phải khớp thứ tự trong allLocations bên dưới.
         Location depotLoc = Location.Builder.newInstance()
-                .setId("depot-TimeTerminationBugTest.java")
+                .setId("depot-1")
                 .setIndex(0)
                 .setCoordinate(Coordinate.newInstance(0, 0))
                 .build();
 
         Location order1Loc = Location.Builder.newInstance()
-                .setId("order-TimeTerminationBugTest.java")
+                .setId("order-1")
                 .setIndex(1)
                 .setCoordinate(Coordinate.newInstance(0, 1))
                 .build();
@@ -58,12 +58,12 @@ class SolutionMetricsCalculatorTest {
 
         // 2. Vehicle type — capacity gốc (KHÔNG scale) = 100kg
         int rawCapacity = 100;
-        VehicleTypeImpl vehicleType = VehicleTypeImpl.Builder.newInstance("type-TimeTerminationBugTest.java")
+        VehicleTypeImpl vehicleType = VehicleTypeImpl.Builder.newInstance("type-1")
                 .addCapacityDimension(0, rawCapacity * DEMAND_SCALE) // Jsprit cần scaled
                 .setCostPerDistance(1.0)
                 .build();
 
-        VehicleImpl vehicle = VehicleImpl.Builder.newInstance("vehicle-TimeTerminationBugTest.java")
+        VehicleImpl vehicle = VehicleImpl.Builder.newInstance("vehicle-1")
                 .setStartLocation(depotLoc)
                 .setEndLocation(depotLoc)
                 .setType(vehicleType)
@@ -73,7 +73,7 @@ class SolutionMetricsCalculatorTest {
         double rawDemand1 = 30.0;
         double rawDemand2 = 50.0;
 
-        Service order1 = Service.Builder.newInstance("order-TimeTerminationBugTest.java")
+        Service order1 = Service.Builder.newInstance("order-1")
                 .setLocation(order1Loc)
                 .addSizeDimension(0, (int) Math.round(rawDemand1 * DEMAND_SCALE))
                 .build();
@@ -108,7 +108,7 @@ class SolutionMetricsCalculatorTest {
         // 5. Dựng OptimizationContext + DistanceTimeMatrix khớp với DTO gốc (chưa scale)
         Order orderDTO1 = new Order();
         orderDTO1.setId(1L);
-        orderDTO1.setOrderCode("order-TimeTerminationBugTest.java");
+        orderDTO1.setOrderCode("order-1");
         orderDTO1.setDemand(rawDemand1);
 
         Order orderDTO2 = new Order();
