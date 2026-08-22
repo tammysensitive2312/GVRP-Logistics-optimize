@@ -62,6 +62,11 @@ public class RoutePlanningRequest {
          * - Chức năng phục vụ cho mục đích nghiên cứu
          */
         private Boolean enableParetoAnalysis;
+
+        /**
+         * Seed cho thuat toan. null = ngau nhien; dat gia tri de tai lap (benchmark).
+         */
+        private Long seed;
     }
 
     /**

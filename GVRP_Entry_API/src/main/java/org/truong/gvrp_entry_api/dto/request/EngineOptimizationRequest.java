@@ -40,5 +40,7 @@ public class EngineOptimizationRequest {
         private Double unassignedJobPenalty; // e.g., 10000 or 100
 
         private Boolean enableParetoAnalysis;
+
+        private Long seed;
     }
 }

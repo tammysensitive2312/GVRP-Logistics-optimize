@@ -1,0 +1,101 @@
+@startuml GVRP_Engine_Sequence
+' ============================================================
+'  GVRP Engine API - Luồng xử lý một job tối ưu (Sequence)
+' ============================================================
+skinparam shadowing false
+skinparam defaultFontName "Segoe UI"
+skinparam sequenceMessageAlign center
+skinparam ParticipantBackgroundColor #ECF0F1
+skinparam ParticipantBorderColor #34495E
+skinparam ArrowColor #2C3E50
+skinparam NoteBackgroundColor #FEF9E7
+skinparam NoteBorderColor #F1C40F
+
+title GVRP Engine — Luồng xử lý bất đồng bộ một job tối ưu
+
+actor Entry
+participant "Optimization\nController" as CTRL
+participant "Optimization\nService" as OPT
+participant "JobRegistry" as JOB
+participant "Clustering\n(KMeans→Merge→Assign)" as CL
+participant "DistanceMatrix\nService" as DMS
+participant "GraphHopper" as GH
+participant "GreenVRP\nCostCalculator" as GREEN
+participant "Jsprit\nAlgorithm" as JS
+participant "Metrics /\nExtractor" as MET
+participant "Callback\nService" as CB
+participant "ResultSpool" as SP
+
+== 1. Nhận yêu cầu ==
+Entry -> CTRL : POST /api/v1/optimization\n(EngineOptimizationRequest)
+activate CTRL
+CTRL -> CTRL : validateRequest()
+CTRL -> OPT : optimizeAsync(request)
+activate OPT
+CTRL --> Entry : 202 ACCEPTED\n(externalJobId = "engine-{id}")
+deactivate CTRL
+
+note over OPT : Chạy nền trên virtual thread (@Async)
+
+OPT -> JOB : register(jobId) → RUNNING
+
+== 2. Tiền xử lý ==
+alt số order >= 1000 (cluster-first)
+  OPT -> CL : K-means(seed=42) → merge cụm nhỏ → gán xe theo demand
+  CL --> OPT : clusterAssignment (order/vehicle → clusterId)
+  OPT -> DMS : mask = fromClusters(...)  (ma trận thưa)
+else job nhỏ / Pareto
+  OPT -> DMS : mask = null  (ma trận dày)
+end
+
+== 3. Ma trận khoảng cách ==
+OPT -> JOB : phase = BUILDING_MATRIX
+activate DMS
+loop mỗi cặp (i,j) mà mask.needed()
+  DMS -> GH : fetch(coord_i, coord_j)
+  GH --> DMS : {distance_m, time_s}
+end
+note right of DMS : Cặp lỗi → điền SENTINEL (1e9 m)\nKHÔNG dùng 0 (tránh route rác)
+DMS --> OPT : DistanceTimeMatrix
+deactivate DMS
+
+== 4. Dựng Green-VRP & giải ==
+OPT -> GREEN : buildGreenVehicleType(costWeight, co2Weight)
+note right of GREEN
+  costPerMeter =
+   fuel·w_cost + (EF·carbonPrice)·w_co2
+end note
+GREEN --> OPT : VehicleType (đã nhúng CO2)
+OPT -> JS : buildAlgorithm() + constraints\n(NoPrunedEdge, MaxDistance, ClusterRoute)
+OPT -> JOB : phase = SOLVING
+activate JS
+loop mỗi iteration (Ruin & Recreate)
+  JS -> JOB : snapshot(iteration, bestCost, routes)
+  JS -> JS : kiểm cờ cancel (premature termination)
+end
+JS --> OPT : bestSolution
+deactivate JS
+
+== 5. Kiểm tra & trích kết quả ==
+OPT -> OPT : assertNoSentinelEdgeTraversed()  (fail-loud)
+OPT -> MET : calculate metrics + extract routes / unassigned
+MET --> OPT : SolutionMetrics + RouteDetails
+
+== 6. Trả kết quả (bền vững) ==
+OPT -> JOB : markTerminal(COMPLETED)
+OPT -> CB : sendCompletionCallback(jobId, result)
+activate CB
+CB -> SP : store(payload)  →  pending/  (ghi ĐĨA trước)
+CB -> Entry : POST /solutions/callbacks/complete
+alt 2xx thành công
+  Entry --> CB : 200 OK
+  CB -> SP : markSent() → sent/
+else 4xx (payload sai)
+  CB -> SP : markPoisoned() → poison/
+else 5xx / timeout
+  CB -> SP : recordFailure() (giữ pending, sweeper retry)
+end
+deactivate CB
+deactivate OPT
+
+@enduml

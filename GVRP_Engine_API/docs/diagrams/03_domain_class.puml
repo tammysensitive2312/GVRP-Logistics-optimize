@@ -1,0 +1,157 @@
+@startuml GVRP_Engine_Domain
+' ============================================================
+'  GVRP Engine API - Mô hình miền (Class / Domain model)
+' ============================================================
+skinparam shadowing false
+skinparam defaultFontName "Segoe UI"
+skinparam classAttributeIconSize 0
+skinparam class {
+  BorderColor #34495E
+  BackgroundColor #ECF0F1
+  ArrowColor #2C3E50
+}
+
+title GVRP Engine — Mô hình miền & DTO (phẳng, giữ startDepotId/endDepotId)
+
+package "Request (đầu vào)" #FBFCFC {
+  class EngineOptimizationRequest {
+    +Long jobId
+    +List<Order> orders
+    +List<Vehicle> vehicles
+    +List<Depot> depots
+    +List<VehicleType> vehicleTypes
+    +OptimizationConfig config
+  }
+  class Order {
+    +Long id
+    +String orderCode
+    +Double latitude
+    +Double longitude
+    +double demand
+    +double serviceTime
+    +String timeWindowStart
+    +String timeWindowEnd
+    +Integer priority
+  }
+  class Vehicle {
+    +Long id
+    +Long vehicleTypeId
+    +Long startDepotId
+    +Long endDepotId
+  }
+  class Depot {
+    +Long id
+    +String name
+    +Double latitude
+    +Double longitude
+  }
+  class VehicleType {
+    +Long id
+    +double capacity
+    +double costPerKm
+    +double costPerHour
+    +double fixedCost
+    +Double emissionFactor
+    +Double maxDistance
+    +Double maxDuration
+  }
+  class OptimizationConfig {
+    +Double costWeight
+    +Double co2Weight
+    +Integer maxIterations
+    +Integer numThreads
+    +Boolean enableParetoAnalysis
+    +getEffectiveWeights()
+  }
+}
+
+package "Context (làm việc)" #FBFCFC {
+  class OptimizationContext {
+    +List<Location> allLocations
+    +Map<Long,Depot> depotDTOs
+    +Map<Long,Order> orderDTOs
+    +Map<Long,VehicleType> vehicleTypeDTOs
+    +Map<Long,Vehicle> vehicleDTOs
+  }
+  class DistanceTimeMatrix {
+    +CostMatrix costs
+    +List<Location> locations
+    +distance(i,j)
+    +time(i,j)
+  }
+}
+
+package "Result (đầu ra)" #FBFCFC {
+  class OptimizationResult {
+    +Long jobId
+    +OptimizationMode mode
+    +SolutionCandidate selected
+    +List<SolutionCandidate> paretoFrontier
+    +List<RouteDetail> routes
+    +List<UnassignedOrder> unassignedOrders
+  }
+  class SolutionCandidate {
+    +String presetName
+    +VehicleRoutingProblemSolution solution
+    +SolutionMetrics metrics
+    +double costWeight
+    +double co2Weight
+    +dominates(other)
+  }
+  class SolutionMetrics {
+    +double totalCostVnd
+    +double totalCo2Kg
+    +double totalDistance
+    +double totalTime
+    +int vehiclesUsed
+    +int ordersServed
+    +int ordersUnserved
+  }
+  class RouteDetail {
+    +String vehicleId
+    +double totalDistance
+    +double totalTime
+    +double totalCO2
+    +int orderCount
+    +double loadUtilization
+    +List<Stop> stops
+  }
+  class Stop {
+    +int sequenceNumber
+    +String type
+    +Long orderId
+    +double arrivalTime
+    +double departureTime
+    +double loadAfter
+  }
+  class UnassignedOrder {
+    +Long orderId
+    +String orderCode
+    +String reason
+  }
+  enum OptimizationMode {
+    SINGLE_WEIGHTED
+    MULTI_PARETO
+  }
+}
+
+EngineOptimizationRequest "1" *-- "many" Order
+EngineOptimizationRequest "1" *-- "many" Vehicle
+EngineOptimizationRequest "1" *-- "many" Depot
+EngineOptimizationRequest "1" *-- "many" VehicleType
+EngineOptimizationRequest "1" *-- "1" OptimizationConfig
+Vehicle ..> Depot : startDepotId / endDepotId
+Vehicle ..> VehicleType : vehicleTypeId
+
+EngineOptimizationRequest ..> OptimizationContext : prepareContext()
+OptimizationContext ..> DistanceTimeMatrix : build
+
+OptimizationResult "1" *-- "1" SolutionCandidate : selected
+OptimizationResult "1" o-- "many" SolutionCandidate : paretoFrontier
+OptimizationResult "1" *-- "many" RouteDetail
+OptimizationResult "1" *-- "many" UnassignedOrder
+OptimizationResult ..> OptimizationMode
+SolutionCandidate "1" *-- "1" SolutionMetrics
+RouteDetail "1" *-- "many" Stop
+
+@enduml

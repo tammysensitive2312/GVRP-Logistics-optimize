@@ -42,6 +42,9 @@ public class OptimizationConfigMapper {
 
         engineConfig.setEnableParetoAnalysis(userPrefs.getEnableParetoAnalysis());
 
+        // Seed benchmark: truyen thang, null-safe (null = ngau nhien).
+        engineConfig.setSeed(userPrefs.getSeed());
+
         return engineConfig;
     }
 

@@ -1,0 +1,68 @@
+@startuml GVRP_Engine_Activity
+' ============================================================
+'  GVRP Engine API - Luồng quyết định thuật toán (Activity)
+' ============================================================
+skinparam shadowing false
+skinparam defaultFontName "Segoe UI"
+skinparam ActivityBackgroundColor #ECF0F1
+skinparam ActivityBorderColor #34495E
+skinparam ActivityDiamondBackgroundColor #FEF9E7
+skinparam ArrowColor #2C3E50
+
+title GVRP Engine — Luồng quyết định trong optimize()
+
+start
+:Nhận EngineOptimizationRequest;
+:prepareContext() → OptimizationContext;
+:validateConfig()\n(costWeight + co2Weight > 0);
+
+if (enableParetoAnalysis == true ?) then (Pareto)
+  :Ma trận DÀY (mask = null);
+  :ParetoWeightSampler.generate(N=4, p=2.0)\n→ 5 weight-point;
+  partition "Với mỗi weight-point" {
+    :clone config + set (costWeight, co2Weight);
+    :buildGreenVRP();
+    :Jsprit.searchSolutions();
+    :tính SolutionMetrics;
+  }
+  :buildParetoFrontier()\n(loại nghiệm bị trội);
+  :selectFromPareto()\n(chuẩn hoá + weighted sum);
+else (Weighted - mặc định)
+  if (số order >= 1000\nvà C > 1 ?) then (đủ điều kiện)
+    :K-means (seed 42);
+    :ClusterMergeService.merge()\n(gộp cụm demand nhỏ);
+    :VehicleClusterAssigner.assign()\n(quota theo demand);
+    :MatrixMask.fromClusters()\n→ ma trận THƯA (block-diagonal);
+  else (job nhỏ)
+    :mask = null → ma trận dày;
+  endif
+  :calculateDistanceMatrix()\n(GraphHopper, cặp lỗi = SENTINEL);
+  :buildGreenVRP()\n(cost = fuel·w_cost + CO2·w_co2);
+  :createAlgorithm()\n+ constraints;
+  note right
+    Ràng buộc cứng:
+    • NoPrunedEdge (chặn cạnh sentinel)
+    • MaxDistance (theo xe)
+    • ClusterRoute (nếu có cluster)
+  end note
+  :Jsprit.searchSolutions()\n(cập nhật snapshot mỗi 50 vòng);
+endif
+
+if (isCancelRequested() ?) then (có)
+  :throw JobCancelledException;
+  :sendCancelledCallback();
+  stop
+else (không)
+endif
+
+:assertNoSentinelEdgeTraversed()\n(fail-loud lưới an toàn cuối);
+:SolutionMetricsCalculator.calculate();
+:extractRouteDetails() + extractUnassignedOrders();
+:OptimizationResult (single | pareto);
+
+:markTerminal(COMPLETED);
+:ResultSpool.store() → pending/;
+:CallbackService.deliver() → Entry API;
+
+stop
+@enduml

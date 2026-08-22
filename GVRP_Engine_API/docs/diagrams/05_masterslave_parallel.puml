@@ -1,0 +1,54 @@
+@startuml MMVRPD_MasterSlave_Parallel
+skinparam shadowing false
+skinparam defaultFontName "Segoe UI"
+skinparam ParticipantBackgroundColor #ECF0F1
+skinparam ParticipantBorderColor #34495E
+skinparam ArrowColor #2C3E50
+skinparam NoteBackgroundColor #FEF9E7
+skinparam NoteBorderColor #F1C40F
+
+title MMVRPD-MTV — Kiến trúc Master-Slave song song (MPI, elite-pool)
+
+participant "Master\n(rank 0)" as M
+participant "Worker 1\n(rank 1)" as W1
+participant "Worker k\n(rank k)" as Wk
+database "Elite Pool\n(giữ tại Master)" as EP
+
+== Khởi tạo (một lần) ==
+M -> M : compute elite_keep_count,\nmin_pull_elites (∝ √customers)
+M -> M : gán preset hyperparams\ncho từng worker (Preset mode)
+M -> W1 : TAG_JOB {seed, preset_index}
+M -> Wk : TAG_JOB {seed, preset_index}
+note over W1, Wk
+  Mỗi worker = 1 Tabu Search ĐỘC LẬP
+  với seed + bộ γ/tabu KHÁC nhau
+  (đa dạng hoá tìm kiếm)
+end note
+
+== Vòng lặp trao đổi elite (bất đồng bộ, non-blocking) ==
+loop trong lúc Tabu Search chạy
+  W1 -> M : TAG_ELITE_PUSH (lời giải tốt tìm được)
+  M -> EP : consider() — thay entry\nGIỐNG nhất (giữ đa dạng)
+  M -> M : cập nhật best_solution nếu tốt hơn
+
+  Wk -> M : TAG_ELITE_PULL (xin 1 elite)
+  M -> EP : pick_for_dispatch()\n(Random/TopK/Rank/PullCount/Diverse)
+  M -> Wk : TAG_ELITE_REPLY (elite của worker KHÁC)
+  note right of Wk : worker chèn elite ngoại lai\nvào quần thể của mình
+end
+
+== Điều kiện dừng ==
+M -> M : mọi worker đã pull\n>= min_pull_elites ?
+alt đạt ngưỡng
+  Wk -> M : TAG_ELITE_PULL
+  M -> Wk : TAG_ELITE_REPLY = STOP (size = -1)
+  note right of Wk : should_stop = true\n→ kết thúc Tabu Search
+end
+
+== Thu kết quả ==
+W1 -> M : TAG_RESULT (lời giải cuối) + TAG_STATS
+Wk -> M : TAG_RESULT + TAG_STATS
+M -> M : best_solution = min cost\n(gộp thống kê neighborhood)
+M -> M : verify() + ghi convergence.csv
+
+@enduml

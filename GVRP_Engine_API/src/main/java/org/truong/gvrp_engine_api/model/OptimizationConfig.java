@@ -21,6 +21,12 @@ public class OptimizationConfig {
 
     private Boolean enableParetoAnalysis;
 
+    /**
+     * Seed cho Jsprit (ruin & recreate). null = ngau nhien (giu hanh vi cu);
+     * co gia tri = tai lap. Tai lap bit-by-bit CHI dam bao khi numThreads=1.
+     */
+    private Long seed;
+
     @Deprecated
     private Double distanceWeight;
 
@@ -46,6 +52,7 @@ public class OptimizationConfig {
         copy.enableParetoAnalysis = this.enableParetoAnalysis;
         copy.strictTimeWindows = this.strictTimeWindows;
         copy.unassignedJobPenalty = this.unassignedJobPenalty;
+        copy.seed = this.seed;
         return copy;
     }
 }

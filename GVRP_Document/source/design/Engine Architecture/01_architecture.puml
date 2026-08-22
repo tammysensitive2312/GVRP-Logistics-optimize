@@ -1,0 +1,118 @@
+@startuml GVRP_Engine_Architecture
+' ============================================================
+'  GVRP Engine API - Sơ đồ kiến trúc thành phần (Component)
+' ============================================================
+skinparam componentStyle rectangle
+skinparam shadowing false
+skinparam defaultFontName "Segoe UI"
+skinparam ArrowColor #2C3E50
+skinparam component {
+  BorderColor #34495E
+  BackgroundColor #ECF0F1
+}
+skinparam package {
+  BorderColor #7F8C8D
+  BackgroundColor #FBFCFC
+}
+
+title GVRP Engine API — Kiến trúc thành phần (Green VRP, Spring Boot + Jsprit + GraphHopper)
+
+actor "Entry API\n(dịch vụ gọi)" as Entry
+cloud "OSM\nvietnam-251213.osm.pbf" as OSM
+
+package "GVRP_Engine_API (Spring Boot :8081)" {
+
+  package "Controller" {
+    [OptimizationController] as CTRL
+  }
+
+  package "Job (trạng thái sống)" {
+    [JobRegistry] as JOBREG
+    note bottom of JOBREG
+      In-memory: iteration, bestCost,
+      cờ cancel, phase, TTL evict
+    end note
+  }
+
+  package "Service - Điều phối lõi" {
+    [OptimizationService\n«@Async»] as OPT
+    [SolutionMetricsCalculator] as METRIC
+    [OptimizationResultExtractor] as EXTRACT
+    [GreenVRPCostCalculator] as GREEN
+    [ParetoWeightSampler] as PARETO
+  }
+
+  package "Clustering (cluster-first)" {
+    [KMeansClusterer] as KMEANS
+    [ClusterMergeService] as MERGE
+    [VehicleClusterAssigner] as VASSIGN
+  }
+
+  package "Distance Matrix" {
+    [DistanceMatrixService] as DMS
+    [MatrixMask] as MASK
+    [BlockDiagonalCostMatrix] as BLOCK
+    [DenseCostMatrix] as DENSE
+    [GraphHopperDistanceProvider] as GHPROV
+    [MatrixBasedTransportCosts] as TCOST
+  }
+
+  package "Solver (thư viện Jsprit)" {
+    [VehicleRoutingAlgorithm\n(Ruin & Recreate)] as JSPRIT
+    [Constraints:\nNoPrunedEdge / MaxDistance / ClusterRoute] as CONS
+  }
+
+  package "Outbox / Callback" {
+    [CallbackService] as CB
+    [ResultSpool\n(pending/sent/poison)] as SPOOL
+    [CallbackRetryScheduler\n«@Scheduled»] as RETRY
+  }
+
+  package "Config" {
+    [WebConfig\n(RestTemplate, CORS)] as WEBCFG
+    [AppConstant] as CONST
+  }
+}
+
+database "Filesystem\n.data/results/*" as FS
+database "GraphHopper\n.cache/routing-graph" as GHCACHE
+
+' ---- Luồng vào ----
+Entry --> CTRL : POST /optimization\n(job_id, orders, vehicles, depots)
+CTRL --> OPT : optimizeAsync(request)
+CTRL --> JOBREG : progress / cancel
+CTRL ..> SPOOL : GET /result, POST /resend
+
+' ---- Điều phối ----
+OPT --> JOBREG : register / snapshot / markTerminal
+OPT --> KMEANS : (nếu ≥ 1000 orders)
+KMEANS --> MERGE
+MERGE --> VASSIGN
+VASSIGN --> MASK : clusterAssignment
+
+OPT --> DMS : createDistanceMatrix(coords, mask)
+DMS --> MASK : needed(i,j)?
+DMS --> BLOCK : bố cục thưa (có cluster)
+DMS --> DENSE : bố cục dày (Pareto/nhỏ)
+DMS --> GHPROV : fetch(i,j)
+GHPROV --> GHCACHE
+GHCACHE ..> OSM : import 1 lần
+
+OPT --> GREEN : buildGreenVehicleType\n(weighted cost+CO2)
+OPT --> PARETO : (nếu bật Pareto)
+GREEN --> TCOST : cost matrix (chỉ vật lý)
+OPT --> JSPRIT : searchSolutions()
+JSPRIT --> CONS : kiểm ràng buộc chèn
+JSPRIT --> JOBREG : IterationListener → snapshot
+
+' ---- Kết quả ----
+OPT --> METRIC : tính metric thực
+OPT --> EXTRACT : trích route + unassigned
+OPT --> CB : sendCompletionCallback
+CB --> SPOOL : store() TRƯỚC khi gửi
+SPOOL --> FS
+CB --> Entry : POST /solutions/callbacks/complete
+RETRY --> SPOOL : quét pending/
+RETRY --> CB : gửi lại (backoff mũ)
+
+@enduml

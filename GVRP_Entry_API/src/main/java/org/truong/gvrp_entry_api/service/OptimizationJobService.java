@@ -72,7 +72,7 @@ public class OptimizationJobService {
             throw new DataInvalidException(List.of(
                     ErrorDetail.builder()
                             .code(ErrorCode.JOB_LIMIT_EXCEEDED.getCode())
-                            .message(ErrorCode.JOB_LIMIT_EXCEEDED.getCode())
+                            .message(ErrorCode.JOB_LIMIT_EXCEEDED.getMessage())
                             .resource(AppConstant.JOB)
                             .build()
             ));

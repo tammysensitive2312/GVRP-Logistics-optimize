@@ -1,0 +1,59 @@
+@startuml Compare_Architectures
+skinparam shadowing false
+skinparam defaultFontName "Segoe UI"
+skinparam componentStyle rectangle
+skinparam rectangle {
+  BorderColor #34495E
+  BackgroundColor #ECF0F1
+}
+skinparam package {
+  BorderColor #7F8C8D
+  BackgroundColor #FBFCFC
+}
+
+title So sánh kiến trúc: MMVRPD Master-Slave (trái)  vs  GVRP Engine của bạn (phải)
+
+package "MMVRPD-MTV — Song song cấp THUẬT TOÁN" as A #FEF9E7 {
+  rectangle "1 tiến trình / bài toán\n(MPI, nhiều rank)" as A0
+  rectangle "Master (rank 0)\nĐiều phối + Elite Pool" as AM
+  rectangle "N Worker\nTabu Search độc lập\n(seed + γ khác nhau)" as AW
+  rectangle "Trao đổi elite\nPUSH / PULL qua MPI" as AE
+  rectangle "Mục tiêu: min makespan\n+ penalty (energy drone)" as AObj
+  rectangle "Song song = nhiều LỜI GIẢI\ncùng lúc, hợp tác" as APar
+  A0 --> AM
+  AM --> AW
+  AW --> AE
+  AE --> AM
+  AM --> AObj
+  AW --> APar
+}
+
+package "GVRP Engine — Song song cấp DỮ LIỆU / HẠ TẦNG" as B #EBF5FB {
+  rectangle "Service web (Spring Boot)\nnhiều JOB đồng thời" as B0
+  rectangle "@Async + virtual threads\n(1 job = 1 luồng)" as BM
+  rectangle "Jsprit\n(1 thuật toán / job,\nRuin & Recreate)" as BW
+  rectangle "Song song NỘI BỘ:\n• matrix build (ForkJoinPool)\n• Jsprit THREADS" as BE
+  rectangle "Mục tiêu: min (cost + CO2)\nweighted-sum" as BObj
+  rectangle "Song song = chia NHỎ\n1 job (matrix, cluster)" as BPar
+  B0 --> BM
+  BM --> BW
+  BW --> BE
+  BM --> BObj
+  BE --> BPar
+}
+
+note bottom of A
+  Đơn vị song song = **1 lời giải hoàn chỉnh**.
+  Nhiều worker cùng giải 1 instance, chia sẻ
+  elite → hội tụ tốt hơn (metaheuristic hợp tác).
+  Không có web/DB/callback — chạy CLI, ghi file.
+end note
+
+note bottom of B
+  Đơn vị song song = **các phần của 1 job**
+  (ô ma trận, iteration Jsprit) + nhiều job web.
+  Có tầng dịch vụ: REST, JobRegistry, spool,
+  callback bền vững. Hướng production.
+end note
+
+@enduml

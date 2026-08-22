@@ -611,6 +611,17 @@ public class OptimizationService {
         int numThreads = config.getNumThreads() != null ? config.getNumThreads() : 1;
 
         Jsprit.Builder builder = Jsprit.Builder.newInstance(vrp);
+
+        // Seed tai lap. null -> KHONG goi setRandom (giu hanh vi cu: Jsprit tu sinh
+        // ngau nhien). Co seed -> cung seed + cung du lieu ra cung nghiem, phuc vu
+        // '5 seed/cau hinh' cua RUNBOOK. CANH BAO: tai lap bit-by-bit CHI dung khi
+        // numThreads=1; da luong thi thu tu thao tac phu thuoc lich OS.
+        if (config.getSeed() != null) {
+            builder.setRandom(new Random(config.getSeed()));
+            log.info("🎲 Jsprit seed co dinh: {} (tai lap chi dam bao khi threads=1)", config.getSeed());
+        } else {
+            log.info("🎲 Jsprit seed: ngau nhien");
+        }
         builder.setProperty(Jsprit.Parameter.ITERATIONS, String.valueOf(maxIterations))
                 .setProperty(Jsprit.Parameter.THREADS, String.valueOf(numThreads))
                 .setProperty(Jsprit.Parameter.FAST_REGRET, "true")
