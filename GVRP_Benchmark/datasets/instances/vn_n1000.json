@@ -1,8 +1,8 @@
 {
   "_meta": {
     "instance_id": "vn_n1000_b1000_d21082026",
-    "corpus_sha256": "5ba2014ee9c229ae2f01c89794ec9ea42951ac63188cfd82413b934dd686a811",
-    "git_commit": "38425a8",
+    "corpus_sha256": "874f1a6769467a616ac9afb16e7569f77db5555bd4afc164d26fcd0faea6f43d",
+    "git_commit": "9c7e663",
     "created_at": "2026-08-21",
     "branch_id": 1000,
     "delivery_dates": [
@@ -4018,9 +4018,10 @@
   ],
   "preferences": {
     "goal": "MINIMIZE_COST",
-    "time_window_mode": "STRICT",
-    "allow_unassigned_orders": false,
     "speed": "NORMAL",
+    "seed": 42,
+    "allow_unassigned_orders": false,
+    "time_window_mode": "STRICT",
     "enable_pareto_analysis": false
   }
 }
