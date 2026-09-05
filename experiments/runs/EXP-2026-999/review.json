@@ -1,0 +1,71 @@
+{
+  "schema_version": "1.0",
+  "experiment_id": "EXP-2026-999",
+  "reviewed_at": "2026-09-05T16:10:00+07:00",
+
+  "reviewer": {
+    "type": "AGENT",
+    "identifier": "validator-test-reviewer",
+    "agent_role": "Reviewer"
+  },
+
+  "reviewed_revision": {
+    "commit": "abcdef1234567890",
+    "branch": "test-validator",
+    "working_tree_state": "CLEAN"
+  },
+
+  "review_status": "ACCEPTED",
+
+  "protocol_compliance": {
+    "compliant": true,
+    "violations": []
+  },
+
+  "artifact_checks": {
+    "metadata_valid": true,
+    "raw_artifacts_present": true,
+    "config_present": true,
+    "dataset_identity_verified": true,
+    "analysis_present": false,
+    "independent_recomputation_performed": false,
+    "service_parity_checked": false,
+    "stochastic_runs_checked": false
+  },
+
+  "evidence_assessment": {
+    "strength": "LIMITED",
+    "conclusion_supported": true,
+    "scope_appropriate": true,
+    "notes": "Validator smoke test only."
+  },
+
+  "critical_issues": [],
+  "limitations": [
+    "Synthetic validator test only."
+  ],
+  "required_actions": [],
+  "contradictions": [],
+
+  "knowledge_promotion_allowed": true,
+
+  "promotion_scope": {
+    "claims": [
+      "Validator accepts this synthetic package."
+    ],
+    "modules": [],
+    "configurations": [],
+    "datasets": [
+      "VALIDATOR-SMOKE-001"
+    ],
+    "problem_size": {
+      "min": 1,
+      "max": 1
+    },
+    "assumptions": [
+      "This is not a scientific experiment."
+    ]
+  },
+
+  "review_summary": "Synthetic package passes structural and promotion checks."
+}

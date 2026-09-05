@@ -74,7 +74,7 @@ class MaxDistanceConstraintTest {
 
         // Code cũ (bug): route rỗng → totalDistance ≈ 0 → luôn true
         // Code đúng: phải tính chèn C vào route rỗng = depot→C→depot = 5000m > 100m → false
-        assertFalse(constraint.fulfilled(ctx),
+        assertFalse(accepts(constraint, ctx),
                 "Route rỗng nhưng job cách xa vẫn phải bị từ chối nếu vượt maxDistance");
     }
 
@@ -102,7 +102,7 @@ class MaxDistanceConstraintTest {
 
         // Code cũ (bug): chỉ tính route hiện tại (2000m) ≤ 2100m → true (SAI)
         // Code đúng: phải tính 2000 + minDetour(B) và so sánh với 2100m → false
-        assertFalse(constraint.fulfilled(ctx),
+        assertFalse(accepts(constraint, ctx),
                 "Chèn job B phải bị từ chối vì tổng khoảng cách sau khi chèn (4000m) vượt maxDistance (2100m), " +
                         "dù route hiện tại (2000m) vẫn đang hợp lệ");
     }
@@ -127,11 +127,20 @@ class MaxDistanceConstraintTest {
         OptimizationService.MaxDistanceConstraint constraint =
                 new OptimizationService.MaxDistanceConstraint(costs, Map.of(VEHICLE_ID, maxDistance));
 
-        assertTrue(constraint.fulfilled(ctx),
+        assertTrue(accepts(constraint, ctx),
                 "Chèn job B phải được chấp nhận vì tổng khoảng cách (4000m) vẫn dưới maxDistance (5000m) — " +
                         "đảm bảo fix không làm constraint quá chặt (false negative)");
     }
 
+    private boolean accepts(OptimizationService.MaxDistanceConstraint constraint, JobInsertionContext ctx) {
+        var route = ctx.getRoute();
+        var activity = VehicleRoute.Builder.newInstance(ctx.getNewVehicle())
+                .addService((Service) ctx.getJob()).build().getActivities().get(0);
+        var previous = route.getActivities().isEmpty() ? route.getStart()
+                : route.getActivities().get(route.getActivities().size() - 1);
+        return constraint.fulfilled(ctx, previous, activity, route.getEnd(), 0)
+                == com.graphhopper.jsprit.core.problem.constraint.HardActivityConstraint.ConstraintsStatus.FULFILLED;
+    }
     // ==================== HELPER METHODS ====================
 
     private VehicleRoute buildRoute(String vehicleId, Location start, Location end) {

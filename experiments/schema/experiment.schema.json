@@ -1,0 +1,599 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gvrp.local/schema/experiment.schema.json",
+  "title": "GVRP Experiment Record",
+  "description": "Machine-readable metadata for reproducible GVRP experiments.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "experiment_id",
+    "title",
+    "created_at",
+    "execution_status",
+    "verification_type",
+    "revision",
+    "research",
+    "comparison",
+    "dataset",
+    "metrics",
+    "artifacts"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0"
+    },
+    "experiment_id": {
+      "type": "string",
+      "pattern": "^EXP-[0-9]{4}-[0-9]{3,}$"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 5
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "execution_status": {
+      "type": "string",
+      "enum": [
+        "PLANNED",
+        "RUNNING",
+        "COMPLETED",
+        "BLOCKED",
+        "INVALID"
+      ]
+    },
+    "verification_type": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": [
+          "IMPLEMENTATION",
+          "MATHEMATICAL",
+          "EXPERIMENTAL",
+          "LITERATURE"
+        ]
+      }
+    },
+    "revision": {
+      "$ref": "#/$defs/revision"
+    },
+    "research": {
+      "$ref": "#/$defs/research"
+    },
+    "comparison": {
+      "$ref": "#/$defs/comparison"
+    },
+    "dataset": {
+      "$ref": "#/$defs/dataset"
+    },
+    "environment": {
+      "$ref": "#/$defs/environment"
+    },
+    "solver": {
+      "$ref": "#/$defs/solver"
+    },
+    "procedure": {
+      "$ref": "#/$defs/procedure"
+    },
+    "metrics": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/metric"
+      }
+    },
+    "service_parity": {
+      "$ref": "#/$defs/serviceParity"
+    },
+    "stochastic": {
+      "$ref": "#/$defs/stochastic"
+    },
+    "carbon_evaluation": {
+      "$ref": "#/$defs/carbonEvaluation"
+    },
+    "artifacts": {
+      "$ref": "#/$defs/artifacts"
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "$defs": {
+    "revision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "commit",
+        "branch",
+        "working_tree_state"
+      ],
+      "properties": {
+        "commit": {
+          "type": "string",
+          "minLength": 7
+        },
+        "branch": {
+          "type": "string",
+          "minLength": 1
+        },
+        "working_tree_state": {
+          "type": "string",
+          "enum": [
+            "CLEAN",
+            "DIRTY"
+          ]
+        }
+      }
+    },
+    "research": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "research_question",
+        "hypothesis",
+        "falsification_criteria"
+      ],
+      "properties": {
+        "research_question": {
+          "type": "string",
+          "minLength": 10
+        },
+        "hypothesis": {
+          "type": "string",
+          "minLength": 10
+        },
+        "falsification_criteria": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 5
+          }
+        }
+      }
+    },
+    "comparison": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "baseline",
+        "treatment",
+        "controlled_variables"
+      ],
+      "properties": {
+        "baseline": {
+          "$ref": "#/$defs/experimentArm"
+        },
+        "treatment": {
+          "$ref": "#/$defs/experimentArm"
+        },
+        "controlled_variables": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "known_differences": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "experimentArm": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "description"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "description": {
+          "type": "string",
+          "minLength": 5
+        },
+        "config_ref": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "dataset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dataset_id",
+        "description",
+        "hash"
+      ],
+      "properties": {
+        "dataset_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "description": {
+          "type": "string",
+          "minLength": 5
+        },
+        "path": {
+          "type": "string"
+        },
+        "hash": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "algorithm",
+            "value"
+          ],
+          "properties": {
+            "algorithm": {
+              "type": "string",
+              "enum": [
+                "SHA-256"
+              ]
+            },
+            "value": {
+              "type": "string",
+              "pattern": "^[A-Fa-f0-9]{64}$"
+            }
+          }
+        },
+        "generated": {
+          "type": "boolean"
+        },
+        "generator": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "version": {
+              "type": "string"
+            },
+            "seed": {
+              "type": [
+                "integer",
+                "string"
+              ]
+            },
+            "parameters_ref": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "generated": {
+                "const": true
+              }
+            },
+            "required": [
+              "generated"
+            ]
+          },
+          "then": {
+            "required": [
+              "generator"
+            ]
+          }
+        }
+      ]
+    },
+    "environment": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "os": {
+          "type": "string"
+        },
+        "java_version": {
+          "type": "string"
+        },
+        "jvm": {
+          "type": "string"
+        },
+        "cpu": {
+          "type": "string"
+        },
+        "memory": {
+          "type": "string"
+        },
+        "library_versions": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "solver": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "iterations": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "runtime_limit_seconds": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "threads": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "termination_criteria": {
+          "type": "string"
+        }
+      }
+    },
+    "procedure": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "commands"
+      ],
+      "properties": {
+        "commands": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "command",
+              "produces"
+            ],
+            "properties": {
+              "command": {
+                "type": "string",
+                "minLength": 1
+              },
+              "arm": {
+                "type": "string",
+                "minLength": 1
+              },
+              "working_dir": {
+                "type": "string",
+                "minLength": 1
+              },
+              "produces": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "metric": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "unit",
+        "measurement_method"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "unit": {
+          "type": "string",
+          "minLength": 1
+        },
+        "measurement_method": {
+          "type": "string",
+          "minLength": 3
+        },
+        "independently_recomputed": {
+          "type": "boolean"
+        }
+      }
+    },
+    "serviceParity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "required",
+        "criteria"
+      ],
+      "properties": {
+        "required": {
+          "type": "boolean"
+        },
+        "criteria": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "metrics": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": [
+              "total_orders",
+              "served_orders",
+              "unserved_orders",
+              "total_demand",
+              "delivered_demand",
+              "feasible"
+            ]
+          }
+        }
+      }
+    },
+    "stochastic": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "enabled"
+      ],
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "number_of_runs": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "seed_strategy": {
+          "type": "string"
+        },
+        "seeds": {
+          "type": "array",
+          "items": {
+            "type": [
+              "integer",
+              "string"
+            ]
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "enabled": {
+                "const": true
+              }
+            },
+            "required": [
+              "enabled"
+            ]
+          },
+          "then": {
+            "required": [
+              "number_of_runs",
+              "seed_strategy"
+            ]
+          }
+        }
+      ]
+    },
+    "carbonEvaluation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "optimization_model",
+        "evaluation_model",
+        "unit",
+        "system_boundary"
+      ],
+      "properties": {
+        "optimization_model": {
+          "type": "string",
+          "minLength": 1
+        },
+        "evaluation_model": {
+          "type": "string",
+          "minLength": 1
+        },
+        "unit": {
+          "type": "string",
+          "minLength": 1
+        },
+        "system_boundary": {
+          "type": "string",
+          "enum": [
+            "TAILPIPE",
+            "ENERGY_USE",
+            "ELECTRICITY_GENERATION",
+            "LIFECYCLE",
+            "OTHER"
+          ]
+        },
+        "system_boundary_description": {
+          "type": "string"
+        },
+        "parameters_ref": {
+          "type": "string"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "system_boundary": {
+                "const": "OTHER"
+              }
+            },
+            "required": [
+              "system_boundary"
+            ]
+          },
+          "then": {
+            "required": [
+              "system_boundary_description"
+            ]
+          }
+        }
+      ]
+    },
+    "artifacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "raw"
+      ],
+      "properties": {
+        "raw": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "processed": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "analysis": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,481 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gvrp.local/schema/review.schema.json",
+  "title": "GVRP Experiment Review Record",
+  "description": "Machine-readable independent review record for GVRP experiments.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "experiment_id",
+    "reviewed_at",
+    "reviewer",
+    "review_status",
+    "protocol_compliance",
+    "artifact_checks",
+    "evidence_assessment",
+    "knowledge_promotion_allowed"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0"
+    },
+    "experiment_id": {
+      "type": "string",
+      "pattern": "^EXP-[0-9]{4}-[0-9]{3,}$"
+    },
+    "reviewed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "reviewer": {
+      "$ref": "#/$defs/reviewer"
+    },
+    "reviewed_revision": {
+      "$ref": "#/$defs/revision"
+    },
+    "review_status": {
+      "type": "string",
+      "enum": [
+        "NOT_REVIEWED",
+        "ACCEPTED",
+        "ACCEPTED_WITH_LIMITATIONS",
+        "REJECTED",
+        "REQUIRES_RERUN"
+      ]
+    },
+    "protocol_compliance": {
+      "$ref": "#/$defs/protocolCompliance"
+    },
+    "artifact_checks": {
+      "$ref": "#/$defs/artifactChecks"
+    },
+    "evidence_assessment": {
+      "$ref": "#/$defs/evidenceAssessment"
+    },
+    "critical_issues": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/reviewIssue"
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "required_actions": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "contradictions": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "knowledge_promotion_allowed": {
+      "type": "boolean"
+    },
+    "promotion_scope": {
+      "$ref": "#/$defs/promotionScope"
+    },
+    "review_summary": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "review_status": {
+            "const": "ACCEPTED"
+          }
+        },
+        "required": [
+          "review_status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "knowledge_promotion_allowed": {
+            "const": true
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "review_status": {
+            "const": "ACCEPTED_WITH_LIMITATIONS"
+          }
+        },
+        "required": [
+          "review_status"
+        ]
+      },
+      "then": {
+        "required": [
+          "limitations",
+          "promotion_scope"
+        ],
+        "properties": {
+          "knowledge_promotion_allowed": {
+            "const": true
+          },
+          "limitations": {
+            "minItems": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "review_status": {
+            "enum": [
+              "REJECTED",
+              "REQUIRES_RERUN",
+              "NOT_REVIEWED"
+            ]
+          }
+        },
+        "required": [
+          "review_status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "knowledge_promotion_allowed": {
+            "const": false
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "review_status": {
+            "const": "REQUIRES_RERUN"
+          }
+        },
+        "required": [
+          "review_status"
+        ]
+      },
+      "then": {
+        "required": [
+          "required_actions"
+        ],
+        "properties": {
+          "required_actions": {
+            "minItems": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "review_status": {
+            "const": "REJECTED"
+          }
+        },
+        "required": [
+          "review_status"
+        ]
+      },
+      "then": {
+        "required": [
+          "critical_issues"
+        ],
+        "properties": {
+          "critical_issues": {
+            "minItems": 1
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "reviewer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "identifier"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "HUMAN",
+            "AGENT"
+          ]
+        },
+        "identifier": {
+          "type": "string",
+          "minLength": 1
+        },
+        "agent_role": {
+          "type": "string"
+        },
+        "model": {
+          "type": "string"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "AGENT"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "required": [
+              "agent_role"
+            ]
+          }
+        }
+      ]
+    },
+    "revision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "commit",
+        "branch",
+        "working_tree_state"
+      ],
+      "properties": {
+        "commit": {
+          "type": "string",
+          "minLength": 7
+        },
+        "branch": {
+          "type": "string",
+          "minLength": 1
+        },
+        "working_tree_state": {
+          "type": "string",
+          "enum": [
+            "CLEAN",
+            "DIRTY"
+          ]
+        }
+      }
+    },
+    "protocolCompliance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "compliant"
+      ],
+      "properties": {
+        "compliant": {
+          "type": "boolean"
+        },
+        "violations": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "compliant": {
+                "const": false
+              }
+            },
+            "required": [
+              "compliant"
+            ]
+          },
+          "then": {
+            "required": [
+              "violations"
+            ],
+            "properties": {
+              "violations": {
+                "minItems": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "artifactChecks": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "metadata_valid",
+        "raw_artifacts_present",
+        "config_present",
+        "dataset_identity_verified"
+      ],
+      "properties": {
+        "metadata_valid": {
+          "type": "boolean"
+        },
+        "raw_artifacts_present": {
+          "type": "boolean"
+        },
+        "config_present": {
+          "type": "boolean"
+        },
+        "dataset_identity_verified": {
+          "type": "boolean"
+        },
+        "analysis_present": {
+          "type": "boolean"
+        },
+        "independent_recomputation_performed": {
+          "type": "boolean"
+        },
+        "service_parity_checked": {
+          "type": "boolean"
+        },
+        "stochastic_runs_checked": {
+          "type": "boolean"
+        }
+      }
+    },
+    "evidenceAssessment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "strength",
+        "conclusion_supported",
+        "scope_appropriate"
+      ],
+      "properties": {
+        "strength": {
+          "type": "string",
+          "enum": [
+            "STRONG",
+            "MODERATE",
+            "LIMITED",
+            "NONE"
+          ]
+        },
+        "conclusion_supported": {
+          "type": "boolean"
+        },
+        "scope_appropriate": {
+          "type": "boolean"
+        },
+        "notes": {
+          "type": "string"
+        }
+      }
+    },
+    "reviewIssue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "severity",
+        "description"
+      ],
+      "properties": {
+        "severity": {
+          "type": "string",
+          "enum": [
+            "CRITICAL",
+            "MAJOR",
+            "MINOR"
+          ]
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "promotionScope": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "claims": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "modules": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "configurations": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "datasets": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "problem_size": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "min": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "max": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0
+            }
+          }
+        },
+        "assumptions": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,67 @@
+{
+  "schema_version": "1.0",
+  "experiment_id": "EXP-2026-999",
+  "title": "Validator smoke test",
+  "created_at": "2026-09-05T16:00:00+07:00",
+  "execution_status": "PLANNED",
+  "verification_type": ["EXPERIMENTAL"],
+
+  "revision": {
+    "commit": "abcdef1234567890",
+    "branch": "test-validator",
+    "working_tree_state": "CLEAN"
+  },
+
+  "research": {
+    "research_question": "Does the validator accept a complete experiment record?",
+    "hypothesis": "A complete valid experiment package will pass promotion checks.",
+    "falsification_criteria": [
+      "Promotion check fails despite all required artifacts being valid."
+    ]
+  },
+
+  "comparison": {
+    "baseline": {
+      "name": "baseline",
+      "description": "Baseline configuration",
+      "config_ref": "config-baseline.json"
+    },
+    "treatment": {
+      "name": "treatment",
+      "description": "Treatment configuration",
+      "config_ref": "config-treatment.json"
+    },
+    "controlled_variables": [
+      "dataset",
+      "environment"
+    ]
+  },
+
+  "dataset": {
+    "dataset_id": "VALIDATOR-SMOKE-001",
+    "description": "Small synthetic validator test dataset",
+    "path": "experiments/runs/EXP-2026-999/raw/result.json",
+    "hash": {
+      "algorithm": "SHA-256",
+      "value": "F9F9EABCE465A99080D1DD4800F08D1A634608FB159AB4575CC606618FC6B29F"
+    },
+    "generated": false
+  },
+
+  "metrics": [
+    {
+      "name": "runtime",
+      "unit": "s",
+      "measurement_method": "Synthetic test value",
+      "independently_recomputed": false
+    }
+  ],
+
+  "artifacts": {
+    "raw": [
+      "raw/result.json"
+    ],
+    "processed": [],
+    "analysis": []
+  }
+}

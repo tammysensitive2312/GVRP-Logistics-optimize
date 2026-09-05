@@ -293,6 +293,7 @@ public class OptimizationService {
 
         // FAIL-LOUD: chặn kết quả rác (cạnh sentinel lọt vào route) trước khi tính metric/gửi callback
         assertNoSentinelEdgeTraversed(bestSolution, matrix, context, request.getJobId());
+        assertMaxDistances(bestSolution, matrix, context);
 
         // Calculate real metrics
         SolutionMetrics metrics = SolutionMetricsCalculator.calculate(
@@ -378,6 +379,7 @@ public class OptimizationService {
 
             // FAIL-LOUD: chặn kết quả rác (cạnh sentinel lọt vào route)
             assertNoSentinelEdgeTraversed(bestSolution, matrix, context, request.getJobId());
+            assertMaxDistances(bestSolution, matrix, context);
 
             // Calculate metrics
             SolutionMetrics metrics = SolutionMetricsCalculator.calculate(
@@ -640,7 +642,7 @@ public class OptimizationService {
             constraintManager.addConstraint(new MaxDistanceConstraint(
                     vrp.getTransportCosts(),
                     vehicleMaxDistances
-            ));
+            ), ConstraintManager.Priority.HIGH);
             log.info("✅ Applied MaxDistance constraints for {} vehicles", vehicleMaxDistances.size());
         }
 
@@ -999,7 +1001,37 @@ public class OptimizationService {
 
     // ==================== MAX DISTANCE CONSTRAINT ====================
 
-    static class MaxDistanceConstraint implements HardRouteConstraint {
+    // Distances come from the static physical matrix; tolerance is one micrometer.
+    private static final double DISTANCE_TOLERANCE_METERS = 1e-6;
+
+    /** Independently check returned routes before metrics or callbacks are produced. */
+    static void assertMaxDistances(VehicleRoutingProblemSolution solution,
+                                   DistanceTimeMatrix matrix, OptimizationContext context) {
+        for (VehicleRoute route : solution.getRoutes()) {
+            long id = Long.parseLong(route.getVehicle().getId().replace("vehicle-", ""));
+            Vehicle dto = context.vehicleDTOs().get(id);
+            Double maxKm = context.vehicleTypeDTOs().get(dto.getVehicleTypeId()).getMaxDistance();
+            if (maxKm == null) continue;
+            double distance = 0;
+            Location previous = route.getStart().getLocation();
+            for (TourActivity activity : route.getActivities()) {
+                distance += matrix.distance(previous.getIndex(), activity.getLocation().getIndex());
+                previous = activity.getLocation();
+            }
+            if (route.getVehicle().isReturnToDepot()) {
+                distance += matrix.distance(previous.getIndex(), route.getEnd().getLocation().getIndex());
+            }
+            double limit = maxKm * 1000.0;
+            if (!Double.isFinite(distance) || !Double.isFinite(limit)
+                    || distance > limit + DISTANCE_TOLERANCE_METERS) {
+                throw new IllegalStateException("Vehicle " + id + " route distance " + distance
+                        + " m exceeds or invalidates maximum " + limit + " m");
+            }
+        }
+    }
+
+    /** Validate the actual insertion position using the candidate vehicle and its depots. */
+    static class MaxDistanceConstraint implements HardActivityConstraint {
         private final VehicleRoutingTransportCosts costs;
         private final Map<String, Double> vehicleMaxDistances;
 
@@ -1010,72 +1042,37 @@ public class OptimizationService {
         }
 
         @Override
-        public boolean fulfilled(JobInsertionContext iFacts) {
-            String vehicleId = iFacts.getRoute().getVehicle().getId();
-            Double maxDistance = vehicleMaxDistances.get(vehicleId);
+        public ConstraintsStatus fulfilled(JobInsertionContext context, TourActivity prevAct,
+                                           TourActivity newAct, TourActivity nextAct,
+                                           double departureTime) {
+            var vehicle = context.getNewVehicle();
+            Double limit = vehicleMaxDistances.get(vehicle.getId());
+            if (limit == null) return ConstraintsStatus.FULFILLED;
 
-            if (maxDistance == null) return true;
-
-            // ===== BƯỚC 1: Tính d_current — khoảng cách route hiện tại (chưa có job mới) =====
-            double currentDistance = 0.0;
-            TourActivity prevAct = iFacts.getRoute().getStart();
-
-            for (TourActivity act : iFacts.getRoute().getActivities()) {
-                currentDistance += costs.getDistance(
-                        prevAct.getLocation(),
-                        act.getLocation(),
-                        prevAct.getEndTime(),
-                        iFacts.getRoute().getVehicle()
-                );
-                prevAct = act;
+            // Rebuild this candidate route's distance, inserting immediately before nextAct.
+            // This also handles vehicle switches with different start/end depots.
+            double distance = 0;
+            Location previous = vehicle.getStartLocation();
+            boolean inserted = false;
+            for (TourActivity activity : context.getRoute().getActivities()) {
+                if (activity == nextAct) {
+                    distance += costs.getDistance(previous, newAct.getLocation(), departureTime, vehicle);
+                    previous = newAct.getLocation();
+                    inserted = true;
+                }
+                distance += costs.getDistance(previous, activity.getLocation(), departureTime, vehicle);
+                previous = activity.getLocation();
             }
-
-            currentDistance += costs.getDistance(
-                    prevAct.getLocation(),
-                    iFacts.getRoute().getEnd().getLocation(),
-                    prevAct.getEndTime(),
-                    iFacts.getRoute().getVehicle()
-            );
-
-            // ===== BƯỚC 2: Tính Δd_min — detour tốt nhất khi chèn job mới =====
-            // Lấy location của job đang được xem xét chèn
-            Location jobLocation = iFacts.getJob().getActivities().stream()
-                    .findFirst()
-                    .orElseThrow(() -> new IllegalStateException(
-                            "Job " + iFacts.getJob().getId() + " has no activities"))
-                    .getLocation();
-
-            double minDetour = Double.MAX_VALUE;
-            TourActivity prev = iFacts.getRoute().getStart();
-
-            // Danh sách các "điểm nối tiếp theo" để duyệt mọi vị trí chèn khả dĩ,
-            // bao gồm cả vị trí cuối route (trước khi về depot)
-            java.util.List<TourActivity> candidates = new java.util.ArrayList<>(
-                    iFacts.getRoute().getActivities());
-            candidates.add(iFacts.getRoute().getEnd());
-
-            for (TourActivity next : candidates) {
-                double dPrevNext = costs.getDistance(
-                        prev.getLocation(), next.getLocation(),
-                        prev.getEndTime(), iFacts.getRoute().getVehicle());
-
-                double dPrevJob = costs.getDistance(
-                        prev.getLocation(), jobLocation,
-                        prev.getEndTime(), iFacts.getRoute().getVehicle());
-
-                double dJobNext = costs.getDistance(
-                        jobLocation, next.getLocation(),
-                        prev.getEndTime(), iFacts.getRoute().getVehicle());
-
-                double detour = dPrevJob + dJobNext - dPrevNext;
-                minDetour = Math.min(minDetour, detour);
-
-                prev = next;
+            if (!inserted) {
+                distance += costs.getDistance(previous, newAct.getLocation(), departureTime, vehicle);
+                previous = newAct.getLocation();
             }
-
-            double projectedDistance = currentDistance + minDetour;
-
-            return projectedDistance <= maxDistance;
+            if (vehicle.isReturnToDepot()) {
+                distance += costs.getDistance(previous, vehicle.getEndLocation(), departureTime, vehicle);
+            }
+            return Double.isFinite(distance) && Double.isFinite(limit)
+                    && distance <= limit + DISTANCE_TOLERANCE_METERS
+                    ? ConstraintsStatus.FULFILLED : ConstraintsStatus.NOT_FULFILLED;
         }
     }
 

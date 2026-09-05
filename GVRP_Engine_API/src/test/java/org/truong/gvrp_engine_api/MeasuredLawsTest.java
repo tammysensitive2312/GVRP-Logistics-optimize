@@ -431,7 +431,7 @@ class MeasuredLawsTest {
 
         // ...còn distance nhân CẢ HAI (fuel×w_c + co2×w_e):
         double fuelPerM = 8_000.0 / 1_000.0;
-        double co2PerM = (180.0 / 1e6) * AppConstant.CARBON_PRICE_PER_TON;
+        double co2PerM = (180.0 / 1e9) * AppConstant.CARBON_PRICE_PER_TON;
         assertEquals(fuelPerM * wc + co2PerM * we, p.perDistanceUnit, 1e-9,
                 "distance nhân cả costWeight và co2Weight — chính đây là chỗ bất đối xứng");
 
