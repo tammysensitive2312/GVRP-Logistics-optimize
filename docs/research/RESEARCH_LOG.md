@@ -257,3 +257,127 @@ and solver/env/seed strictness remain optional. Follow-ups deferred.
 Related Experiment: EXP-2026-999 (synthetic fixture, not scientific)
 
 Related Commit: working tree (dirty, governance files untracked)
+
+---
+
+## RL-2026-003 — Literature-first GVRP gap investigation (search 2026-09-05)
+
+Date: 2026-09-06
+
+Context:
+Literature-first investigation (no brainstorming first). Workflow: Orchestrator
+Stage-1 context -> Researcher protocol + corpus + landscape + gaps + triangulation ->
+Reviewer adversarial re-verification (OpenAlex/publisher/arXiv + own falsification
+searches F1-F4) -> Orchestrator fit + logging. No production code changed. Corpus and
+verdicts recorded in docs/research/LITERATURE.md (created this entry; previously absent).
+
+Question:
+Which GVRP research gaps are scientifically defensible AND feasible for this project
+(GraphHopper + jsprit, vn_n1000/vn_n5000 + vn6183)?
+
+Observation:
+Corpus: 8 surveys + 20 primaries/context (DOIs + levels recorded; 2 full-text excerpts:
+Turkensteen 2017, Koc 2014; rest abstract/metadata). Four broad gap framings were
+killed or narrowed by targeted falsification (Liu ALNS-1000 + XL-CVRP + SVRPBench kill
+"no large green"; Koc/E-HFFVRP/hybrid-fleet kill "hetero unstudied"; Franceschetti/Liu
+kill "no TD green"; Demir2011/Turkensteen/CIRRELT kill "no model comparison").
+Reviewer downgrades: GAP-5 broadly near-contradicted (PLOS 2026 sensitivity; Tehran
+MOSVRP 2025); GAP-4 reclassified as protocol, not gap.
+
+Evidence:
+- LITERATURE.md: full citation table with DOI + inspection level + verdicts.
+- Reviewer citation re-verification: Asghari, Bektas&Laporte, Koc, Raeesi via OpenAlex;
+  Turkensteen via RePEc/ScienceDirect/Semantic Scholar; Schneider via publisher;
+  Liu BCP multi-source; SVRPBench verified with non-green caveat; Shahin2025 partial
+  (future-dated volume).
+- Falsification: F1 Wang2025/Li2018 hetero (narrow GAP-1); F2 VN e-moto routing no OR
+  hit (strengthen GAP-3); F3 Pareto sensitivity hits (narrow GAP-5); F4 real-network
+  PRP cases (narrow GAP-2).
+
+Interpretation:
+Strongest: GAP-3 motorcycle-specific VN last-mile (SUPPORTED_GAP, MODERATE).
+Plausible conjunctions: GAP-1 VN-calibrated hetero factors; GAP-2 large-scale real-matrix
+green + hetero (both PLAUSIBLE, LIMITED-MODERATE). GAP-4 is hygiene, not novelty
+(STRONG prescription, NONE novelty). GAP-5 only as in-house experiment gated on GAP-1+GAP-4.
+
+Decision:
+Top-3 directions: (1) VN-calibrated hetero emission factors + evaluator/parity protocol;
+(2) motorcycle-specific VN last-mile optimisation; (3) large-scale real-matrix green
+routing conditioned on (1). Primary RQ + hypotheses + minimum experiment recorded in
+the final report; pre-registration required before runs. Open items: source-trace
+16-factor + UNASSIGNED premises; VN-language pass; truck->moto energy boundary; CMEM
+reconciliation.
+
+Impact:
+No PROJECT_STATE.md promotion (reviewer-forbidden as verified fact). LITERATURE.md
+created as triangulation record; this log entry preserves the decision trail.
+
+Remaining Uncertainty:
+Single-round searches; VN-language sources unsearched; paywalled full texts mostly
+abstract-judged; 2025-2026 items evolving; internal prior-work overlap not fully excluded.
+
+Related Commit: working tree (governance/docs untracked)
+
+---
+
+## RL-2026-004 — GAP-3 hostile falsification loop (2026-09-06)
+
+Date: 2026-09-06
+
+Context:
+Re-open of GAP-3 only, with intent to falsify (not confirm). Researcher ran expanded
+Vietnamese + SE-Asian terminology searches (8 websearch queries incl. Vietnamese, OpenAlex
+recall query count 556 with top-10 triaged) and bucketed every hit as
+ROUTING_OPTIMIZATION vs FLEET_SELECTION/MCDM vs POLICY/DESCRIPTIVE vs GENERIC_VRP_VN.
+Reviewer independently re-verified the two load-bearing narrowers via OpenAlex DOI lookup
++ DOI-resolution search (no direct MDPI PDF parse or KCI page fetch achieved).
+
+Question:
+Should GAP-3 ("motorcycle-specific Vietnamese last-mile green routing is underexplored")
+remain as-stated, be upgraded, narrowed, or rejected?
+
+Observation:
+Two peer-reviewed nearest neighbours surfaced. N1: Lee et al. 2020, Sustainability
+12:1077, doi:10.3390/su12031077 — VN-framed moto-inclusive VRP-EL, cost/distance objective,
+ex-post carbon estimation (0.343 truck / 0.044405 moto kgCO2/km per excerpts), existence +
+moto/VN + ex-post-only treatment corroborated by Reviewer (instance/scale details NOT
+re-verified). N2: Dao & Cho 2025, JKMS 28(1):46-57, doi:10.9717/kmms.2025.28.1.046 —
+moto-specific MDVRPTW for HCMC, distance/cost objectives, no green content in
+abstract/keywords (full text unchecked; KCI-indexing unverified). No strict bucket-(a)
+killer found (moto-specific energy/emission model + explicit emission objective + VN
+instances). Supporting context: AhaMove industrial moto VRP without green content (grey);
+Rhouzali 2024 IJETT moto-inclusive green VRP non-VN tiny instances (anti-drift guard);
+ITDP context reports (no routing); NEU student proposal (grey intent only).
+
+Evidence:
+- Researcher query/bucket table (Q1-Q8, O1; failed O2 alias call reported).
+- Reviewer OpenAlex DOI verifications: N1 W3003750123, N2 W4407182630; verdict NARROW, MODERATE.
+- Flagged confounder (untriaged): "A Practical Green Vehicle Routing Solution — A Case
+  in HCMC" (IEOM Rome 2021, CMEM-based, truck framing).
+
+Interpretation:
+Original wording is loose enough that N1 fairly counts against it (peer-reviewed,
+VN-framed, moto-inclusive, "sustainable" + quantified carbon numbers). N2 kills any
+"no moto-VRP for Vietnam" reading but leaves the green leg intact. Excluding N1 on
+"emission term must influence route selection" is principled (reporting vs optimisation).
+KEEP-as-stated indefensible; REJECT overstates (no bucket-(a) killer). Correct: NARROW
+to the (a)+(b)+(c) conjunction with "located" discipline.
+
+Decision:
+GAP-3 narrowed in LITERATURE.md to the amended conjunction wording with DOI pair,
+"located as of 2026-09-06" qualifier, and per-item limits. Strength stays MODERATE
+(conjunction only). No PROJECT_STATE.md change. Other gaps untouched in this loop.
+
+Impact:
+GAP-3 remains the strongest project direction but now with explicit exclusions (N1, N2,
+industrial deployments, non-VN moto-green, non-green e-moto routing) that any future
+thesis/design must cite to avoid overclaim.
+
+Remaining Uncertainty:
+N2 full text unchecked (green-absence unproven); N1 direct PDF equation-level check
+outstanding; VN login-walled repositories, VJOL, RAISD-beyond-P16, citation-chasing
+N1/N2, and the IEOM-2021 HCMC item untriaged; single-round searches; 2026 items evolving.
+
+Related Issue: none (no code changed)
+
+Related Commit: working tree (docs untracked)
