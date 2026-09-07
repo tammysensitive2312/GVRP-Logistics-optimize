@@ -1,6 +1,8 @@
 package org.truong.gvrp_engine_api.model;
 
 import lombok.*;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 @Getter
 @Setter
@@ -16,4 +18,5 @@ public class VehicleType {
     private Double maxDistance;
     private Double maxDuration;
     private Double emissionFactor;
+    private Set<String> skills = new LinkedHashSet<>();
 }

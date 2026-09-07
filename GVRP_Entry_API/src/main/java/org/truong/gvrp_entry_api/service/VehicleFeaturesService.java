@@ -14,6 +14,8 @@ import org.truong.gvrp_entry_api.util.AppConstant;
 import org.truong.gvrp_entry_api.util.ErrorCode;
 
 import java.util.List;
+import java.util.Set;
+import org.truong.gvrp_entry_api.entity.enums.VehicleSkill;
 
 /**
  * Helper service to parse vehicle features JSON
@@ -64,6 +66,11 @@ public class VehicleFeaturesService {
         return parseFeatures(type.getVehicleFeatures());
     }
 
+    @Named("getFeatures")
+    public VehicleFeaturesDTO getFeatures(VehicleType type) {
+        return parseFeatures(type);
+    }
+
     /**
      * Convert DTO to JSON string
      */
@@ -80,5 +87,11 @@ public class VehicleFeaturesService {
     public Double getEmissionFactor(VehicleType type) {
         VehicleFeaturesDTO features = parseFeatures(type);
         return features != null ? features.getEmissionFactor() : null;
+    }
+
+    @Named("getSkills")
+    public Set<VehicleSkill> getSkills(VehicleType type) {
+        VehicleFeaturesDTO features = parseFeatures(type);
+        return features.getSkills() == null ? Set.of() : Set.copyOf(features.getSkills());
     }
 }

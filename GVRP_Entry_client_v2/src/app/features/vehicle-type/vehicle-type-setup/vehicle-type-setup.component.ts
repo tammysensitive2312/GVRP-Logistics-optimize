@@ -14,7 +14,12 @@ import { finalize } from 'rxjs/operators';
 
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 
-import { VehicleFeatures, VehicleTypeInputDTO } from '@core/models';
+import {
+  VEHICLE_SKILLS,
+  VehicleFeatures,
+  VehicleSkill,
+  VehicleTypeInputDTO
+} from '@core/models';
 import { VehicleTypeStore } from '@core/services/vehicle-type.store';
 import { VndPipe } from '@shared/pipes/vnd.pipe';
 import { ToastService } from '@shared/services/toast.service';
@@ -33,6 +38,7 @@ interface VehicleTypeFormControls {
   costPerHour: FormControl<number | null>;
   maxDistance: FormControl<number | null>;
   maxDuration: FormControl<number | null>;
+  skills: FormControl<VehicleSkill[]>;
 }
 
 const PREVIOUS_SETUP_STEP = '/setup/depot';
@@ -72,6 +78,7 @@ export class VehicleTypeSetupComponent implements OnInit {
   readonly hasVehicleTypes = this.store.hasVehicleTypes;
 
   readonly saving = signal(false);
+  readonly skillOptions = VEHICLE_SKILLS;
 
   readonly form = new FormGroup<VehicleTypeFormControls>({
     typeName: new FormControl('', {
@@ -96,7 +103,8 @@ export class VehicleTypeSetupComponent implements OnInit {
     }),
     maxDuration: new FormControl<number | null>(null, {
       validators: [greaterThanZeroWhenPresent()]
-    })
+    }),
+    skills: new FormControl<VehicleSkill[]>([], { nonNullable: true })
   });
 
   ngOnInit(): void {
@@ -169,7 +177,7 @@ export class VehicleTypeSetupComponent implements OnInit {
     if (raw.costPerKm === null || raw.costPerHour === null) return null;
 
     // V1 always sent a vehicle_features object, empty when no emission factor.
-    const vehicleFeatures: VehicleFeatures = {};
+    const vehicleFeatures: VehicleFeatures = { skills: raw.skills };
     if (raw.emissionFactor !== null) {
       vehicleFeatures.emission_factor = raw.emissionFactor;
     }

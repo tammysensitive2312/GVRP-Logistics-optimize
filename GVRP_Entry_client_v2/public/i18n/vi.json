@@ -58,6 +58,8 @@
     "costPerHourLabel": "Chi phí/giờ (VND)",
     "maxDistanceLabel": "Quãng đường tối đa (km)",
     "maxDurationLabel": "Thời gian tối đa (phút)",
+    "skillsLabel": "Kỹ năng của xe",
+    "skillsHint": "Chọn tất cả năng lực mà loại xe này đáp ứng.",
     "addButton": "+ Thêm loại xe",
     "saving": "Đang tạo loại xe…",
     "created": "Loại xe đã được tạo thành công!",

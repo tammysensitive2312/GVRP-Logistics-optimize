@@ -133,6 +133,7 @@ CREATE TABLE IF NOT EXISTS orders (
       status ENUM('SCHEDULED', 'ON_ROUTE', 'SERVICING', 'COMPLETED', 'FAILED', 'REJECTED') NOT NULL DEFAULT 'SCHEDULED',
       priority INT DEFAULT 1 COMMENT '1=highest priority',
       delivery_notes TEXT COMMENT 'Additional delivery instructions',
+      required_skills JSON COMMENT 'Skills a serving vehicle must provide',
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 

@@ -174,6 +174,16 @@
       <div class="form-group"><!-- spacer, mirrors V1 layout --></div>
     </div>
 
+    <div class="form-group">
+      <label for="vtype-skills">{{ 'vehicleTypeSetup.skillsLabel' | transloco }}</label>
+      <select id="vtype-skills" formControlName="skills" multiple>
+        @for (skill of skillOptions; track skill) {
+          <option [value]="skill">{{ skill }}</option>
+        }
+      </select>
+      <small>{{ 'vehicleTypeSetup.skillsHint' | transloco }}</small>
+    </div>
+
     <div class="form-actions">
       <button type="button" class="btn btn-secondary" [disabled]="saving()" (click)="onBack()">
         {{ 'common.back' | transloco }}

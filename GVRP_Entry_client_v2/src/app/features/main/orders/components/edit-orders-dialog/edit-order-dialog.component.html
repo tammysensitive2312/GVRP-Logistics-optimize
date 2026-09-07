@@ -129,6 +129,15 @@
 
     <!-- Notes -->
     <div class="form-section">
+      <h3 class="section-title">🧰 Required vehicle skills</h3>
+      <div class="form-field full-width">
+        <select [(ngModel)]="form.required_skills" multiple class="input-field select-field">
+          <option *ngFor="let skill of skillOptions" [ngValue]="skill">{{ skill }}</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-section">
       <h3 class="section-title">📝 Notes</h3>
 
       <div class="form-field full-width">

@@ -80,6 +80,7 @@ create table orders
     status            enum ('COMPLETED', 'FAILED', 'ON_ROUTE', 'REJECTED', 'SCHEDULED', 'SERVICING') not null,
     priority          int       default 1                                                            null comment '1=highest priority',
     delivery_notes    text                                                                           null comment 'Additional delivery instructions',
+    required_skills   json                                                                           null comment 'Skills a serving vehicle must provide',
     delivery_date     date      default (curdate())                                                  null,
     created_at        timestamp default CURRENT_TIMESTAMP                                            null,
     updated_at        timestamp default CURRENT_TIMESTAMP                                            null on update CURRENT_TIMESTAMP,

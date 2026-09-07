@@ -1,9 +1,23 @@
+export const VEHICLE_SKILLS = [
+  'ELECTRIC',
+  'HYBRID',
+  'PETROL',
+  'DIESEL',
+  'REFRIGERATED',
+  'FRAGILE_CAPABLE',
+  'URBAN_ACCESS',
+  'HAZMAT_CAPABLE'
+] as const;
+
+export type VehicleSkill = (typeof VEHICLE_SKILLS)[number];
+
 /**
  * Free-form feature bag the backend stores per vehicle type.
  * V1 (`vehicle-type-form.js`) only ever set `emission_factor`.
  */
 export interface VehicleFeatures {
   emission_factor?: number;
+  skills?: VehicleSkill[];
 }
 
 /**

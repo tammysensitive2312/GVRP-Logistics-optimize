@@ -2,9 +2,12 @@ package org.truong.gvrp_entry_api.dto.request;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
+import org.truong.gvrp_entry_api.entity.enums.VehicleSkill;
 
 import java.math.BigDecimal;
 import java.time.LocalTime;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -23,4 +26,6 @@ public class EngineOrderDTO {
     private Integer serviceTime;
 
     private Integer priority;
+
+    private Set<VehicleSkill> requiredSkills = new LinkedHashSet<>();
 }

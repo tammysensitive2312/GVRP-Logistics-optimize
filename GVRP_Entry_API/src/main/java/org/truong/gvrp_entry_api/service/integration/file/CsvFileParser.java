@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 import org.truong.gvrp_entry_api.dto.request.OrderInputDTO;
 import org.truong.gvrp_entry_api.dto.response.ImportError;
+import org.truong.gvrp_entry_api.entity.enums.VehicleSkill;
 import org.truong.gvrp_entry_api.exception.DataInvalidException;
 import org.truong.gvrp_entry_api.util.ErrorCode;
 import org.truong.gvrp_entry_api.exception.ErrorDetail;
@@ -24,6 +25,9 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.LinkedHashSet;
+import java.util.Locale;
+import java.util.Set;
 
 /**
  * Parser cho CSV files để import orders.
@@ -147,6 +151,7 @@ public class CsvFileParser implements FileParser<OrderInputDTO> {
                     .timeWindowEnd(parseOptionalTime(record, "timeWindowEnd"))
                     .priority(parseOptionalInteger(record, "priority"))
                     .deliveryNotes(parseOptionalString(record, "deliveryNotes"))
+                    .requiredSkills(parseOptionalSkills(record, "requiredSkills", lineNumber))
                     .build();
 
         } catch (ParseException e) {
@@ -179,6 +184,25 @@ public class CsvFileParser implements FileParser<OrderInputDTO> {
     private String parseOptionalString(CSVRecord record, String columnName) {
         String value = safeGet(record, columnName);
         return (value != null && !value.trim().isEmpty()) ? value.trim() : null;
+    }
+
+    private Set<VehicleSkill> parseOptionalSkills(
+            CSVRecord record, String columnName, int lineNumber) throws ParseException {
+        String value = parseOptionalString(record, columnName);
+        if (value == null) {
+            return new LinkedHashSet<>();
+        }
+
+        Set<VehicleSkill> skills = new LinkedHashSet<>();
+        for (String token : value.split(";")) {
+            try {
+                skills.add(VehicleSkill.valueOf(token.trim().toUpperCase(Locale.ROOT)));
+            } catch (IllegalArgumentException e) {
+                throw new ParseException(columnName, lineNumber,
+                        "Unknown vehicle skill: " + token.trim());
+            }
+        }
+        return skills;
     }
 
     private Integer parseOptionalInteger(CSVRecord record, String columnName) {

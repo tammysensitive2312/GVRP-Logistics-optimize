@@ -131,7 +131,7 @@ describe('VehicleTypeSetupComponent', () => {
 
     const expected: VehicleTypeInputDTO = {
       type_name: 'Xe tải 5 tấn',
-      vehicle_features: { emission_factor: 12.3 },
+      vehicle_features: { emission_factor: 12.3, skills: [] },
       capacity: 5000,
       fixed_cost: 50000,
       cost_per_km: 5000,
@@ -151,7 +151,7 @@ describe('VehicleTypeSetupComponent', () => {
 
     expect(store.create).toHaveBeenCalledWith({
       type_name: 'Xe tải 5 tấn',
-      vehicle_features: {},
+      vehicle_features: { skills: [] },
       capacity: 5000,
       fixed_cost: 50000,
       cost_per_km: 5000,

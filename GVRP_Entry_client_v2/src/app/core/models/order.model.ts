@@ -13,6 +13,7 @@ export interface OrderInputDTO {
   time_window_end?: string;
   priority: number;
   delivery_notes?: string;
+  required_skills?: VehicleSkill[];
 }
 
 export interface OrderDTO extends OrderInputDTO {
@@ -30,3 +31,4 @@ export interface OrderFilter {
   priority?: number;
   search?: string;
 }
+import { VehicleSkill } from './vehicle.model';

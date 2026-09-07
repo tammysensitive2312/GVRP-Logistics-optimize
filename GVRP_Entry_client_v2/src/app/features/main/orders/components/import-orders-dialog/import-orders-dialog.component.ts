@@ -106,8 +106,8 @@ export class ImportOrdersDialogComponent {
   downloadTemplate(): void {
     const csv =
       'orderCode,customerName,customerPhone,address,latitude,longitude,' +
-      'demand,serviceTime,timeWindowStart,timeWindowEnd,priority,deliveryNotes\n' +
-      'ORD001,John Doe,0901234567,123 Main St,21.028511,105.804817,50.5,5,08:00,12:00,1,Handle with care\n';
+      'demand,serviceTime,timeWindowStart,timeWindowEnd,priority,deliveryNotes,requiredSkills\n' +
+      'ORD001,John Doe,0901234567,123 Main St,21.028511,105.804817,50.5,5,08:00,12:00,1,Handle with care,REFRIGERATED;FRAGILE_CAPABLE\n';
 
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);

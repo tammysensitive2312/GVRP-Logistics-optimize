@@ -58,6 +58,8 @@
     "costPerHourLabel": "Cost per hour (VND)",
     "maxDistanceLabel": "Max distance (km)",
     "maxDurationLabel": "Max duration (minutes)",
+    "skillsLabel": "Vehicle skills",
+    "skillsHint": "Select every capability this vehicle type provides.",
     "addButton": "+ Add vehicle type",
     "saving": "Creating vehicle type…",
     "created": "Vehicle type created successfully!",

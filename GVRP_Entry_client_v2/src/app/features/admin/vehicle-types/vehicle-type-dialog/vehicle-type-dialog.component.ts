@@ -9,7 +9,13 @@ import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/materia
 import { MatButtonModule } from '@angular/material/button';
 import { TranslocoPipe } from '@jsverse/transloco';
 
-import { VehicleFeatures, VehicleTypeDTO, VehicleTypeInputDTO } from '@core/models';
+import {
+  VEHICLE_SKILLS,
+  VehicleFeatures,
+  VehicleSkill,
+  VehicleTypeDTO,
+  VehicleTypeInputDTO
+} from '@core/models';
 import { notBlank } from '@shared/utils/geo.validators';
 import {
   greaterThanZeroWhenPresent,
@@ -30,6 +36,7 @@ interface VehicleTypeDialogControls {
   costPerHour: FormControl<number | null>;
   maxDistance: FormControl<number | null>;
   maxDuration: FormControl<number | null>;
+  skills: FormControl<VehicleSkill[]>;
 }
 
 /**
@@ -52,6 +59,7 @@ interface VehicleTypeDialogControls {
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class VehicleTypeDialogComponent {
+  readonly skillOptions = VEHICLE_SKILLS;
   readonly dialogRef =
     inject<MatDialogRef<VehicleTypeDialogComponent, VehicleTypeInputDTO>>(MatDialogRef);
   private readonly data = inject<VehicleTypeDialogData>(MAT_DIALOG_DATA, { optional: true });
@@ -82,7 +90,8 @@ export class VehicleTypeDialogComponent {
     }),
     maxDuration: new FormControl<number | null>(null, {
       validators: [greaterThanZeroWhenPresent()]
-    })
+    }),
+    skills: new FormControl<VehicleSkill[]>([], { nonNullable: true })
   });
 
   constructor() {
@@ -96,7 +105,8 @@ export class VehicleTypeDialogComponent {
         costPerKm: vehicleType.cost_per_km,
         costPerHour: vehicleType.cost_per_hour,
         maxDistance: vehicleType.max_distance ?? null,
-        maxDuration: vehicleType.max_duration ?? null
+        maxDuration: vehicleType.max_duration ?? null,
+        skills: vehicleType.vehicle_features?.skills ?? []
       });
     }
   }
@@ -118,7 +128,7 @@ export class VehicleTypeDialogComponent {
       return;
     }
 
-    const vehicleFeatures: VehicleFeatures = {};
+    const vehicleFeatures: VehicleFeatures = { skills: raw.skills };
     if (raw.emissionFactor !== null) {
       vehicleFeatures.emission_factor = raw.emissionFactor;
     }

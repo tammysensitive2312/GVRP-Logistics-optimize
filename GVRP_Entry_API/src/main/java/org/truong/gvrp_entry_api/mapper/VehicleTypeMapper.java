@@ -14,10 +14,12 @@ import java.util.List;
 public interface VehicleTypeMapper {
 
     @Mapping(target = "name", source = "typeName")
+    @Mapping(target = "vehicleFeatures", source = "entity", qualifiedByName = "getFeatures")
     VehicleTypeDTO toDTO(VehicleType entity);
 
 
     @Mapping(target = "emissionFactor", source = "entity", qualifiedByName = "getEmissionFactor")
+    @Mapping(target = "skills", source = "entity", qualifiedByName = "getSkills")
     EngineVehicleTypeDTO toEngineDTO(VehicleType entity);
 
     List<VehicleTypeDTO> toDTOList(List<VehicleType> entities);

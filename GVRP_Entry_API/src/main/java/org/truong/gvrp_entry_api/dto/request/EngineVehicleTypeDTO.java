@@ -4,6 +4,9 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.util.LinkedHashSet;
+import java.util.Set;
+import org.truong.gvrp_entry_api.entity.enums.VehicleSkill;
 
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -20,4 +23,5 @@ public class EngineVehicleTypeDTO {
     private BigDecimal maxDuration;
 
     private Double emissionFactor;
+    private Set<VehicleSkill> skills = new LinkedHashSet<>();
 }

@@ -5,15 +5,20 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import org.locationtech.jts.geom.Point;
 import org.truong.gvrp_entry_api.entity.enums.OrderStatus;
+import org.truong.gvrp_entry_api.entity.enums.VehicleSkill;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 @Entity
 @Table(name = "orders")
@@ -70,6 +75,11 @@ public class Order extends BaseEntity{
 
     @Column(name = "delivery_notes", columnDefinition = "TEXT")
     private String deliveryNotes;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "required_skills", columnDefinition = "JSON")
+    @Builder.Default
+    private Set<VehicleSkill> requiredSkills = new LinkedHashSet<>();
 
     @Column(name = "delivery_date", nullable = false)
     private LocalDate deliveryDate;

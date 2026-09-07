@@ -1,7 +1,7 @@
 package org.truong.gvrp_entry_api.dto.response;
 
-import jakarta.persistence.Column;
 import lombok.Data;
+import org.truong.gvrp_entry_api.dto.request.VehicleFeaturesDTO;
 
 import java.math.BigDecimal;
 
@@ -9,7 +9,7 @@ import java.math.BigDecimal;
 public class VehicleTypeDTO {
     private Long id;
     private String name;
-    private String vehicleFeatures;
+    private VehicleFeaturesDTO vehicleFeatures;
     private String description;
     private Integer capacity;
     private BigDecimal fixedCost;

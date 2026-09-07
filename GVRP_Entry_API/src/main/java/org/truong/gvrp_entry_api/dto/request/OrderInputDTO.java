@@ -4,10 +4,13 @@ import jakarta.validation.constraints.*;
 import jakarta.validation.groups.Default; // Import thêm class Default
 import lombok.*;
 import org.truong.gvrp_entry_api.entity.enums.OrderStatus;
+import org.truong.gvrp_entry_api.entity.enums.VehicleSkill;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 @Getter
 @Setter
@@ -61,6 +64,9 @@ public class OrderInputDTO {
 
     @Size(max = 1000, message = "Delivery notes must not exceed 1000 characters")
     private String deliveryNotes;
+
+    @Builder.Default
+    private Set<VehicleSkill> requiredSkills = new LinkedHashSet<>();
 
     @NotNull(message = "Delivery date is required")
     private LocalDate deliveryDate;

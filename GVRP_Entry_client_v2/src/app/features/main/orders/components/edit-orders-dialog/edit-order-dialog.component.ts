@@ -9,7 +9,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { ApiService } from '@core/services/api.service';
 import { ToastService } from '@shared/services/toast.service';
-import { OrderDTO, OrderInputDTO } from '@core/models';
+import { OrderDTO, OrderInputDTO, VEHICLE_SKILLS } from '@core/models';
 import {MatProgressSpinner} from '@angular/material/progress-spinner';
 import {th} from 'date-fns/locale';
 import {MapPickerDialogComponent} from '@features/main/orders/components/map-picker-dialog/map-picker-dialog.component';
@@ -36,6 +36,7 @@ export interface EditOrderDialogData {
   styleUrl: './edit-order-dialog.component.scss'
 })
 export class EditOrderDialogComponent implements OnInit {
+  readonly skillOptions = VEHICLE_SKILLS;
   isEditMode = false;
   isLoading = false;
   isSaving = false;
@@ -54,6 +55,7 @@ export class EditOrderDialogComponent implements OnInit {
     time_window_end: '',
     priority: 5,
     delivery_notes: '',
+    required_skills: [],
     status: 'SCHEDULED',
     delivery_date: new Date().toISOString().split('T')[0]
   };
@@ -112,6 +114,7 @@ export class EditOrderDialogComponent implements OnInit {
       time_window_end: order.time_window_end || '',
       priority: order.priority,
       delivery_notes: order.delivery_notes || '',
+      required_skills: order.required_skills ?? [],
       status: order.status,
       delivery_date: order.delivery_date
     };

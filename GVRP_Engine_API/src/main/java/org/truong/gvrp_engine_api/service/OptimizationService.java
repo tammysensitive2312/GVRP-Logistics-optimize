@@ -530,11 +530,10 @@ public class OptimizationService {
                 .setType(greenVehicleType)  // ✅ Use GREEN vehicle type
                 .setReturnToDepot(true);
 
-        vehicleBuilder.addSkill("STANDARD");
-
         // Time Windows
         long earliestStart = 8 * 3600;
         VehicleType vt = context.vehicleTypeDTOs().get(vehicleDTO.getVehicleTypeId());
+        addVehicleSkills(vehicleBuilder, vt.getSkills());
         double maxDurationHours = vt.getMaxDuration() != null ? vt.getMaxDuration() : 12.0;
         long maxDurationSeconds = (long) (maxDurationHours * 3600);
         long latestArrival = earliestStart + maxDurationSeconds;
@@ -586,9 +585,31 @@ public class OptimizationService {
             serviceBuilder.setPriority(orderDTO.getPriority());
         }
 
-        serviceBuilder.addRequiredSkill("STANDARD");
+        addRequiredSkills(serviceBuilder, orderDTO.getRequiredSkills());
 
         return serviceBuilder.build();
+    }
+
+    static List<String> normalizedSkills(Set<String> skills) {
+        if (skills == null || skills.isEmpty()) {
+            return List.of();
+        }
+        return skills.stream()
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .filter(skill -> !skill.isEmpty())
+                .map(skill -> skill.toUpperCase(Locale.ROOT))
+                .distinct()
+                .sorted()
+                .toList();
+    }
+
+    static void addVehicleSkills(VehicleImpl.Builder builder, Set<String> skills) {
+        normalizedSkills(skills).forEach(builder::addSkill);
+    }
+
+    static void addRequiredSkills(Service.Builder builder, Set<String> skills) {
+        normalizedSkills(skills).forEach(builder::addRequiredSkill);
     }
 
     // ==================== CREATE ALGORITHM ====================

@@ -1,6 +1,8 @@
 package org.truong.gvrp_engine_api.model;
 
 import lombok.*;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 @Getter
 @Setter
@@ -16,4 +18,5 @@ public class Order {
     private String timeWindowEnd;
     private Integer serviceTime;
     private Integer priority;
+    private Set<String> requiredSkills = new LinkedHashSet<>();
 }

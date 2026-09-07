@@ -1,11 +1,13 @@
 package org.truong.gvrp_entry_api.dto.response;
 
 import org.truong.gvrp_entry_api.entity.enums.OrderStatus;
+import org.truong.gvrp_entry_api.entity.enums.VehicleSkill;
 import lombok.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.Set;
 
 @Getter
 @Setter
@@ -30,6 +32,7 @@ public class OrderDTO {
     private OrderStatus status;
     private Integer priority;
     private String deliveryNotes;
+    private Set<VehicleSkill> requiredSkills;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }
