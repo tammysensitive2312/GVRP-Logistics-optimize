@@ -381,3 +381,67 @@ N1/N2, and the IEOM-2021 HCMC item untriaged; single-round searches; 2026 items 
 Related Issue: none (no code changed)
 
 Related Commit: working tree (docs untracked)
+
+---
+
+## RL-2026-005 — Hetero emission-factor sufficiency refuted (necessary, not sufficient)
+
+Date: 2026-09-08
+
+Context:
+Claim "heterogeneous vehicle emission factors are sufficient to make
+carbon-aware routing scientifically distinct from distance-only routing."
+Workflow MIXED (MATHEMATICAL primary + IMPLEMENTATION); no solver run
+(sufficiency refuted analytically); Reviewer gate passed; Challenger Gate
+assessed and not triggered (qualifying/negative result, direct source +
+arithmetic evidence, no positive-claim promotion). No production code
+modified. Inspected tree be5d752 + dirty (requested pin ba68918 was stale).
+
+Question:
+Is hetero e_k sufficient alone for scientific distinctness, and what else
+conditions the conclusion?
+
+Observation:
+Necessity confirmed: CO2_total = Σ_k(e_k/1000)·D_k carries
+assignment-dependent info only if e_k varies. Sufficiency fails on four
+independent defeaters: (a) assignment freedom (finite fleet, capacity/time/
+max-distance/skill constraints may force identical assignment); (b) magnitude
+is weight-dependent — raw carbon Δ ≈0.0345 VND/m (e=280 vs 50) vs fuel-scale
+differentials, tie-break-scale at BALANCED but dominant at ECO weights, so no
+unconditional "negligible" reading; (c) fixed/time-collapse confound
+(ECO weights devalue fixed/time ~10,000× while carbon is amplified —
+attribution to carbon alone is confounded); (d) skills orthogonal to e
+(HEAD skill plumbing: OptimizationService.java:536,593-613;
+EngineVehicleTypeDTO carries emissionFactor + skills — corrects the stale
+ba68918 hardcoded-STANDARD citation used in the orchestrator analysis).
+
+Evidence:
+- GreenVRPCostCalculator.java:110,116,119-120,143-153; AppConstant.java:14
+  (Engine CARBON_PRICE_PER_TON=150000); ObjectivePreset.java:20-38;
+  OptimizationConfig.java:36-40; OptimizationService.java:460-473,536,625-668.
+- EXPERIMENT_PROTOCOL.md §§10-12 (parity + common per-type evaluator rule).
+
+Interpretation:
+Original sufficiency claim REJECTED (NOT_SUPPORTED). Narrow necessity
+subclaim SUPPORTED (static + derivation). No solver experiment required to
+settle sufficiency; one IS required for any future positive
+"hetero e reduces evaluated emissions by X" claim (preregistered
+baseline/treatment, parity, common per-type evaluator, budget, seeds).
+
+Decision:
+Do not promote sufficiency in any form. Narrow necessity wording eligible
+only with revision/weight/price/fleet conditions attached (see review
+record); no PROJECT_STATE.md status changed by this loop.
+
+Impact:
+Guards the project against the "hetero fleet ⇒ green routing works"
+shortcut; scopes the future hetero-fleet experiment design (must control
+fixed/time-collapse confound and verify dispatched mix + assignment freedom).
+
+Remaining Uncertainty:
+Live fleet e_k/costPerKm distributions; runtime re-ranking unobserved;
+load/speed dependence absent from model (assignment-mix only).
+
+Related Issue: KI-008, KI-009
+
+Related Commit: be5d752 + dirty (docs only changed by this loop)
