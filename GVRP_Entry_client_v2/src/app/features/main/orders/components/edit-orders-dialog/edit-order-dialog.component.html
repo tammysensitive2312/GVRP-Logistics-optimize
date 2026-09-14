@@ -131,9 +131,18 @@
     <div class="form-section">
       <h3 class="section-title">🧰 Required vehicle skills</h3>
       <div class="form-field full-width">
-        <select [(ngModel)]="form.required_skills" multiple class="input-field select-field">
-          <option *ngFor="let skill of skillOptions" [ngValue]="skill">{{ skill }}</option>
-        </select>
+        <label id="edit-order-skills-label">Skills</label>
+        <mat-form-field appearance="outline" class="skill-select-field" subscriptSizing="dynamic">
+          <mat-select [(ngModel)]="form.required_skills" multiple
+                      aria-labelledby="edit-order-skills-label"
+                      placeholder="Select skills"
+                      panelClass="edit-order-skills-panel">
+            <mat-option *ngFor="let skill of skillOptions" [value]="skill">
+              {{ skill }}
+            </mat-option>
+          </mat-select>
+          <mat-hint>Only vehicles with all selected skills can serve this order.</mat-hint>
+        </mat-form-field>
       </div>
     </div>
 

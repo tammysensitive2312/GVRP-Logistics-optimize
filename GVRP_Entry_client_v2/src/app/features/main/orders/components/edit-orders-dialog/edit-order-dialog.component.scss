@@ -56,9 +56,6 @@
   }
 }
 
-// ============================================
-// FORM LAYOUT
-// ============================================
 .form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -91,9 +88,6 @@
   }
 }
 
-// ============================================
-// INPUT FIELDS
-// ============================================
 .input-field {
   width: 100%;
   height: 36px;
@@ -128,6 +122,86 @@
   appearance: auto;
   cursor: pointer;
   padding-right: 8px;
+}
+
+.skill-select-field {
+  width: 100%;
+  min-width: 0;
+  --mdc-outlined-text-field-container-shape: var(--radius-md);
+  --mdc-outlined-text-field-outline-color: var(--border-color);
+  --mdc-outlined-text-field-hover-outline-color: var(--border-color);
+  --mdc-outlined-text-field-focus-outline-color: var(--primary-blue);
+  --mdc-outlined-text-field-focus-outline-width: 1px;
+  --mat-select-trigger-text-font: var(--font-family);
+  --mat-select-trigger-text-size: 13px;
+  --mat-select-trigger-text-weight: 400;
+  --mat-select-enabled-trigger-text-color: var(--text-dark);
+  --mat-select-placeholder-text-color: var(--text-light);
+
+  ::ng-deep {
+    .mat-mdc-text-field-wrapper {
+      height: 36px;
+      padding: 0 10px;
+      background: var(--white);
+      border-radius: var(--radius-md);
+      transition: box-shadow 0.2s;
+    }
+
+    .mat-mdc-form-field-flex {
+      height: 100%;
+      align-items: center;
+    }
+
+    .mat-mdc-form-field-infix {
+      min-height: 0;
+      width: auto;
+      padding: 0;
+    }
+
+    .mat-mdc-select-trigger {
+      min-height: 34px;
+    }
+
+    .mat-mdc-form-field-subscript-wrapper {
+      font-family: var(--font-family);
+      font-size: 11px;
+      line-height: 16px;
+    }
+
+    .mat-mdc-form-field-hint-wrapper {
+      padding: 4px 0 0;
+    }
+
+    .mat-mdc-form-field-hint {
+      color: var(--text-gray);
+    }
+  }
+
+  &.mat-focused ::ng-deep .mat-mdc-text-field-wrapper {
+    box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.1);
+  }
+}
+
+// The select overlay lives outside the dialog; scope overrides to its own panel.
+::ng-deep .mat-mdc-select-panel.edit-order-skills-panel {
+  padding: 6px 0;
+  max-height: 280px;
+  --mat-option-label-text-font: var(--font-family);
+  --mat-option-label-text-size: 13px;
+  --mat-option-label-text-weight: 400;
+  --mat-option-label-text-color: var(--text-dark);
+  --mat-option-selected-state-label-text-color: var(--primary-blue);
+  --mat-option-hover-state-layer-color: rgba(74, 144, 226, 0.06);
+  --mat-option-focus-state-layer-color: rgba(74, 144, 226, 0.1);
+  --mat-option-selected-state-layer-color: rgba(74, 144, 226, 0.1);
+  --mat-full-pseudo-checkbox-selected-icon-color: var(--primary-blue);
+  --mat-full-pseudo-checkbox-selected-checkmark-color: var(--white);
+  --mat-full-pseudo-checkbox-unselected-icon-color: var(--text-gray);
+
+  .mat-mdc-option {
+    min-height: 36px;
+    padding: 0 10px;
+  }
 }
 
 // Textarea
