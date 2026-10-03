@@ -1,0 +1,23 @@
+# CBM — exclude from knowledge graph (project-local)
+# Syntax: gitignore-style, .cbmignore at repo root only
+# Precedence: built-in skip -> .gitignore -> nested .gitignore -> .cbmignore -> global excludes
+
+# Docs (both trees)
+docs/
+GVRP_Document/
+
+# Benchmark (full tree)
+GVRP_Benchmark/
+
+# Legacy client v1 (keep v2)
+GVRP_Entry_client/
+
+# Experiments / results (derived artifacts)
+experiments/
+GVRP_Benchmark/datasets/
+GVRP_Benchmark/results/
+
+# Keep essential root docs for agent instructions (negation = last wins)
+!README.md
+!CLAUDE.md
+!AGENTS.md

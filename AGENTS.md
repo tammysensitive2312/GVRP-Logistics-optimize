@@ -186,6 +186,16 @@ Typical work:
 * API behavior
 * performance engineering
 
+### Business feature implementation
+
+Business feature development uses a separate workflow described in
+`docs/workflows/business-development/README.md` and `nodes.md` in that directory.
+For an authorized business feature implementation, initialize or resume its run
+with `tools/feature-workflow/workflow.mjs` and record each transition. Keep design,
+code and verification linked. Wait for actual user acceptance of the handed-off
+version before performance optimization. This does not replace or modify the
+research workflow below. Read-only explanations and reviews do not require a run.
+
 ### Research task
 
 Read:
