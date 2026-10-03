@@ -118,8 +118,12 @@ export const routes: Routes = [
     ]
   },
   {
+    // Landing for email deep links `?solution=<id>`. A plain redirect would
+    // drop the query params, so a component resolves the link target instead.
     path: '',
-    redirectTo: '/login',
+    loadComponent: () =>
+      import('./features/solution-link/solution-link.component')
+        .then(m => m.SolutionLinkComponent),
     pathMatch: 'full'
   },
   {

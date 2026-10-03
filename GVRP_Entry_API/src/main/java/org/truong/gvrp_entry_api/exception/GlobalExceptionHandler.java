@@ -22,6 +22,48 @@ public class GlobalExceptionHandler {
                 .body(new ErrorResponse(ex.getErrors()));
     }
 
+    @ExceptionHandler(UnprocessablePlanException.class)
+    public ResponseEntity<ErrorResponse> handleUnprocessablePlan(UnprocessablePlanException ex) {
+        logger.warn("Route plan violates hard constraints: {}", ex.getMessage());
+
+        ErrorDetail detail = ErrorDetail.builder()
+                .code(ErrorCode.UNPROCESSABLE_PLAN.getCode())
+                .message(ex.getMessage())
+                .build();
+
+        return ResponseEntity
+                .status(HttpStatus.UNPROCESSABLE_ENTITY)
+                .body(new ErrorResponse(List.of(detail)));
+    }
+
+    @ExceptionHandler(RevisionConflictException.class)
+    public ResponseEntity<ErrorResponse> handleRevisionConflict(RevisionConflictException ex) {
+        logger.warn("Stale revision base: {}", ex.getMessage());
+
+        ErrorDetail detail = ErrorDetail.builder()
+                .code(ErrorCode.RESOURCE_CONFLICT.getCode())
+                .message(ex.getMessage() + " Latest revision id: " + ex.getLatestRevisionId())
+                .build();
+
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(new ErrorResponse(List.of(detail)));
+    }
+
+    @ExceptionHandler(EngineUnavailableException.class)
+    public ResponseEntity<ErrorResponse> handleEngineUnavailable(EngineUnavailableException ex) {
+        logger.warn("Optimization engine unavailable: {}", ex.getMessage());
+
+        ErrorDetail detail = ErrorDetail.builder()
+                .code(ErrorCode.BACKEND_SERVER_ERROR.getCode())
+                .message(ex.getMessage())
+                .build();
+
+        return ResponseEntity
+                .status(HttpStatus.BAD_GATEWAY)
+                .body(new ErrorResponse(List.of(detail)));
+    }
+
     /**
      * 503 — báo cho engine biết đây là lỗi tạm thời, cứ gửi lại.
      *

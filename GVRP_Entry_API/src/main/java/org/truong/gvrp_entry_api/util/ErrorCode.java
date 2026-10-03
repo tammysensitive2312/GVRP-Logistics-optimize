@@ -24,6 +24,9 @@ public enum ErrorCode {
     INVALID_ORDER_TRANSITION("0040902", "Invalid order status transition."),
     JOB_LIMIT_EXCEEDED("0040903", "Branch reached job limit."),
 
+    // 422
+    UNPROCESSABLE_PLAN("0042201", "Route plan violates hard constraints."),
+
     // 500
     INTERNAL_ERROR("0050001", "Internal server error."),
     BACKEND_SERVER_ERROR("0050002", "Backend server error."),

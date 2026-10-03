@@ -13,6 +13,28 @@
   padding: 0.5rem;
 }
 
+.route-copy {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8rem;
+  .copy-error { color: #b42318; }
+}
+
+.btn-copy {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid $primary-blue;
+  border-radius: $radius-sm;
+  background: $white;
+  color: $primary-blue;
+  cursor: pointer;
+  &:hover:not(:disabled) { background: $bg-light; }
+  &:focus-visible { outline: 2px solid $primary-blue; outline-offset: 2px; }
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
+}
+
 .route-summary {
   background: $bg-light;
   padding: 0.75rem;
@@ -56,6 +78,118 @@
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+}
+
+.routes-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.routes-toolbar-label {
+  font-size: 0.85rem;
+  font-weight: $font-weight-semibold;
+  color: $text-dark;
+  margin-right: auto;
+}
+
+.btn-toolbar {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid $primary-blue;
+  border-radius: $radius-sm;
+  background: $white;
+  color: $primary-blue;
+  cursor: pointer;
+  font-size: 0.8rem;
+  &:hover:not(:disabled) { background: $bg-light; }
+  &:focus-visible { outline: 2px solid $primary-blue; outline-offset: 2px; }
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
+}
+
+.btn-primary {
+  background: $primary-blue;
+  color: $white;
+  &:hover:not(:disabled) { filter: brightness(0.92); }
+}
+
+.edit-session {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.edit-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.edit-title {
+  font-size: 0.8rem;
+  color: $text-dark;
+  margin-right: auto;
+}
+
+.edit-status, .edit-totals {
+  font-size: 0.8rem;
+  color: $text-gray;
+  margin: 0;
+}
+
+.edit-totals { color: $text-dark; }
+
+.edit-error, .edit-violations {
+  font-size: 0.8rem;
+  color: #b42318;
+  margin: 0;
+}
+
+.edit-error {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.edit-violations { padding-left: 1.25rem; }
+
+.edit-depot {
+  padding: 0.25rem 0.75rem;
+  font-size: 0.8rem;
+  color: $text-gray;
+}
+
+.edit-orders {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.5rem 0.75rem;
+  min-height: 2.5rem;
+  border-top: 1px solid $border-color;
+}
+
+.edit-order {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.5rem;
+  background: $bg-light;
+  border-radius: $radius-sm;
+  font-size: 0.8rem;
+  cursor: grab;
+}
+
+.edit-empty, .edit-order-time {
+  font-size: 0.75rem;
+  color: $text-gray;
+}
+
+.edit-order-name {
+  flex: 1;
+  color: $text-dark;
 }
 
 .route-card {

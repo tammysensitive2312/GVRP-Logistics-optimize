@@ -11,11 +11,14 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestTemplate;
+import org.truong.gvrp_entry_api.dto.request.EngineEvaluateRequestDTO;
 import org.truong.gvrp_entry_api.dto.request.EngineOptimizationRequest;
+import org.truong.gvrp_entry_api.dto.response.EngineEvaluateResponseDTO;
 import org.truong.gvrp_entry_api.dto.response.EngineOptimizationResponse;
 import org.truong.gvrp_entry_api.entity.OptimizationJob;
 import org.truong.gvrp_entry_api.entity.enums.OptimizationJobStatus;
 import org.truong.gvrp_entry_api.exception.DataInvalidException;
+import org.truong.gvrp_entry_api.exception.EngineUnavailableException;
 import org.truong.gvrp_entry_api.exception.ErrorDetail;
 import org.truong.gvrp_entry_api.repository.OptimizationJobRepository;
 import org.truong.gvrp_entry_api.util.AppConstant;
@@ -125,6 +128,33 @@ public class EngineApiClientImpl implements EngineApiClient{
         } catch (Exception e) {
             // best-effort: DB đã set CANCELLED; engine không tới được thì chỉ cảnh báo
             log.warn("Không gửi được cancel job #{} xuống engine: {}", jobId, e.getMessage());
+        }
+    }
+
+    @Override
+    public EngineEvaluateResponseDTO evaluateRoutes(EngineEvaluateRequestDTO request) {
+        String url = engineBaseUrl + "/optimization/evaluate";
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            ResponseEntity<EngineEvaluateResponseDTO> response = restTemplate.postForEntity(
+                    url, new HttpEntity<>(request, headers), EngineEvaluateResponseDTO.class);
+            if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
+                throw new EngineUnavailableException(
+                        "Engine returned " + response.getStatusCode() + " for route evaluation.", null);
+            }
+            return response.getBody();
+        } catch (HttpClientErrorException e) {
+            // Engine rejected OUR payload — surface as a 400 with the engine message.
+            throw new DataInvalidException(List.of(
+                    ErrorDetail.builder()
+                            .code(ErrorCode.VALIDATION_ERROR.getCode())
+                            .message("Engine rejected route sequences: " + e.getResponseBodyAsString())
+                            .build()));
+        } catch (HttpServerErrorException | ResourceAccessException e) {
+            throw new EngineUnavailableException(
+                    "Cannot reach optimization engine for route evaluation. Retry later; unsaved edits are kept.",
+                    e);
         }
     }
 

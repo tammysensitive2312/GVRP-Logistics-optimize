@@ -82,7 +82,9 @@ export class LoginComponent implements OnInit {
         next: () => {
           this.toast.success('Login successful!');
           const redirectUrl = this.authService.getRedirectUrl();
-          this.router.navigate([redirectUrl]);
+          // navigateByUrl (not navigate) so a stored "/?solution=<id>" survives
+          // login; identical outcome for plain paths such as "/main".
+          this.router.navigateByUrl(redirectUrl);
         },
         error: (error) => {
           this.toast.error(error.message || 'Login failed!');

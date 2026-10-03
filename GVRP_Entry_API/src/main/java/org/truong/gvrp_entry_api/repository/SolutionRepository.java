@@ -4,6 +4,7 @@ import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.truong.gvrp_entry_api.entity.Solution;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface SolutionRepository extends JpaRepository<Solution, Long> {
@@ -17,5 +18,7 @@ public interface SolutionRepository extends JpaRepository<Solution, Long> {
     Optional<Solution> findWithDetailsById(Long id);
 
     Optional<Solution> findByJobId(Long jobId);
+
+    List<Solution> findByParentSolutionId(Long parentSolutionId);
 
 }

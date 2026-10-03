@@ -2,8 +2,10 @@ import {inject, Injectable} from '@angular/core';
 import {HttpClient, HttpParams} from '@angular/common/http';
 import {environment} from '@environments/environment';
 import {
+  CustomizeRoutesPayload,
   DepotDTO,
   DepotInputDTO,
+  EvaluatePreviewDTO,
   FleetDTO,
   FleetInputDTO,
   JobDTO,
@@ -163,6 +165,26 @@ export class ApiService {
 
   getSolutionById(solutionId: number): Observable<SolutionDTO> {
     return this.http.get<SolutionDTO>(`${this.apiUrl}/solutions/${solutionId}`);
+  }
+
+  evaluateRoutes(solutionId: number, payload: CustomizeRoutesPayload): Observable<EvaluatePreviewDTO> {
+    return this.http.post<EvaluatePreviewDTO>(
+      `${this.apiUrl}/solutions/${solutionId}/evaluate`,
+      payload
+    );
+  }
+
+  saveRouteRevision(solutionId: number, payload: CustomizeRoutesPayload): Observable<SolutionDTO> {
+    return this.http.post<SolutionDTO>(
+      `${this.apiUrl}/solutions/${solutionId}/revisions`,
+      payload
+    );
+  }
+
+  latestRevisionId(solutionId: number): Observable<{ id: number }> {
+    return this.http.get<{ id: number }>(
+      `${this.apiUrl}/solutions/${solutionId}/latest-revision`
+    );
   }
 
 }

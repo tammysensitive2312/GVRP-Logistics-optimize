@@ -313,7 +313,9 @@ public class OptimizationService {
 
         // Extract route details
         OptimizationResultExtractor.RouteExtractionResult routeResult = extractRouteDetails(bestSolution, context, matrix);
-        List<UnassignedOrder> unassigned = extractUnassignedOrders(bestSolution, context);
+        List<UnassignedOrder> unassigned = extractUnassignedOrders(bestSolution, context,
+                UnassignedOrderDiagnosticService.diagnose(vrp, bestSolution,
+                        clusterAssignment, handle::isCancelRequested, 1000));
 
         log.info("✅ Single optimization completed");
         log.info("   Cost: {} VND | CO2: {} kg | Vehicles: {} | Orders: {} / {}",
@@ -351,6 +353,7 @@ public class OptimizationService {
         log.info("   This will run {} optimization scenarios", ObjectivePreset.values().length);
 
         List<SolutionCandidate> candidates = new ArrayList<>();
+        Map<String, VehicleRoutingProblem> candidateProblems = new HashMap<>();
         List<ParetoWeightSampler.WeightPoint> weightPoints = ParetoWeightSampler.generate(4, 2.0);
 
         // Run optimization for each preset
@@ -364,6 +367,7 @@ public class OptimizationService {
 
             // Build and solve VRP
             VehicleRoutingProblem vrp = buildGreenVRP(context, matrix, presetConfig);
+            candidateProblems.put(point.label(), vrp);
             // Cluster-first CHƯA áp dụng cho nhánh Pareto (quyết định đã chốt) — truyền
             // null tường minh, KHÔNG phải quên set. Mỗi weight-point trong Pareto vẫn
             // giải trên toàn bộ order set, không phân vùng cluster.
@@ -421,7 +425,10 @@ public class OptimizationService {
         );
         List<UnassignedOrder> unassigned = extractUnassignedOrders(
                 selected.getSolution(),
-                context
+                context,
+                UnassignedOrderDiagnosticService.diagnose(
+                        candidateProblems.get(selected.getPresetName()), selected.getSolution(),
+                        null, handle::isCancelRequested, 1000)
         );
 
         return OptimizationResult.pareto(

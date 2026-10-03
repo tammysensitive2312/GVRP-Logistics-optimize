@@ -33,8 +33,16 @@ public class Solution {
     private Branch branch;
 
     @OneToOne
-    @JoinColumn(name = "job_id", nullable = false)
+    @JoinColumn(name = "job_id")
     private OptimizationJob job;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "parent_solution_id")
+    private Solution parentSolution;
+
+    @OneToMany(mappedBy = "parentSolution")
+    @Builder.Default
+    private List<Solution> revisions = new ArrayList<>();
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)

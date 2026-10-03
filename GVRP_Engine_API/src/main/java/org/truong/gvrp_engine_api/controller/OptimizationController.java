@@ -9,9 +9,12 @@ import org.springframework.web.bind.annotation.*;
 import org.truong.gvrp_engine_api.job.JobRegistry;
 import org.truong.gvrp_engine_api.model.EngineOptimizationRequest;
 import org.truong.gvrp_engine_api.model.EngineOptimizationResponse;
+import org.truong.gvrp_engine_api.model.RouteEvaluateRequest;
+import org.truong.gvrp_engine_api.model.RouteEvaluateResponse;
 import org.truong.gvrp_engine_api.service.CallbackService;
 import org.truong.gvrp_engine_api.service.OptimizationService;
 import org.truong.gvrp_engine_api.service.ResultSpool;
+import org.truong.gvrp_engine_api.service.RouteEvaluationService;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -26,6 +29,7 @@ public class OptimizationController {
     private final JobRegistry jobRegistry;
     private final ResultSpool resultSpool;
     private final CallbackService callbackService;
+    private final RouteEvaluationService routeEvaluationService;
 
     @PostMapping
     public ResponseEntity<EngineOptimizationResponse> optimize(
@@ -199,5 +203,37 @@ public class OptimizationController {
         health.put("service", "GVRP Engine API");
         health.put("timestamp", java.time.LocalDateTime.now());
         return ResponseEntity.ok(health);
+    }
+
+    /**
+     * Evaluate candidate route sequences without solving.
+     *
+     * <p>Synchronous: builds a matrix over the candidate stops only and returns
+     * feasibility verdicts plus recalculated metrics. 200 with violations listed
+     * (possibly infeasible), 400 on malformed sequences, 413 over the stop cap.
+     */
+    @PostMapping("/evaluate")
+    public ResponseEntity<?> evaluate(@RequestBody RouteEvaluateRequest request) {
+        try {
+            RouteEvaluateResponse response = routeEvaluationService.evaluate(request);
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            log.warn("Evaluate rejected: {}", e.getMessage());
+            Map<String, Object> body = new HashMap<>();
+            body.put("status", "REJECTED");
+            body.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(body);
+        } catch (org.springframework.web.server.ResponseStatusException e) {
+            Map<String, Object> body = new HashMap<>();
+            body.put("status", "REJECTED");
+            body.put("message", e.getReason());
+            return ResponseEntity.status(e.getStatusCode()).body(body);
+        } catch (Exception e) {
+            log.error("Unexpected error evaluating routes", e);
+            Map<String, Object> body = new HashMap<>();
+            body.put("status", "ERROR");
+            body.put("message", "Internal server error: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(body);
+        }
     }
 }

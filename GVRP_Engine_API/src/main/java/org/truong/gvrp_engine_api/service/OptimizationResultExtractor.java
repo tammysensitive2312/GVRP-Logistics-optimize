@@ -30,6 +30,13 @@ public class OptimizationResultExtractor {
     public static List<UnassignedOrder> extractUnassignedOrders(
             VehicleRoutingProblemSolution solution,
             OptimizationContext context) {
+        return extractUnassignedOrders(solution, context, java.util.Map.of());
+    }
+
+    public static List<UnassignedOrder> extractUnassignedOrders(
+            VehicleRoutingProblemSolution solution,
+            OptimizationContext context,
+            java.util.Map<String, String> diagnoses) {
 
         List<UnassignedOrder> unassignedOrders = new ArrayList<>();
 
@@ -41,7 +48,8 @@ public class OptimizationResultExtractor {
                 UnassignedOrder unassigned = new UnassignedOrder();
                 unassigned.setOrderId(orderDTO.getId());
                 unassigned.setOrderCode(orderDTO.getOrderCode());
-                unassigned.setReason("No suitable vehicle found or capacity exceeded");
+                unassigned.setReason(diagnoses.getOrDefault(job.getId(),
+                        UnassignedOrderDiagnosticService.UNKNOWN));
                 unassignedOrders.add(unassigned);
 
                 log.debug("⚠️  Unassigned Order: {}", orderDTO.getOrderCode());

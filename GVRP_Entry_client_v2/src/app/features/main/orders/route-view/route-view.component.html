@@ -24,6 +24,121 @@
 
   <!-- Routes list -->
   <div class="routes-container">
+    <div class="routes-toolbar">
+      <span class="routes-toolbar-label">Routes</span>
+      <button
+        type="button"
+        class="btn-toolbar"
+        aria-label="Expand all routes"
+        [disabled]="routeCards().length === 0"
+        (click)="expandAllRoutes()">
+        Expand all
+      </button>
+      <button
+        type="button"
+        class="btn-toolbar"
+        aria-label="Collapse all routes"
+        [disabled]="routeCards().length === 0"
+        (click)="collapseAllRoutes()">
+        Collapse all
+      </button>
+      <button
+        type="button"
+        class="btn-toolbar"
+        aria-label="Customize routes"
+        [disabled]="!canCustomize() || editing()"
+        (click)="startEdit()">
+        Customize
+      </button>
+    </div>
+    @if (editing()) {
+      <section class="edit-session" aria-label="Route customization session">
+        <div class="edit-actions">
+          <span class="edit-title">Editing plan — drag orders to reorder or move them between routes.</span>
+          <button type="button" class="btn-toolbar" [disabled]="!canUndo()" (click)="undo()">
+            Undo
+          </button>
+          <button type="button" class="btn-toolbar btn-primary"
+            [disabled]="!canSave()" (click)="save()">
+            {{ saving() ? 'Saving…' : 'Save revision' }}
+          </button>
+          <button type="button" class="btn-toolbar" [disabled]="saving()" (click)="cancelEdit()">
+            Discard
+          </button>
+        </div>
+
+        @if (evaluating()) {
+          <p class="edit-status" role="status">Recalculating times and totals…</p>
+        } @else if (previewStale()) {
+          <p class="edit-status" role="status">Preview outdated — recalculating…</p>
+        }
+        @if (evaluateError()) {
+          <p class="edit-error" role="alert">
+            {{ evaluateError() }}
+            <button type="button" class="btn-toolbar" (click)="retryPreview()">Retry</button>
+          </p>
+        }
+        @if (preview() && !previewStale() && preview()!.violations.length > 0) {
+          <ul class="edit-violations" aria-label="Plan violations">
+            @for (violation of preview()!.violations; track $index) {
+              <li><strong>{{ violation.code }}</strong> — {{ violation.detail }}</li>
+            }
+          </ul>
+        }
+        @if (preview() && !previewStale() && preview()!.totals) {
+          <p class="edit-totals">
+            {{ preview()!.totals!.total_distance.toFixed(1) }} km ·
+            {{ preview()!.totals!.orders_served }} orders served
+          </p>
+        }
+        @if (saveError()) {
+          <p class="edit-error" role="alert">
+            {{ saveError() }}
+            @if (saveConflict()) {
+              <button type="button" class="btn-toolbar" (click)="loadLatestAndExit()">
+                Load latest
+              </button>
+            }
+          </p>
+        }
+
+        <div class="routes-list" cdkDropListGroup>
+          @for (draft of draftRoutes(); track draft.vehicleId) {
+            <article class="route-card" [attr.aria-label]="'Edit ' + draft.licensePlate">
+              <div class="route-card-header" [style.border-left]="'4px solid ' + draft.color">
+                <div class="route-title">
+                  <span class="route-icon" [style.background]="draft.color">🚚</span>
+                  <strong>{{ draft.licensePlate }}</strong>
+                </div>
+              </div>
+              @if (draft.depotStart) {
+                <div class="edit-depot">🏢 {{ draft.depotStart.location_name }}</div>
+              }
+              <div
+                class="edit-orders"
+                cdkDropList
+                [cdkDropListData]="draft.orders"
+                [attr.aria-label]="'Orders of ' + draft.licensePlate"
+                (cdkDropListDropped)="drop($event)">
+                @for (stop of draft.orders; track $index) {
+                  <div class="edit-order" cdkDrag>
+                    <span aria-hidden="true">⠿</span>
+                    <span class="edit-order-name">{{ stop.location_name }}</span>
+                    <span class="edit-order-time">⏰ {{ stop.arrival_time }}</span>
+                  </div>
+                } @empty {
+                  <div class="edit-empty">Drop orders here</div>
+                }
+              </div>
+              @if (draft.depotEnd) {
+                <div class="edit-depot">🏢 {{ draft.depotEnd.location_name }}</div>
+              }
+            </article>
+          }
+        </div>
+      </section>
+    }
+    @if (!editing()) {
     <div class="routes-list">
       @for (route of routeCards(); track route.index) {
         <article class="route-card">
@@ -68,6 +183,22 @@
               <span class="label">Load:</span>
               <span class="value">{{ route.loadText }}</span>
             </div>
+          </div>
+
+          <div class="route-copy">
+            <button type="button" class="btn-copy"
+              [disabled]="!route.copyText || copyStatus().get(route) === 'pending'"
+              [attr.aria-label]="'Copy delivery stops for ' + route.licensePlate"
+              (click)="copyStops(route)">
+              {{ copyStatus().get(route) === 'pending' ? 'Copying…' : 'Copy delivery stops' }}
+            </button>
+            <span role="status" aria-live="polite" [class.copy-error]="copyStatus().get(route) === 'error'">
+              @if (!route.copyText) { No delivery stops. }
+              @else if (copyStatus().get(route) === 'success') { Delivery stops copied. }
+              @else if (copyStatus().get(route) === 'error') {
+                Could not copy. Allow clipboard access and use HTTPS or localhost, then retry.
+              }
+            </span>
           </div>
 
           @if (isExpanded(route.index)) {
@@ -117,5 +248,6 @@
         </article>
       }
     </div>
+    }
   </div>
 </div>
