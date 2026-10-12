@@ -1,0 +1,21 @@
+<h2 mat-dialog-title>Update {{ data.selectedCount }} order(s)</h2>
+
+<mat-dialog-content>
+  <p class="dialog-note">
+    Orders that cannot move to the new status stay unchanged and are listed afterwards.
+  </p>
+  <mat-form-field appearance="fill">
+    <mat-label>New status</mat-label>
+    <mat-select [(ngModel)]="selectedStatus" aria-label="New status">
+      @for (status of statuses; track status) {
+        <mat-option [value]="status">{{ status }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button type="button" (click)="onCancel()">Cancel</button>
+  <button mat-raised-button color="primary" type="button"
+    [disabled]="!canSubmit()" (click)="onSubmit()">Update</button>
+</mat-dialog-actions>

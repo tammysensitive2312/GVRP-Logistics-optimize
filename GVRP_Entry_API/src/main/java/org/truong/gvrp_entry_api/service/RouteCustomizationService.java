@@ -314,8 +314,8 @@ public class RouteCustomizationService {
                         .locationName(s.getLocationName())
                         .latitude(s.getLatitude())
                         .longitude(s.getLongitude())
-                        .arrivalTime(parseTime(s.getArrivalTime()))
-                        .departureTime(parseTime(s.getDepartureTime()))
+                        .arrivalTime(RouteStopSupport.parseEngineTime(s.getArrivalTime()))
+                        .departureTime(RouteStopSupport.parseEngineTime(s.getDepartureTime()))
                         .serviceTime(toBigDecimal(s.getServiceTime()))
                         .waitTime(toBigDecimal(s.getWaitTime()))
                         .demand(toBigDecimal(s.getDemand()))
@@ -411,13 +411,13 @@ public class RouteCustomizationService {
                         .order(order)
                         .sequenceNumber(stopData.getSequenceNumber() != null
                                 ? stopData.getSequenceNumber() : position)
-                        .type(mapLocationType(stopData.getType()))
+                        .type(RouteStopSupport.mapLocationType(stopData.getType()))
                         .locationId(stopData.getLocationId())
                         .locationName(stopData.getLocationName())
                         .location(geometryMapper.createPoint(
                                 stopData.getLatitude(), stopData.getLongitude()))
-                        .arrivalTime(parseTime(stopData.getArrivalTime()))
-                        .departureTime(parseTime(stopData.getDepartureTime()))
+                        .arrivalTime(RouteStopSupport.parseEngineTime(stopData.getArrivalTime()))
+                        .departureTime(RouteStopSupport.parseEngineTime(stopData.getDepartureTime()))
                         .serviceTime(toBigDecimal(stopData.getServiceTime()))
                         .waitTime(toBigDecimal(stopData.getWaitTime()))
                         .demand(toBigDecimal(stopData.getDemand()))
@@ -444,25 +444,6 @@ public class RouteCustomizationService {
     }
 
     // --------------------------------------------------
-
-    private LocationType mapLocationType(String type) {
-        if ("CUSTOMER".equals(type)) {
-            return LocationType.ORDER;
-        }
-        try {
-            return LocationType.valueOf(type);
-        } catch (IllegalArgumentException | NullPointerException e) {
-            log.warn("Unknown location type: {}, defaulting to ORDER", type);
-            return LocationType.ORDER;
-        }
-    }
-
-    private LocalTime parseTime(String time) {
-        if (time == null || time.isEmpty()) {
-            return null;
-        }
-        return LocalTime.parse(time);
-    }
 
     private BigDecimal toBigDecimal(Double value) {
         return value != null ? BigDecimal.valueOf(value) : null;

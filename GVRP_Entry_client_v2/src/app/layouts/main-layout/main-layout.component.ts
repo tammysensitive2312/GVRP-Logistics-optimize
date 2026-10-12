@@ -15,7 +15,5 @@ import {NavbarComponent} from '@features/main/components/navbar/navbar.component
 export class MainLayoutComponent {
 
   onTabChange(tab: string) {
-    console.log('Active tab:', tab);
-    // Handle tab navigation if needed
   }
 }

@@ -23,6 +23,7 @@ import {
 import { VehicleTypeStore } from '@core/services/vehicle-type.store';
 import { VndPipe } from '@shared/pipes/vnd.pipe';
 import { ToastService } from '@shared/services/toast.service';
+import { extractErrorMessage } from '@shared/utils/http-error.utils';
 import { notBlank } from '@shared/utils/geo.validators';
 import {
   greaterThanZeroWhenPresent,
@@ -139,7 +140,7 @@ export class VehicleTypeSetupComponent implements OnInit {
         error: (error: unknown) => {
           console.error('Failed to create vehicle type:', error);
           this.toast.error(
-            extractMessage(error) ?? this.i18n.translate('vehicleTypeSetup.createFailed')
+            extractErrorMessage(error) ?? this.i18n.translate('vehicleTypeSetup.createFailed')
           );
         }
       });
@@ -164,7 +165,7 @@ export class VehicleTypeSetupComponent implements OnInit {
         error: (error: unknown) => {
           console.error('Failed to load vehicle types:', error);
           this.toast.error(
-            extractMessage(error) ?? this.i18n.translate('vehicleTypeSetup.loadFailed')
+            extractErrorMessage(error) ?? this.i18n.translate('vehicleTypeSetup.loadFailed')
           );
         }
       });
@@ -213,14 +214,4 @@ export class VehicleTypeSetupComponent implements OnInit {
 
     return t('generic');
   }
-}
-
-function extractMessage(error: unknown): string | null {
-  if (typeof error === 'object' && error !== null && 'message' in error) {
-    const message = (error as { message?: unknown }).message;
-    if (typeof message === 'string' && message.trim().length > 0) {
-      return message;
-    }
-  }
-  return null;
 }

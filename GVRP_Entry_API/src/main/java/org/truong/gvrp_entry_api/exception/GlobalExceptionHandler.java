@@ -22,6 +22,20 @@ public class GlobalExceptionHandler {
                 .body(new ErrorResponse(ex.getErrors()));
     }
 
+    @ExceptionHandler(ForbiddenException.class)
+    public ResponseEntity<ErrorResponse> handleForbidden(ForbiddenException ex) {
+        logger.warn("Forbidden: {}", ex.getMessage());
+
+        ErrorDetail detail = ErrorDetail.builder()
+                .code(ErrorCode.FORBIDDEN.getCode())
+                .message(ex.getMessage())
+                .build();
+
+        return ResponseEntity
+                .status(HttpStatus.FORBIDDEN)
+                .body(new ErrorResponse(List.of(detail)));
+    }
+
     @ExceptionHandler(UnprocessablePlanException.class)
     public ResponseEntity<ErrorResponse> handleUnprocessablePlan(UnprocessablePlanException ex) {
         logger.warn("Route plan violates hard constraints: {}", ex.getMessage());

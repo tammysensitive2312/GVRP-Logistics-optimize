@@ -17,12 +17,11 @@ import org.truong.gvrp_entry_api.entity.OptimizationJob;
 import org.truong.gvrp_entry_api.entity.Solution;
 import org.truong.gvrp_entry_api.entity.User;
 import org.truong.gvrp_entry_api.exception.DataInvalidException;
-import org.truong.gvrp_entry_api.exception.ErrorDetail;
+import org.truong.gvrp_entry_api.exception.ErrorDetails;
 import org.truong.gvrp_entry_api.repository.OptimizationJobRepository;
 import org.truong.gvrp_entry_api.repository.SolutionRepository;
 import org.truong.gvrp_entry_api.repository.UserRepository;
 import org.truong.gvrp_entry_api.util.AppConstant;
-import org.truong.gvrp_entry_api.util.ErrorCode;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -66,31 +65,19 @@ public class EmailService {
         User user = userRepository.findById(userId).orElseThrow(
                 () -> new DataInvalidException(
                         List.of(
-                                ErrorDetail.builder()
-                                        .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
-                                        .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
-                                        .resource(AppConstant.USER)
-                                        .build()
+                                ErrorDetails.notFound(AppConstant.USER)
                         ))
         );
         OptimizationJob job = jobRepository.findById(jobId).orElseThrow(
                 () -> new DataInvalidException(
                         List.of(
-                                ErrorDetail.builder()
-                                        .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
-                                        .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
-                                        .resource(AppConstant.JOB)
-                                        .build()
+                                ErrorDetails.notFound(AppConstant.JOB)
                         ))
         );
         Solution solution = solutionRepository.findById(solutionId).orElseThrow(
                 () -> new DataInvalidException(
                         List.of(
-                                ErrorDetail.builder()
-                                        .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
-                                        .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
-                                        .resource(AppConstant.SOLUTION)
-                                        .build()
+                                ErrorDetails.notFound(AppConstant.SOLUTION)
                         ))
         );
 
@@ -143,21 +130,13 @@ public class EmailService {
         User user = userRepository.findById(userId).orElseThrow(
                 () -> new DataInvalidException(
                         List.of(
-                                ErrorDetail.builder()
-                                        .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
-                                        .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
-                                        .resource(AppConstant.USER)
-                                        .build()
+                                ErrorDetails.notFound(AppConstant.USER)
                         ))
         );
         OptimizationJob job = jobRepository.findById(jobId).orElseThrow(
                 () -> new DataInvalidException(
                         List.of(
-                                ErrorDetail.builder()
-                                        .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
-                                        .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
-                                        .resource(AppConstant.JOB)
-                                        .build()
+                                ErrorDetails.notFound(AppConstant.JOB)
                         ))
         );
 

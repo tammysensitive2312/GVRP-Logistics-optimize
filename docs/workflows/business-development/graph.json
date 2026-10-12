@@ -1,0 +1,35 @@
+{
+  "id": "business-feature-development",
+  "version": 1,
+  "initial": "intake",
+  "nodes": {
+    "intake": {"ready": {"to": "discover", "requires": ["request"]}},
+    "discover": {"ready": {"to": "design", "requires": ["context"]}},
+    "design": {"ready": {"to": "implement", "requires": ["design", "traceability"]}},
+    "implement": {"ready": {"to": "verify", "requires": ["implementation"]}},
+    "verify": {
+      "pass": {"to": "await_user_test", "requires": ["verification", "handoff"]},
+      "code_failed": {"to": "implement", "requires": ["findings"]},
+      "design_changed": {"to": "design", "requires": ["findings"]}
+    },
+    "await_user_test": {
+      "accepted": {"to": "accepted", "requires": ["user_acceptance"], "fresh": true},
+      "rejected": {"to": "implement", "requires": ["user_feedback"]},
+      "changed": {"to": "implement", "requires": ["findings"]}
+    },
+    "accepted": {
+      "finish": {"to": "done", "requires": ["closure"], "fresh": true},
+      "optimize": {"to": "optimize", "requires": ["optimization_plan", "baseline"], "fresh": true},
+      "changed": {"to": "implement", "requires": ["findings"]}
+    },
+    "optimize": {"ready": {"to": "verify", "requires": ["comparison", "implementation"]}},
+    "done": {},
+    "await_decision": {},
+    "cancelled": {}
+  },
+  "controls": {
+    "ask": {"to": "await_decision", "requires": ["question"]},
+    "resume": {"requires": ["user_decision"]},
+    "cancel": {"to": "cancelled", "requires": ["cancellation"]}
+  }
+}

@@ -6,6 +6,7 @@ import org.truong.gvrp_entry_api.dto.response.OptimizationJobDTO;
 import org.truong.gvrp_entry_api.entity.OptimizationJob;
 import org.truong.gvrp_entry_api.entity.Solution;
 import org.truong.gvrp_entry_api.entity.enums.OptimizationJobStatus;
+import org.truong.gvrp_entry_api.repository.JobHistoryView;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -15,6 +16,36 @@ import java.util.stream.Collectors;
 @Component
 @RequiredArgsConstructor
 public class OptimizationJobMapper {
+
+    /** Map scalar history results without loading job entities or their payloads. */
+    public OptimizationJobDTO fromHistory(JobHistoryView job) {
+        LocalDateTime end = job.getCompletedAt() != null ? job.getCompletedAt()
+                : (job.getCancelledAt() != null ? job.getCancelledAt() : LocalDateTime.now());
+        long elapsed = job.getCreatedAt() == null ? 0L
+                : ChronoUnit.SECONDS.between(job.getCreatedAt(), end);
+        Integer remaining = null;
+        if (job.getStatus() == OptimizationJobStatus.PROCESSING
+                && job.getEstimatedDurationMinutes() != null) {
+            remaining = Math.max(0, (int) (job.getEstimatedDurationMinutes() * 60L - elapsed));
+        }
+        return OptimizationJobDTO.builder()
+                .id(job.getId())
+                .branchId(job.getBranchId())
+                .userId(job.getUserId())
+                .userName(job.getUserName())
+                .status(job.getStatus())
+                .externalJobId(job.getExternalJobId())
+                .estimatedDurationMinutes(job.getEstimatedDurationMinutes())
+                .errorMessage(job.getErrorMessage())
+                .createdAt(job.getCreatedAt())
+                .completedAt(job.getCompletedAt())
+                .cancelledAt(job.getCancelledAt())
+                .elapsedSeconds(elapsed)
+                .remainingSeconds(remaining)
+                .canBeCancelled(job.getStatus() == OptimizationJobStatus.PROCESSING)
+                .solutionId(job.getSolutionId())
+                .build();
+    }
 
     /**
      * Convert entity to DTO

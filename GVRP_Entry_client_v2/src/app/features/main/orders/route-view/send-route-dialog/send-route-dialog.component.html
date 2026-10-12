@@ -1,0 +1,41 @@
+<h2 mat-dialog-title>Send {{ data.licensePlate }} to driver</h2>
+
+<mat-dialog-content>
+  @if (loading) {
+    <p>Loading drivers…</p>
+  } @else if (loadError) {
+    <p class="dialog-error" role="alert">{{ loadError }}</p>
+  } @else {
+    @if (currentAssignee) {
+      <p class="dialog-note">Currently assigned to {{ currentAssignee }}. Sending again supersedes it.</p>
+    }
+    <mat-form-field appearance="fill">
+      <mat-label>Driver</mat-label>
+      <mat-select [(ngModel)]="selectedDriverId" aria-label="Driver">
+        @for (driver of drivers; track driver.id) {
+          <mat-option [value]="driver.id">
+            {{ driver.full_name || driver.username }}
+            @if (driver.phone) { ({{ driver.phone }}) }
+          </mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="fill">
+      <mat-label>Plan revision</mat-label>
+      <mat-select [(ngModel)]="selectedSolutionId" aria-label="Plan revision">
+        @for (revision of revisions; track revision.id) {
+          <mat-option [value]="revision.id">
+            Solution #{{ revision.id }} ({{ revision.type }}, {{ revision.status }})
+          </mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+  }
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button type="button" (click)="onCancel()">Cancel</button>
+  <button mat-raised-button color="primary" type="button"
+    [disabled]="!canSubmit()" (click)="onSubmit()">Send</button>
+</mat-dialog-actions>

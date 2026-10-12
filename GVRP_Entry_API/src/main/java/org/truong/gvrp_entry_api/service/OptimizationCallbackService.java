@@ -21,8 +21,6 @@ import org.truong.gvrp_entry_api.util.AppConstant;
 import org.truong.gvrp_entry_api.util.ErrorCode;
 
 import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -43,8 +41,6 @@ public class OptimizationCallbackService {
     private final ApplicationEventPublisher eventPublisher;
     private final JobStatusUpdater jobStatusUpdater;
     private final OrderStatusTransitionService orderStatusTransitionService;
-
-    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm:ss");
 
     @Transactional
     public void handleCompletion(EngineCallbackRequest.CompletionCallback callback) {
@@ -491,12 +487,12 @@ public class OptimizationCallbackService {
                             .route(route)
                             .order(order)
                             .sequenceNumber(stop.getSequenceNumber())
-                            .type(mapLocationType(stop.getType()))
+                            .type(RouteStopSupport.mapLocationType(stop.getType()))
                             .locationId(stop.getLocationId())
                             .locationName(stop.getLocationName())
                             .location(geometryMapper.createPoint(stop.getLatitude(), stop.getLongitude()))
-                            .arrivalTime(parseTime(stop.getArrivalTime()))
-                            .departureTime(parseTime(stop.getDepartureTime()))
+                            .arrivalTime(RouteStopSupport.parseEngineTime(stop.getArrivalTime()))
+                            .departureTime(RouteStopSupport.parseEngineTime(stop.getDepartureTime()))
                             .serviceTime(stop.getWaitTime())
                             .demand(stop.getDemand())
                             .loadAfter(stop.getLoadAfter())
@@ -506,34 +502,5 @@ public class OptimizationCallbackService {
                 })
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
-    }
-
-    private LocationType mapLocationType(String type) {
-        if ("CUSTOMER".equals(type)) {
-            return LocationType.ORDER;
-        }
-        try {
-            return LocationType.valueOf(type);
-        } catch (IllegalArgumentException e) {
-            log.warn("Unknown location type: {}, defaulting to ORDER", type);
-            return LocationType.ORDER;
-        }
-    }
-
-    private LocalTime parseTime(String timeStr) {
-        if (timeStr == null || timeStr.isEmpty()) {
-            return null;
-        }
-
-        try {
-            return LocalTime.parse(timeStr, TIME_FORMATTER);
-        } catch (Exception e) {
-            try {
-                return LocalTime.parse(timeStr, DateTimeFormatter.ofPattern("HH:mm"));
-            } catch (Exception e2) {
-                log.warn("⚠️  Failed to parse time: {}", timeStr);
-                return null;
-            }
-        }
     }
 }

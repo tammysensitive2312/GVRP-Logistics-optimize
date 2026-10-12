@@ -1,0 +1,115 @@
+<div class="driver-view">
+  <header class="driver-header">
+    <h2>🚚 My routes</h2>
+    <button type="button" class="btn-logout" (click)="logout()">Log out</button>
+  </header>
+
+  @if (loading()) {
+    <p>Loading assigned routes…</p>
+  } @else if (error()) {
+    <p class="driver-error" role="alert">{{ error() }}</p>
+  } @else if (selected() === null) {
+    @if (hasSuperseded) {
+      <p class="driver-banner" role="status">
+        A newer version is available — current assignments are listed first.
+      </p>
+    }
+    @if (sends().length === 0) {
+      <p>No routes assigned yet.</p>
+    } @else {
+      <ul class="driver-list">
+        @for (send of sends(); track send.id) {
+          <li>
+            <button type="button" class="driver-route" (click)="openSend(send)">
+              <strong>{{ send.vehicle_license_plate || 'Route' }}</strong>
+              <span class="driver-meta">
+                Sent {{ send.sent_at | date:'dd/MM/yyyy HH:mm' }}
+                @if (send.status === 'SUPERSEDED') {
+                  <span class="driver-flag"> superseded</span>
+                }
+              </span>
+            </button>
+          </li>
+        }
+      </ul>
+    }
+  } @else {
+    <button type="button" class="btn-logout" (click)="backToList()">← Back</button>
+    @if (detailError()) {
+      <p class="driver-error" role="alert">{{ detailError() }}</p>
+    } @else {
+      <h3>
+        {{ selected()!.vehicle_license_plate || 'Route' }}
+        @if (selected()!.status === 'SUPERSEDED') {
+          <span class="driver-flag">superseded version</span>
+        }
+      </h3>
+      <div class="driver-detail-grid">
+        <div class="driver-map-col">
+          <div id="driver-mini-map" class="driver-map" aria-label="Route overview map"></div>
+          <div class="driver-map-bar">
+            <button type="button" class="btn-logout"
+              [attr.aria-pressed]="following()"
+              (click)="toggleFollow()">
+              {{ following() ? '📍 Following on' : '📍 Follow my location' }}
+            </button>
+          </div>
+          @if (followGate() === 'prompt') {
+            <div class="follow-gate" role="dialog" aria-label="Location permission">
+              <p>Follow mode keeps the map centered on you as you drive.
+                Your position is only shown on this map.</p>
+              <button type="button" class="btn-logout" (click)="allowFollow()">Allow location</button>
+              <button type="button" class="btn-logout" (click)="dismissGate()">Not now</button>
+            </div>
+          }
+          @if (followGate() === 'help') {
+            <div class="follow-gate" role="alert">
+              <p>Location is blocked or unavailable. Allow location access for this
+                site in your browser settings, then try again.</p>
+              <button type="button" class="btn-logout" (click)="dismissGate()">Dismiss</button>
+            </div>
+          }
+          <p class="driver-note">
+            Follow the stop order of this plan. Google routing is for guidance only.
+          </p>
+        </div>
+        <div class="driver-side-col">
+          @if (maneuvers().length > 0) {
+            <section aria-label="Route guidance">
+              <h4>🧭 Route guidance</h4>
+              <ol class="driver-maneuvers">
+                @for (step of maneuvers(); track $index) {
+                  <li>{{ step.instruction }} <span class="driver-dist">({{ formatLegDistance(step.distanceM) }})</span></li>
+                }
+              </ol>
+            </section>
+          }
+          <ol class="driver-stops">
+        @for (stop of selected()!.stops; track $index) {
+          <li class="driver-stop">
+            <strong>{{ stop.location_name }}</strong>
+            @if (stop.type !== 'DEPOT') {
+              <span class="driver-badge">Order</span>
+            }
+            <div class="driver-stop-meta">
+              @if (stop.arrival_time) { <span>⏰ {{ stop.arrival_time }}</span> }
+              @if (stop.address) { <span>📍 {{ stop.address }}</span> }
+              @if (stop.customer_name) { <span>👤 {{ stop.customer_name }}</span> }
+              @if (stop.customer_phone) {
+                <span>📞 <a href="tel:{{ stop.customer_phone }}">{{ stop.customer_phone }}</a></span>
+              }
+              @if (stop.delivery_notes) { <span>📝 {{ stop.delivery_notes }}</span> }
+              @if (googleMapsUrl(stop)) {
+                <span>🧭 <a [href]="googleMapsUrl(stop)" target="_blank" rel="noopener"
+                  [attr.aria-label]="'Navigate to ' + stop.location_name">Navigate</a></span>
+              }
+            </div>
+          </li>
+        }
+      </ol>
+        </div>
+      </div>
+    }
+  }
+</div>
+

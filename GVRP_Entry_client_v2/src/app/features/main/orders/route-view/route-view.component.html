@@ -192,6 +192,15 @@
               (click)="copyStops(route)">
               {{ copyStatus().get(route) === 'pending' ? 'Copying…' : 'Copy delivery stops' }}
             </button>
+            <button type="button" class="btn-copy"
+              [disabled]="route.routeId === null"
+              [attr.aria-label]="'Send ' + route.licensePlate + ' to driver'"
+              (click)="openSendDialog(route)">
+              Send to driver
+            </button>
+            @if (assigneeOf(route)) {
+              <span class="assignee">Driver: {{ assigneeOf(route) }}</span>
+            }
             <span role="status" aria-live="polite" [class.copy-error]="copyStatus().get(route) === 'error'">
               @if (!route.copyText) { No delivery stops. }
               @else if (copyStatus().get(route) === 'success') { Delivery stops copied. }

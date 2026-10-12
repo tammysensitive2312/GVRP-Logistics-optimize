@@ -197,6 +197,92 @@
   }
 }
 
+// Bulk result report: compact banner, grouped details scroll internally
+// so long refusal lists never push the table off screen.
+.bulk-report {
+  flex-shrink: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-sm);
+  margin: var(--space-sm) var(--space-lg) 0;
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--border-color);
+  border-left: 4px solid var(--success-green);
+  border-radius: var(--radius-md);
+  background: var(--white);
+  font-size: 13px;
+  color: var(--text-dark);
+
+  &.has-failures {
+    border-left-color: var(--warning-orange);
+    background: #FFFBF2;
+  }
+
+  .bulk-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    color: var(--success-green);
+  }
+
+  &.has-failures .bulk-icon {
+    color: var(--warning-orange);
+  }
+
+  .bulk-summary {
+    font-weight: 600;
+  }
+
+  .bulk-reasons {
+    color: var(--text-gray);
+  }
+
+  .bulk-toggle,
+  .bulk-dismiss {
+    border: 1px solid var(--border-color-dark);
+    border-radius: var(--radius-sm);
+    background: var(--white);
+    padding: 2px var(--space-sm);
+    font-size: 12px;
+    cursor: pointer;
+    color: var(--text-dark);
+
+    &:hover {
+      background: var(--bg-light);
+    }
+  }
+
+  .bulk-toggle {
+    border-color: var(--primary-blue);
+    color: var(--primary-blue);
+  }
+
+  .bulk-details {
+    flex-basis: 100%;
+    max-height: 160px;
+    overflow-y: auto;
+    border-top: 1px solid var(--border-color);
+    padding-top: var(--space-sm);
+  }
+
+  .bulk-group {
+    margin-bottom: var(--space-xs);
+
+    summary {
+      cursor: pointer;
+      font-weight: 600;
+      color: var(--text-dark);
+    }
+
+    ul {
+      margin: var(--space-xs) 0 0 var(--space-lg);
+      padding: 0;
+      color: var(--text-gray);
+    }
+  }
+}
+
 .empty-state {
   display: flex;
   flex-direction: column;

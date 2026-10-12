@@ -28,6 +28,8 @@ import {
 } from '@shared/components/location-picker/location-picker.component';
 import { GeocodingService } from '@shared/services/geocoding.service';
 import { ToastService } from '@shared/services/toast.service';
+import { formatCoordinate } from '@shared/utils/coordinate.utils';
+import { extractErrorMessage } from '@shared/utils/http-error.utils';
 import {
   latitudeRange,
   longitudeRange,
@@ -106,8 +108,14 @@ export class DepotSetupComponent {
   readonly pickedLongitude = computed(() => this.picked()?.longitude ?? null);
 
   /** Read-only coordinate boxes, same 6-decimal display as V1. */
-  readonly latitudeText = computed(() => formatCoordinate(this.pickedLatitude()));
-  readonly longitudeText = computed(() => formatCoordinate(this.pickedLongitude()));
+  readonly latitudeText = computed(() => {
+    const value = this.pickedLatitude();
+    return value === null ? '' : formatCoordinate(value);
+  });
+  readonly longitudeText = computed(() => {
+    const value = this.pickedLongitude();
+    return value === null ? '' : formatCoordinate(value);
+  });
 
   private readonly geocodeRequests = new Subject<PickedLocation>();
 
@@ -173,7 +181,7 @@ export class DepotSetupComponent {
         error: (error: unknown) => {
           console.error('Failed to create depot:', error);
           this.toast.error(
-            extractMessage(error) ?? this.i18n.translate('depotSetup.createFailed')
+            extractErrorMessage(error) ?? this.i18n.translate('depotSetup.createFailed')
           );
         }
       });
@@ -222,16 +230,3 @@ export class DepotSetupComponent {
   }
 }
 
-function formatCoordinate(value: number | null): string {
-  return value === null ? '' : value.toFixed(6);
-}
-
-function extractMessage(error: unknown): string | null {
-  if (typeof error === 'object' && error !== null && 'message' in error) {
-    const message = (error as { message?: unknown }).message;
-    if (typeof message === 'string' && message.trim().length > 0) {
-      return message;
-    }
-  }
-  return null;
-}

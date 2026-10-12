@@ -19,10 +19,9 @@ import org.truong.gvrp_entry_api.entity.OptimizationJob;
 import org.truong.gvrp_entry_api.entity.enums.OptimizationJobStatus;
 import org.truong.gvrp_entry_api.exception.DataInvalidException;
 import org.truong.gvrp_entry_api.exception.EngineUnavailableException;
-import org.truong.gvrp_entry_api.exception.ErrorDetail;
+import org.truong.gvrp_entry_api.exception.ErrorDetails;
 import org.truong.gvrp_entry_api.repository.OptimizationJobRepository;
 import org.truong.gvrp_entry_api.util.AppConstant;
-import org.truong.gvrp_entry_api.util.ErrorCode;
 
 import java.util.List;
 import java.util.Map;
@@ -147,10 +146,7 @@ public class EngineApiClientImpl implements EngineApiClient{
         } catch (HttpClientErrorException e) {
             // Engine rejected OUR payload — surface as a 400 with the engine message.
             throw new DataInvalidException(List.of(
-                    ErrorDetail.builder()
-                            .code(ErrorCode.VALIDATION_ERROR.getCode())
-                            .message("Engine rejected route sequences: " + e.getResponseBodyAsString())
-                            .build()));
+                    ErrorDetails.validation("Engine rejected route sequences: " + e.getResponseBodyAsString())));
         } catch (HttpServerErrorException | ResourceAccessException e) {
             throw new EngineUnavailableException(
                     "Cannot reach optimization engine for route evaluation. Retry later; unsaved edits are kept.",
@@ -162,11 +158,7 @@ public class EngineApiClientImpl implements EngineApiClient{
         try {
             OptimizationJob job = jobRepository.findById(jobId)
                     .orElseThrow(() -> new DataInvalidException(List.of(
-                            ErrorDetail.builder()
-                                    .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
-                                    .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
-                                    .resource(AppConstant.JOB)
-                                    .build()
+                            ErrorDetails.notFound(AppConstant.JOB)
                     )));
 
             job.setStatus(status);

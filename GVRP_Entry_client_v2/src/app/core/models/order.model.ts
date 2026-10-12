@@ -1,4 +1,4 @@
-export type OrderStatus = 'SCHEDULED' | 'UNASSIGNED' | 'COMPLETED' | 'FAILED';
+export type OrderStatus = 'SCHEDULED' | 'ON_ROUTE' | 'SERVICING' | 'COMPLETED' | 'UNASSIGNED' | 'REJECTED';
 
 export interface OrderInputDTO {
   order_code: string;
@@ -26,9 +26,26 @@ export interface OrderDTO extends OrderInputDTO {
 }
 
 export interface OrderFilter {
-  date: string;
+  date?: string;
   status?: string;
   priority?: number;
   search?: string;
+}
+
+export interface BulkStatusRow {
+  id: number;
+  status?: string;
+  order_code?: string;
+  reason?: string;
+}
+
+export interface BulkStatusResult {
+  updated: BulkStatusRow[];
+  failed: BulkStatusRow[];
+}
+
+export interface BulkStatusPayload {
+  ids: number[];
+  status: string;
 }
 import { VehicleSkill } from './vehicle.model';

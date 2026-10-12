@@ -1,6 +1,7 @@
 // src/app/app.routes.ts
 import {Routes} from '@angular/router';
 import {AuthGuard} from '@core/guards/auth.guard';
+import {DriverGuard} from '@core/guards/driver.guard';
 import {setupGuard} from '@core/guards/setup.guard';
 
 export const routes: Routes = [
@@ -101,6 +102,13 @@ export const routes: Routes = [
         redirectTo: 'vehicle-types'
       }
     ]
+  },
+  {
+    path: 'driver',
+    loadComponent: () =>
+      import('./features/driver/driver-view/driver-view.component')
+        .then(m => m.DriverViewComponent),
+    canActivate: [DriverGuard]
   },
   {
     path: 'main',

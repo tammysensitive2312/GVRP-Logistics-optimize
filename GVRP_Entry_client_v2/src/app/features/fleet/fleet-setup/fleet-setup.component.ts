@@ -29,6 +29,7 @@ import { VehicleTypeStore } from '@core/services/vehicle-type.store';
 import { VndPipe } from '@shared/pipes/vnd.pipe';
 import { ConfirmService } from '@shared/services/confirm.service';
 import { ToastService } from '@shared/services/toast.service';
+import { extractErrorMessage } from '@shared/utils/http-error.utils';
 import { notBlank } from '@shared/utils/geo.validators';
 
 interface VehicleRowControls {
@@ -172,7 +173,7 @@ export class FleetSetupComponent implements OnInit {
         error: (error: unknown) => {
           console.error('Failed to create fleet:', error);
           this.toast.error(
-            extractMessage(error) ?? this.i18n.translate('fleetSetup.createFailed')
+            extractErrorMessage(error) ?? this.i18n.translate('fleetSetup.createFailed')
           );
         }
       });
@@ -210,7 +211,7 @@ export class FleetSetupComponent implements OnInit {
         },
         error: (error: unknown) => {
           console.error('Failed to load data:', error);
-          this.toast.error(extractMessage(error) ?? this.i18n.translate('fleetSetup.loadFailed'));
+          this.toast.error(extractErrorMessage(error) ?? this.i18n.translate('fleetSetup.loadFailed'));
         }
       });
   }
@@ -310,14 +311,4 @@ export class FleetSetupComponent implements OnInit {
 
     return null;
   }
-}
-
-function extractMessage(error: unknown): string | null {
-  if (typeof error === 'object' && error !== null && 'message' in error) {
-    const message = (error as { message?: unknown }).message;
-    if (typeof message === 'string' && message.trim().length > 0) {
-      return message;
-    }
-  }
-  return null;
 }

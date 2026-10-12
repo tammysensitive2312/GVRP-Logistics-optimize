@@ -9,10 +9,12 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.truong.gvrp_entry_api.dto.request.OrderInputDTO;
+import org.truong.gvrp_entry_api.dto.response.BulkUpdateOrderStatusResponse;
 import org.truong.gvrp_entry_api.dto.response.OrderDTO;
 import org.truong.gvrp_entry_api.dto.response.PageResponse;
 import org.truong.gvrp_entry_api.entity.Branch;
 import org.truong.gvrp_entry_api.entity.Order;
+import org.truong.gvrp_entry_api.entity.enums.OrderStatus;
 import org.truong.gvrp_entry_api.exception.DataInvalidException;
 import org.truong.gvrp_entry_api.exception.ErrorDetail;
 import org.truong.gvrp_entry_api.mapper.OrderMapper;
@@ -22,7 +24,11 @@ import org.truong.gvrp_entry_api.service.GeocodingService;
 import org.truong.gvrp_entry_api.util.AppConstant;
 import org.truong.gvrp_entry_api.util.ErrorCode;
 
+import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -32,11 +38,15 @@ public class OrderService {
     private final BranchRepository branchRepository;
     private final OrderRepository orderRepository;
     private final OrderMapper orderMapper;
+    private final OrderStatusTransitionService transitionService;
 
     @Transactional(readOnly = true)
-    public PageResponse<OrderDTO> getAllOrdersPaginated(Long branchId, int pageNo, int pageSize) {
-        Pageable pageable = PageRequest.of(pageNo, pageSize, Sort.by("id").descending());
-        Page<Order> orderPage = orderRepository.findByBranchIdOrderByCreatedAtDesc(branchId, pageable);
+    public PageResponse<OrderDTO> getAllOrdersPaginated(
+            Long branchId, int pageNo, int pageSize,
+            LocalDate deliveryDate, OrderStatus status, String search) {        Pageable pageable = PageRequest.of(pageNo, pageSize, Sort.by("id").descending());
+        String keyword = search != null && !search.isBlank() ? search.trim() : null;
+        Page<Order> orderPage = orderRepository.searchOrders(
+                branchId, deliveryDate, status, keyword, pageable);
         List<OrderDTO> content = orderMapper.toDTOList(orderPage.getContent());
 
         return PageResponse.<OrderDTO>builder()
@@ -93,8 +103,54 @@ public class OrderService {
         return orderMapper.toDTO(saved);
     }
 
-    public OrderDTO getOrderById(Long orderId, Long branchId) {
-        Order order = orderRepository.findByIdAndBranchId(orderId, branchId).orElseThrow(() -> new DataInvalidException(
+    /**
+     * Lenient bulk status update: every input id lands in exactly one of the
+     * two result lists; legal rows flip, the rest carry reasons. No silent
+     * partial writes.
+     */
+    @Transactional
+    public BulkUpdateOrderStatusResponse bulkUpdateStatus(
+            Long branchId, List<Long> ids, OrderStatus newStatus) {
+        Map<Long, Order> found = orderRepository.findAllById(ids).stream()
+                .collect(Collectors.toMap(Order::getId, o -> o));
+
+        List<BulkUpdateOrderStatusResponse.FailedRow> failed = new ArrayList<>();
+        List<Order> candidates = new ArrayList<>();
+        for (Long id : ids) {
+            Order order = found.get(id);
+            if (order == null || !order.getBranch().getId().equals(branchId)) {
+                failed.add(BulkUpdateOrderStatusResponse.FailedRow
+                        .builder().id(id)
+                        .orderCode(order != null ? order.getOrderCode() : null)
+                        .reason("Order not found in this branch")
+                        .build());
+            } else {
+                candidates.add(order);
+            }
+        }
+
+        OrderStatusTransitionService.BulkTransitionResult result =
+                transitionService.bulkTransitionLenient(candidates, newStatus);
+
+        List<BulkUpdateOrderStatusResponse.UpdatedRow> updated = result.succeeded().stream()
+                .map(order -> BulkUpdateOrderStatusResponse.UpdatedRow
+                        .builder().id(order.getId()).status(newStatus.name()).build())
+                .toList();
+        for (Order order : result.failed()) {
+            failed.add(BulkUpdateOrderStatusResponse.FailedRow
+                    .builder().id(order.getId()).orderCode(order.getOrderCode())
+                    .reason(String.format("Cannot transition order '%s' from [%s] to [%s]",
+                            order.getOrderCode(), order.getStatus(), newStatus))
+                    .build());
+        }
+
+        return BulkUpdateOrderStatusResponse.builder()
+                .updated(updated)
+                .failed(failed)
+                .build();
+    }
+
+    public OrderDTO getOrderById(Long orderId, Long branchId) {        Order order = orderRepository.findByIdAndBranchId(orderId, branchId).orElseThrow(() -> new DataInvalidException(
                 List.of(
                         ErrorDetail.builder()
                                 .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())

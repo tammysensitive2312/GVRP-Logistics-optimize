@@ -1,9 +1,8 @@
-import {ActivatedRouteSnapshot, CanActivateChildFn, Router, RouterStateSnapshot, UrlTree} from '@angular/router';
+import {ActivatedRouteSnapshot, Router, RouterStateSnapshot, UrlTree} from '@angular/router';
 import {Injectable} from '@angular/core';
 import {AuthService} from '@core/services/auth.service';
 import {StorageService} from '@core/services/storage.service';
 import {Observable} from 'rxjs';
-import {th} from 'date-fns/locale';
 
 @Injectable({
   providedIn: 'root'

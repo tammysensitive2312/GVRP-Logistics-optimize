@@ -37,9 +37,6 @@ public class GraphHoperDistanceProvider implements DistanceProvider {
     @Value("${graphhopper.graph.location}")
     private String graphLocation;
 
-//    @Value("${graphhopper.profile}")
-//    private String profile;
-
     @Getter
     private GraphHopper graphHopper;
 

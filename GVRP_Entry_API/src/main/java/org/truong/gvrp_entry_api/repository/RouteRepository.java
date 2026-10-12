@@ -2,12 +2,21 @@ package org.truong.gvrp_entry_api.repository;
 
 import org.truong.gvrp_entry_api.entity.Route;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import jakarta.persistence.LockModeType;
 import java.util.List;
+import java.util.Optional;
 
 public interface RouteRepository extends JpaRepository<Route, Long> {
+
+    /**
+     * Find route with a write lock (concurrent sends serialize here).
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    Optional<Route> findWithLockById(Long id);
 
     /**
      * Find all routes by solution ID

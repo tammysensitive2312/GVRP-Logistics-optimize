@@ -1,4 +1,5 @@
 @import '../../../../../assets/styles/variables';
+@import '../../../../../assets/styles/buttons';
 
 // Ported from V1 styles/components/view.css (.route-summary ... .stop-connector).
 
@@ -23,16 +24,17 @@
   .copy-error { color: #b42318; }
 }
 
-.btn-copy {
-  padding: 0.5rem 0.75rem;
-  border: 1px solid $primary-blue;
-  border-radius: $radius-sm;
-  background: $white;
-  color: $primary-blue;
-  cursor: pointer;
-  &:hover:not(:disabled) { background: $bg-light; }
-  &:focus-visible { outline: 2px solid $primary-blue; outline-offset: 2px; }
-  &:disabled { opacity: 0.5; cursor: not-allowed; }
+// Merged base: `.btn-copy` and `.btn-toolbar` shared every declaration except
+// `.btn-toolbar`'s `font-size`, so both extend the shared `%route-btn-base`
+// (buttons partial) and keep their class names. `.btn-toolbar` keeps its
+// `font-size: 0.8rem` override below; compiled declarations are unchanged.
+.btn-copy,
+.btn-toolbar {
+  @extend %route-btn-base;
+}
+
+.assignee {
+  color: $text-dark;
 }
 
 .route-summary {
@@ -95,16 +97,7 @@
 }
 
 .btn-toolbar {
-  padding: 0.5rem 0.75rem;
-  border: 1px solid $primary-blue;
-  border-radius: $radius-sm;
-  background: $white;
-  color: $primary-blue;
-  cursor: pointer;
   font-size: 0.8rem;
-  &:hover:not(:disabled) { background: $bg-light; }
-  &:focus-visible { outline: 2px solid $primary-blue; outline-offset: 2px; }
-  &:disabled { opacity: 0.5; cursor: not-allowed; }
 }
 
 .btn-primary {

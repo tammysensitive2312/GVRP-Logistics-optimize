@@ -17,6 +17,7 @@ public class AppConstant {
     public static String VEHICLE_TYPE = "types";
     public static String VEHICLE = "vehicles";
     public static String VEHICLE_FEATURES = "features";
+    public static String ROUTE = "routes";
 
     public static String LOCATION = "location";
     public static String LATITUDE = "lat";

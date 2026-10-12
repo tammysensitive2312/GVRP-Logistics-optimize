@@ -1,0 +1,11 @@
+{
+  "revision": 0,
+  "completed": ["Captured request"],
+  "remaining": ["Inspect related code and documentation"],
+  "read_next": [],
+  "evidence": [],
+  "blockers": [],
+  "decisions": [],
+  "processes": [],
+  "next_action": "Inspect request evidence and continue the current node"
+}

@@ -1,9 +1,11 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { MatDialog } from '@angular/material/dialog';
 import { of, throwError } from 'rxjs';
 
 import { RouteDTO, SolutionDTO, StopDTO } from '@core/models';
 import { ApiService } from '@core/services/api.service';
 import { SolutionStore } from '@core/services/solution.store';
+import { ToastService } from '@shared/services/toast.service';
 import { ROUTE_COLORS } from '@shared/utils/solution-view.utils';
 
 import { RouteViewComponent } from './route-view.component';
@@ -54,18 +56,25 @@ describe('RouteViewComponent', () => {
   let component: RouteViewComponent;
   let api: jasmine.SpyObj<ApiService>;
   let store: jasmine.SpyObj<SolutionStore>;
+  let dialog: jasmine.SpyObj<MatDialog>;
+  let toast: jasmine.SpyObj<ToastService>;
 
   beforeEach(async () => {
     api = jasmine.createSpyObj<ApiService>('ApiService',
-      ['evaluateRoutes', 'saveRouteRevision', 'latestRevisionId']);
+      ['evaluateRoutes', 'saveRouteRevision', 'latestRevisionId', 'routeSends', 'sendRoute']);
+    api.routeSends.and.returnValue(of([]));
     store = jasmine.createSpyObj<SolutionStore>('SolutionStore',
       ['setSolution', 'loadById']);
-
+    dialog = jasmine.createSpyObj<MatDialog>('MatDialog', ['open']);
+    dialog.open.and.returnValue({ afterClosed: () => of(null) } as never);
+    toast = jasmine.createSpyObj<ToastService>('ToastService', ['success', 'error']);
     await TestBed.configureTestingModule({
       imports: [RouteViewComponent],
       providers: [
         { provide: ApiService, useValue: api },
-        { provide: SolutionStore, useValue: store }
+        { provide: SolutionStore, useValue: store },
+        { provide: MatDialog, useValue: dialog },
+        { provide: ToastService, useValue: toast }
       ]
     }).compileComponents();
 
@@ -453,6 +462,58 @@ describe('RouteViewComponent', () => {
       expect(component.editing()).toBeFalse();
       expect(component.draftRoutes()).toEqual([]);
       expect(store.setSolution).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('driver dispatch', () => {
+    const sendableSolution: SolutionDTO = {
+      ...solution,
+      routes: [{
+        ...solution.routes[0],
+        id: 21,
+        vehicle_id: 7,
+        vehicle_license_plate: '29A-12345'
+      }]
+    };
+
+    beforeEach(() => {
+      fixture.componentRef.setInput('solution', sendableSolution);
+      fixture.detectChanges();
+    });
+
+    it('opens the send dialog and sends on confirm', () => {
+      dialog.open.and.returnValue({
+        afterClosed: () => of({ driverUserId: 2, solutionId: 9 })
+      } as never);
+      api.sendRoute.and.returnValue(of({
+        id: 5, solution_id: 9, route_id: 21, vehicle_license_plate: '29A-12345',
+        driver_id: 2, driver_name: 'Tai Lai', sender_name: 'boss',
+        sent_at: '2026-10-06', status: 'CURRENT'
+      }));
+      const card = component.routeCards()[0];
+
+      component.openSendDialog(card);
+
+      expect(dialog.open).toHaveBeenCalled();
+      expect(api.sendRoute).toHaveBeenCalledWith(21, { driver_user_id: 2, solution_id: 9 });
+      expect(toast.success).toHaveBeenCalledWith('Route sent to Tai Lai.');
+    });
+
+    it('shows the current assignee from send history', async () => {
+      api.routeSends.and.returnValue(of([{
+        id: 5, solution_id: 9, route_id: 21, vehicle_license_plate: '29A-12345',
+        driver_id: 2, driver_name: 'Tai Lai', sender_name: 'boss',
+        sent_at: '2026-10-06', status: 'CURRENT'
+      }]));
+      // Fresh object identity so the solution effect re-runs with the new mock.
+      fixture.componentRef.setInput('solution', {...sendableSolution});
+      fixture.detectChanges();
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      expect(component.assigneeOf(component.routeCards()[0])).toBe('Tai Lai');
+      expect(fixture.nativeElement.querySelector('.assignee').textContent)
+        .toContain('Tai Lai');
     });
   });
 });

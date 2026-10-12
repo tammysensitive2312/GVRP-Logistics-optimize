@@ -11,7 +11,6 @@ import { ApiService } from '@core/services/api.service';
 import { ToastService } from '@shared/services/toast.service';
 import { OrderDTO, OrderInputDTO, VEHICLE_SKILLS } from '@core/models';
 import {MatProgressSpinner} from '@angular/material/progress-spinner';
-import {th} from 'date-fns/locale';
 import {MapPickerDialogComponent} from '@features/main/orders/components/map-picker-dialog/map-picker-dialog.component';
 
 export interface EditOrderDialogData {

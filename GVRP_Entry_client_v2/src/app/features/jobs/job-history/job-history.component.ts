@@ -16,6 +16,7 @@ import { JobDTO } from '@core/models';
 import { ApiService } from '@core/services/api.service';
 import { SolutionStore } from '@core/services/solution.store';
 import { ToastService } from '@shared/services/toast.service';
+import { extractErrorMessage } from '@shared/utils/http-error.utils';
 
 const HISTORY_LIMIT = 50;
 
@@ -92,7 +93,7 @@ export class JobHistoryComponent implements OnInit {
         next: jobs => this.jobs.set(sortByNewest(jobs ?? [])),
         error: (error: unknown) => {
           console.error('Failed to load job history:', error);
-          this.error.set(extractMessage(error) ?? 'Failed to load job history');
+          this.error.set(extractErrorMessage(error) ?? 'Failed to load job history');
         }
       });
   }
@@ -130,7 +131,7 @@ export class JobHistoryComponent implements OnInit {
         },
         error: (error: unknown) => {
           console.error('Failed to load solution:', error);
-          this.toast.error(extractMessage(error) ?? 'Failed to load solution');
+          this.toast.error(extractErrorMessage(error) ?? 'Failed to load solution');
         }
       });
   }
@@ -159,19 +160,11 @@ export class JobHistoryComponent implements OnInit {
 }
 
 function sortByNewest(jobs: readonly JobDTO[]): JobDTO[] {
-  return [...jobs].sort((a, b) => {
+    return [...jobs].sort((a, b) => {
     const timeA = Date.parse(a.created_at);
     const timeB = Date.parse(b.created_at);
 
     if (Number.isNaN(timeA) || Number.isNaN(timeB)) return b.id - a.id;
     return timeB - timeA;
   });
-}
-
-function extractMessage(error: unknown): string | null {
-  if (typeof error === 'object' && error !== null && 'message' in error) {
-    const message = (error as { message?: unknown }).message;
-    if (typeof message === 'string' && message.trim().length > 0) return message;
-  }
-  return null;
 }

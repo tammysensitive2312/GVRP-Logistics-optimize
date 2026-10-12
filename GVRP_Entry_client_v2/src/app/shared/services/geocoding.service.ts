@@ -4,6 +4,7 @@ import { Observable, of } from 'rxjs';
 import { catchError, map, timeout } from 'rxjs/operators';
 
 import { SKIP_LOADING } from '@core/interceptors/loading.context';
+import { formatCoordinate } from '@shared/utils/coordinate.utils';
 
 interface NominatimReverseResponse {
   display_name?: string;
@@ -53,6 +54,6 @@ export class GeocodingService {
   }
 
   formatCoordinates(latitude: number, longitude: number): string {
-    return `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+    return `${formatCoordinate(latitude)}, ${formatCoordinate(longitude)}`;
   }
 }

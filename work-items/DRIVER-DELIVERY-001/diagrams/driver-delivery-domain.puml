@@ -1,0 +1,52 @@
+@startuml
+!theme plain
+
+enum UserRole {
+  PLANNER
+  CUSTOMER
+  DRIVER
+}
+
+class User {
+  id: Long
+  branch: Branch
+  username: String
+  phone: String
+  role: UserRole
+  enabled: Boolean
+}
+
+class RouteSend {
+  id: Long
+  solution: Solution
+  route: Route
+  driver: User
+  sender: User
+  sentAt: LocalDateTime
+  status: SendStatus
+}
+
+enum SendStatus {
+  CURRENT
+  SUPERSEDED
+}
+
+class Solution {
+  id: Long
+}
+class Route {
+  id: Long
+}
+
+UserRole <-- User
+User <.. RouteSend : driver / sender
+RouteSend --> Solution
+RouteSend --> Route
+SendStatus <-- RouteSend
+
+note right of RouteSend
+  Immutable rows.
+  New send flips siblings
+  to SUPERSEDED (DD-021).
+end note
+@enduml

@@ -1,14 +1,13 @@
 package org.truong.gvrp_engine_api.service;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
-import org.truong.gvrp_engine_api.distance_matrix.DistanceMatrix;
-import org.truong.gvrp_engine_api.distance_matrix.DistanceMatrixService;
-import org.truong.gvrp_engine_api.distance_matrix.MatrixMask;
+import org.truong.gvrp_engine_api.distance_matrix.DistanceMatrixEntry;
+import org.truong.gvrp_engine_api.distance_matrix.DistanceProvider;
 import org.truong.gvrp_engine_api.distance_matrix.OptCoordinates;
 import org.truong.gvrp_engine_api.model.*;
 
@@ -22,25 +21,26 @@ import java.util.Set;
 /**
  * Evaluates candidate route sequences without invoking the solver.
  *
- * <p>Uses the same {@link DistanceMatrixService} provider (GraphHopper road network)
- * and the same cost math as the solve path, so recalculated metrics stay comparable
- * with engine output. Time semantics mirror {@link OptimizationResultExtractor}:
- * arrival = previous departure + matrix time, waiting absorbs early arrival,
- * departure = arrival + wait + service.
+ * <p>Fetches ONLY consecutive legs from the same road-network provider the solve
+ * path uses (O(n) provider calls, not an O(n²) matrix), so recalculated metrics
+ * stay comparable with engine output. Time semantics mirror
+ * {@link OptimizationResultExtractor}: arrival = previous departure + leg time,
+ * waiting absorbs early arrival, departure = arrival + wait + service.
  */
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class RouteEvaluationService {
 
-    private final DistanceMatrixService distanceMatrixService;
+    private final DistanceProvider distanceProvider;
 
-    /** Upper bound on evaluated stops per request (matrix cost is quadratic). */
+    public RouteEvaluationService(
+            @Qualifier("graphHoperDistanceProvider") DistanceProvider distanceProvider) {
+        this.distanceProvider = distanceProvider;
+    }
+
+    /** Upper bound on evaluated stops per request (provider calls stay linear). */
     @Value("${gvrp.evaluate.max-stops:200}")
     private int maxStops = 200;
-
-    /** Same sentinel rule as the solve path: a real leg never approaches this. */
-    private static final double SENTINEL_DISTANCE_THRESHOLD = MatrixMask.PRUNED_METERS / 2.0;
 
     public RouteEvaluateResponse evaluate(RouteEvaluateRequest request) {
         validateShape(request);
@@ -52,8 +52,6 @@ public class RouteEvaluationService {
                     "Too many stops to evaluate: " + totalStops + " (max " + maxStops + ")");
         }
 
-        DistanceMatrix matrix = buildMatrix(request);
-
         List<RouteViolation> violations = new ArrayList<>();
         List<RouteDetail> evaluatedRoutes = new ArrayList<>();
         double totalDistance = 0.0;
@@ -64,11 +62,9 @@ public class RouteEvaluationService {
         double totalCO2 = 0.0;
         int ordersServed = 0;
 
-        int base = 0;
         for (int routeIndex = 0; routeIndex < request.getRoutes().size(); routeIndex++) {
-            EvaluatedRoute route = request.getRoutes().get(routeIndex);
-            EvaluatedRouteResult result = evaluateRoute(route, routeIndex, matrix, base, violations);
-            base += route.getOrders().size() + 2;
+            EvaluatedRouteResult result =
+                    evaluateRoute(request.getRoutes().get(routeIndex), routeIndex, violations);
 
             evaluatedRoutes.add(result.detail());
             totalDistance += result.distanceKm();
@@ -90,15 +86,38 @@ public class RouteEvaluationService {
 
     // --------------------------------------------------
 
+    /**
+     * One provider call per consecutive leg (depot → stops → depot). A failed
+     * leg is reported as {@code ROUTING_UNAVAILABLE} and stops the simulation,
+     * mirroring the old sentinel semantics without an O(n²) matrix.
+     */
+    private Leg leg(OptCoordinates from, OptCoordinates to) {
+        try {
+            DistanceMatrixEntry entry = distanceProvider.fetch(from, to);
+            return new Leg(entry.distanceMeters(), entry.timeSeconds(), true);
+        } catch (Exception e) {
+            log.warn("Routing data unavailable for a leg: {}", e.getMessage());
+            return new Leg(0.0, 0.0, false);
+        }
+    }
+
     private EvaluatedRouteResult evaluateRoute(EvaluatedRoute route, int routeIndex,
-                                               DistanceMatrix matrix, int base,
                                                List<RouteViolation> violations) {
         VehicleType type = route.getVehicleType();
         long startSeconds = parseTime(route.getStartTime(), "startTime");
 
+        List<OptCoordinates> points = new ArrayList<>();
+        points.add(depotCoordinates(route.getStartDepot()));
+        for (Order order : route.getOrders()) {
+            points.add(new OptCoordinates(
+                    BigDecimal.valueOf(order.getLatitude()),
+                    BigDecimal.valueOf(order.getLongitude())));
+        }
+        points.add(depotCoordinates(route.getEndDepot()));
+
         List<Stop> stops = new ArrayList<>();
         double totalDemand = route.getOrders().stream()
-                .mapToDouble(order -> demandOf(order)).sum();
+                .mapToDouble(RouteEvaluationService::demandOf).sum();
 
         // Start depot: arrival = departure = start time, fully loaded.
         stops.add(depotStop(route.getStartDepot(), formatTime(startSeconds),
@@ -109,21 +128,20 @@ public class RouteEvaluationService {
         double currentLoad = totalDemand;
         double servedLoad = 0.0;
         int orderCount = 0;
-        int prevIndex = base;
+        int pointIndex = 0;
         boolean routingFailed = false;
 
         for (Order order : route.getOrders()) {
-            int stopIndex = prevIndex + 1;
-
-            double legMeters = matrix.distanceMeters(prevIndex, stopIndex);
-            double legSeconds = matrix.timeSeconds(prevIndex, stopIndex);
-            if (legMeters >= SENTINEL_DISTANCE_THRESHOLD) {
+            Leg inbound = leg(points.get(pointIndex), points.get(pointIndex + 1));
+            if (!inbound.ok()) {
                 violations.add(new RouteViolation("ROUTING_UNAVAILABLE", routeIndex,
                         order.getId(), "No road-network data for the leg into order "
                                 + order.getOrderCode()));
                 routingFailed = true;
                 break;
             }
+            double legMeters = inbound.meters();
+            double legSeconds = inbound.seconds();
             // Backfill the previous stop's leg values now that the leg is known good.
             stops.get(stops.size() - 1).setDistanceToNext(legMeters);
             stops.get(stops.size() - 1).setTimeToNext(legSeconds);
@@ -167,13 +185,14 @@ public class RouteEvaluationService {
 
             routeDistanceMeters += legMeters;
             currentSeconds = departure;
-            prevIndex = stopIndex;
+            pointIndex++;
         }
 
         // Return leg to the end depot.
-        double returnMeters = matrix.distanceMeters(prevIndex, base + route.getOrders().size() + 1);
-        double returnSeconds = matrix.timeSeconds(prevIndex, base + route.getOrders().size() + 1);
-        if (returnMeters >= SENTINEL_DISTANCE_THRESHOLD) {
+        Leg home = leg(points.get(pointIndex), points.get(points.size() - 1));
+        double returnMeters = home.meters();
+        double returnSeconds = home.seconds();
+        if (!home.ok()) {
             violations.add(new RouteViolation("ROUTING_UNAVAILABLE", routeIndex, null,
                     "No road-network data for the return leg to the depot"));
             routingFailed = true;
@@ -215,21 +234,6 @@ public class RouteEvaluationService {
     }
 
     // --------------------------------------------------
-
-    private DistanceMatrix buildMatrix(RouteEvaluateRequest request) {
-        List<OptCoordinates> coordinates = new ArrayList<>();
-        for (EvaluatedRoute route : request.getRoutes()) {
-            coordinates.add(depotCoordinates(route.getStartDepot()));
-            for (Order order : route.getOrders()) {
-                coordinates.add(new OptCoordinates(
-                        BigDecimal.valueOf(order.getLatitude()),
-                        BigDecimal.valueOf(order.getLongitude())));
-            }
-            coordinates.add(depotCoordinates(route.getEndDepot()));
-        }
-        // Null mask = dense layout, right for dispatcher-scale candidate sets.
-        return distanceMatrixService.createDistanceMatrix(coordinates, null);
-    }
 
     private void validateShape(RouteEvaluateRequest request) {
         if (request == null || request.getRoutes() == null || request.getRoutes().isEmpty()) {
@@ -365,5 +369,8 @@ public class RouteEvaluationService {
             double fixedCost,
             double co2,
             int orderCount) {
+    }
+
+    private record Leg(double meters, double seconds, boolean ok) {
     }
 }

@@ -3,7 +3,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { BehaviorSubject, Observable, throwError } from 'rxjs';
-import { tap, catchError, map } from 'rxjs/operators';
+import { tap, catchError } from 'rxjs/operators';
 
 import { environment } from '@environments/environment';
 import { StorageService, AuthSession } from './storage.service';
@@ -97,6 +97,13 @@ export class AuthService {
    */
   getCurrentBranchId(): number | null {
     return this.storage.getBranch();
+  }
+
+  /**
+   * Get current user role (null when logged out)
+   */
+  getRole(): string | null {
+    return this.storage.getAuthSession()?.user?.role ?? null;
   }
 
   /**

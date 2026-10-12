@@ -11,8 +11,8 @@ import org.springframework.stereotype.Component;
 import org.truong.gvrp_entry_api.dto.request.DepotInputDTO;
 import org.truong.gvrp_entry_api.exception.DataInvalidException;
 import org.truong.gvrp_entry_api.exception.ErrorDetail;
+import org.truong.gvrp_entry_api.exception.ErrorDetails;
 import org.truong.gvrp_entry_api.util.AppConstant;
-import org.truong.gvrp_entry_api.util.ErrorCode;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -80,20 +80,12 @@ public class GeometryMapper {
         List<ErrorDetail> errorsInfo = new ArrayList<>();
         if (latitude < -90 || latitude > 90) {
             errorsInfo.add(
-                    ErrorDetail.builder()
-                            .code(ErrorCode.VALIDATION_ERROR.getCode())
-                            .message(ErrorCode.VALIDATION_ERROR.getMessage())
-                            .field(AppConstant.LATITUDE)
-                            .build()
+                    ErrorDetails.validationWithField(AppConstant.LATITUDE)
             );
         }
         if (longitude < -180 || longitude > 180) {
             errorsInfo.add(
-                    ErrorDetail.builder()
-                            .code(ErrorCode.VALIDATION_ERROR.getCode())
-                            .message(ErrorCode.VALIDATION_ERROR.getMessage())
-                            .field(AppConstant.LONGITUDE)
-                            .build()
+                    ErrorDetails.validationWithField(AppConstant.LONGITUDE)
             );
         }
 

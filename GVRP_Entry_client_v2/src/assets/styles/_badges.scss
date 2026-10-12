@@ -1,0 +1,25 @@
+// Shared badge rules for admin section pages (vehicle types / vehicles / depots).
+// Moved verbatim from `_admin-content.scss` (ported from V1
+// styles/screens/admin-settings.css). Requires 'assets/styles/variables'
+// to be imported first (provided by the importing component stylesheet).
+
+.badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: $radius-sm;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-semibold;
+  color: $white;
+}
+
+.badge-success {
+  background: $success-green;
+}
+
+.badge-warning {
+  background: $warning-orange;
+}
+
+.badge-danger {
+  background: $danger-red;
+}

@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  effect,
   inject,
   input,
   OnDestroy,
@@ -14,6 +15,7 @@ import {
   moveItemInArray,
   transferArrayItem
 } from '@angular/cdk/drag-drop';
+import { forkJoin } from 'rxjs';
 
 import { SolutionDTO } from '@core/models';
 import {
@@ -24,6 +26,13 @@ import {
 } from '@core/models';
 import { ApiService } from '@core/services/api.service';
 import { SolutionStore } from '@core/services/solution.store';
+import { ToastService } from '@shared/services/toast.service';
+import { MatDialog } from '@angular/material/dialog';
+import {
+  SendRouteDialogComponent,
+  SendRouteDialogData,
+  SendRouteDialogResult
+} from './send-route-dialog/send-route-dialog.component';
 import {
   formatDuration,
   formatVndAmount,
@@ -47,6 +56,7 @@ interface StopVM {
 interface RouteCardVM {
   copyText: string;
   index: number;
+  routeId: number | null;
   color: string;
   licensePlate: string;
   orderCount: number;
@@ -101,6 +111,8 @@ export class RouteViewComponent implements OnDestroy {
 
   private readonly api = inject(ApiService);
   private readonly store = inject(SolutionStore);
+  private readonly toast = inject(ToastService);
+  private readonly dialog = inject(MatDialog);
 
   private readonly expandedRoutes = signal<ReadonlySet<number>>(new Set<number>());
   readonly copyStatus = signal<ReadonlyMap<RouteCardVM, 'pending' | 'success' | 'error'>>(new Map());
@@ -149,6 +161,7 @@ export class RouteViewComponent implements OnDestroy {
           .map((stop, i) => `${i + 1}. ${stop.location_name?.replace(/\s+/g, ' ').trim() || 'Unnamed stop'}`)
           .join('\n'),
         index,
+        routeId: route.id ?? null,
         color,
         licensePlate: route.vehicle_license_plate,
         orderCount: route.order_count,
@@ -202,6 +215,77 @@ export class RouteViewComponent implements OnDestroy {
 
   onRouteHeaderClick(index: number): void {
     this.routeSelected.emit(index);
+  }
+
+  // ---------- Driver dispatch ----------
+
+  /** Current assignee per route id (from send history). */
+  readonly assignees = signal<ReadonlyMap<number, string>>(new Map());
+
+  constructor() {
+    effect(() => {
+      this.solution();
+      // Defer past the effect context: refreshAssignees writes signals, and
+      // synchronous sources (mocks, cached observables) would otherwise hit
+      // NG0600 by executing the subscribe callback inside the effect.
+      queueMicrotask(() => this.refreshAssignees());
+    });
+  }
+
+  assigneeOf(route: RouteCardVM): string | null {
+    if (route.routeId === null) return null;
+    return this.assignees().get(route.routeId) ?? null;
+  }
+
+  openSendDialog(route: RouteCardVM): void {
+    if (route.routeId === null) {
+      this.toast.error('Route has no id; reload the plan and retry.');
+      return;
+    }
+    const data: SendRouteDialogData = {
+      routeId: route.routeId,
+      solutionId: this.solution().id,
+      licensePlate: route.licensePlate
+    };
+    this.dialog.open(SendRouteDialogComponent, { data }).afterClosed().subscribe(
+      (result: SendRouteDialogResult | null | undefined) => {
+        if (!result) return;
+        this.api.sendRoute(route.routeId as number, {
+          driver_user_id: result.driverUserId,
+          solution_id: result.solutionId
+        }).subscribe({
+          next: send => {
+            this.toast.success(`Route sent to ${send.driver_name}.`);
+            this.refreshAssignees();
+          },
+          error: (error: unknown) => {
+            const message = (error as { error?: { errors?: { message?: string }[] } })
+              .error?.errors?.[0]?.message;
+            this.toast.error(message ?? 'Could not send the route.');
+          }
+        });
+      });
+  }
+
+  private refreshAssignees(): void {
+    const ids = this.routeCards()
+      .map(card => card.routeId)
+      .filter((id): id is number => id !== null);
+    if (ids.length === 0) {
+      this.assignees.set(new Map());
+      return;
+    }
+    forkJoin(ids.map(id => this.api.routeSends(id))).subscribe({
+      next: histories => {
+        const next = new Map<number, string>();
+        histories.forEach((sends, i) => {
+          const current = sends.find(send => send.status === 'CURRENT');
+          if (current) next.set(ids[i], current.driver_name);
+        });
+        this.assignees.set(next);
+      },
+      error: () => undefined
+    });
   }
 
   // ---------- Route customization (edit session) ----------

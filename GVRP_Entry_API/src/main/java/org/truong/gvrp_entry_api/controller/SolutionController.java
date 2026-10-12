@@ -10,10 +10,13 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.truong.gvrp_entry_api.dto.request.CustomizeRoutesRequest;
+import org.truong.gvrp_entry_api.dto.response.RevisionDTO;
 import org.truong.gvrp_entry_api.dto.response.RouteEvaluateResponseDTO;
 import org.truong.gvrp_entry_api.dto.response.SolutionDetailResponseDTO;
 import org.truong.gvrp_entry_api.service.RouteCustomizationService;
 import org.truong.gvrp_entry_api.service.SolutionService;
+
+import java.util.List;
 
 @Slf4j
 @RestController
@@ -34,6 +37,12 @@ public class SolutionController {
     public ResponseEntity<java.util.Map<String, Long>> latestRevision(@PathVariable Long id) {
         return ResponseEntity.ok(java.util.Map.of(
                 "id", routeCustomizationService.latestRevisionId(id)));
+    }
+
+    /** Revision chain (root first) for the send dialog picker. */
+    @GetMapping("/{id}/revision-chain")
+    public ResponseEntity<List<RevisionDTO>> revisionChain(@PathVariable Long id) {
+        return ResponseEntity.ok(solutionService.revisionChain(id));
     }
 
     /** Preview of manual sequences: no persistence. */

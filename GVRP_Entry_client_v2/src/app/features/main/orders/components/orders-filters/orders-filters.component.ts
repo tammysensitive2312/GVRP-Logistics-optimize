@@ -109,12 +109,15 @@ export class OrdersFiltersComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Build filter object from form values
+   * Build filter object from form values. A cleared date stays cleared
+   * (no silent fallback to today) so "no date filter" is expressible.
    */
   private buildFilterObject(formValues: any): OrderFilter {
-    const filter: OrderFilter = {
-      date: formValues.date || new Date().toISOString().split('T')[0]
-    };
+    const filter: OrderFilter = {};
+
+    if (formValues.date) {
+      filter.date = formValues.date;
+    }
 
     if (formValues.status) {
       filter.status = formValues.status;

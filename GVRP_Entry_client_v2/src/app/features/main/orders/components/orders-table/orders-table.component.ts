@@ -88,7 +88,9 @@ export class OrdersTableComponent {
       'UNASSIGNED': 'help_outline',
       'SCHEDULED': 'schedule',
       'ON_ROUTE': 'local_shipping',
+      'SERVICING': 'build',
       'COMPLETED': 'check_circle',
+      'REJECTED': 'cancel',
       'FAILED': 'cancel'
     };
     return statusMap[status] || 'help';
@@ -102,7 +104,9 @@ export class OrdersTableComponent {
       'UNASSIGNED': 'text-gray-500',
       'SCHEDULED': 'text-blue-500',
       'ON_ROUTE': 'text-orange-500',
+      'SERVICING': 'text-purple-500',
       'COMPLETED': 'text-green-500',
+      'REJECTED': 'text-red-500',
       'FAILED': 'text-red-500'
     };
     return colorMap[status] || 'text-gray-500';

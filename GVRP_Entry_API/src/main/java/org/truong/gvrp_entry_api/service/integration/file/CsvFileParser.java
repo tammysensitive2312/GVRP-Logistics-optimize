@@ -11,6 +11,7 @@ import org.truong.gvrp_entry_api.dto.request.OrderInputDTO;
 import org.truong.gvrp_entry_api.dto.response.ImportError;
 import org.truong.gvrp_entry_api.entity.enums.VehicleSkill;
 import org.truong.gvrp_entry_api.exception.DataInvalidException;
+import org.truong.gvrp_entry_api.service.orders.OrderImportService;
 import org.truong.gvrp_entry_api.util.ErrorCode;
 import org.truong.gvrp_entry_api.exception.ErrorDetail;
 import org.truong.gvrp_entry_api.util.AppConstant;
@@ -37,7 +38,6 @@ import java.util.Set;
 @Slf4j
 public class CsvFileParser implements FileParser<OrderInputDTO> {
 
-    private static final long MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
 
     /**
@@ -47,7 +47,7 @@ public class CsvFileParser implements FileParser<OrderInputDTO> {
      * @return ParseResult chứa danh sách orders hợp lệ và errors
      */
     public ParseResult<OrderInputDTO> parse(MultipartFile file) {
-        validateFile(file);
+        FileValidationUtils.validate(file, ".csv");
 
         List<OrderInputDTO> validOrders = new ArrayList<>();
         List<ImportError> errors = new ArrayList<>();
@@ -76,13 +76,12 @@ public class CsvFileParser implements FileParser<OrderInputDTO> {
 
                 } catch (ParseException e) {
                     log.warn("Failed to parse line {}: {}", lineNumber, e.getMessage());
-                    errors.add(ImportError.builder()
-                            .lineNumber(lineNumber)
-                            .orderCode(safeGet(record, "orderCode"))
-                            .field(e.getField())
-                            .errorMessage(e.getMessage())
-                            .rawData(record.toString())
-                            .build());
+                    errors.add(OrderImportService.buildError(
+                            lineNumber,
+                            safeGet(record, "orderCode"),
+                            e.getField(),
+                            e.getMessage(),
+                            record.toString()));
                 }
             }
 
@@ -99,42 +98,6 @@ public class CsvFileParser implements FileParser<OrderInputDTO> {
 
         } catch (Exception e) {
             throw new RuntimeException("Unexpected error during CSV parsing", e);
-        }
-    }
-
-    /**
-     * Validate file trước khi parse, gom tất cả lỗi vào một List và ném DataInvalidException.
-     */
-    private void validateFile(MultipartFile file) {
-        List<ErrorDetail> fileErrors = new ArrayList<>();
-
-        if (file == null || file.isEmpty()) {
-            fileErrors.add(ErrorDetail.builder()
-                    .code(ErrorCode.EMPTY_FIELD_ERROR.getCode())
-                    .message(ErrorCode.EMPTY_FIELD_ERROR.getMessage())
-                    .resource(AppConstant.FILE)
-                    .build());
-        } else {
-            if (file.getSize() > MAX_FILE_SIZE) {
-                fileErrors.add(ErrorDetail.builder()
-                        .code(ErrorCode.FILE_SIZE_EXCEEDED.getCode())
-                        .message(ErrorCode.FILE_SIZE_EXCEEDED.getMessage())
-                        .resource(AppConstant.FILE)
-                        .build());
-            }
-
-            String filename = file.getOriginalFilename();
-            if (filename == null || !filename.toLowerCase().endsWith(".csv")) {
-                fileErrors.add(ErrorDetail.builder()
-                        .code(ErrorCode.VALIDATION_ERROR.getCode())
-                        .message(ErrorCode.VALIDATION_ERROR.getMessage())
-                        .resource(AppConstant.FILE)
-                        .build());
-            }
-        }
-
-        if (!fileErrors.isEmpty()) {
-            throw new DataInvalidException(fileErrors);
         }
     }
 

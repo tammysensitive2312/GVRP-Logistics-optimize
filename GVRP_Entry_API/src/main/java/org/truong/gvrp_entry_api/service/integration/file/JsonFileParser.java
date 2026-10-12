@@ -13,6 +13,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.truong.gvrp_entry_api.dto.request.OrderInputDTO;
 import org.truong.gvrp_entry_api.dto.response.ImportError;
 import org.truong.gvrp_entry_api.exception.DataInvalidException;
+import org.truong.gvrp_entry_api.service.orders.OrderImportService;
 import org.truong.gvrp_entry_api.util.ErrorCode;
 import org.truong.gvrp_entry_api.exception.ErrorDetail;
 import org.truong.gvrp_entry_api.util.AppConstant;
@@ -28,7 +29,6 @@ import java.util.stream.Collectors;
 @Slf4j
 public class JsonFileParser implements FileParser<OrderInputDTO> {
 
-    private static final long MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
     private final ObjectMapper objectMapper;
 
     public JsonFileParser() {
@@ -39,7 +39,7 @@ public class JsonFileParser implements FileParser<OrderInputDTO> {
 
     @Override
     public ParseResult<OrderInputDTO> parse(MultipartFile file) {
-        validateFile(file);
+        FileValidationUtils.validate(file, ".json");
 
         List<OrderInputDTO> validOrders = new ArrayList<>();
         List<ImportError> errors = new ArrayList<>();
@@ -71,22 +71,23 @@ public class JsonFileParser implements FileParser<OrderInputDTO> {
                             .filter(Objects::nonNull)
                             .collect(Collectors.joining("."));
 
-                    errors.add(ImportError.builder()
-                            .lineNumber(currentLine)
-                            .field(fieldName.isEmpty() ? null : fieldName)
-                            .errorMessage(simplifyErrorMessage(e))
-                            .rawData("JSON Object at line " + currentLine)
-                            .build());
+                    errors.add(OrderImportService.buildError(
+                            currentLine,
+                            null,
+                            fieldName.isEmpty() ? null : fieldName,
+                            simplifyErrorMessage(e),
+                            "JSON Object at line " + currentLine));
 
                 } catch (JsonParseException e) {
                     // Lỗi cú pháp JSON (vd: thiếu dấu phẩy, thiếu ngoặc kép)
                     log.warn("JSON parse error at line {}: {}", currentLine, e.getMessage());
 
-                    errors.add(ImportError.builder()
-                            .lineNumber(currentLine)
-                            .errorMessage(simplifyErrorMessage(e))
-                            .rawData("JSON Object at line " + currentLine)
-                            .build());
+                    errors.add(OrderImportService.buildError(
+                            currentLine,
+                            null,
+                            null,
+                            simplifyErrorMessage(e),
+                            "JSON Object at line " + currentLine));
                 }
             }
 
@@ -106,38 +107,6 @@ public class JsonFileParser implements FileParser<OrderInputDTO> {
                 throw (DataInvalidException) e;
             }
             throw new RuntimeException("Unexpected error during JSON parsing", e);
-        }
-    }
-
-    private void validateFile(MultipartFile file) {
-        List<ErrorDetail> fileErrors = new ArrayList<>();
-
-        if (file == null || file.isEmpty()) {
-            fileErrors.add(ErrorDetail.builder()
-                    .code(ErrorCode.EMPTY_FIELD_ERROR.getCode())
-                    .message(ErrorCode.EMPTY_FIELD_ERROR.getMessage())
-                    .resource(AppConstant.FILE)
-                    .build());
-        } else {
-            if (file.getSize() > MAX_FILE_SIZE) {
-                fileErrors.add(ErrorDetail.builder()
-                        .code(ErrorCode.FILE_SIZE_EXCEEDED.getCode())
-                        .message(ErrorCode.FILE_SIZE_EXCEEDED.getMessage())
-                        .resource(AppConstant.FILE)
-                        .build());
-            }
-            String filename = file.getOriginalFilename();
-            if (filename == null || !filename.toLowerCase().endsWith(".json")) {
-                fileErrors.add(ErrorDetail.builder()
-                        .code(ErrorCode.VALIDATION_ERROR.getCode())
-                        .message(ErrorCode.VALIDATION_ERROR.getMessage())
-                        .resource(AppConstant.FILE)
-                        .build());
-            }
-        }
-
-        if (!fileErrors.isEmpty()) {
-            throw new DataInvalidException(fileErrors);
         }
     }
 

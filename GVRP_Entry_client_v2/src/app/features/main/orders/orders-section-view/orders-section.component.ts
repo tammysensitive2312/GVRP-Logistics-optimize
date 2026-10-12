@@ -1,4 +1,4 @@
-import {Component, inject, OnInit, OnDestroy, EventEmitter, Output} from '@angular/core';
+import {Component, computed, inject, OnInit, OnDestroy, EventEmitter, Output, signal} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
@@ -12,6 +12,7 @@ import { ApiService } from '@core/services/api.service';
 import { ToastService } from '@shared/services/toast.service';
 
 import {OrderDTO, OrderFilter, RoutePlanningRequest, SolutionDTO} from '@core/models';
+import {BulkStatusResult, BulkStatusRow} from '@core/models';
 import {SolutionStore} from '@core/services/solution.store';
 import {
   BackgroundJobDialogComponent,
@@ -26,6 +27,11 @@ import { OrdersTableComponent } from '../components/orders-table/orders-table.co
 import {TimelineViewComponent} from '@features/main/orders/timeline-view/timeline-view.component';
 import {RouteViewComponent} from '@features/main/orders/route-view/route-view.component';
 import {VehicleSelectionService} from '@shared/services/vehicle-selection.service';
+import {
+  BulkStatusDialogComponent,
+  BulkStatusDialogData,
+  BulkStatusDialogResult
+} from '../components/bulk-status-dialog/bulk-status-dialog.component';
 import {
   RoutePlanningDialogComponent,
   RoutePlanningDialogData, RoutePlanningDialogResult
@@ -71,6 +77,38 @@ export class OrdersSectionComponent implements OnInit, OnDestroy {
 
   orders: OrderDTO[] = [];
   selectedOrders: OrderDTO[] = [];
+
+  /** Last bulk-update report (null = none/dismissed). */
+  readonly bulkResult = signal<BulkStatusResult | null>(null);
+
+  /** Collapsible per-reason breakdown of refused rows (BE-002). */
+  readonly bulkDetailsOpen = signal(false);
+
+  /**
+   * Failed rows grouped by reason so N identical refusals render as one
+   * group instead of N repetitive lines (verified live: 100 identical
+   * transition refusals on a 100/page view).
+   *
+   * Backend reasons embed the order code
+   * ("Cannot transition order 'ORD-1' from [SCHEDULED] to [COMPLETED]"),
+   * so the grouping key strips per-row identifiers; the full text of the
+   * first row is kept for display.
+   */
+  readonly bulkGroups = computed(() => {
+    const failed = this.bulkResult()?.failed ?? [];
+    const groups = new Map<string, { reason: string; rows: BulkStatusRow[] }>();
+    for (const row of failed) {
+      const full = row.reason?.trim() || 'Unknown reason';
+      const key = full.replace(/order '[^']*'/g, 'order');
+      // Display drops the per-row identifier so the group title reads as
+      // the shared pattern, e.g. "Cannot transition from [A] to [B] (100)".
+      const display = full.replace(/order '[^']*' /g, '');
+      const group = groups.get(key);
+      if (group) group.rows.push(row);
+      else groups.set(key, { reason: display, rows: [row] });
+    }
+    return [...groups.values()];
+  });
 
   /** Shared with the map and the route/timeline views via SolutionStore. */
   private solutionStore = inject(SolutionStore);
@@ -283,10 +321,44 @@ export class OrdersSectionComponent implements OnInit, OnDestroy {
     this.toastService.info('Assign to Route - Coming soon!');
   }
 
-  onBulkUpdateStatus(): void {
-    console.log('Bulk update status');
-    // TODO: Open status update dialog
-    this.toastService.info('Bulk Update Status - Coming soon!');
+  onBulkEditStatus(): void {
+    if (this.selectedOrders.length === 0) return;
+    const dialogRef = this.dialog.open(BulkStatusDialogComponent, {
+      width: '440px',
+      maxWidth: '90vw',
+      data: { selectedCount: this.selectedOrders.length } as BulkStatusDialogData
+    });
+
+    dialogRef.afterClosed().subscribe((result: BulkStatusDialogResult | null) => {
+      if (!result) return;
+      const ids = this.selectedOrders.map(o => o.id);
+      this.apiService.bulkUpdateOrderStatus({ ids, status: result.status }).subscribe({
+        next: report => {
+          this.bulkResult.set(report);
+          // Small lists open for immediate reading; large ones stay
+          // collapsed behind "View details" so the table keeps its space.
+          this.bulkDetailsOpen.set(report.failed.length > 0 && report.failed.length <= 5);
+          this.selectedOrders = [];
+          this.loadOrders();
+          this.toastService.success(
+            `${report.updated.length} updated`
+            + (report.failed.length > 0 ? `, ${report.failed.length} refused` : ''));
+        },
+        error: () => {
+          this.toastService.error('Bulk update failed; list reloaded.');
+          this.loadOrders();
+        }
+      });
+    });
+  }
+
+  clearBulkResult(): void {
+    this.bulkResult.set(null);
+    this.bulkDetailsOpen.set(false);
+  }
+
+  toggleBulkDetails(): void {
+    this.bulkDetailsOpen.update(open => !open);
   }
 
   onBulkUpdatePriority(): void {
@@ -311,14 +383,18 @@ export class OrdersSectionComponent implements OnInit, OnDestroy {
   }
 
   onFilterChange(newFilters: OrderFilter): void {
-    this.currentFilters = { ...this.currentFilters, ...newFilters };
+    // The emitted filter omits cleared fields, so it IS the complete new
+    // state: merging would keep stale values (e.g. a cleared date).
+    this.currentFilters = { ...newFilters };
     this.currentPage = 0; // Reset to first page
+    this.selectedOrders = []; // Single-page selection: never carry across reloads
     this.loadOrders();
   }
 
   onPageChange(event: PageEvent): void {
     this.currentPage = event.pageIndex;
     this.pageSize = event.pageSize;
+    this.selectedOrders = []; // Single-page selection: never carry across reloads
     this.loadOrders();
   }
 

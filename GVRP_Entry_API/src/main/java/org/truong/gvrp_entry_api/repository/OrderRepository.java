@@ -41,6 +41,26 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     Page<Order> findByBranchIdOrderByCreatedAtDesc(Long branchId, Pageable pageable);
 
+    /**
+     * Filtered order search; every filter is optional (null = ignored).
+     */
+    @Query("""
+        SELECT o FROM Order o
+        WHERE o.branch.id = :branchId
+        AND (:deliveryDate IS NULL OR o.deliveryDate = :deliveryDate)
+        AND (:status IS NULL OR o.status = :status)
+        AND (:search IS NULL OR LOWER(o.orderCode) LIKE LOWER(CONCAT('%', :search, '%'))
+            OR LOWER(o.customerName) LIKE LOWER(CONCAT('%', :search, '%'))
+            OR LOWER(o.address) LIKE LOWER(CONCAT('%', :search, '%')))
+        ORDER BY o.createdAt DESC
+        """)
+    Page<Order> searchOrders(
+            @Param("branchId") Long branchId,
+            @Param("deliveryDate") java.time.LocalDate deliveryDate,
+            @Param("status") OrderStatus status,
+            @Param("search") String search,
+            Pageable pageable);
+
     @Modifying(clearAutomatically = true)
     @Query("UPDATE Order e SET e.status = :status WHERE e.id IN :ids")
     void updateStatusByIds(

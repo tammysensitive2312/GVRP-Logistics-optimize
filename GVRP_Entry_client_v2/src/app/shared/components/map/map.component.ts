@@ -4,7 +4,6 @@ import { CommonModule } from '@angular/common';
 import { LeafletModule } from '@asymmetrik/ngx-leaflet';
 import * as L from 'leaflet';
 import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
 
 import { DepotDTO, OrderDTO, SolutionDTO } from '@core/models';
 import { MapService } from '@shared/services/map.service';

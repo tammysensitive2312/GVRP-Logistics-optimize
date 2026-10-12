@@ -3,7 +3,6 @@ package org.truong.gvrp_engine_api.service;
 import org.junit.jupiter.api.Test;
 import org.truong.gvrp_engine_api.distance_matrix.Distance;
 import org.truong.gvrp_engine_api.distance_matrix.DistanceMatrixEntry;
-import org.truong.gvrp_engine_api.distance_matrix.DistanceMatrixService;
 import org.truong.gvrp_engine_api.distance_matrix.DistanceProvider;
 import org.truong.gvrp_engine_api.distance_matrix.OptCoordinates;
 import org.truong.gvrp_engine_api.model.*;
@@ -26,7 +25,7 @@ class RouteEvaluationServiceTest {
             new DistanceMatrixEntry(Duration.ofSeconds(120), Distance.ofMeters(1000.0));
 
     private final RouteEvaluationService service =
-            new RouteEvaluationService(new DistanceMatrixService(STUB_PROVIDER, 1));
+            new RouteEvaluationService(STUB_PROVIDER);
 
     // ---------- fixtures ----------
 
@@ -193,7 +192,7 @@ class RouteEvaluationServiceTest {
             return new DistanceMatrixEntry(Duration.ofSeconds(120), Distance.ofMeters(1000.0));
         };
         RouteEvaluationService failingService =
-                new RouteEvaluationService(new DistanceMatrixService(failing, 1));
+                new RouteEvaluationService(failing);
 
         RouteEvaluateResponse response = failingService.evaluate(
                 request(route(vehicleType(100), order(1L, 10.0))));
@@ -233,5 +232,22 @@ class RouteEvaluationServiceTest {
         route.setStartTime("not-a-time");
 
         assertThrows(IllegalArgumentException.class, () -> service.evaluate(request(route)));
+    }
+
+    @Test
+    void evaluate_fetchesOnlyConsecutiveLegs() {
+        java.util.concurrent.atomic.AtomicInteger calls = new java.util.concurrent.atomic.AtomicInteger();
+        DistanceProvider counting = (from, to) -> {
+            calls.incrementAndGet();
+            return new DistanceMatrixEntry(Duration.ofSeconds(120), Distance.ofMeters(1000.0));
+        };
+        RouteEvaluationService countingService = new RouteEvaluationService(counting);
+
+        // 3 orders -> 4 consecutive legs (depot -> o1 -> o2 -> o3 -> depot),
+        // not a 5x5 = 20-pair matrix. Guards the O(n^2) timeout regression.
+        countingService.evaluate(request(route(vehicleType(100),
+                order(1L, 10.0), order(2L, 10.0), order(3L, 10.0))));
+
+        assertEquals(4, calls.get());
     }
 }

@@ -6,6 +6,7 @@ import 'leaflet-polylinedecorator';
 import { BehaviorSubject, Observable, firstValueFrom } from 'rxjs';
 
 import { DepotDTO, OrderDTO, SolutionDTO, RouteDTO } from '@core/models';
+import { routeColor } from '@shared/utils/solution-view.utils';
 import { MarkerService } from './marker.service';
 import { RoutingService } from './routing.service';
 
@@ -20,7 +21,7 @@ export class MapService {
   /** True while a solution is drawn, so late-arriving orders don't steal the view. */
   private solutionDisplayed = false;
 
-  private readonly ROUTE_COLORS = ['#3498db', '#e74c3c', '#2ecc71', '#f1c40f', '#9b59b6', '#34495e'];
+  /** Route colours come from the shared V1 palette in solution-view.utils. */
 
   // Observable for map ready state
   private mapReady$ = new BehaviorSubject<boolean>(false);
@@ -116,9 +117,9 @@ export class MapService {
 
     for (let index = 0; index < solution.routes.length; index++) {
       const route = solution.routes[index];
-      const routeColor = this.ROUTE_COLORS[index % this.ROUTE_COLORS.length];
+      const color = routeColor(index);
 
-      await this.displayRoute(route, routeColor);
+      await this.displayRoute(route, color);
     }
 
     // Fit bounds

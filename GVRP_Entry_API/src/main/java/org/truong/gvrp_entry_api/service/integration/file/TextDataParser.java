@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.truong.gvrp_entry_api.dto.request.OrderInputDTO;
 import org.truong.gvrp_entry_api.dto.response.ImportError;
+import org.truong.gvrp_entry_api.service.orders.OrderImportService;
 
 import java.math.BigDecimal;
 import java.time.LocalTime;
@@ -37,11 +38,12 @@ public class TextDataParser implements DataParser {
 
             if (fields.length < 10) {
                 log.warn("Line {}: Missing fields. Found {}, required at least 10.", lineNumber, fields.length);
-                errors.add(ImportError.builder()
-                        .lineNumber(lineNumber)
-                        .errorMessage("Line missing data. Required at least 10 fields, found " + fields.length)
-                        .rawData(line)
-                        .build());
+                errors.add(OrderImportService.buildError(
+                        lineNumber,
+                        null,
+                        null,
+                        "Line missing data. Required at least 10 fields, found " + fields.length,
+                        line));
                 continue;
             }
 
@@ -71,22 +73,21 @@ public class TextDataParser implements DataParser {
                 validOrders.add(dto);
 
             } catch (ParseException e) {
-                errors.add(ImportError.builder()
-                        .lineNumber(lineNumber)
-                        .orderCode(orderCode.isEmpty() ? "UNKNOWN" : orderCode)
-                        .field(e.getField())
-                        .errorMessage(e.getMessage())
-                        .rawData(line)
-                        .build());
+                errors.add(OrderImportService.buildError(
+                        lineNumber,
+                        orderCode.isEmpty() ? "UNKNOWN" : orderCode,
+                        e.getField(),
+                        e.getMessage(),
+                        line));
 
             } catch (Exception e) {
                 log.error("Unexpected error at line {}: {}", lineNumber, e.getMessage());
-                errors.add(ImportError.builder()
-                        .lineNumber(lineNumber)
-                        .orderCode(orderCode)
-                        .errorMessage("Error processing line: " + e.getMessage())
-                        .rawData(line)
-                        .build());
+                errors.add(OrderImportService.buildError(
+                        lineNumber,
+                        orderCode,
+                        null,
+                        "Error processing line: " + e.getMessage(),
+                        line));
             }
         }
 

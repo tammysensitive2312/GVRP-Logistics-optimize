@@ -24,8 +24,38 @@
           (addClick)="onAddClick()"
           (planRoutesClick)="onPlanRoutesClick()"
           (deleteSelectedClick)="onDeleteSelected()"
-          (exportClick)="onExportClick()">
+          (exportClick)="onExportClick()"
+          (bulkEditClick)="onBulkEditStatus()">
         </app-orders-action-toolbar>
+
+        <!-- Bulk result report: compact banner + grouped details -->
+        @if (bulkResult(); as result) {
+          <div class="bulk-report" [class.has-failures]="result.failed.length > 0" role="status">
+            <mat-icon class="bulk-icon">{{ result.failed.length > 0 ? 'warning' : 'check_circle' }}</mat-icon>
+            <span class="bulk-summary">{{ result.updated.length }} updated · {{ result.failed.length }} refused</span>
+            @if (result.failed.length > 0) {
+              <span class="bulk-reasons">{{ bulkGroups().length }} unique reason{{ bulkGroups().length > 1 ? 's' : '' }}</span>
+              <button type="button" class="bulk-toggle" (click)="toggleBulkDetails()">
+                {{ bulkDetailsOpen() ? 'Hide details' : 'View details' }}
+              </button>
+            }
+            <button type="button" class="bulk-dismiss" (click)="clearBulkResult()">Dismiss</button>
+            @if (bulkDetailsOpen() && result.failed.length > 0) {
+              <div class="bulk-details">
+                @for (group of bulkGroups(); track group.reason) {
+                  <details class="bulk-group">
+                    <summary>{{ group.reason }} ({{ group.rows.length }})</summary>
+                    <ul>
+                      @for (row of group.rows; track row.id) {
+                        <li>#{{ row.id }}@if (row.order_code) { ({{ row.order_code }}) }</li>
+                      }
+                    </ul>
+                  </details>
+                }
+              </div>
+            }
+          </div>
+        }
 
         <!-- Filters (Inside Orders Tab) -->
         <app-orders-filters

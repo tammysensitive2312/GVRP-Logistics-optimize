@@ -1,0 +1,112 @@
+@startuml VRP-003_Failure_Callback
+' ============================================
+' VRP-003: Engine failure callback flow (reverse-engineered from source)
+' Engine: OptimizationService.java (optimizeAsync catch), CallbackService.java (sendFailureCallback)
+' Entry:  OptimizationCallbackController.java (onOptimizationFailed),
+'         OptimizationCallbackService.java (handleFailure)
+' Date: 2026-10-06 | Tool: PlantUML (skill architecture-diagrams)
+' ============================================
+
+title VRP-003: Failure Callback - Engine optimization fails -> Entry marks job FAILED
+
+actor "Scheduler\n(@Async thread)" as Worker
+
+box "Engine API" #LightGoldenRodYellow
+    participant "Optimization\nService" as OptSvc
+    participant "Job\nRegistry" as JR
+    participant "Callback\nService" as CBS
+end box
+
+box "Entry API" #LightYellow
+    participant "OptCallback\nController" as CC
+    participant "OptCallback\nService" as CBC
+    participant "Job\nRepository" as JRE
+    participant "Email\nService" as ES
+end box
+
+database "Entry\nDatabase" as DB
+
+autonumber
+
+== Phase 1: Failure detected in Engine ==
+
+Worker -> OptSvc: optimizeAsync(request)\n(background thread)
+activate OptSvc
+OptSvc -> OptSvc: optimize(request, handle)\nthrows Exception e
+OptSvc -> JR: markTerminal(handle, FAILED)
+activate JR
+JR --> OptSvc: job evicted after 30m TTL
+deactivate JR
+
+== Phase 2: Engine notifies Entry (fire-and-forget) ==
+
+OptSvc -> CBS: sendFailureCallback(jobId, e.getMessage())
+activate CBS
+CBS -> CBS: build payload\n{job_id, external_job_id: "engine-"+jobId,\n error_message}
+note right of CBS
+  Headers: X-API-Key + JSON.
+  Unlike sendCompletionCallback,
+  NO ResultSpool.store() here
+  (see CallbackService.java).
+end note
+CBS -> CC: POST /solutions/callbacks/failed\n{job_id, error_message}
+activate CC
+
+== Phase 3: Entry handles failure ==
+
+CC -> CBC: handleFailure(callback)
+activate CBC
+CBC -> JRE: findById(jobId)
+activate JRE
+JRE -> DB: SELECT optimization_jobs
+DB --> JRE: job / null
+JRE --> CBC: Optional<Job>
+
+alt job not found
+    CBC --> CC: throw DataInvalidException\n(RESOURCE_NOT_FOUND)
+    CC --> CBS: 4xx/5xx (callback lost,\nengine only logs it)
+else job found
+    CBC -> CBC: check status == PROCESSING?
+    alt status != PROCESSING (already COMPLETED/FAILED/CANCELLED)
+        CBC --> CC: ignore, return 200 OK
+        CC --> CBS: 200 OK
+    else status == PROCESSING
+        CBC -> JRE: save(job: FAILED,\ncompletedAt=now, errorMessage)
+        activate JRE
+        JRE -> DB: UPDATE optimization_jobs
+        DB --> JRE: ok
+        deactivate JRE
+
+        opt failure email (best-effort)
+            CBC -> ES: sendOptimizationFailureEmail(userId, jobId, error)
+            activate ES
+            ES --> CBC: sent / exception swallowed\n(log warn only)
+            deactivate ES
+        end
+
+        CBC --> CC: done
+        CC --> CBS: 200 OK
+    end
+end
+deactivate CBC
+deactivate CC
+
+alt POST itself fails (5xx / timeout / refused)
+    CBS -> CBS: log error only\n(no spool, no retry)
+    note right of CBS
+      Contrast: completion callback IS
+      spooled + retried by
+      CallbackRetryScheduler (backoff
+      2^attempts min, max 20 attempts);
+      failure callback is NOT.
+      If this POST fails, Entry never
+      learns the failure.
+    end note
+else 200 OK
+    CBS --> OptSvc: failure reported
+end
+deactivate CBS
+OptSvc --> Worker: failedFuture(e)
+deactivate OptSvc
+
+@enduml

@@ -1,0 +1,73 @@
+// Shared table / empty-state rules for admin section pages
+// (vehicle types / vehicles / depots). Moved verbatim from
+// `_admin-content.scss` (ported from V1 styles/screens/admin-settings.css).
+// Requires 'assets/styles/variables' to be imported first (provided by the
+// importing component stylesheet).
+
+.empty-state {
+  text-align: center;
+  padding: 80px 20px;
+
+  .empty-icon {
+    font-size: 64px;
+    margin-bottom: $space-lg;
+    opacity: 0.5;
+  }
+
+  .empty-text {
+    font-size: 18px;
+    font-weight: $font-weight-semibold;
+    color: $text-gray;
+    margin-bottom: $space-sm;
+  }
+
+  .empty-hint {
+    font-size: $font-size-base;
+    color: $text-gray;
+    margin-bottom: $space-xl;
+  }
+}
+
+.loading-message {
+  padding: $space-2xl;
+  text-align: center;
+  color: $text-gray;
+}
+
+.table-responsive {
+  max-height: 65vh;
+  overflow: auto;
+  border: 1px solid $border-color;
+  border-radius: $radius-lg;
+  background: $white;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 800px;
+
+  thead th {
+    position: sticky;
+    top: 0;
+    z-index: $z-base;
+    background-color: #f8f9fa;
+    box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.1);
+    text-align: left;
+    padding: $space-md $space-lg;
+    font-size: $font-size-sm;
+    color: $text-gray;
+    text-transform: uppercase;
+  }
+
+  tbody td {
+    padding: $space-md $space-lg;
+    border-bottom: 1px solid $border-color;
+    font-size: $font-size-base;
+    color: $text-dark;
+  }
+
+  tbody tr:last-child td {
+    border-bottom: none;
+  }
+}

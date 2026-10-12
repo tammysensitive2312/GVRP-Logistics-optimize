@@ -2,9 +2,13 @@ import {inject, Injectable} from '@angular/core';
 import {HttpClient, HttpParams} from '@angular/common/http';
 import {environment} from '@environments/environment';
 import {
+  BulkStatusPayload,
+  BulkStatusResult,
   CustomizeRoutesPayload,
   DepotDTO,
   DepotInputDTO,
+  DriverDTO,
+  DriverRouteDTO,
   EvaluatePreviewDTO,
   FleetDTO,
   FleetInputDTO,
@@ -14,7 +18,10 @@ import {
   OrderFilter,
   OrderInputDTO,
   PaginatedResponse,
+  RevisionDTO,
   RoutePlanningRequest,
+  RouteSendDTO,
+  SendRoutePayload,
   SolutionDTO,
   VehicleDTO,
   VehicleTypeDTO,
@@ -32,10 +39,10 @@ export class ApiService {
 
   getOrders(filters: OrderFilter, page: number = 1, pageSize: number = 20): Observable<PaginatedResponse<OrderDTO>> {
     let params = new HttpParams()
-      .set('date', filters.date)
       .set('page', page.toString())
       .set('size', pageSize.toString());
 
+    if (filters.date) params = params.set('date', filters.date);
     if (filters.status) params = params.set('status', filters.status);
     if (filters.priority) params = params.set('priority', filters.priority);
     if (filters.search) params = params.set('search', filters.search);
@@ -110,6 +117,13 @@ export class ApiService {
     );
   }
 
+  bulkUpdateOrderStatus(payload: BulkStatusPayload): Observable<BulkStatusResult> {
+    return this.http.patch<BulkStatusResult>(
+      `${this.apiUrl}/orders/status`,
+      payload
+    );
+  }
+
   addOrder(createData: OrderInputDTO): Observable<OrderDTO> {
     return this.http.post<OrderDTO>(
       `${this.apiUrl}/orders`,
@@ -143,10 +157,6 @@ export class ApiService {
       })
       .pipe(map(response => (response.status === 204 ? null : response.body)));
   }
-
-  // getJobProgress(jobId: number): Observable<any> {
-  //
-  // }
 
   getJobHistory(limit = 10): Observable<JobDTO[]> {
     const params = new HttpParams().set('limit', limit.toString());
@@ -185,6 +195,35 @@ export class ApiService {
     return this.http.get<{ id: number }>(
       `${this.apiUrl}/solutions/${solutionId}/latest-revision`
     );
+  }
+
+  revisionChain(solutionId: number): Observable<RevisionDTO[]> {
+    return this.http.get<RevisionDTO[]>(
+      `${this.apiUrl}/solutions/${solutionId}/revision-chain`
+    );
+  }
+
+  listDrivers(): Observable<DriverDTO[]> {
+    return this.http.get<DriverDTO[]>(`${this.apiUrl}/drivers`);
+  }
+
+  sendRoute(routeId: number, payload: SendRoutePayload): Observable<RouteSendDTO> {
+    return this.http.post<RouteSendDTO>(
+      `${this.apiUrl}/routes/${routeId}/send`,
+      payload
+    );
+  }
+
+  routeSends(routeId: number): Observable<RouteSendDTO[]> {
+    return this.http.get<RouteSendDTO[]>(`${this.apiUrl}/routes/${routeId}/sends`);
+  }
+
+  myDriverRoutes(): Observable<RouteSendDTO[]> {
+    return this.http.get<RouteSendDTO[]>(`${this.apiUrl}/driver/routes`);
+  }
+
+  driverRouteDetail(sendId: number): Observable<DriverRouteDTO> {
+    return this.http.get<DriverRouteDTO>(`${this.apiUrl}/driver/routes/${sendId}`);
   }
 
 }

@@ -5,6 +5,7 @@ import { AuthService } from '@core/services/auth.service';
 import { SolutionStore } from '@core/services/solution.store';
 import { StorageService } from '@core/services/storage.service';
 import { ToastService } from '@shared/services/toast.service';
+import { extractErrorMessage } from '@shared/utils/http-error.utils';
 
 /**
  * Landing component for the exact "" route (email deep links `?solution=<id>`).
@@ -46,7 +47,7 @@ export class SolutionLinkComponent implements OnInit {
         void this.router.navigate(['/main']);
       },
       error: (error: unknown) => {
-        this.toast.error(extractMessage(error) ?? 'Failed to load solution');
+        this.toast.error(extractErrorMessage(error) ?? 'Failed to load solution');
         void this.router.navigate(['/main']);
       }
     });
@@ -58,12 +59,4 @@ export class SolutionLinkComponent implements OnInit {
     const parsed = Number(raw);
     return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
   }
-}
-
-function extractMessage(error: unknown): string | null {
-  if (typeof error === 'object' && error !== null && 'message' in error) {
-    const message = (error as { message?: unknown }).message;
-    if (typeof message === 'string' && message.trim().length > 0) return message;
-  }
-  return null;
 }

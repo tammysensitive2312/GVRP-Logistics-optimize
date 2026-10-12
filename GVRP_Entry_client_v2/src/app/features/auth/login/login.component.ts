@@ -84,7 +84,12 @@ export class LoginComponent implements OnInit {
           const redirectUrl = this.authService.getRedirectUrl();
           // navigateByUrl (not navigate) so a stored "/?solution=<id>" survives
           // login; identical outcome for plain paths such as "/main".
-          this.router.navigateByUrl(redirectUrl);
+          // Drivers land on their own screen unless already heading somewhere legal.
+          if (this.authService.getRole() === 'DRIVER' && !redirectUrl.startsWith('/driver')) {
+            this.router.navigateByUrl('/driver');
+          } else {
+            this.router.navigateByUrl(redirectUrl);
+          }
         },
         error: (error) => {
           this.toast.error(error.message || 'Login failed!');

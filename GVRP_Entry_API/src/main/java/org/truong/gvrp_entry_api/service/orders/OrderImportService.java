@@ -275,7 +275,7 @@ public class OrderImportService {
     }
 
 
-    private ImportError buildError(Integer lineNumber, String orderCode, String field, String message, String rawData) {
+    public static ImportError buildError(Integer lineNumber, String orderCode, String field, String message, String rawData) {
         return ImportError.builder()
                 .lineNumber(lineNumber)
                 .orderCode(orderCode)

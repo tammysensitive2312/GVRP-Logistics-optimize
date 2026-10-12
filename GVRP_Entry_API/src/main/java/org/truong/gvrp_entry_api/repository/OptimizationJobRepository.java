@@ -8,28 +8,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
-import java.util.Optional;
 
 public interface OptimizationJobRepository extends JpaRepository<OptimizationJob, Long> {
-
-    /**
-     * Find current running job for branch
-     * @param branchId Branch ID
-     * @param status Job status (PROCESSING)
-     * @return Optional OptimizationJob
-     */
-    Optional<OptimizationJob> findFirstByBranchIdAndStatusOrderByCreatedAtDesc(
-            Long branchId,
-            OptimizationJobStatus status
-    );
-
-    /**
-     * Check if branch has running job
-     * @param branchId Branch ID
-     * @param status Job status (PROCESSING)
-     * @return true if exists
-     */
-    boolean existsByBranchIdAndStatus(Long branchId, OptimizationJobStatus status);
 
     /**
      * Find job history (paginated)
@@ -38,22 +18,23 @@ public interface OptimizationJobRepository extends JpaRepository<OptimizationJob
      * @return List of jobs
      */
     @Query("""
-        SELECT j FROM OptimizationJob j
+        SELECT j.id AS id, j.branch.id AS branchId,
+               u.id AS userId, u.fullName AS userName,
+               j.status AS status, j.externalJobId AS externalJobId,
+               j.estimatedDurationMinutes AS estimatedDurationMinutes,
+               j.errorMessage AS errorMessage, j.createdAt AS createdAt,
+               j.completedAt AS completedAt, j.cancelledAt AS cancelledAt,
+               s.id AS solutionId
+        FROM OptimizationJob j
+        LEFT JOIN j.createdBy u
+        LEFT JOIN j.solution s
         WHERE j.branch.id = :branchId
         ORDER BY j.createdAt DESC
         """)
-    List<OptimizationJob> findJobHistory(
+    List<JobHistoryView> findJobHistory(
             @Param("branchId") Long branchId,
             Pageable pageable
     );
-
-    /**
-     * Find jobs by status
-     * @param branchId Branch ID
-     * @param status Job status
-     * @return List of jobs
-     */
-    List<OptimizationJob> findByBranchIdAndStatus(Long branchId, OptimizationJobStatus status);
 
     /**
      * Count jobs by branch and status

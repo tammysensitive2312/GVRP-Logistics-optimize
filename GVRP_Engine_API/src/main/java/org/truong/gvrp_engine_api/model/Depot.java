@@ -1,6 +1,5 @@
 package org.truong.gvrp_engine_api.model;
 
-import jakarta.websocket.server.ServerEndpoint;
 import lombok.*;
 
 @Getter

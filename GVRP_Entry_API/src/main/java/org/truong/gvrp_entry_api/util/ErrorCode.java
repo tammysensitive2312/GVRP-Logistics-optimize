@@ -16,6 +16,9 @@ public enum ErrorCode {
     // 401
     INCORRECT_LOGIN_INFORMATION("0040101", "Incorrect login information."),
 
+    // 403
+    FORBIDDEN("0040301", "Access forbidden."),
+
     // 404
     RESOURCE_NOT_FOUND("0040402", "Resource not found."),
 

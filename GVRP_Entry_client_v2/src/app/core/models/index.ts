@@ -5,5 +5,6 @@ export * from './depot.model';
 export * from './order.model';
 export * from './vehicle.model';
 export * from './solution.model';
+export * from './driver.model';
 export * from './job.model';
 export * from './stats.model'

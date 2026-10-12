@@ -13,6 +13,7 @@ export interface StopDTO {
 }
 
 export interface RouteDTO {
+  id?: number;
   vehicle_id: number;
   vehicle_license_plate: string;
   start_time: string;

@@ -231,8 +231,9 @@ public class OptimizationJobService {
     @Transactional(readOnly = true)
     public List<OptimizationJobDTO> getJobHistory(Long branchId, int limit) {
         Pageable pageable = PageRequest.of(0, limit);
-        List<OptimizationJob> jobs = jobRepository.findJobHistory(branchId, pageable);
-        return jobMapper.toDTOList(jobs);
+        return jobRepository.findJobHistory(branchId, pageable).stream()
+                .map(jobMapper::fromHistory)
+                .collect(Collectors.toList());
     }
 
     /**
