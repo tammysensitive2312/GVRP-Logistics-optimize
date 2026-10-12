@@ -15,4 +15,7 @@ public interface RouteSendRepository extends JpaRepository<RouteSend, Long> {
     List<RouteSend> findByDriverIdAndStatusOrderBySentAtDescIdDesc(Long driverId, SendStatus status);
 
     List<RouteSend> findByRouteIdAndStatusOrderBySentAtDescIdDesc(Long routeId, SendStatus status);
+
+    /** Sends pinning a solution (RESTRICT FK) — must go before the solution. */
+    List<RouteSend> findBySolutionId(Long solutionId);
 }

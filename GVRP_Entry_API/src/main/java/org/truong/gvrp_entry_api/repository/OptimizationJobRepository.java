@@ -43,4 +43,23 @@ public interface OptimizationJobRepository extends JpaRepository<OptimizationJob
      * @return Count
      */
     Long countByBranchIdAndStatus(Long branchId, OptimizationJobStatus status);
+
+    /**
+     * IDs of terminal jobs older than the cutoff, oldest first.
+     * Only CANCELLED/FAILED/COMPLETED are ever passed in — PENDING and
+     * PROCESSING must never be swept (a live job looks old while solving).
+     */
+    @Query("""
+        SELECT j.id FROM OptimizationJob j
+        WHERE j.status = :status AND j.createdAt < :cutoff
+        ORDER BY j.id
+        """)
+    List<Long> findExpiredIds(
+            @Param("status") OptimizationJobStatus status,
+            @Param("cutoff") java.time.LocalDateTime cutoff,
+            Pageable pageable
+    );
+
+    long countByStatusAndCreatedAtBefore(
+            OptimizationJobStatus status, java.time.LocalDateTime cutoff);
 }

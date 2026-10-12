@@ -170,6 +170,58 @@ public class ResultSpool {
     }
 
     /**
+     * Dọn payload hết hạn giữ trong {@code sent/} và {@code poison/}.
+     *
+     * <p>Tuổi tính theo mtime của file payload (lúc ghi ≈ lúc job kết thúc).
+     * Mỗi payload đi kèm đúng một file meta cùng tên — xóa cả hai.
+     * {@code pending/} KHÔNG BAO GIỜ bị đụng: nó thuộc về retry scheduler,
+     * xóa nhầm là mất kết quả chưa giao.
+     *
+     * <p>Không ném exception: scheduler dọn rác phải sống sót qua file lẻ.
+     *
+     * @return số payload đã xóa (đếm theo file {@code .json.gz}).
+     */
+    public int sweepDelivered(java.time.Duration sentRetention,
+                              java.time.Duration poisonRetention) {
+        int removed = sweepDir(sentDir, sentRetention, "sent");
+        removed += sweepDir(poisonDir, poisonRetention, "poison");
+        return removed;
+    }
+
+    private int sweepDir(Path dir, java.time.Duration retention, String label) {
+        Instant cutoff = Instant.now().minus(retention);
+        int removed = 0;
+        List<Path> payloads;
+        try (var stream = Files.list(dir)) {
+            payloads = stream
+                    .filter(p -> p.getFileName().toString().endsWith(".json.gz"))
+                    .toList();
+        } catch (Exception e) {
+            log.error("❌ Không liệt kê được {} để dọn: {}", dir, e.getMessage());
+            return 0;
+        }
+        for (Path payload : payloads) {
+            try {
+                Instant modified = Files.getLastModifiedTime(payload).toInstant();
+                if (modified.isAfter(cutoff)) {
+                    continue;
+                }
+                String base = payload.getFileName().toString();
+                String stem = base.substring(0, base.length() - ".json.gz".length());
+                Files.deleteIfExists(payload);
+                Files.deleteIfExists(dir.resolve(stem + ".meta.json"));
+                removed++;
+            } catch (Exception e) {
+                log.warn("⚠️ Không xóa được {}: {}", payload, e.getMessage());
+            }
+        }
+        if (removed > 0) {
+            log.info("🧹 Đã dọn {} payload quá hạn trong {}/", removed, label);
+        }
+        return removed;
+    }
+
+    /**
      * Tăng bộ đếm lần thử.
      *
      * <p>Chỉ ghi meta khi payload thực sự còn nằm trong {@code pending/}. Endpoint

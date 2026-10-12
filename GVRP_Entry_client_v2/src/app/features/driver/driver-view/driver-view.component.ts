@@ -1,10 +1,10 @@
-import { AfterViewChecked, Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
+import { AfterViewChecked, Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import * as L from 'leaflet';
 import 'leaflet-polylinedecorator';
 
-import { DriverRouteDTO, RouteSendDTO } from '@core/models';
+import { DriverRouteDTO, DriverStopDTO, RouteSendDTO } from '@core/models';
 import { ApiService } from '@core/services/api.service';
 import { AuthService } from '@core/services/auth.service';
 import { ManeuverStep, RoutingService, formatLegDistance } from '@shared/services/routing.service';
@@ -46,6 +46,21 @@ export class DriverViewComponent implements OnInit, OnDestroy, AfterViewChecked 
   readonly following = signal(false);
   readonly followGate = signal<'none' | 'prompt' | 'help'>('none');
 
+  /**
+   * Progressive disclosure (Google-Maps style): the full maneuver list and
+   * the full stop list stay collapsed behind one tap each; only the next
+   * step / next stop shows up front. Verified live: 23 maneuvers dumped at
+   * once buried the stop list on a real route.
+   */
+  readonly guidanceOpen = signal(false);
+  readonly stopsOpen = signal(false);
+
+  /** First delivery stop (depots skipped); null when there are no stops. */
+  readonly nextStop = computed<DriverStopDTO | null>(() => {
+    const stops = this.selected()?.stops ?? [];
+    return stops.find(stop => stop.type !== 'DEPOT') ?? stops[0] ?? null;
+  });
+
   ngOnInit(): void {
     this.api.myDriverRoutes().subscribe({
       next: sends => {
@@ -67,6 +82,8 @@ export class DriverViewComponent implements OnInit, OnDestroy, AfterViewChecked 
     this.detailError.set(null);
     this.mappedSendId = null;
     this.maneuvers.set([]);
+    this.guidanceOpen.set(false);
+    this.stopsOpen.set(false);
     this.api.driverRouteDetail(send.id).subscribe({
       next: detail => this.selected.set(detail),
       error: () => this.detailError.set('Could not load route detail.')
@@ -78,6 +95,8 @@ export class DriverViewComponent implements OnInit, OnDestroy, AfterViewChecked 
     this.destroyMap();
     this.mappedSendId = null;
     this.maneuvers.set([]);
+    this.guidanceOpen.set(false);
+    this.stopsOpen.set(false);
     this.following.set(false);
     this.followGate.set('none');
     this.selected.set(null);
@@ -122,6 +141,14 @@ export class DriverViewComponent implements OnInit, OnDestroy, AfterViewChecked 
 
   dismissGate(): void {
     this.followGate.set('none');
+  }
+
+  toggleGuidance(): void {
+    this.guidanceOpen.update(open => !open);
+  }
+
+  toggleStops(): void {
+    this.stopsOpen.update(open => !open);
   }
 
   private async requestFollowPermission(): Promise<void> {

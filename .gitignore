@@ -85,3 +85,5 @@ GVRP_Benchmark/datasets/vn6183/data.sql
 GVRP_Benchmark/scripts/00_env.bat
 
 .agents
+
+work-items

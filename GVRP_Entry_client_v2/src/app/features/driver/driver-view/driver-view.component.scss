@@ -123,6 +123,76 @@
   gap: 0.25rem;
 }
 
+// Expanded step list scrolls internally so it never buries the stops.
+.guide-scroll {
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.guide-head,
+.stops-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.guide-head h4,
+.stops-head h4 {
+  margin: 0.5rem 0;
+}
+
+.btn-toggle {
+  padding: 0.25rem 0.6rem;
+  border: 1px solid #4a90e2;
+  border-radius: 4px;
+  background: #fff;
+  color: #4a90e2;
+  font-size: 0.8rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+// Google-Maps-style next-step card: one glanceable instruction.
+.guide-current {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem;
+  background: #e3f2fd;
+  border-radius: 8px;
+  padding: 0.6rem 0.75rem;
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+}
+
+.guide-next,
+.next-label {
+  font-size: 0.7rem;
+  font-weight: bold;
+  text-transform: uppercase;
+  color: #1976d2;
+  letter-spacing: 0.04em;
+}
+
+.guide-count {
+  flex-basis: 100%;
+  font-size: 0.75rem;
+  color: #666;
+}
+
+// Next-stop preview card above the collapsed stop list.
+.next-stop {
+  background: #f5f9ff;
+  border: 1px solid #bbdefb;
+  border-radius: 8px;
+  padding: 0.6rem 0.75rem;
+  margin-bottom: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
 .driver-dist {
   color: #666;
 }

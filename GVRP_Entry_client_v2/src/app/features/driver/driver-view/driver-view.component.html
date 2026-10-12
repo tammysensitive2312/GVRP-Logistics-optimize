@@ -74,19 +74,9 @@
           </p>
         </div>
         <div class="driver-side-col">
-          @if (maneuvers().length > 0) {
-            <section aria-label="Route guidance">
-              <h4>🧭 Route guidance</h4>
-              <ol class="driver-maneuvers">
-                @for (step of maneuvers(); track $index) {
-                  <li>{{ step.instruction }} <span class="driver-dist">({{ formatLegDistance(step.distanceM) }})</span></li>
-                }
-              </ol>
-            </section>
-          }
-          <ol class="driver-stops">
-        @for (stop of selected()!.stops; track $index) {
-          <li class="driver-stop">
+          <!-- Shared stop card: next-stop preview and full-list rows render
+               the same markup from one template. -->
+          <ng-template #stopItem let-stop>
             <strong>{{ stop.location_name }}</strong>
             @if (stop.type !== 'DEPOT') {
               <span class="driver-badge">Order</span>
@@ -104,9 +94,53 @@
                   [attr.aria-label]="'Navigate to ' + stop.location_name">Navigate</a></span>
               }
             </div>
-          </li>
-        }
-      </ol>
+          </ng-template>
+          @if (maneuvers().length > 0) {
+            <section aria-label="Route guidance">
+              <div class="guide-head">
+                <h4>🧭 Route guidance</h4>
+                <button type="button" class="btn-toggle" (click)="toggleGuidance()">
+                  {{ guidanceOpen() ? 'Hide steps' : 'All ' + maneuvers().length + ' steps' }}
+                </button>
+              </div>
+              <div class="guide-current">
+                <span class="guide-next">Next</span>
+                <strong>{{ maneuvers()[0].instruction }}</strong>
+                <span class="driver-dist">({{ formatLegDistance(maneuvers()[0].distanceM) }})</span>
+                <span class="guide-count">Step 1 of {{ maneuvers().length }}</span>
+              </div>
+              @if (guidanceOpen()) {
+                <ol class="driver-maneuvers guide-scroll">
+                  @for (step of maneuvers(); track $index) {
+                    <li>{{ step.instruction }} <span class="driver-dist">({{ formatLegDistance(step.distanceM) }})</span></li>
+                  }
+                </ol>
+              }
+            </section>
+          }
+          <section aria-label="Stops">
+            <div class="stops-head">
+              <h4>🛑 Stops ({{ selected()!.stops.length }})</h4>
+              <button type="button" class="btn-toggle" (click)="toggleStops()">
+                {{ stopsOpen() ? 'Hide all' : 'Show all' }}
+              </button>
+            </div>
+            @if (nextStop(); as next) {
+              <div class="next-stop">
+                <span class="next-label">Next stop</span>
+                <ng-container *ngTemplateOutlet="stopItem; context: {$implicit: next}"></ng-container>
+              </div>
+            }
+            @if (stopsOpen()) {
+              <ol class="driver-stops">
+                @for (stop of selected()!.stops; track $index) {
+                  <li class="driver-stop">
+                    <ng-container *ngTemplateOutlet="stopItem; context: {$implicit: stop}"></ng-container>
+                  </li>
+                }
+              </ol>
+            }
+          </section>
         </div>
       </div>
     }

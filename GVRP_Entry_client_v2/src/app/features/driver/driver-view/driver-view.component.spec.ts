@@ -179,7 +179,7 @@ describe('DriverViewComponent', () => {
       expect(fixture.nativeElement.textContent).not.toContain('T09:00:00');
     });
 
-    it('lists maneuver guidance when legs resolve', () => {
+    it('shows the next step up front and the full list on toggle', () => {
       routing.getRouteLegs.and.returnValue(of([{
         summary: 'A-B', distanceKm: 1.2, durationMin: 5,
         steps: [
@@ -192,10 +192,46 @@ describe('DriverViewComponent', () => {
       fixture.detectChanges();
 
       expect(component.maneuvers().length).toBe(1);
+      // Next-step card visible; full list collapsed.
+      expect(fixture.nativeElement.querySelector('.guide-current').textContent)
+        .toContain('Turn right onto Pho Hue');
+      expect(fixture.nativeElement.querySelector('.driver-maneuvers')).toBeNull();
+
+      component.toggleGuidance();
+      fixture.detectChanges();
+
       expect(fixture.nativeElement.querySelector('.driver-maneuvers').textContent)
         .toContain('Turn right onto Pho Hue');
       expect(fixture.nativeElement.querySelector('.driver-maneuvers').textContent)
         .not.toContain('Head out');
+    });
+
+    it('collapses the stop list behind a next-stop preview', () => {
+      const text: string = fixture.nativeElement.textContent;
+
+      // Next-stop card shows the delivery stop up front.
+      expect(fixture.nativeElement.querySelector('.next-stop').textContent)
+        .toContain('Khach');
+      expect(fixture.nativeElement.querySelector('.next-stop').textContent)
+        .toContain('0902');
+      // Full list hidden until expanded.
+      expect(fixture.nativeElement.querySelector('.driver-stops')).toBeNull();
+
+      component.toggleStops();
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelector('.driver-stops').textContent)
+        .toContain('Goi truoc');
+      expect(text).toContain('Khach');
+    });
+
+    it('resets disclosure state when reopening', () => {
+      component.toggleGuidance();
+      component.toggleStops();
+      component.backToList();
+
+      expect(component.guidanceOpen()).toBeFalse();
+      expect(component.stopsOpen()).toBeFalse();
     });
 
     it('hides guidance when legs fail', () => {
