@@ -66,7 +66,7 @@ Dùng thống nhất trong toàn tài liệu.
 | $H_{\max}$ | thời lượng ca tối đa của một xe (`max_duration`) | **giờ** | 10 |
 | $Q$ | dung tích xe | kg | 5 000 |
 | $e$ | hệ số phát thải | g CO₂/km | **180** (giá trị engine đang dùng — xem 7.2) |
-| $P_{CO_2}$ | giá carbon (`CARBON_PRICE_PER_KG`) | VND/kg | 100 000 (**số giả**) |
+| $P_{CO_2}$ | giá carbon (`CARBON_PRICE_PER_TON`, chốt 2026-10-13) | VND/tấn | 150 000 |
 | $f$ | chi phí cố định mỗi chuyến (`fixed_cost`) | VND | 100 000 |
 | $\ell(i)$ | chỉ số **cục bộ** của điểm $i$ trong cụm của nó, $\ell(i) \in [0, S_c)$ | — | — |
 | $\alpha$ | tỉ lệ heap được phép dùng cho ma trận | — | 0.6 |
@@ -775,8 +775,10 @@ làm $e$ phụ thuộc **loại xe** (đội xe pha trộn diesel + điện), ho
 
 *Ghi chú:* giá trị 180 g/km xuất hiện ở mọi loại xe là hardcode
 `VehicleFeaturesDTO.defaultFeatures()` (PETROL_CAR) phía Entry — tức JSON `vehicle_features`
-đang không tới được engine. Còn `CARBON_PRICE_PER_KG = 100 000` và `emission_factor = 12.3`
-đều là **số giả** đặt tạm khi chưa có giá thật; đừng suy luận gì từ giá trị của chúng.
+đang không tới được engine. Giá carbon đã chốt 150 000 VND/tấn
+(`CARBON_PRICE_PER_TON`, quyết định 2026-10-13; log thời giá cũ suy ra
+100 000 VND/kg — xem KI-030). Còn `emission_factor = 12.3` là **số giả**
+đặt tạm khi chưa có giá trị thật; đừng suy luận gì từ nó.
 
 ### 7.3. Weights nhân bất đối xứng
 
@@ -784,22 +786,22 @@ làm $e$ phụ thuộc **loại xe** (đội xe pha trộn diesel + điện), ho
 $w_c$, nhưng `distance` với **cả hai** $w_c$ và $w_{co2}$. Hệ quả đo được qua **break-even
 detour** — đường vòng dài nhất mà solver còn chấp nhận thay vì mở một xe mới:
 
-$$\text{break-even} = \frac{f \cdot w_c}{p_{\text{dist}}}, \qquad p_{\text{dist}} = \underbrace{\frac{c^{km}}{1000} w_c}_{\text{nhiên liệu}} + \underbrace{\frac{e}{10^6} P_{CO_2} w_{co2}}_{\text{CO}_2}$$
+$$\text{break-even} = \frac{f \cdot w_c}{p_{\text{dist}}}, \qquad p_{\text{dist}} = \underbrace{\frac{c^{km}}{1000} w_c}_{\text{nhiên liệu}} + \underbrace{\frac{e}{10^9} P_{CO_2} w_{co2}}_{\text{CO}_2}$$
 
 **Ý nghĩa:** tử số là chi phí mở xe mới (đã nhân weight); mẫu số là chi phí mỗi mét. Chia
 ra được "bao nhiêu mét đường vòng thì đắt bằng một xe mới".
 
 **Thay số cho mẫu số — và đây là chỗ PHẢI khai báo giá trị $e$:**
 
-$$\frac{c^{km}}{1000} = \frac{8\,000}{1\,000} = 8.00 \text{ VND/m}, \qquad \frac{e}{10^6} P_{CO_2} = \frac{180}{10^6} \times 100\,000 = 18.00 \text{ VND/m}$$
+$$\frac{c^{km}}{1000} = \frac{8\,000}{1\,000} = 8.00 \text{ VND/m}, \qquad \frac{e}{10^9} P_{CO_2} = \frac{180}{10^9} \times 150\,000 = 0.027 \text{ VND/m}$$
 
-$$\Rightarrow p_{\text{dist}}(0.7,\, 0.3) = 8.00 \times 0.7 + 18.00 \times 0.3 = 5.6 + 5.4 = 11.00 \text{ VND/m}$$
+$$\Rightarrow p_{\text{dist}}(0.7,\, 0.3) = 8.00 \times 0.7 + 0.027 \times 0.3 = 5.6 + 0.0081 = 5.61 \text{ VND/m}$$
 
 > ⚠️ **$e = 180$ g/km, KHÔNG phải 12.3 của DB.** Toàn bộ bảng dưới đây đứng trên $e = 180$,
 > vì đó là giá trị **engine thực sự dùng** (kiểm được: log cho CO₂/km $= 0.180$ ở cả bốn
-> job). Nếu dùng $e = 12.3$ như DB ghi thì số hạng CO₂ chỉ còn 1.23 VND/m, $p_{\text{dist}}$
-> thành 5.97, và **cả bảng đổi khoảng 8×** (ECO_FOCUSED break-even thành 8.1 m thay vì
-> 0.56 m; biến động 1 540× thay vì 22 500×).
+> job). Nếu dùng $e = 12.3$ như DB ghi thì số hạng CO₂ chỉ còn 0.0018 VND/m, $p_{\text{dist}}$
+> thành 5.60, và **cả bảng đổi nhẹ** (ECO_FOCUSED break-even thành 3 781 m thay vì
+> 359.7 m; biến động 3.3× thay vì 35×).
 >
 > `GVRP_Benchmark/OBJECTIVE_FUNCTION.md` mục 6 tính với $e = 12.3$ nên **ra số khác tài liệu
 > này**. Không tài liệu nào sai công thức — chúng khai $e$ khác nhau. Tài liệu đó soạn trước
@@ -812,12 +814,17 @@ $$\Rightarrow p_{\text{dist}}(0.7,\, 0.3) = 8.00 \times 0.7 + 18.00 \times 0.3 =
 | Preset | $p_{\text{dist}}$ (VND/m) | $f \cdot w_c$ | break-even |
 |---|---|---|---|
 | COST_FOCUSED (1, 0) | 8.00 | 100 000 | 12 500 m |
-| mặc định (0.7, 0.3) | 11.00 | 70 000 | 6 364 m |
-| BALANCED (0.5, 0.5) | 13.00 | 50 000 | 3 846 m |
-| ECO_FOCUSED (1e−4, 1) | 18.00 | 10 | **0.56 m** |
+| mặc định (0.7, 0.3) | 5.61 | 70 000 | 12 482 m |
+| BALANCED (0.5, 0.5) | 4.01 | 50 000 | 12 458 m |
+| ECO_FOCUSED (1e−4, 1) | 0.028 | 10 | 359.7 m |
 
-Biến động **22 500×**. Ở ECO_FOCUSED, solver mở một xe mới để tiết kiệm **nửa mét** — nghiệm
-suy biến thành một đơn/xe. Đây là lỗi cấu trúc, không phải lựa chọn tham số.
+Bảng trên ứng với giá carbon chốt 150 000 VND/tấn (quyết định 2026-10-13).
+Thời giá cũ cho 11.00 / 13.00 / 18.00 VND/m và break-even 6 364 / 3 846 /
+**0.56 m**.
+
+Biến động **≈35×** giữa COST_FOCUSED và ECO_FOCUSED. Ở giá mới, ECO mở xe
+mới ở 359.7 m — hết suy biến 1 đơn/xe thời giá cũ, nhưng khiếm khuyết bất
+đối xứng (fixed/time chỉ nhân $w_c$) thì vẫn còn trong code.
 
 ### 7.4. `fixed_cost = 100 000` VND/chuyến quá rẻ
 

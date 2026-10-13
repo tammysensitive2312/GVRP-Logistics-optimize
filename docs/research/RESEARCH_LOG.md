@@ -463,3 +463,11 @@ Review: ACCEPTED_WITH_LIMITATIONS (SUPPORTED_BY_STATIC_TRACE); corrections appli
 Contradiction (test-executed, blocks nothing yet decides nothing): MeasuredLawsTest 25 run / 4 failures pin price 100000 + break-even tables vs current 150000; production logs imply ~100000. Recorded as KI-030 (OPEN, STRONG). Null-emissionFactor NPE path recorded as KI-031 (SUSPECTED). Neither fixed here — price is a business decision.
 Promoted: STATE-CARBON-001 to PARTIALLY_VERIFIED (STRONG, static plumbing scope) at 0ca992f.
 Next: VQ-003/VQ-004 carbon equation + independence experiment (needs the KI-030 price decision first, or explicitly under current 150000).
+
+## 2026-10-13 — KI-030 resolved: carbon price decided 150000 VND/ton, pinned laws re-baselined
+
+Decision (user): correct price is 150000/ton; NPE fix deferred (KI-031 stays SUSPECTED).
+Change (one deliberate change, not silent edits): break-even pins 12482/12458/359.7 + swing threshold >10 (was 6364/3846/0.556 + >10000); historical-log price assertion pinned to old-era 100000 VND/kg with era comment (logs not edited); constant pin to 150000 with update procedure in message.
+Docs synced: CLAUDE.md table + asymmetry note + price note; ENGINE_V1_TO_V2.md symbol row + worked example + e=12.3 variant (3781 m, 3.3x); RUNBOOK.md row; OBJECTIVE_FUNCTION.md audit paragraph.
+Notable consequence: ECO break-even moved 0.56 m -> 359.7 m, so the 1-order-per-vehicle degeneracy is gone at current price; the weight-asymmetry defect itself remains in code.
+Verify: MeasuredLawsTest 25/25 green. KI-030 -> FIXED (STRONG).

@@ -92,7 +92,7 @@ Tới khi hoàn thành Bước 4 của checklist, các tham số sau vẫn **har
 |---|---|
 | `CLUSTER_TARGET_SIZE` (150) | `utils/AppConstant.java` |
 | `CLUSTER_FIRST_ORDER_THRESHOLD` (1000) | `utils/AppConstant.java` |
-| `CARBON_PRICE_PER_KG` (100000) | `utils/AppConstant.java` |
+| `CARBON_PRICE_PER_TON` (150000) | `utils/AppConstant.java` |
 | `DEMAND_SCALE` (10) | `utils/AppConstant.java` |
 | `FAST_REGRET`, `CONSTRUCTION` | `service/OptimizationService.java:617–618` |
 | iterations default (2000), threads default (**1**) | `service/OptimizationService.java:611–612` |

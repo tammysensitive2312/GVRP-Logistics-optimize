@@ -45,11 +45,13 @@ The current behavior is anchored to these execution-path files:
 
 Focused Engine verification executed on 2026-09-09 covered 90 tests for measured laws,
 matrix representation, maximum-distance constraints, skill mapping, clustering, metrics, and
-the timeout regression. Result: **86 passed and 4 failed**. All four failures are in
-`MeasuredLawsTest` and encode stale expectations: the former carbon price, former break-even
-value, a historical result produced with the old emission fallback, and the former expected
-weight asymmetry. These failures do not invalidate the source inspection below, but they mean
-the full selected suite is not green at this revision.
+the timeout regression. Result: **86 passed and 4 failed**. All four failures were in
+`MeasuredLawsTest` and encoded stale expectations from the former carbon price era.
+
+On 2026-10-13 the carbon price was decided at 150000 VND/ton and the four pinned
+expectations were re-baselined together (break-even table, swing threshold, historical-log
+era marker, constant pin) plus the stale price references in CLAUDE.md, ENGINE_V1_TO_V2.md
+and RUNBOOK.md — see KI-030. `MeasuredLawsTest` is 25/25 green at that revision.
 
 No live database query, end-to-end HTTP optimization run, calibrated emissions experiment, or
 controlled solver benchmark was performed as part of this audit. Claims that require those

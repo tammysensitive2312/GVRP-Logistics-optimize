@@ -276,11 +276,14 @@ Khi benchmark, phải nói rõ đang so cái nào. Ba khiếm khuyết cấu tr�
   | preset | dist (VND/m) | fixed | break-even |
   |---|---|---|---|
   | COST_FOCUSED (1, 0) | 8.00 | 100 000 | 12 500 m |
-  | mặc định (0.7, 0.3) | 11.00 | 70 000 | 6 364 m |
-  | BALANCED (0.5, 0.5) | 13.00 | 50 000 | 3 846 m |
-  | ECO_FOCUSED (1e-4, 1) | 18.00 | 10 | **0.56 m** |
+  | mặc định (0.7, 0.3) | 5.61 | 70 000 | 12 482 m |
+  | BALANCED (0.5, 0.5) | 4.01 | 50 000 | 12 458 m |
+  | ECO_FOCUSED (1e-4, 1) | 0.028 | 10 | 359.7 m |
 
-  ECO_FOCUSED/PURE_ECO sinh nghiệm suy biến 1 đơn/xe. Có log cảnh báo khi break-even < 500 m.
+  Bảng trên ứng với giá carbon chốt 150 000 VND/tấn (quyết định 2026-10-13;
+  xem `MeasuredLawsTest`). Thời giá cũ cho 6 364 / 3 846 / **0.56 m**.
+  Ở giá mới, ECO_FOCUSED không còn suy biến 1 đơn/xe (359.7 m > ngưỡng
+  cảnh báo 500 m); khiếm khuyết bất đối xứng weights thì vẫn còn.
 - **`fixed_cost = 100 000` VND/chuyến quá rẻ** — chỉ tương đương 12.5 km xăng, trong khi
   quãng đường/order thực tế là 2.6–9.4 km. Phân mảnh fleet do đó *một phần* là nghiệm kinh
   tế đúng của mô hình. Thực tế xe 5T (tài xế + khấu hao) nên cỡ 500k–1M.
@@ -292,9 +295,12 @@ Log cho **180.0 g/km cố định ở mọi job và mọi loại xe** — đúng
 capacity của `init.sql` cho `DIESEL_TRUCK = 280`. Tức JSON `vehicle_features` đang bị bỏ
 qua và mọi xe tải 5T bị tính CO2 như xe con.
 
-Lưu ý: cả `CARBON_PRICE_PER_KG = 100 000` và `emission_factor = 12.3` đều là **số giả** do
-người dùng đặt tạm khi chưa có giá thật. Đừng suy luận gì từ giá trị của chúng — nhưng
-việc *cùng một giá trị 180 xuất hiện ở mọi loại xe* thì vẫn là bug thật.
+Lưu ý: `emission_factor = 12.3` trong DB từng là **số giả** do người dùng đặt tạm.
+Giá carbon đã chốt 150 000 VND/tấn (`CARBON_PRICE_PER_TON`, quyết định
+2026-10-13; log thời giá cũ suy ra 100 000 VND/kg — xem KI-030). Đừng suy
+luận gì từ giá trị cũ — nhưng việc *cùng một giá trị 180 xuất hiện ở mọi
+loại xe* thì vẫn là bug thật (defaultFeatures hardcode — chờ VQ-004 xác minh
+giá trị hiệu dụng).
 
 ### Bug định dạng thời gian: `toMinutesPart()` ăn mất giờ
 
@@ -499,4 +505,4 @@ Dấu hiệu engine chạy đúng trong log:
 2. `Transport costs adapter ready` rồi **ngay sau đó** `GREEN VRP built` — dừng lâu giữa hai
    dòng này nghĩa là adapter đang bị bỏ qua ở đâu đó.
 3. `Cost weight: X, CO2 weight: Y` — luôn ghi lại dòng này khi so sánh hai job, vì thay đổi
-   weights làm break-even detour biến động 20 000× (xem bảng preset ở trên).
+   weights làm break-even detour biến động ~35× ở giá carbon hiện tại (xem bảng preset ở trên).

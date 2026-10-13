@@ -2078,7 +2078,7 @@ historical_claim: >
   pinned laws, or the laws encode the intended economics and the
   constant drifted.
 
-status: OPEN
+status: FIXED
 
 evidence_strength: STRONG
 
@@ -2087,7 +2087,7 @@ first_observed:
   date: 2026-10-13
 
 last_verified:
-  revision: "0ca992f"
+  revision: null
   date: 2026-10-13
 
 evidence:
@@ -2095,12 +2095,12 @@ evidence:
     - "GVRP_Engine_API/.../utils/AppConstant.java:14"
     - "GVRP_Engine_API/.../service/GreenVRPCostCalculator.java:108-116"
   tests:
-    - "MeasuredLawsTest (25 run, 4 failures 2026-10-13)"
+    - "MeasuredLawsTest 25/25 green 2026-10-13 after re-baseline"
   experiments: []
   runtime: []
   issues: []
   documentation:
-    - "GVRP_Document/ENGINE_V1_TO_V2.md and CLAUDE.md cite CARBON_PRICE_PER_KG 100000"
+    - "CLAUDE.md break-even table, ENGINE_V1_TO_V2.md price row + worked example, RUNBOOK.md row"
 
 scope:
   modules:
@@ -2124,10 +2124,10 @@ root_cause: >
   differ across eras (PER_KG vs PER_TON) and must be reconciled, not assumed.
 
 mitigation_or_fix: >
-  Decide the correct price AND unit explicitly, then update the constant,
-  the 4 pinned tests, and the stale docs together in one change. Do not
-  edit only the tests to match the code, nor only the code to match the
-  tests, without that decision.
+  Price decided at 150000 VND/ton (2026-10-13); the 4 pinned tests,
+  the break-even tables, and the stale price references were re-baselined
+  together in one change, and MeasuredLawsTest is green. Historical logs
+  remain old-era by design (pinned as era marker, not edited).
 
 regression_protection:
   tests:

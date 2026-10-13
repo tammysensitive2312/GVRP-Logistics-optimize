@@ -148,8 +148,13 @@ class MeasuredLawsTest {
                     "job " + j.id() + ": CO2/km phải là 0.180 = emissionFactor 180 g/km. "
                             + "180.0 là hardcode VehicleFeaturesDTO.defaultFeatures() (PETROL_CAR), "
                             + "KHÔNG phải giá trị DB (12.3) hay DIESEL_TRUCK (280) — bug đã biết.");
-            assertEquals(AppConstant.CARBON_PRICE_PER_TON, j.co2CostVnd() / j.co2Kg(), 1.0,
-                    "job " + j.id() + ": giá carbon suy ra phải khớp AppConstant");
+            // JOBS là log thời giá cũ (suy ra đúng 100000 VND/kg). Giá hiện tại
+            // 150000 VND/tấn (=150 VND/kg) nên KHÔNG khớp log cũ — đó là bằng
+            // chứng thời kỳ, không phải bug công thức. Đừng "sửa" bằng cách
+            // đụng vào JOBS; khi có log thời giá mới, thêm job mới thay vì
+            // ghi đè.
+            assertEquals(100_000.0, j.co2CostVnd() / j.co2Kg(), 1.0,
+                    "job " + j.id() + ": log cũ phải suy ra đúng giá thời đó (100000 VND/kg)");
         }
 
         // Cộng tuyến tuyệt đối: tỉ lệ CO2/distance GIỐNG NHAU ở mọi job, dù fleet, mật độ
@@ -397,21 +402,22 @@ class MeasuredLawsTest {
     }
 
     @Test
-    @DisplayName("Bảng break-even detour trong CLAUDE.md: 12500 / 6364 / 3846 / 0.556 m — tính từ code thật")
+    @DisplayName("Bảng break-even detour trong CLAUDE.md: 12500 / 12482 / 12458 / 359.7 m — tính từ code thật")
     void breakEvenTableMatchesFormula() {
         // Weight lấy từ chính ObjectivePreset, không phải literal — đổi preset thì test theo.
+        // Giá carbon 150000 VND/tấn (quyết định 2026-10-13): co2PerM = 180×150000/1e9
+        // = 0.027 VND/m, nên break-even co lại so với bảng thời giá cũ (6364/3846/0.556).
         assertEquals(12_500, breakEvenMeters(
                         ObjectivePreset.COST_FOCUSED.costWeight, ObjectivePreset.COST_FOCUSED.co2Weight), 1,
                 "COST_FOCUSED: mở xe mới rẻ hơn nếu detour > 12.5 km");
-        assertEquals(6_364, breakEvenMeters(0.7, 0.3), 1,
+        assertEquals(12_482, breakEvenMeters(0.7, 0.3), 1,
                 "weights MẶC ĐỊNH (0.7, 0.3) trong OptimizationConfig.getEffectiveWeights()");
-        assertEquals(3_846, breakEvenMeters(
+        assertEquals(12_458, breakEvenMeters(
                         ObjectivePreset.BALANCED.costWeight, ObjectivePreset.BALANCED.co2Weight), 1,
                 "BALANCED");
-        // CLAUDE.md ghi "0.56 m"; giá trị chính xác 0.5555 m.
-        assertEquals(0.556, breakEvenMeters(
-                        ObjectivePreset.ECO_FOCUSED.costWeight, ObjectivePreset.ECO_FOCUSED.co2Weight), 0.005,
-                "ECO_FOCUSED: solver mở xe mới để tiết kiệm nửa mét ⇒ nghiệm suy biến 1 đơn/xe");
+        assertEquals(359.7, breakEvenMeters(
+                        ObjectivePreset.ECO_FOCUSED.costWeight, ObjectivePreset.ECO_FOCUSED.co2Weight), 0.05,
+                "ECO_FOCUSED: break-even ~360 m ở giá carbon mới (thời giá cũ: 0.56 m)");
     }
 
     @Test
@@ -436,10 +442,13 @@ class MeasuredLawsTest {
                 "distance nhân cả costWeight và co2Weight — chính đây là chỗ bất đối xứng");
 
         // Hệ quả: đẩy co2Weight → 1 làm fixed bay hơi trong khi distance phình lên.
+        // Ở giá carbon 150000 VND/tấn, swing COST_FOCUSED→ECO_FOCUSED ≈ 35×
+        // (thời giá cũ >10000×). Ngưỡng >10 giữ tripwire mà không ghim số tuyệt đối
+        // (số tuyệt đối đã ghim ở breakEvenTableMatchesFormula).
         double swing = breakEvenMeters(1.0, 0.0) / breakEvenMeters(
                 ObjectivePreset.ECO_FOCUSED.costWeight, ObjectivePreset.ECO_FOCUSED.co2Weight);
-        assertTrue(swing > 10_000, String.format(
-                "break-even biến động %.0f× giữa COST_FOCUSED và ECO_FOCUSED (kỳ vọng >10 000×)",
+        assertTrue(swing > 10, String.format(
+                "break-even biến động %.0f× giữa COST_FOCUSED và ECO_FOCUSED (kỳ vọng >10× ở giá hiện tại)",
                 swing));
     }
 
@@ -562,10 +571,10 @@ class MeasuredLawsTest {
                         + "Đổi giá trị này thì phải cập nhật toàn bộ những con số đó.");
         assertEquals(1_000, AppConstant.CLUSTER_FIRST_ORDER_THRESHOLD);
         assertEquals(10, AppConstant.DEMAND_SCALE);
-        assertEquals(100_000.0, AppConstant.CARBON_PRICE_PER_TON,
-                "SỐ GIẢ do người dùng đặt tạm. Nếu bạn cố ý đổi sang giá thật, hãy cập nhật "
-                        + "bảng break-even trong CLAUDE.md rồi sửa kỳ vọng ở test này — "
-                        + "đừng chỉ tắt assertion.");
+        assertEquals(150_000.0, AppConstant.CARBON_PRICE_PER_TON,
+                "Giá carbon chốt 150000 VND/tấn (quyết định 2026-10-13). Đổi giá này "
+                        + "thì phải cập nhật đồng thời bảng break-even, ngưỡng swing, "
+                        + "CLAUDE.md/RUNBOOK và KI-030 — đừng chỉ sửa assertion.");
     }
 
     @Test
