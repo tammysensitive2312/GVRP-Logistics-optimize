@@ -487,27 +487,40 @@ reverify_when:
 ---
 
 # 8. Carbon Emission State
-
 ## STATE-CARBON-001 — Active Carbon Model
 
 ```yaml
 id: STATE-CARBON-001
 
 claim: >
-  The exact carbon-emission model currently used by the active
-  optimization path is known and has been traced end-to-end.
+  Entry emissionFactor (from VehicleType.features JSON) is mapped through
+  VehicleTypeMapper.toEngineDTO into the engine request and, when non-null,
+  reaches GreenVRPCostCalculator.buildGreenVehicleType where it enters
+  jsprit costPerDistance as (fuelPerM * cw) + (emissionFactor *
+  150000.0/1e9 * cow). User goal maps to (costWeight, co2Weight) per
+  OptimizationConfigMapper (null prefs object to 0.5/0.5; null goal inside
+  prefs to MINIMIZE_COST 1.0/0.0); engine getEffectiveWeights applies
+  null defaults 0.7/0.3 then normalizes. CARBON_PRICE_PER_TON=150000.0 is
+  an engine-local constant with no API knob.
 
-status: NOT_VERIFIED
-evidence_strength: NONE
+status: PARTIALLY_VERIFIED
 
-verified_at: null
+evidence_strength: STRONG
+
+verified_at: 2026-10-13
 
 revision:
-  commit: null
-  branch: null
+  commit: "0ca992f"
+  branch: "master"
 
 evidence:
-  source: []
+  source:
+    - "GVRP_Entry_API/.../mapper/VehicleTypeMapper.java:21-23"
+    - "GVRP_Entry_API/.../service/OptimizationJobService.java:406-414"
+    - "GVRP_Entry_API/.../mapper/OptimizationConfigMapper.java:84-148"
+    - "GVRP_Engine_API/.../service/OptimizationService.java:779-780,460-472"
+    - "GVRP_Engine_API/.../service/GreenVRPCostCalculator.java:108-129"
+    - "GVRP_Engine_API/.../utils/AppConstant.java:14"
   tests: []
   experiments: []
   runtime: []
@@ -517,17 +530,30 @@ scope:
   modules:
     - GVRP_Entry_API
     - GVRP_Engine_API
+  configuration:
+    - single-objective and Pareto branches
+  datasets: []
+  problem_size:
+    min: null
+    max: null
 
 limitations:
-  - Carbon-related fields may exist without affecting solver decisions.
-  - Parameter propagation has not yet been recorded.
+  - Static trace only; runtime behavior, model validity, and effectiveness
+    not established.
+  - Holds only when emissionFactor is non-null; null throws NPE at
+    GreenVRPCostCalculator.java:108 (see KI-031).
+  - Entry null-prefs default (0.5/0.5) differs from engine null-weight
+    default (0.7/0.3) for direct engine callers.
 
-contradictions: []
+contradictions:
+  - MeasuredLawsTest pins carbon price 100000.0 and related break-even
+    laws; current constant is 150000.0 — 4 tests fail (see KI-030).
 
 reverify_when:
   - emission model changes
   - objective implementation changes
   - API emission parameters change
+  - carbon price constant changes
 ```
 
 ---

@@ -2057,7 +2057,177 @@ reverify_when:
 
 ---
 
-# 34. Promotion Rule
+# 34. KI-030 — Carbon Price Pinned-Law Contradiction
+
+```yaml
+id: KI-030
+title: Carbon Price Pinned-Law Contradiction
+
+category:
+  - SCIENTIFIC
+  - NUMERICAL
+  - ENGINEERING
+
+historical_claim: >
+  MeasuredLawsTest pins carbon price 100000.0 and related break-even
+  tables, but AppConstant.CARBON_PRICE_PER_TON is now 150000.0, so 4
+  tests fail (appConstantsMatchDocumentation, breakEvenTableMatchesFormula,
+  co2IsPerfectlyCollinearWithDistance, weightAsymmetryIsStillPresent).
+  Production job logs imply an inferred price of ~100000 while the code
+  uses 150000. Either the constant was changed without updating the
+  pinned laws, or the laws encode the intended economics and the
+  constant drifted.
+
+status: OPEN
+
+evidence_strength: STRONG
+
+first_observed:
+  revision: "0ca992f"
+  date: 2026-10-13
+
+last_verified:
+  revision: "0ca992f"
+  date: 2026-10-13
+
+evidence:
+  source:
+    - "GVRP_Engine_API/.../utils/AppConstant.java:14"
+    - "GVRP_Engine_API/.../service/GreenVRPCostCalculator.java:108-116"
+  tests:
+    - "MeasuredLawsTest (25 run, 4 failures 2026-10-13)"
+  experiments: []
+  runtime: []
+  issues: []
+  documentation:
+    - "GVRP_Document/ENGINE_V1_TO_V2.md and CLAUDE.md cite CARBON_PRICE_PER_KG 100000"
+
+scope:
+  modules:
+    - GVRP_Engine_API
+  configurations:
+    - single-objective and Pareto branches
+  datasets: []
+  problem_size:
+    min: null
+    max: null
+
+impact: >
+  Every VND-denominated CO2 figure (solver cost, reports, DB totals) scales
+  with this constant. If the wrong value is live, all carbon economics —
+  including break-even vehicle-opening tables — shift, and past logged
+  figures are incomparable with current ones.
+
+root_cause: >
+  Not established: either an intentional price update that skipped the
+  pinned laws and docs, or an accidental constant change. Units also
+  differ across eras (PER_KG vs PER_TON) and must be reconciled, not assumed.
+
+mitigation_or_fix: >
+  Decide the correct price AND unit explicitly, then update the constant,
+  the 4 pinned tests, and the stale docs together in one change. Do not
+  edit only the tests to match the code, nor only the code to match the
+  tests, without that decision.
+
+regression_protection:
+  tests:
+    - "MeasuredLawsTest (currently red: guards the decision)"
+  guards: []
+
+limitations:
+  - The correct price is a business decision, not derivable from code.
+  - Which production era the job logs came from is not yet pinned down.
+
+reverify_when:
+  - carbon price constant changes
+  - pinned-law tests change
+  - carbon reporting units change
+```
+
+---
+
+# 35. KI-031 — Null EmissionFactor NPE Path
+
+```yaml
+id: KI-031
+title: Null EmissionFactor NPE Path
+
+category:
+  - ENGINEERING
+  - INTEGRATION
+
+historical_claim: >
+  Engine VehicleType.emissionFactor is a nullable Double at every hop
+  (Entry features JSON, wire DTO with NON_NULL omit, engine model), but
+  GreenVRPCostCalculator.buildGreenVehicleType unboxes it without a null
+  check, so a vehicle type without features fails the whole job with
+  NullPointerException. Neither engine validateConfig nor controller
+  validateRequest guards it. The sibling calculateRouteCO2 in the same
+  file does null-guard with fallback 200.0.
+
+status: SUSPECTED
+
+evidence_strength: MODERATE
+
+first_observed:
+  revision: "0ca992f"
+  date: 2026-10-13
+
+last_verified:
+  revision: "0ca992f"
+  date: 2026-10-13
+
+evidence:
+  source:
+    - "GVRP_Engine_API/.../service/GreenVRPCostCalculator.java:108"
+    - "GVRP_Engine_API/.../model/VehicleType.java:20"
+    - "GVRP_Engine_API/.../service/OptimizationService.java:836-856"
+    - "GVRP_Entry_API/.../service/VehicleFeaturesService.java:86-90"
+  tests: []
+  experiments: []
+  runtime: []
+  issues: []
+  documentation: []
+
+scope:
+  modules:
+    - GVRP_Entry_API
+    - GVRP_Engine_API
+  configurations: []
+  datasets: []
+  problem_size:
+    min: null
+    max: null
+
+impact: >
+  One featureless vehicle type can fail an entire optimization job at
+  solve time (after minutes of matrix build), surfacing as a generic job
+  failure rather than a validation error.
+
+root_cause: >
+  Not yet reproduced at runtime; static nullability chain only.
+
+mitigation_or_fix: >
+  Fail fast (validate non-null at Entry input or engine validateRequest)
+  or define a documented default. Owner decision; not repaired here.
+
+regression_protection:
+  tests: []
+  guards: []
+
+limitations:
+  - Never executed; a runtime reproduction with a null-emissionFactor
+    request is still needed to raise this to OPEN.
+
+reverify_when:
+  - emission input validation changes
+  - engine VehicleType model changes
+  - a null-emissionFactor job is observed
+```
+
+---
+
+# 36. Promotion Rule
 
 An issue must not move to `OPEN` merely because:
 
@@ -2082,7 +2252,7 @@ OPEN
 
 ---
 
-# 35. Fix Rule
+# 37. Fix Rule
 
 Do not classify an issue as `FIXED` merely because a patch exists.
 
@@ -2104,7 +2274,7 @@ The verification scope must be recorded.
 
 ---
 
-# 36. Evidence Scope Rule
+# 38. Evidence Scope Rule
 
 A fix verified on:
 
@@ -2134,7 +2304,7 @@ Always retain the scope of evidence.
 
 ---
 
-# 37. Issue vs Project State
+# 39. Issue vs Project State
 
 Use `KNOWN_ISSUES.md` to answer:
 
@@ -2158,7 +2328,7 @@ The historical issue can remain even after the current state becomes verified as
 
 ---
 
-# 38. Maintenance Rule
+# 40. Maintenance Rule
 
 When investigating an issue:
 

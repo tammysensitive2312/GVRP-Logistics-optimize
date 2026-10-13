@@ -453,3 +453,13 @@ Result: full Entry-to-callback chain recorded; Pareto branch always dense; BLOCK
 Review: independent reviewer ACCEPTED_WITH_LIMITATIONS (SUPPORTED_BY_STATIC_TRACE); 5 narrowing corrections applied (full URIs, Pareto-dense, Impl-scope dead code, SolutionConverter/ResultSpool hops).
 Promoted: STATE-ARCH-003 and STATE-SOLVER-001 to PARTIALLY_VERIFIED (STRONG, static scope) at master@045a13a. No effectiveness/scientific claim promoted.
 Next: VQ-005 emission-parameter propagation; optional runtime smoke to lift toward VERIFIED_AT_RUNTIME.
+
+## 2026-10-13 — VQ-005 emission propagation traced; carbon-price contradiction found
+
+Question: VQ-005 — do emission API params reach the engine solver cost?
+Method: hop-by-hop static trace Entry DTOs/wire/engine cost fold + independent review + MeasuredLawsTest execution.
+Result: YES for plumbing — emissionFactor and (costWeight, co2Weight) both reach buildGreenVehicleType; carbon price is engine-local (150000.0/ton, no API knob). Goal mapping and null-default nuances recorded.
+Review: ACCEPTED_WITH_LIMITATIONS (SUPPORTED_BY_STATIC_TRACE); corrections applied (null-goal default, Entry/engine default inconsistency).
+Contradiction (test-executed, blocks nothing yet decides nothing): MeasuredLawsTest 25 run / 4 failures pin price 100000 + break-even tables vs current 150000; production logs imply ~100000. Recorded as KI-030 (OPEN, STRONG). Null-emissionFactor NPE path recorded as KI-031 (SUSPECTED). Neither fixed here — price is a business decision.
+Promoted: STATE-CARBON-001 to PARTIALLY_VERIFIED (STRONG, static plumbing scope) at 0ca992f.
+Next: VQ-003/VQ-004 carbon equation + independence experiment (needs the KI-030 price decision first, or explicitly under current 150000).
