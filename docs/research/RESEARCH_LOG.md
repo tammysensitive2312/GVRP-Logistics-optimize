@@ -445,3 +445,11 @@ load/speed dependence absent from model (assignment-mix only).
 Related Issue: KI-008, KI-009
 
 Related Commit: be5d752 + dirty (docs only changed by this loop)
+## 2026-10-13 — VQ-001 execution path traced and promoted (narrow)
+
+Question: VQ-001 — what is the active Engine optimization execution path?
+Method: graph call tracing (optimizeAsync outbound, 87 callees) + direct source reads + whole-repo dead-code grep.
+Result: full Entry-to-callback chain recorded; Pareto branch always dense; BLOCK iff N>=1000 and C>1; provider graphHoperDistanceProvider; BatchGraphHopperMatrixProvider unwired/dead (no callers, no bean, no tests).
+Review: independent reviewer ACCEPTED_WITH_LIMITATIONS (SUPPORTED_BY_STATIC_TRACE); 5 narrowing corrections applied (full URIs, Pareto-dense, Impl-scope dead code, SolutionConverter/ResultSpool hops).
+Promoted: STATE-ARCH-003 and STATE-SOLVER-001 to PARTIALLY_VERIFIED (STRONG, static scope) at master@045a13a. No effectiveness/scientific claim promoted.
+Next: VQ-005 emission-parameter propagation; optional runtime smoke to lift toward VERIFIED_AT_RUNTIME.

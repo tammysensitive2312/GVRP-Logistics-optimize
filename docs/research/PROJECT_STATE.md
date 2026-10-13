@@ -232,27 +232,44 @@ reverify_when:
 ```
 
 ---
-
 ## STATE-ARCH-003 — Engine API Responsibility
 
 ```yaml
 id: STATE-ARCH-003
 
 claim: >
-  GVRP_Engine_API is responsible for route optimization and
-  currently contains GraphHopper/jsprit-related solver logic.
+  On revision master@045a13a, static trace shows the active Engine
+  optimization path is Entry OptimizationJobService.afterCommit →
+  EngineApiClientImpl.submitOptimizationAsync → POST /api/v1/optimization
+  → OptimizationController.optimize → OptimizationService.optimizeAsync →
+  optimize, branching on enableParetoAnalysis (Pareto branch always dense;
+  single-objective branch BLOCK iff N>=1000 and
+  C=min(ceil(N/150),numVehicles)>1, else dense via the
+  graphHoperDistanceProvider bean), through jsprit searchSolutions/bestOf,
+  sentinel + max-distance asserts, metrics/extractor, to CallbackService →
+  POST /api/v1/solutions/callbacks/{complete,failed,cancelled}. Secondary
+  live path: POST /api/v1/optimization/evaluate → RouteEvaluationService.
+  BatchGraphHopperMatrixProvider is unwired/dead; sibling
+  GraphHoperDistanceProvider is live.
 
-status: NOT_VERIFIED
-evidence_strength: NONE
+status: PARTIALLY_VERIFIED
 
-verified_at: null
+evidence_strength: STRONG
+
+verified_at: 2026-10-13
 
 revision:
-  commit: null
-  branch: null
+  commit: "045a13a"
+  branch: "master"
 
 evidence:
-  source: []
+  source:
+    - "GVRP_Entry_API/.../service/OptimizationJobService.java:133-138"
+    - "GVRP_Entry_API/.../integration/external_api/EngineApiClientImpl.java:67-73"
+    - "GVRP_Engine_API/.../controller/OptimizationController.java:25,34-43"
+    - "GVRP_Engine_API/.../service/OptimizationService.java:91-155,271-442"
+    - "GVRP_Engine_API/.../distance_matrix/DistanceMatrixService.java:69-77"
+    - "GVRP_Engine_API/.../service/CallbackService.java:31-38"
   tests: []
   experiments: []
   runtime: []
@@ -260,42 +277,60 @@ evidence:
 
 scope:
   modules:
+    - GVRP_Entry_API
     - GVRP_Engine_API
+  configuration:
+    - "spring.optimization.engine.url=http://localhost:8081/api/v1"
+  datasets: []
+  problem_size:
+    min: null
+    max: null
 
 limitations:
-  - Exact active solver path has not yet been recorded in this state file.
+  - Static trace only; no runtime log, test execution, or HTTP trace inspected.
+  - Bean-name derivation relies on Spring default naming, not observed startup.
+  - Code literal is "/optimization"; "/api/v1" comes from config.
 
 contradictions: []
 
 reverify_when:
-  - solver architecture changes
-  - routing libraries change
+  - engine execution pipeline changes
+  - optimization endpoint or callback contract changes
+  - matrix construction or provider wiring changes
 ```
 
 ---
 
 # 6. Solver State
-
 ## STATE-SOLVER-001 — Active Solver Stack
 
 ```yaml
 id: STATE-SOLVER-001
 
 claim: >
-  The active optimization engine uses GraphHopper for routing-related
-  functionality and jsprit for vehicle-routing optimization.
+  The active optimization path builds a jsprit VehicleRoutingProblem in
+  OptimizationService.buildGreenVRP, solves it with a jsprit
+  VehicleRoutingAlgorithm via searchSolutions()/bestOf, and guards the
+  result with sentinel-edge and max-distance asserts before metrics
+  extraction. Cost queries flow through the CostMatrix interface
+  (BlockDiagonalCostMatrix when cluster-eligible, DenseCostMatrix
+  otherwise) served by the graphHoperDistanceProvider bean.
 
-status: NOT_VERIFIED
-evidence_strength: NONE
+status: PARTIALLY_VERIFIED
 
-verified_at: null
+evidence_strength: STRONG
+
+verified_at: 2026-10-13
 
 revision:
-  commit: null
-  branch: null
+  commit: "045a13a"
+  branch: "master"
 
 evidence:
-  source: []
+  source:
+    - "GVRP_Engine_API/.../service/OptimizationService.java:280-296,369-386,452-505"
+    - "GVRP_Engine_API/.../distance_matrix/CostMatrix.java:32-48"
+    - "GVRP_Engine_API/.../distance_matrix/Impl/GraphHoperDistanceProvider.java:31-33"
   tests: []
   experiments: []
   runtime: []
@@ -304,10 +339,16 @@ evidence:
 scope:
   modules:
     - GVRP_Engine_API
+  configuration:
+    - single-objective (enableParetoAnalysis false) and Pareto branches
+  datasets: []
+  problem_size:
+    min: null
+    max: null
 
 limitations:
-  - Dependency presence alone is not sufficient.
-  - Active runtime call paths must be confirmed.
+  - Static trace only; solver effectiveness and solution quality unverified.
+  - Dependency presence alone was not used as evidence.
 
 contradictions: []
 
