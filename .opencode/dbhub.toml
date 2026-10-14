@@ -1,0 +1,28 @@
+# dbhub — read-only MySQL access for agents (GVRP local DB).
+# Password is NEVER stored here: it interpolates from the GVRP_DB_PASSWORD
+# environment variable (set per-machine, e.g. `setx GVRP_DB_PASSWORD "..."`).
+# The DB user (agent_reader) itself holds only SELECT + SHOW VIEW on gvrp_db.
+
+[[sources]]
+id = "gvrp"
+description = "GVRP local MySQL (gvrp_db) — read-only agent access"
+type = "mysql"
+host = "localhost"
+port = 3306
+database = "gvrp_db"
+user = "agent_reader"
+password = "${GVRP_DB_PASSWORD}"
+charset = "utf8mb4"
+query_timeout = 30
+
+# Read-only SQL execution, capped rows. No writes possible at this layer
+# (and the DB user cannot write anyway — defense in depth).
+[[tools]]
+name = "execute_sql"
+source = "gvrp"
+readonly = true
+max_rows = 500
+
+[[tools]]
+name = "search_objects"
+source = "gvrp"

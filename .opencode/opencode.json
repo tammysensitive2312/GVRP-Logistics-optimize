@@ -5,6 +5,11 @@
       "type": "local",
       "command": ["C:\\Users\\ACER\\AppData\\Local\\Programs\\codebase-memory-mcp\\codebase-memory-mcp.exe"],
       "enabled": true
+    },
+    "dbhub": {
+      "type": "local",
+      "command": ["npx", "@bytebase/dbhub@latest", "--transport", "stdio", "--config", ".opencode/dbhub.toml"],
+      "enabled": true
     }
   },
   "instructions": ["AGENTS.md"],
