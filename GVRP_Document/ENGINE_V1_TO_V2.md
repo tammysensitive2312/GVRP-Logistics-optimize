@@ -773,12 +773,16 @@ Mặt Pareto cost↔CO₂ là **một điểm**, không phải đường cong.
 Đây là khiếm khuyết **mô hình**, không phải giá trị tham số — thay số không chữa được. Phải
 làm $e$ phụ thuộc **loại xe** (đội xe pha trộn diesel + điện), hoặc phụ thuộc **tải/tốc độ**.
 
-*Ghi chú:* giá trị 180 g/km xuất hiện ở mọi loại xe là hardcode
-`VehicleFeaturesDTO.defaultFeatures()` (PETROL_CAR) phía Entry — tức JSON `vehicle_features`
-đang không tới được engine. Giá carbon đã chốt 150 000 VND/tấn
+*Ghi chú thời gian (VQ-003):* đoạn này mô tả đúng thời kỳ trước commit `452d0c5`,
+khi `VehicleFeaturesDTO.defaultFeatures()` (PETROL_CAR, 180 g/km) còn tồn tại
+và JSON `vehicle_features` bị bỏ qua — tức mọi xe bị tính CO2 như xe con.
+`defaultFeatures()` đã bị xóa; DB hiện tại ghi 12.3 ở 9/10 branch và
+0/105/190/350 ở Branch Huge 1 (đo live 2026-10-14). Đừng áp dụng nguyên văn
+đoạn này cho dữ liệu hiện tại.
+Giá carbon đã chốt 150 000 VND/tấn
 (`CARBON_PRICE_PER_TON`, quyết định 2026-10-13; log thời giá cũ suy ra
-100 000 VND/kg — xem KI-030). Còn `emission_factor = 12.3` là **số giả**
-đặt tạm khi chưa có giá trị thật; đừng suy luận gì từ nó.
+100 000 VND/kg — xem KI-030). Tính vật lý đúng/sai của các giá trị
+12.3 hiện hành vẫn chưa xác minh — đừng suy luận gì từ chúng.
 
 ### 7.3. Weights nhân bất đối xứng
 
@@ -807,7 +811,10 @@ $$\Rightarrow p_{\text{dist}}(0.7,\, 0.3) = 8.00 \times 0.7 + 0.027 \times 0.3 =
 > này**. Không tài liệu nào sai công thức — chúng khai $e$ khác nhau. Tài liệu đó soạn trước
 > khi phát hiện engine đang dùng 180, và nó phỏng đoán engine dùng default 200; phỏng đoán
 > đó **đã bị bác bỏ**: 180 khớp *chính xác*
-> `VehicleFeaturesDTO.defaultFeatures()` (PETROL_CAR), không phải "gần 200".
+> `VehicleFeaturesDTO.defaultFeatures()` (PETROL_CAR) thời đó, không phải "gần 200".
+> (Ghi chú thời gian, VQ-003: `defaultFeatures()` đã bị xóa khỏi source ở commit
+> `452d0c5` — hiện tại không còn default 180 nào trong code; đoạn này giải thích
+> đúng các job log thời cũ, không áp dụng cho dữ liệu hiện tại.)
 >
 > Khi trích bất kỳ con số nào ở mục này, **phải nói rõ đang dùng $e$ nào**.
 

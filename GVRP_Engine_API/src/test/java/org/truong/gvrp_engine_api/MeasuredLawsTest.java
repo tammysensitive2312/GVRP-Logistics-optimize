@@ -146,8 +146,9 @@ class MeasuredLawsTest {
         for (JobLog j : JOBS) {
             assertEquals(0.18, j.co2Kg() / j.distanceKm(), 1e-5,
                     "job " + j.id() + ": CO2/km phải là 0.180 = emissionFactor 180 g/km. "
-                            + "180.0 là hardcode VehicleFeaturesDTO.defaultFeatures() (PETROL_CAR), "
-                            + "KHÔNG phải giá trị DB (12.3) hay DIESEL_TRUCK (280) — bug đã biết.");
+                            + "180.0 là defaultFeatures() (PETROL_CAR) thời trước commit "
+                            + "452d0c5 — KHÔNG phải giá trị DB hiện tại. "
+                            + "Đừng đọc thành 'mọi xe hiện tại đều 180'.");
             // JOBS là log thời giá cũ (suy ra đúng 100000 VND/kg). Giá hiện tại
             // 150000 VND/tấn (=150 VND/kg) nên KHÔNG khớp log cũ — đó là bằng
             // chứng thời kỳ, không phải bug công thức. Đừng "sửa" bằng cách
@@ -365,8 +366,9 @@ class MeasuredLawsTest {
 
     /**
      * `Truck 5T` đúng như DB — chính vehicle type của cả 4 job.
-     * `emissionFactor = 180` là giá trị THỰC SỰ tới engine (hardcode
-     * `VehicleFeaturesDTO.defaultFeatures()` phía Entry, không phải default 200 của engine).
+     * `emissionFactor = 180` tái hiện đúng giá trị TỪNG tới engine thời các
+     * job này chạy (defaultFeatures() trước commit 452d0c5). Mốc thời gian,
+     * không phải giá trị hiện tại — đừng cập nhật số này theo DB mới.
      */
     private static VehicleType truck5T() {
         VehicleType t = new VehicleType();

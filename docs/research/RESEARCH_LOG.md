@@ -471,3 +471,12 @@ Change (one deliberate change, not silent edits): break-even pins 12482/12458/35
 Docs synced: CLAUDE.md table + asymmetry note + price note; ENGINE_V1_TO_V2.md symbol row + worked example + e=12.3 variant (3781 m, 3.3x); RUNBOOK.md row; OBJECTIVE_FUNCTION.md audit paragraph.
 Notable consequence: ECO break-even moved 0.56 m -> 359.7 m, so the 1-order-per-vehicle degeneracy is gone at current price; the weight-asymmetry defect itself remains in code.
 Verify: MeasuredLawsTest 25/25 green. KI-030 -> FIXED (STRONG).
+
+## 2026-10-14 — VQ-003 carbon equation locked; live e values read via dbhub
+
+Question: VQ-003 — exact active carbon equation + effective values.
+Method: source trace (equation) + read-only dbhub queries (values) + independent review.
+Result: equation confirmed line-by-line (co2/m = e*150000/1e9; fuel/m=costPerKm/1000; time/fixed x cw only; report kg = distKm*e/1000). Live: 9/10 branches uniform 12.3; Branch Huge 1 mixes 350/190/105/0 across 3000 vehicles; zero NULL features. Artifact: docs/research/observations/VQ-003-live-reads-2026-10-14.md.
+Review: ACCEPTED_WITH_LIMITATIONS (static + reported-reads). Historical correction applied: defaultFeatures()/180 genuinely existed pre-452d0c5 and correctly explains old 0.180 logs; stale references in ENGINE_V1_TO_V2.md + MeasuredLawsTest comments re-scoped in place (not deleted). Refinement: Entry parseFeatures throws on null, so end-to-end NPE needs direct engine callers.
+Promoted: equation half into STATE-CARBON-001 scope (already held the formula); live values stay in log + artifact, not PROJECT_STATE (reviewer: not independently re-queried).
+Next: VQ-004 independence experiment — Huge 1 heterogeneous fleet is the valid testbed; uniform-12.3 branches are the control case.
