@@ -9,6 +9,9 @@ import { ApiService } from '@core/services/api.service';
 import { AuthService } from '@core/services/auth.service';
 import { ManeuverStep, RoutingService, formatLegDistance } from '@shared/services/routing.service';
 
+/** Leaflet pane for the live GPS dot (stacked above stop markers). */
+const GPS_PANE = 'driverGps';
+
 /** Google Maps directions link to one stop (no key, no billing). Null-safe. */
 export function googleMapsUrl(latitude: number | null, longitude: number | null): string | null {
   if (latitude === null || latitude === undefined
@@ -197,6 +200,9 @@ export class DriverViewComponent implements OnInit, OnDestroy, AfterViewChecked 
       this.map = map;
       // Manual gestures pause follow mode: never fight the driver (FM-002).
       map.on('dragstart zoomstart', () => this.following.set(false));
+      // GPS dot above stop pins (marker pane is 600): at a stop the driver must
+      // still see where they are.
+      map.createPane(GPS_PANE).style.zIndex = '650';
       L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
         attribution: '© Google',
         maxZoom: 20
@@ -274,12 +280,15 @@ export class DriverViewComponent implements OnInit, OnDestroy, AfterViewChecked 
           const at: L.LatLngExpression = [
             position.coords.latitude, position.coords.longitude];
           if (!this.geoDot) {
-            this.geoDot = L.circleMarker(at, {
-              radius: 8, color: '#fff', weight: 2, fillColor: '#1a73e8', fillOpacity: 1
-            }).addTo(this.map);
+            // Ring stays in the overlay pane (below pins); dot is non-interactive
+            // so taps on a pin underneath still reach the pin.
             this.geoRing = L.circle(at, {
               radius: position.coords.accuracy ?? 0,
               color: '#1a73e8', weight: 1, opacity: 0.5, fillOpacity: 0.15
+            }).addTo(this.map);
+            this.geoDot = L.circleMarker(at, {
+              pane: GPS_PANE, interactive: false,
+              radius: 8, color: '#fff', weight: 2, fillColor: '#1a73e8', fillOpacity: 1
             }).addTo(this.map);
           } else {
             this.geoDot.setLatLng(at);

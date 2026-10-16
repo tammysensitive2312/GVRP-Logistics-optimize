@@ -12,6 +12,7 @@ import org.truong.gvrp_entry_api.dto.response.RouteSendDTO;
 import org.truong.gvrp_entry_api.entity.Order;
 import org.truong.gvrp_entry_api.entity.Route;
 import org.truong.gvrp_entry_api.entity.RouteSend;
+import org.truong.gvrp_entry_api.entity.RouteStop;
 import org.truong.gvrp_entry_api.entity.Solution;
 import org.truong.gvrp_entry_api.entity.User;
 import org.truong.gvrp_entry_api.entity.enums.LocationType;
@@ -181,7 +182,7 @@ public class RouteSendService {
         ).stream().collect(Collectors.toMap(Order::getId, o -> o));
 
         List<DriverStopDTO> stops = route.getSegments().stream()
-                .sorted(Comparator.comparing(s -> s.getSequenceNumber() == null ? 0 : s.getSequenceNumber()))
+                .sorted(Comparator.comparingInt(RouteSendService::planRank))
                 .map(stop -> {
                     Order order = stop.getOrder() != null ? orderMap.get(stop.getOrder().getId()) : null;
                     return DriverStopDTO.builder()
@@ -214,6 +215,22 @@ public class RouteSendService {
     }
 
     // ---------- helpers ----------
+
+    /**
+     * Plan position of a stop. Engine-generated depots carry no sequence number
+     * (customers are 1..N); the start depot has a departure time, the end depot
+     * only arrives. Without this, NULL-first ordering puts the end depot second
+     * and the driver map drops the return leg.
+     */
+    static int planRank(RouteStop stop) {
+        if (stop.getSequenceNumber() != null) {
+            return stop.getSequenceNumber();
+        }
+        if (stop.getType() == LocationType.DEPOT && stop.getDepartureTime() != null) {
+            return Integer.MIN_VALUE;
+        }
+        return Integer.MAX_VALUE;
+    }
 
     private User requireDriver() {
         if (!UserRole.DRIVER.name().equals(CurrentUserUtil.getCurrentRole())) {

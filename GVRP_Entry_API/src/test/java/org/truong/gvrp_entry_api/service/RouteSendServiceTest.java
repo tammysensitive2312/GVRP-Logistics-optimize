@@ -243,6 +243,51 @@ class RouteSendServiceTest {
         assertEquals("Goi truoc", detail.getStops().get(1).getDeliveryNotes());
     }
 
+    @Test
+    void sendDetail_unnumberedDepots_startFirstEndLast() {
+        // Engine-generated routes: depots have no sequence; DB returns NULLs first.
+        Fixture f = fixture();
+        asUser(2L, 1L, "DRIVER");
+        when(userRepository.findById(2L)).thenReturn(Optional.of(f.driver()));
+        RouteStop endDepot = RouteStop.builder().type(LocationType.DEPOT).locationName("end")
+                .arrivalTime(LocalTime.of(15, 47)).build();
+        RouteStop startDepot = RouteStop.builder().type(LocationType.DEPOT).locationName("start")
+                .arrivalTime(LocalTime.of(8, 0)).departureTime(LocalTime.of(8, 0)).build();
+        RouteStop first = RouteStop.builder().type(LocationType.ORDER).locationName("o1")
+                .sequenceNumber(1).build();
+        RouteStop second = RouteStop.builder().type(LocationType.ORDER).locationName("o2")
+                .sequenceNumber(2).build();
+        f.route().setSegments(new ArrayList<>(List.of(endDepot, startDepot, second, first)));
+        RouteSend send = RouteSend.builder().id(9L).solution(f.solution())
+                .route(f.route()).driver(f.driver()).status(SendStatus.CURRENT).build();
+        when(sendRepository.findById(9L)).thenReturn(Optional.of(send));
+        when(orderRepository.findAllById(any())).thenReturn(List.of());
+
+        DriverRouteDTO detail = service.sendDetail(9L);
+
+        assertEquals(List.of("start", "o1", "o2", "end"),
+                detail.getStops().stream().map(s -> s.getLocationName()).toList());
+    }
+
+    @Test
+    void sendDetail_numberedDepot_keepsSequence() {
+        Fixture f = fixture();
+        asUser(2L, 1L, "DRIVER");
+        when(userRepository.findById(2L)).thenReturn(Optional.of(f.driver()));
+        RouteStop returnDepot = RouteStop.builder().type(LocationType.DEPOT).locationName("back")
+                .sequenceNumber(2).build();
+        f.route().getSegments().add(0, returnDepot);
+        RouteSend send = RouteSend.builder().id(9L).solution(f.solution())
+                .route(f.route()).driver(f.driver()).status(SendStatus.CURRENT).build();
+        when(sendRepository.findById(9L)).thenReturn(Optional.of(send));
+        when(orderRepository.findAllById(any())).thenReturn(List.of(f.order()));
+
+        DriverRouteDTO detail = service.sendDetail(9L);
+
+        assertEquals(List.of(0, 1, 2),
+                detail.getStops().stream().map(s -> s.getSequenceNumber()).toList());
+    }
+
     private record Fixture(
             Branch branch, User sender, User driver, OptimizationJob job,
             Solution solution, Order order, Vehicle vehicle, Route route) {

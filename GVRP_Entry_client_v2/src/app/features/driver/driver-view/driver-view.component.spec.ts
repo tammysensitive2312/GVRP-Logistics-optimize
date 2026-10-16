@@ -304,6 +304,24 @@ describe('DriverViewComponent', () => {
       expect(clearWatch).toHaveBeenCalledWith(7);
     });
 
+    it('draws the dot above stop pins so a driver at a stop still sees it', () => {
+      mockGeolocation(ok => {
+        ok(positionAt(21.0, 105.8)); // exactly on the stop pin
+        return 9;
+      });
+      component.openSend(sends[0] as unknown as RouteSendDTO);
+      fixture.detectChanges();
+
+      const gpsPane = document.querySelector<HTMLElement>('#driver-mini-map .leaflet-driverGps-pane');
+      const markerPane = document.querySelector<HTMLElement>('#driver-mini-map .leaflet-marker-pane');
+      expect(gpsPane).not.toBeNull();
+      expect(Number(gpsPane!.style.zIndex))
+        .toBeGreaterThan(Number(getComputedStyle(markerPane!).zIndex));
+      const dot = gpsPane!.querySelector('path[fill="#1a73e8"]');
+      expect(dot).not.toBeNull();
+      expect(dot!.classList.contains('leaflet-interactive')).toBeFalse();
+    });
+
     it('stays silent when permission is denied', () => {
       mockGeolocation((ok, err) => {
         err?.({ code: 1, message: 'denied', PERMISSION_DENIED: 1, POSITION_UNAVAILABLE: 2, TIMEOUT: 3 } as GeolocationPositionError);
