@@ -24,7 +24,7 @@ jobs:
       # Scans the commits of this push / pull request, not the whole history.
       # Existing history already contains committed credentials: see
       # docs/security/SECURITY_CHECKLIST.md (SEC-001).
-      - uses: gitleaks/gitleaks-action@v2
+      - uses: gitleaks/gitleaks-action@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
