@@ -1,0 +1,122 @@
+{
+  "id": "SEC-ROLE-001",
+  "root": "E:\\OR-tools java example\\GVRP-Logistics_Optimize",
+  "scope": [
+    "GVRP_Entry_API/src",
+    "GVRP_Entry_API/pom.xml",
+    "docs/security"
+  ],
+  "graphHash": "dd102f16a0bb44c675032aab0813a841f1b446ea1fa8d99958fa094d0e8de614",
+  "state": "done",
+  "revision": 7,
+  "history": [
+    {
+      "revision": 1,
+      "from": "intake",
+      "event": "ready",
+      "to": "discover",
+      "evidence": {
+        "request": {
+          "path": "work-items/SEC-ROLE-001/request.md",
+          "sha256": "cfbcc616907d41148fa67870ecd51a0ab7705e22a8886ed482d63ae6b98d7870"
+        }
+      },
+      "snapshot": "6a240db6db5d7b755d28bfad0c43e718cfae0156e6fe1490e85e205b955ca666",
+      "time": "2026-10-16T15:37:13.379Z"
+    },
+    {
+      "revision": 2,
+      "from": "discover",
+      "event": "ready",
+      "to": "design",
+      "evidence": {
+        "context": {
+          "path": "work-items/SEC-ROLE-001/context.md",
+          "sha256": "dc86b80c8ce13d36ad253cfd02332c0c03edb58c9a220d63e9f79d1569af8605"
+        }
+      },
+      "snapshot": "6a240db6db5d7b755d28bfad0c43e718cfae0156e6fe1490e85e205b955ca666",
+      "time": "2026-10-16T15:37:28.409Z"
+    },
+    {
+      "revision": 3,
+      "from": "design",
+      "event": "ready",
+      "to": "implement",
+      "evidence": {
+        "design": {
+          "path": "work-items/SEC-ROLE-001/design.md",
+          "sha256": "c3774db3a3a8dc7522c919e4ee96e825dbcaed1c7ad4b1ca2b7fcbc85ec9b68f"
+        },
+        "traceability": {
+          "path": "work-items/SEC-ROLE-001/traceability.md",
+          "sha256": "a4b24fde5ad4d8f7a8cde2ab6937ae02fa569017562d4555521effb8c1231322"
+        }
+      },
+      "snapshot": "6a240db6db5d7b755d28bfad0c43e718cfae0156e6fe1490e85e205b955ca666",
+      "time": "2026-10-16T15:37:34.158Z"
+    },
+    {
+      "revision": 4,
+      "from": "implement",
+      "event": "ready",
+      "to": "verify",
+      "evidence": {
+        "implementation": {
+          "path": "work-items/SEC-ROLE-001/implementation.md",
+          "sha256": "05c0adf5058578c552798c1d7e231616ac68b6590ac4ef75a9a4eae9cf80cdca"
+        }
+      },
+      "snapshot": "a80ba79e8ea316bd9b4a94d5aacb790e696b7e4a7f45e738bf7a3b5efd78525e",
+      "time": "2026-10-16T16:41:59.564Z"
+    },
+    {
+      "revision": 5,
+      "from": "verify",
+      "event": "pass",
+      "to": "await_user_test",
+      "evidence": {
+        "verification": {
+          "path": "work-items/SEC-ROLE-001/verification.md",
+          "sha256": "1662d32c44ffbf98bd2a0173f818df20ba427d71a477722d548555c4660596ac"
+        },
+        "handoff": {
+          "path": "work-items/SEC-ROLE-001/handoff.md",
+          "sha256": "70339b0ebb9a59281cb8a9a389c42730811f897d4c02f9a331084371d2466773"
+        }
+      },
+      "snapshot": "a80ba79e8ea316bd9b4a94d5aacb790e696b7e4a7f45e738bf7a3b5efd78525e",
+      "time": "2026-10-16T16:49:49.151Z"
+    },
+    {
+      "revision": 6,
+      "from": "await_user_test",
+      "event": "accepted",
+      "to": "accepted",
+      "evidence": {
+        "user_acceptance": {
+          "path": "work-items/SEC-ROLE-001/user-acceptance.json",
+          "sha256": "007cda413c53804dd6b12647a67900a4c9142662711b421a00b3a50ab501924e"
+        }
+      },
+      "snapshot": "a80ba79e8ea316bd9b4a94d5aacb790e696b7e4a7f45e738bf7a3b5efd78525e",
+      "time": "2026-10-16T16:49:49.470Z"
+    },
+    {
+      "revision": 7,
+      "from": "accepted",
+      "event": "finish",
+      "to": "done",
+      "evidence": {
+        "closure": {
+          "path": "work-items/SEC-ROLE-001/closure.md",
+          "sha256": "97e6747000a95da88183464fad5c034eccd764d8c26084ab41f2439ddb623173"
+        }
+      },
+      "snapshot": "a80ba79e8ea316bd9b4a94d5aacb790e696b7e4a7f45e738bf7a3b5efd78525e",
+      "time": "2026-10-16T16:49:49.606Z"
+    }
+  ],
+  "handoff": "a80ba79e8ea316bd9b4a94d5aacb790e696b7e4a7f45e738bf7a3b5efd78525e",
+  "returnTo": null
+}

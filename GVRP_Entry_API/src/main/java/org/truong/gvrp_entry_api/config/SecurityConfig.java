@@ -18,6 +18,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.truong.gvrp_entry_api.security.ApiKeyAuthenticationFilter;
 import org.truong.gvrp_entry_api.security.BranchAwareAuthenticationProvider;
 import org.truong.gvrp_entry_api.security.CustomUserDetailsService;
+import org.truong.gvrp_entry_api.security.RoleAccessDeniedHandler;
 import org.truong.gvrp_entry_api.security.jwt.JwtAuthenticationFilter;
 import org.truong.gvrp_entry_api.security.jwt.JwtAuthenticationEntryPoint;
 
@@ -35,6 +36,7 @@ public class SecurityConfig {
     private final CustomUserDetailsService userDetailsService;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+    private final RoleAccessDeniedHandler roleAccessDeniedHandler;
     private final BranchAwareAuthenticationProvider branchAwareAuthenticationProvider;
     private final PasswordEncoder passwordEncoder;
 
@@ -64,7 +66,8 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configure(http))
                 .exceptionHandling(exception ->
-                        exception.authenticationEntryPoint(jwtAuthenticationEntryPoint))
+                        exception.authenticationEntryPoint(jwtAuthenticationEntryPoint)
+                                .accessDeniedHandler(roleAccessDeniedHandler))
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
@@ -74,13 +77,10 @@ public class SecurityConfig {
                         .requestMatchers("/actuator/health").permitAll()
                         .requestMatchers("/api/v1/solutions/callbacks/**").permitAll()
 
-                        // Authenticated endpoints
-                        .requestMatchers("/api/v1/depots/**").authenticated()
-                        .requestMatchers("/api/v1/fleets/**").authenticated()
-                        .requestMatchers("/api/v1/vehicles/**").authenticated()
-                        .requestMatchers("/api/v1/orders/**").authenticated()
-                        .requestMatchers("/api/v1/jobs/**").authenticated()
-                        .requestMatchers("/api/v1/solutions/**").authenticated()
+                        // Role rules (SEC-ROLE-001): driver self-service for DRIVER,
+                        // every other business endpoint for PLANNER.
+                        .requestMatchers("/api/v1/driver/**").hasRole("DRIVER")
+                        .requestMatchers("/api/v1/**").hasRole("PLANNER")
 
                         // All other requests require authentication
                         .anyRequest().authenticated()
