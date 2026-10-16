@@ -33,7 +33,8 @@ public class VehicleController {
             @Valid @RequestBody VehicleInputDTO input,
             @RequestParam Long fleetId) {
 
-        VehicleDTO vehicle = vehicleService.createVehicle(input, fleetId);
+        Long branchId = CurrentUserUtil.getCurrentBranchId();
+        VehicleDTO vehicle = vehicleService.createVehicle(input, fleetId, branchId);
         return ResponseEntity.status(HttpStatus.CREATED).body(vehicle);
     }
 
@@ -46,7 +47,8 @@ public class VehicleController {
             @PathVariable Long id,
             @Valid @RequestBody VehicleUpdateDTO update) {
 
-        VehicleDTO vehicle = vehicleService.updateVehicle(id, update);
+        Long branchId = CurrentUserUtil.getCurrentBranchId();
+        VehicleDTO vehicle = vehicleService.updateVehicle(id, update, branchId);
         return ResponseEntity.ok(vehicle);
     }
 }

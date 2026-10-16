@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 import org.truong.gvrp_entry_api.entity.Vehicle;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface VehicleRepository extends JpaRepository<Vehicle, Long> {
 
@@ -18,6 +19,11 @@ public interface VehicleRepository extends JpaRepository<Vehicle, Long> {
      * @return List of vehicles
      */
     Page<Vehicle> findByFleetBranchId(Long branchId, Pageable pageable);
+
+    /**
+     * Find a vehicle only if its fleet belongs to the given branch.
+     */
+    Optional<Vehicle> findByIdAndFleetBranchId(Long id, Long branchId);
 
     /**
      * Check if license plate exists

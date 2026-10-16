@@ -12,10 +12,14 @@ Never write secret values into this file. Name the file and property only.
 
 | ID | Severity | Finding | Evidence | Status |
 |---|---|---|---|---|
-| SEC-001 | Critical | Credentials committed to git. `GVRP_Entry_API/src/main/resources/application.properties` holds literal values for `spring.datasource.password`, `spring.gvrp.jwt.secret-key`, `spring.mail.password`, `engine.api.key`, `geocoding.goong.api-key`. `GVRP_Engine_API/src/main/resources/application.properties` holds `entry.api-key`. Remote: GitHub. | File present in git index (checked 2026-10-16); values are literals, not `${...}` placeholders. | OPEN |
-| SEC-002 | High | Possible cross-branch access to solutions (IDOR). `SolutionController` endpoints `GET /{id}`, `GET /{id}/latest-revision`, `GET /{id}/revision-chain`, `POST /{id}/evaluate`, `POST /{id}/revisions` load the solution by ID only (`SolutionRepository.findWithDetailsById`, `findById`) and do not compare its branch with the caller's branch. No tenant filter, aspect or interceptor was found. | Static inspection of `SolutionController`, `SolutionService`, `RouteCustomizationService`, `SolutionRepository` (2026-10-16). Not reproduced at runtime. | OPEN, NOT_VERIFIED at runtime |
-| SEC-003 | Medium | Other controllers not yet audited for the same pattern. | Only `Solution*` and `OrderRepository` were inspected. `OrderRepository` uses `findByIdAndBranchId`, but `updateStatusByIds` is not branch-scoped, so its callers must validate the IDs. | OPEN, audit pending |
+| SEC-001 | Critical | Credentials committed to git. `GVRP_Entry_API/src/main/resources/application.properties` holds literal values for `spring.datasource.password`, `spring.gvrp.jwt.secret-key`, `spring.mail.password`, `engine.api.key`, `geocoding.goong.api-key`. `GVRP_Engine_API/src/main/resources/application.properties` holds `entry.api-key`. Remote: GitHub. | File present in git index (checked 2026-10-16); values are literals, not `${...}` placeholders. Impact: with the JWT key anyone can mint a token for any branch, which bypasses every tenant check. | OPEN |
+| SEC-002 | High | Possible cross-branch access to solutions (IDOR). `SolutionController` endpoints `GET /{id}`, `GET /{id}/latest-revision`, `GET /{id}/revision-chain`, `POST /{id}/evaluate`, `POST /{id}/revisions` load the solution by ID only (`SolutionRepository.findWithDetailsById`, `findById`) and do not compare its branch with the caller's branch. No tenant filter, aspect or interceptor was found. | Static inspection of `SolutionController`, `SolutionService`, `RouteCustomizationService`, `SolutionRepository` (2026-10-16). | FIXED on branch `fix/sec-tenant-001` (`work-items/SEC-TENANT-001`, done 2026-10-16; unit tests + manual cross-branch test) |
+| SEC-003 | High | Audit of all Entry API controllers (2026-10-16) found the same pattern in vehicle create/update, fleet create (foreign depots/types) and route send history. | `work-items/SEC-TENANT-001/context.md` | FIXED on branch `fix/sec-tenant-001` (`work-items/SEC-TENANT-001`) |
 | SEC-004 | Low | Engine callback API key is compared with `String.equals` (not constant-time) in `ApiKeyAuthenticationFilter`. The callback path is `permitAll` in `SecurityConfig` but is protected by this filter. | Static inspection. | OPEN |
+| SEC-005 | Low | `work-items/DRIVER-MAP-004/request.md` contains local test-account credentials, now tracked in git. | File content (2026-10-16). | OPEN: change those test passwords; never reuse them |
+| SEC-006 | Medium | No role checks outside `RouteSendService`: a DRIVER token can call planner endpoints of its own branch (orders with customer data, vehicles, solutions). Conflicts with the intent of DRIVER-DELIVERY-001 DD-022. | Static inspection of all controllers (2026-10-16). | OPEN |
+| SEC-007 | Low | `VehicleService.createVehicle` checks license-plate uniqueness globally, revealing whether a plate exists in another branch. | Static inspection. | OPEN |
+| SEC-008 | Low | `POST /api/v1/auth/register` (public) returns "User registered successfully" without creating a user. | Static inspection of `AuthController`. | OPEN |
 
 ### Required actions for SEC-001 (user decision)
 
@@ -24,9 +28,9 @@ Never write secret values into this file. Name the file and property only.
 3. Optional and destructive: rewrite history with `git filter-repo` and force-push. Rotation is still required either way.
 4. Enable GitHub secret scanning and push protection if available for the repository.
 
-### Required actions for SEC-002 and SEC-003
+### Actions taken for SEC-002 and SEC-003
 
-Open a work item and fix through the business-development workflow:
+Done in `work-items/SEC-TENANT-001` (see `closure.md` for coverage and limitations). Original plan:
 
 * Add branch-scoped lookups (for example `findWithDetailsByIdAndBranchId`).
 * Take the branch from the authenticated principal (`CurrentUserUtil.getCurrentBranchId()`).

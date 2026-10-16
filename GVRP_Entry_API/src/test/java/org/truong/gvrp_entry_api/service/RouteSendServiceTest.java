@@ -288,6 +288,33 @@ class RouteSendServiceTest {
                 detail.getStops().stream().map(s -> s.getSequenceNumber()).toList());
     }
 
+    // ---------- tenant isolation (SEC-TENANT-001, new tests) ----------
+
+    @Test
+    void routeSends_otherBranch_notFound() {
+        Fixture f = fixture();
+        asUser(1L, 2L, "PLANNER");
+        when(routeRepository.findById(21L)).thenReturn(Optional.of(f.route()));
+
+        assertThrows(DataInvalidException.class, () -> service.routeSends(21L));
+        verify(sendRepository, never()).findByRouteIdOrderBySentAtDescIdDesc(any());
+    }
+
+    @Test
+    void routeSends_ownBranch_returnsHistory() {
+        Fixture f = fixture();
+        asUser(1L, 1L, "PLANNER");
+        when(routeRepository.findById(21L)).thenReturn(Optional.of(f.route()));
+        RouteSend send = RouteSend.builder().id(1L).solution(f.solution())
+                .route(f.route()).driver(f.driver()).sender(f.sender())
+                .status(SendStatus.CURRENT).sentAt(java.time.LocalDateTime.now()).build();
+        when(sendRepository.findByRouteIdOrderBySentAtDescIdDesc(21L)).thenReturn(List.of(send));
+
+        List<RouteSendDTO> sends = service.routeSends(21L);
+
+        assertEquals(List.of(1L), sends.stream().map(RouteSendDTO::getId).toList());
+    }
+
     private record Fixture(
             Branch branch, User sender, User driver, OptimizationJob job,
             Solution solution, Order order, Vehicle vehicle, Route route) {

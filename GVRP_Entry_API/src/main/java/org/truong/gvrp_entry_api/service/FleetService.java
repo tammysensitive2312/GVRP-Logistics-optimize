@@ -60,7 +60,8 @@ public class FleetService {
 
             var vehicleTypeId = vehicleInputDTO.getVehicleTypeId();
 
-            var vehicleType = typeRepository.findById(vehicleTypeId)
+            // Depots and vehicle types must belong to the same branch (tenant isolation).
+            var vehicleType = typeRepository.findByIdAndBranchId(vehicleTypeId, branchId)
                     .orElseThrow(() -> new DataInvalidException(
                             List.of(
                                     ErrorDetail.builder()
@@ -71,7 +72,7 @@ public class FleetService {
                             ))
                     );
 
-            var startDepot = depotRepository.findById(startDepotId)
+            var startDepot = depotRepository.findByIdAndBranchId(startDepotId, branchId)
                     .orElseThrow(() -> new DataInvalidException(
                             List.of(
                                     ErrorDetail.builder()
@@ -80,7 +81,7 @@ public class FleetService {
                                             .resource(AppConstant.DEPOT)
                                             .build()
                             )));
-            var endDepot = depotRepository.findById(endDepotId)
+            var endDepot = depotRepository.findByIdAndBranchId(endDepotId, branchId)
                     .orElseThrow(
                             () -> new DataInvalidException(
                                     List.of(

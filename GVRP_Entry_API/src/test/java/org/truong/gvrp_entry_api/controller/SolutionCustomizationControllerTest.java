@@ -58,7 +58,7 @@ class SolutionCustomizationControllerTest {
 
     @Test
     void evaluate_ok_returnsPreview() throws Exception {
-        when(routeCustomizationService.evaluate(eq(9L), any())).thenReturn(
+        when(routeCustomizationService.evaluate(eq(9L), any(), any())).thenReturn(
                 RouteEvaluateResponseDTO.builder()
                         .feasible(true).violations(List.of()).routes(List.of())
                         .warnings(List.of()).build());
@@ -71,7 +71,7 @@ class SolutionCustomizationControllerTest {
 
     @Test
     void evaluate_badSequences_returns400() throws Exception {
-        when(routeCustomizationService.evaluate(eq(9L), any())).thenThrow(
+        when(routeCustomizationService.evaluate(eq(9L), any(), any())).thenThrow(
                 new DataInvalidException(List.of(ErrorDetail.builder()
                         .code(ErrorCode.VALIDATION_ERROR.getCode()).message("bad").build())));
 
@@ -82,7 +82,7 @@ class SolutionCustomizationControllerTest {
 
     @Test
     void evaluate_engineDown_returns502() throws Exception {
-        when(routeCustomizationService.evaluate(eq(9L), any())).thenThrow(
+        when(routeCustomizationService.evaluate(eq(9L), any(), any())).thenThrow(
                 new EngineUnavailableException("down", null));
 
         mockMvc().perform(post("/api/v1/solutions/9/evaluate")
@@ -92,7 +92,7 @@ class SolutionCustomizationControllerTest {
 
     @Test
     void saveRevision_ok_returnsDetail() throws Exception {
-        when(routeCustomizationService.saveRevision(eq(9L), any())).thenReturn(
+        when(routeCustomizationService.saveRevision(eq(9L), any(), any())).thenReturn(
                 SolutionDetailResponseDTO.builder().id(10L).build());
 
         mockMvc().perform(post("/api/v1/solutions/9/revisions")
@@ -103,7 +103,7 @@ class SolutionCustomizationControllerTest {
 
     @Test
     void saveRevision_hardViolation_returns422() throws Exception {
-        when(routeCustomizationService.saveRevision(eq(9L), any())).thenThrow(
+        when(routeCustomizationService.saveRevision(eq(9L), any(), any())).thenThrow(
                 new UnprocessablePlanException("OVER_CAPACITY route=0"));
 
         mockMvc().perform(post("/api/v1/solutions/9/revisions")
@@ -114,7 +114,7 @@ class SolutionCustomizationControllerTest {
 
     @Test
     void saveRevision_staleBase_returns409() throws Exception {
-        when(routeCustomizationService.saveRevision(eq(9L), any())).thenThrow(
+        when(routeCustomizationService.saveRevision(eq(9L), any(), any())).thenThrow(
                 new RevisionConflictException("stale", 10L));
 
         mockMvc().perform(post("/api/v1/solutions/9/revisions")

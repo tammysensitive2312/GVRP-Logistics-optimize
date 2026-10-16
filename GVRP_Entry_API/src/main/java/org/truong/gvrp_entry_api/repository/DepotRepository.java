@@ -18,6 +18,11 @@ public interface DepotRepository extends JpaRepository<Depot, Long> {
     List<Depot> findByBranchId(Long branchId);
 
     /**
+     * Find a depot only if it belongs to the given branch.
+     */
+    Optional<Depot> findByIdAndBranchId(Long id, Long branchId);
+
+    /**
      * Find depot by branch ID and name
      * @param branchId Branch ID
      * @param name Depot name

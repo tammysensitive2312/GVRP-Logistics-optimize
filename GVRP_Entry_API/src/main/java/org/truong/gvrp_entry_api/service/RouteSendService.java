@@ -141,7 +141,11 @@ public class RouteSendService {
     @Transactional(readOnly = true)
     public List<RouteSendDTO> routeSends(Long routeId) {
         requireRole(UserRole.PLANNER);
+        Long branchId = currentBranchId();
+        // Tenant check: another branch's route answers exactly like a missing one.
         routeRepository.findById(routeId)
+                .filter(route -> route.getSolution() != null
+                        && SolutionService.belongsTo(route.getSolution(), branchId))
                 .orElseThrow(() -> notFound(AppConstant.ROUTE));
         return sendRepository.findByRouteIdOrderBySentAtDescIdDesc(routeId).stream()
                 .map(this::toSendDTO)

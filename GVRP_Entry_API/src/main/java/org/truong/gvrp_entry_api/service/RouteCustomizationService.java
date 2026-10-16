@@ -78,23 +78,26 @@ public class RouteCustomizationService {
     private final SolutionMapper solutionMapper;
     private final EngineApiClient engineApiClient;
     @Transactional(readOnly = true)
-    public RouteEvaluateResponseDTO evaluate(Long baseSolutionId, CustomizeRoutesRequest request) {
-        ValidatedPlan plan = validateAndPrepare(baseSolutionId, request);
+    public RouteEvaluateResponseDTO evaluate(Long baseSolutionId, Long branchId,
+                                             CustomizeRoutesRequest request) {
+        ValidatedPlan plan = validateAndPrepare(baseSolutionId, branchId, request);
         EngineEvaluateResponseDTO engine = engineApiClient.evaluateRoutes(plan.engineRequest());
         return toPreview(plan, engine);
     }
 
     /** Id of the newest revision in the chain (the id itself when unedited). */
     @Transactional(readOnly = true)
-    public Long latestRevisionId(Long solutionId) {
+    public Long latestRevisionId(Long solutionId, Long branchId) {
         Solution base = solutionRepository.findById(solutionId)
+                .filter(found -> SolutionService.belongsTo(found, branchId))
                 .orElseThrow(() -> notFound(AppConstant.SOLUTION));
         return latestRevision(base).getId();
     }
 
     @Transactional
-    public SolutionDetailResponseDTO saveRevision(Long baseSolutionId, CustomizeRoutesRequest request) {
-        ValidatedPlan plan = validateAndPrepare(baseSolutionId, request);
+    public SolutionDetailResponseDTO saveRevision(Long baseSolutionId, Long branchId,
+                                                  CustomizeRoutesRequest request) {
+        ValidatedPlan plan = validateAndPrepare(baseSolutionId, branchId, request);
 
         Solution latest = latestRevision(plan.base());
         if (!latest.getId().equals(plan.base().getId())) {
@@ -122,8 +125,12 @@ public class RouteCustomizationService {
     // --------------------------------------------------
 
     /** Shared validation + engine-payload building for preview and save. */
-    private ValidatedPlan validateAndPrepare(Long baseSolutionId, CustomizeRoutesRequest request) {
+    private ValidatedPlan validateAndPrepare(Long baseSolutionId, Long branchId,
+                                             CustomizeRoutesRequest request) {
+        // Tenant check first: another branch's plan answers exactly like a missing one,
+        // before any validation detail, engine call or persistence.
         Solution base = solutionRepository.findWithDetailsById(baseSolutionId)
+                .filter(found -> SolutionService.belongsTo(found, branchId))
                 .orElseThrow(() -> notFound(AppConstant.SOLUTION));
 
         if (request == null || request.getRoutes() == null || request.getRoutes().isEmpty()) {

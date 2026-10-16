@@ -16,6 +16,7 @@ import org.truong.gvrp_entry_api.util.ErrorCode;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -25,37 +26,49 @@ public class SolutionService {
     private final SolutionMapper solutionMapper;
 
     @Transactional(readOnly = true)
-    public SolutionDetailResponseDTO getSolutionDetail(Long id) {        Solution solution = solutionRepository.findWithDetailsById(id)
-                .orElseThrow(() -> new DataInvalidException(
-                        List.of(
-                                ErrorDetail.builder()
-                                        .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
-                                        .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
-                                        .resource(AppConstant.SOLUTION)
-                                        .build()
-                        )));
+    public SolutionDetailResponseDTO getSolutionDetail(Long id, Long branchId) {
+        Solution solution = solutionRepository.findWithDetailsById(id)
+                .filter(found -> belongsTo(found, branchId))
+                .orElseThrow(SolutionService::solutionNotFound);
 
         return solutionMapper.toDTO(solution);
     }
 
     /** Full revision chain (root first) for the send dialog picker. */
     @Transactional(readOnly = true)
-    public List<RevisionDTO> revisionChain(Long id) {
+    public List<RevisionDTO> revisionChain(Long id, Long branchId) {
+        // Revisions inherit the base solution's branch, so checking the requested
+        // solution covers the whole chain.
         Solution current = solutionRepository.findById(id)
-                .orElseThrow(() -> new DataInvalidException(
-                        List.of(
-                                ErrorDetail.builder()
-                                        .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
-                                        .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
-                                        .resource(AppConstant.SOLUTION)
-                                        .build()
-                        )));
+                .filter(found -> belongsTo(found, branchId))
+                .orElseThrow(SolutionService::solutionNotFound);
         while (current.getParentSolution() != null) {
             current = current.getParentSolution();
         }
         List<RevisionDTO> chain = new ArrayList<>();
         collectRevisions(current, chain);
         return chain;
+    }
+
+    /**
+     * Tenant check: a solution of another branch, or a missing caller branch,
+     * is treated exactly like a missing solution.
+     */
+    static boolean belongsTo(Solution solution, Long branchId) {
+        return branchId != null
+                && solution.getBranch() != null
+                && Objects.equals(solution.getBranch().getId(), branchId);
+    }
+
+    static DataInvalidException solutionNotFound() {
+        return new DataInvalidException(
+                List.of(
+                        ErrorDetail.builder()
+                                .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
+                                .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
+                                .resource(AppConstant.SOLUTION)
+                                .build()
+                ));
     }
 
     private void collectRevisions(Solution node, List<RevisionDTO> chain) {

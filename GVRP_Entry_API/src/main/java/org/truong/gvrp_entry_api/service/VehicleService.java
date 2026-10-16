@@ -56,12 +56,13 @@ public class VehicleService {
                 .build();
     }
 
-    public VehicleDTO createVehicle(VehicleInputDTO input, long fleetId) {
+    public VehicleDTO createVehicle(VehicleInputDTO input, long fleetId, Long branchId) {
         if (vehicleRepository.existsByVehicleLicensePlate(input.getVehicleLicensePlate())) {
             throw new ValidationException("License plate already exists");
         }
 
-        Fleet fleet = fleetRepository.findById(fleetId)
+        // Every referenced entity must belong to the caller's branch (tenant isolation).
+        Fleet fleet = fleetRepository.findByIdAndBranchId(fleetId, branchId)
                 .orElseThrow(() -> new DataInvalidException(
                         List.of(
                                 ErrorDetail.builder()
@@ -71,7 +72,7 @@ public class VehicleService {
                                         .build()
                         )));
 
-        Depot startDepot = depotRepository.findById(input.getStartDepotId())
+        Depot startDepot = depotRepository.findByIdAndBranchId(input.getStartDepotId(), branchId)
                 .orElseThrow(() -> new DataInvalidException(
                         List.of(
                                 ErrorDetail.builder()
@@ -80,7 +81,7 @@ public class VehicleService {
                                         .resource(AppConstant.DEPOT)
                                         .build()
                         )));
-        Depot endDepot = depotRepository.findById(input.getEndDepotId())
+        Depot endDepot = depotRepository.findByIdAndBranchId(input.getEndDepotId(), branchId)
                 .orElseThrow(() -> new DataInvalidException(
                         List.of(
                                 ErrorDetail.builder()
@@ -90,7 +91,7 @@ public class VehicleService {
                                         .build()
                         )));
 
-        VehicleType vehicleType = typeRepository.findById(input.getVehicleTypeId())
+        VehicleType vehicleType = typeRepository.findByIdAndBranchId(input.getVehicleTypeId(), branchId)
                 .orElseThrow(() -> new DataInvalidException(
                         List.of(
                                 ErrorDetail.builder()
@@ -114,10 +115,11 @@ public class VehicleService {
     }
 
     @Transactional
-    public VehicleDTO updateVehicle(Long id, VehicleUpdateDTO input) {
+    public VehicleDTO updateVehicle(Long id, VehicleUpdateDTO input, Long branchId) {
         log.info("Updating vehicle: {}", id);
 
-        Vehicle vehicle = vehicleRepository.findById(id)
+        // Every referenced entity must belong to the caller's branch (tenant isolation).
+        Vehicle vehicle = vehicleRepository.findByIdAndFleetBranchId(id, branchId)
                 .orElseThrow(() -> new DataInvalidException(
                         List.of(
                                 ErrorDetail.builder()
@@ -131,7 +133,7 @@ public class VehicleService {
         vehicleMapper.updateEntityFromDTO(input, vehicle);
 
         if (input.getStartDepotId() != null) {
-            Depot startDepot = depotRepository.findById(input.getStartDepotId())
+            Depot startDepot = depotRepository.findByIdAndBranchId(input.getStartDepotId(), branchId)
                     .orElseThrow(() -> new DataInvalidException(
                             List.of(
                                     ErrorDetail.builder()
@@ -144,7 +146,7 @@ public class VehicleService {
         }
 
         if (input.getEndDepotId() != null) {
-            Depot endDepot = depotRepository.findById(input.getEndDepotId())
+            Depot endDepot = depotRepository.findByIdAndBranchId(input.getEndDepotId(), branchId)
                     .orElseThrow(() -> new DataInvalidException(
                             List.of(
                                     ErrorDetail.builder()
@@ -157,7 +159,7 @@ public class VehicleService {
         }
 
         if (input.getVehicleTypeId() != null) {
-            VehicleType type = typeRepository.findById(input.getVehicleTypeId())
+            VehicleType type = typeRepository.findByIdAndBranchId(input.getVehicleTypeId(), branchId)
                     .orElseThrow(() -> new DataInvalidException(
                             List.of(
                                     ErrorDetail.builder()

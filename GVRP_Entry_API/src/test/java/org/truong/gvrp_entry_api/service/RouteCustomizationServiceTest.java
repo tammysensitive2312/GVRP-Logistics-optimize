@@ -190,7 +190,7 @@ class RouteCustomizationServiceTest {
         Fixture f = fixture();
         stubLookups(f);
 
-        RouteEvaluateResponseDTO preview = service.evaluate(9L, sequences(7L, 12L, 11L));
+        RouteEvaluateResponseDTO preview = service.evaluate(9L, 1L, sequences(7L, 12L, 11L));
 
         assertTrue(preview.isFeasible());
         assertTrue(preview.getViolations().isEmpty());
@@ -207,7 +207,7 @@ class RouteCustomizationServiceTest {
         f.type().setCapacity(50);
         stubLookups(f);
 
-        RouteEvaluateResponseDTO preview = service.evaluate(9L, sequences(7L, 11L, 12L));
+        RouteEvaluateResponseDTO preview = service.evaluate(9L, 1L, sequences(7L, 11L, 12L));
 
         assertFalse(preview.isFeasible());
         assertTrue(preview.getViolations().stream()
@@ -220,7 +220,7 @@ class RouteCustomizationServiceTest {
         when(solutionRepository.findWithDetailsById(9L)).thenReturn(Optional.of(f.base()));
 
         assertThrows(DataInvalidException.class,
-                () -> service.evaluate(9L, sequences(7L, 11L, 11L)));
+                () -> service.evaluate(9L, 1L, sequences(7L, 11L, 11L)));
     }
 
     @Test
@@ -229,7 +229,7 @@ class RouteCustomizationServiceTest {
         when(solutionRepository.findWithDetailsById(9L)).thenReturn(Optional.of(f.base()));
 
         assertThrows(DataInvalidException.class,
-                () -> service.evaluate(9L, sequences(7L, 11L)));
+                () -> service.evaluate(9L, 1L, sequences(7L, 11L)));
     }
 
     @Test
@@ -239,7 +239,7 @@ class RouteCustomizationServiceTest {
         f.route().getSegments().get(0).setDepartureTime(null);
         stubLookups(f);
 
-        RouteEvaluateResponseDTO preview = service.evaluate(9L, sequences(7L, 11L, 12L));
+        RouteEvaluateResponseDTO preview = service.evaluate(9L, 1L, sequences(7L, 11L, 12L));
 
         assertTrue(preview.isFeasible());
     }
@@ -254,7 +254,7 @@ class RouteCustomizationServiceTest {
         when(solutionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(solutionMapper.toDTO(any())).thenReturn(SolutionDetailResponseDTO.builder().build());
 
-        service.saveRevision(9L, sequences(7L, 12L, 11L));
+        service.saveRevision(9L, 1L, sequences(7L, 12L, 11L));
 
         ArgumentCaptor<Solution> captor = ArgumentCaptor.forClass(Solution.class);
         verify(solutionRepository).save(captor.capture());
@@ -282,7 +282,7 @@ class RouteCustomizationServiceTest {
         when(solutionRepository.findByParentSolutionId(9L)).thenReturn(List.of());
 
         assertThrows(UnprocessablePlanException.class,
-                () -> service.saveRevision(9L, sequences(7L, 11L, 12L)));
+                () -> service.saveRevision(9L, 1L, sequences(7L, 11L, 12L)));
         verify(solutionRepository, never()).save(any());
     }
 
@@ -300,10 +300,60 @@ class RouteCustomizationServiceTest {
         when(solutionRepository.findByParentSolutionId(9L)).thenReturn(List.of(newer));
 
         RevisionConflictException ex = assertThrows(RevisionConflictException.class,
-                () -> service.saveRevision(9L, sequences(7L, 11L, 12L)));
+                () -> service.saveRevision(9L, 1L, sequences(7L, 11L, 12L)));
         assertEquals(10L, ex.getLatestRevisionId());
         verify(solutionRepository, never()).save(any());
         verify(engineApiClient, never()).evaluateRoutes(any());
+    }
+
+    // ---------- tenant isolation (SEC-TENANT-001, new tests) ----------
+
+    @Test
+    void evaluate_otherBranch_notFoundWithoutEngineCall() {
+        Fixture f = fixture();
+        when(solutionRepository.findWithDetailsById(9L)).thenReturn(Optional.of(f.base()));
+
+        assertThrows(DataInvalidException.class,
+                () -> service.evaluate(9L, 2L, sequences(7L, 12L, 11L)));
+        verify(engineApiClient, never()).evaluateRoutes(any());
+    }
+
+    @Test
+    void evaluate_missingBranch_notFound() {
+        Fixture f = fixture();
+        when(solutionRepository.findWithDetailsById(9L)).thenReturn(Optional.of(f.base()));
+
+        assertThrows(DataInvalidException.class,
+                () -> service.evaluate(9L, null, sequences(7L, 12L, 11L)));
+        verify(engineApiClient, never()).evaluateRoutes(any());
+    }
+
+    @Test
+    void saveRevision_otherBranch_notFoundWithoutSaving() {
+        Fixture f = fixture();
+        when(solutionRepository.findWithDetailsById(9L)).thenReturn(Optional.of(f.base()));
+
+        assertThrows(DataInvalidException.class,
+                () -> service.saveRevision(9L, 2L, sequences(7L, 12L, 11L)));
+        verify(solutionRepository, never()).save(any());
+        verify(engineApiClient, never()).evaluateRoutes(any());
+    }
+
+    @Test
+    void latestRevisionId_otherBranch_notFound() {
+        Fixture f = fixture();
+        when(solutionRepository.findById(9L)).thenReturn(Optional.of(f.base()));
+
+        assertThrows(DataInvalidException.class, () -> service.latestRevisionId(9L, 2L));
+    }
+
+    @Test
+    void latestRevisionId_ownBranch_returnsBaseWhenUnedited() {
+        Fixture f = fixture();
+        when(solutionRepository.findById(9L)).thenReturn(Optional.of(f.base()));
+        when(solutionRepository.findByParentSolutionId(9L)).thenReturn(List.of());
+
+        assertEquals(9L, service.latestRevisionId(9L, 1L));
     }
 
     private record Fixture(
