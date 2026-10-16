@@ -41,6 +41,9 @@ Major components include:
 * `GVRP_Benchmark` — benchmark and profiling artifacts
 * `GVRP_Document` — architecture and design documentation
 * `docs/research` — durable research knowledge
+* `docs/security` — security checklist and open findings
+* `work-items` — business feature runs and their evidence
+* `.github` — CI and Dependabot configuration
 * `.agents/skills` — specialized scientific skills
 * `.opencode/agents` — specialized agent roles
 
@@ -222,6 +225,8 @@ Search for:
 * reproducibility gaps
 * unsupported conclusions
 
+For code changes, also apply sections 14 (Test Integrity) and 15 (Security and Tenant Isolation).
+
 Historical traps may be consulted in:
 
 * `docs/research/KNOWN_ISSUES.md`
@@ -401,7 +406,113 @@ Specialized skills provide task-specific methods.
 
 ---
 
-## 14. Final Principle
+## 14. Test Integrity
+
+Existing tests are specifications of accepted behavior.
+
+Do not make a change pass by changing the tests that judge it.
+
+Without explicit user approval for that specific test, do not:
+
+* delete or rename an existing test
+* disable or skip a test (`@Disabled`, `assumeTrue(false)`, `xit`, `xdescribe`, `pending`)
+* focus a test so others stop running (`fit`, `fdescribe`)
+* weaken assertions, widen tolerances or change expected values
+* edit shared fixtures, test data or test helpers in a way that changes what existing tests check
+* exclude tests from a build or CI command (`-DskipTests`, surefire excludes, `--exclude`)
+
+Adding new tests is always allowed.
+
+If an existing test looks wrong, stop and report:
+
+* the test
+* why it looks wrong
+* the evidence
+* the proposed change
+
+Then wait for the user's decision on that test.
+
+Every handoff must list each modified test file and the reason.
+
+Pre-existing failures must be recorded by test name before work starts.
+
+Do not fix them silently inside an unrelated task, and do not report them as new failures.
+
+---
+
+## 15. Security and Tenant Isolation
+
+The system is pre-deployment.
+
+A branch is a separate company (tenant).
+
+Exposure of one branch's data to another branch is the highest-severity defect class in this repository.
+
+The security checklist and open findings live in:
+
+```text
+docs/security/SECURITY_CHECKLIST.md
+```
+
+### Tenant isolation
+
+* Every read or write of branch-owned data must be scoped on the server to the branch of the authenticated principal.
+* Take the branch from the authenticated principal, never from a request body, path or query parameter alone.
+* A lookup by ID must also check ownership, for example `findByIdAndBranchId`. Prefer a not-found response for another branch's ID.
+* Batch operations, scheduled jobs and callbacks must preserve branch boundaries.
+* A new or changed endpoint touching branch-owned data needs a test proving that branch A cannot read or modify branch B's data.
+
+### Secrets
+
+* Never place secret values in tracked files, code, tests, logs, commit messages, `work-items` evidence or chat.
+* Use environment variables or gitignored local files; refer to secrets by property name only.
+* If a secret is found in a tracked file, report the file and property name only.
+* Do not rewrite git history; that is a destructive action and a user decision.
+
+### Authentication and authorization
+
+* Use the existing Spring Security components; do not write custom cryptography or token handling.
+* New endpoints are authenticated by default.
+* Any new `permitAll` rule must be justified in the handoff.
+* Do not disable TLS or hostname verification.
+
+### Inputs and resources
+
+* Bound request sizes: bulk uploads, number of orders, vehicles and stops.
+* Solver work runs with a time limit and outside the request thread.
+
+### Logging
+
+* Do not log tokens, passwords, API keys or personal data (customer name, phone, address, or coordinates linked to a customer).
+
+### Dependencies
+
+* Before adding a dependency, verify that the exact coordinate exists on Maven Central or npm and is maintained.
+* Name every new dependency in the handoff.
+* Watch for look-alike package names.
+
+### Agent environment
+
+* Agents use only the local development database, with test data and the read-only `agent_reader` user.
+* No production credentials are given to agents.
+* Do not send secrets or customer data to third-party model providers.
+
+### AI-generated code red flags
+
+Reviewers must check changed code for:
+
+* hard-coded secrets
+* disabled TLS or certificate checks
+* swallowed exceptions where the failure must propagate
+* new queries or endpoints without branch scoping
+* new `permitAll` rules
+* stubs that report success without doing the work
+* modified, disabled or excluded tests
+* dependencies that do not exist or have look-alike names
+
+---
+
+## 16. Final Principle
 
 Always distinguish:
 

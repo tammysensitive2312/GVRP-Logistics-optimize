@@ -86,4 +86,9 @@ GVRP_Benchmark/scripts/00_env.bat
 
 .agents
 
-work-items
+# work-items/ is tracked: workflow evidence (request, design, verification,
+# proof hashes) must stay in git. Never put secrets or real customer data there.
+
+# Claude Code — personal, machine-local files
+CLAUDE.local.md
+.claude/settings.local.json

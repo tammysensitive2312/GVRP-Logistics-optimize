@@ -948,6 +948,14 @@ For non-experimental verification:
 ## Required Next Action
 ```
 
+For code changes additionally include:
+
+```text
+## Test Integrity
+
+## Security / Tenant Isolation
+```
+
 For experiments additionally include:
 
 ```text
@@ -1052,7 +1060,47 @@ If yes, investigate or narrow the claim.
 
 ---
 
-# 35. Core Principle
+# 35. Test Integrity and Security Review
+
+Apply this section to every review of a code change, even when the stated claim is scientific.
+
+Inspect the diff yourself.
+
+Do not rely on the Engineer's `Modified Tests` or `Security-Relevant Changes` sections.
+
+### Test integrity
+
+List changed test files independently, for example:
+
+```text
+git diff --stat <base>...HEAD -- "*/src/test/*" "*.spec.ts"
+```
+
+For each changed existing test, check whether assertions were removed or weakened, expected values or tolerances changed, tests were disabled, skipped or focused, or tests were excluded from the build.
+
+Any such change without recorded user approval for that test is a `REJECTED` finding, regardless of other evidence.
+
+### Tenant isolation
+
+For each new or changed endpoint, service method or repository query touching branch-owned data, check:
+
+* where the branch comes from (it must be the authenticated principal)
+* whether lookups by ID also check branch ownership
+* whether a test proves that another branch is refused
+
+A missing ownership check on branch-owned data is a blocking finding.
+
+### Security red flags
+
+Check the diff against the red-flag list in `AGENTS.md` section 15.
+
+Report each finding with file, line and a concrete failure scenario.
+
+Do not quote secret values; name the file and property only.
+
+---
+
+# 36. Core Principle
 
 Your job is not to confirm the Engineer.
 

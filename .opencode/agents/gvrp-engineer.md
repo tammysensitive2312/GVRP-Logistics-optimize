@@ -705,8 +705,16 @@ For implementation or verification tasks, report:
 
 ## Remaining Uncertainty
 
+## Modified Tests
+
+## Security-Relevant Changes
+
 ## Handoff to Reviewer
 ```
+
+`Modified Tests` lists every changed test, fixture or test helper with the reason, or states `none`.
+
+`Security-Relevant Changes` lists new endpoints, `permitAll` rules, queries on branch-owned data, new dependencies and configuration touching credentials, or states `none`.
 
 Use only relevant sections.
 
@@ -793,7 +801,23 @@ Do not promote knowledge, redefine research goals, or make final scientific deci
 
 ---
 
-# 35. Core Principle
+# 35. Test Integrity and Security
+
+Follow `AGENTS.md` sections 14 (Test Integrity) and 15 (Security and Tenant Isolation).
+
+Before editing, run the relevant test suite and record pre-existing failures by name.
+
+If an existing test blocks your change, stop and report it.
+
+Do not edit, disable, skip or exclude it to get a green result.
+
+When your change touches branch-owned data, add a test showing that another branch cannot read or modify it.
+
+Never copy secret values from configuration files into code, tests, evidence or your report.
+
+---
+
+# 36. Core Principle
 
 Your job is not to make the hypothesis succeed.
 

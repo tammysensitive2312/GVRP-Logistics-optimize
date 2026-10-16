@@ -1,0 +1,166 @@
+{
+  "id": "DRIVER-MAP-003",
+  "root": "E:\\OR-tools java example\\GVRP-Logistics_Optimize",
+  "scope": [
+    "GVRP_Entry_client_v2/src"
+  ],
+  "graphHash": "dd102f16a0bb44c675032aab0813a841f1b446ea1fa8d99958fa094d0e8de614",
+  "state": "done",
+  "revision": 10,
+  "history": [
+    {
+      "revision": 1,
+      "from": "intake",
+      "event": "ready",
+      "to": "discover",
+      "evidence": {
+        "request": {
+          "path": "work-items/DRIVER-MAP-003/request.md",
+          "sha256": "c13dfe6d27034cef0b8b9274b3318af95cfde237edd88906fd9a017eecf99a13"
+        }
+      },
+      "snapshot": "6232f98ef44dd2f02b40f51915c25e132f6934b153bb8bbf8c1ad01572d289f8",
+      "time": "2026-10-09T01:19:17.939Z"
+    },
+    {
+      "revision": 2,
+      "from": "discover",
+      "event": "ready",
+      "to": "design",
+      "evidence": {
+        "context": {
+          "path": "work-items/DRIVER-MAP-003/context.md",
+          "sha256": "159b6aa6f5b2fa5ee0ba47d7c6a5bb49a8c5453a4934c76a5d63dc0dbd12c3f0"
+        }
+      },
+      "snapshot": "6232f98ef44dd2f02b40f51915c25e132f6934b153bb8bbf8c1ad01572d289f8",
+      "time": "2026-10-09T01:19:43.026Z"
+    },
+    {
+      "revision": 3,
+      "from": "design",
+      "event": "ready",
+      "to": "implement",
+      "evidence": {
+        "design": {
+          "path": "work-items/DRIVER-MAP-003/design.md",
+          "sha256": "85b8004a750e0e87d0e7fe49a9e061e58862814c2c253da6b960dfb72fc64e54"
+        },
+        "traceability": {
+          "path": "work-items/DRIVER-MAP-003/traceability.md",
+          "sha256": "5a4a4b72d0a2d21113c1fa28191cc64275985a73327053b001d2c1027276bf8b"
+        }
+      },
+      "snapshot": "6232f98ef44dd2f02b40f51915c25e132f6934b153bb8bbf8c1ad01572d289f8",
+      "time": "2026-10-09T01:20:21.634Z"
+    },
+    {
+      "revision": 4,
+      "from": "implement",
+      "event": "ready",
+      "to": "verify",
+      "evidence": {
+        "implementation": {
+          "path": "work-items/DRIVER-MAP-003/implementation.md",
+          "sha256": "e57523ee8f726a0b6cffdb2e225f61f670c8b38cc3c1acee0e23156309162f6a"
+        }
+      },
+      "snapshot": "f225d9c252e97a679a008cbc4fbb26a9ad5894467a74522b8d596e8f28888bfa",
+      "time": "2026-10-09T01:26:42.567Z"
+    },
+    {
+      "revision": 5,
+      "from": "verify",
+      "event": "pass",
+      "to": "await_user_test",
+      "evidence": {
+        "verification": {
+          "path": "work-items/DRIVER-MAP-003/verification.md",
+          "sha256": "de2c9dcc817052426b76178c1004515f266f4f091ae2d0dad665f41ab3addeef"
+        },
+        "handoff": {
+          "path": "work-items/DRIVER-MAP-003/handoff.md",
+          "sha256": "ee7a97a6e2954e5d1a5247d07730b375beb30dd248e0f9c7ef13dd7d4a372e45"
+        }
+      },
+      "snapshot": "f225d9c252e97a679a008cbc4fbb26a9ad5894467a74522b8d596e8f28888bfa",
+      "time": "2026-10-09T01:27:07.525Z"
+    },
+    {
+      "revision": 6,
+      "from": "await_user_test",
+      "event": "rejected",
+      "to": "implement",
+      "evidence": {
+        "user_feedback": {
+          "path": "work-items/DRIVER-MAP-003/user-feedback-01.md",
+          "sha256": "b0555d3055de6cb2039d3ba551e0fbea74f873cd57776dcb20ecbee7d631136e"
+        }
+      },
+      "snapshot": "f225d9c252e97a679a008cbc4fbb26a9ad5894467a74522b8d596e8f28888bfa",
+      "time": "2026-10-09T01:31:56.143Z"
+    },
+    {
+      "revision": 7,
+      "from": "implement",
+      "event": "ready",
+      "to": "verify",
+      "evidence": {
+        "implementation": {
+          "path": "work-items/DRIVER-MAP-003/implementation.md",
+          "sha256": "d6f9be08e2a3dba069bbf7a6f1ad547cf5d771e34ff419f0a03ac9aa0e9f1cc6"
+        }
+      },
+      "snapshot": "0964372aadb7fd3eda30b460d0b16bacd9c0081b0e79f9b21cf4813aa5c958b1",
+      "time": "2026-10-09T01:35:34.575Z"
+    },
+    {
+      "revision": 8,
+      "from": "verify",
+      "event": "pass",
+      "to": "await_user_test",
+      "evidence": {
+        "verification": {
+          "path": "work-items/DRIVER-MAP-003/verification.md",
+          "sha256": "a816d5d117494890072786036035045495e3b25b291a0c9130aad6ab36d424a6"
+        },
+        "handoff": {
+          "path": "work-items/DRIVER-MAP-003/handoff.md",
+          "sha256": "ee7a97a6e2954e5d1a5247d07730b375beb30dd248e0f9c7ef13dd7d4a372e45"
+        }
+      },
+      "snapshot": "0964372aadb7fd3eda30b460d0b16bacd9c0081b0e79f9b21cf4813aa5c958b1",
+      "time": "2026-10-09T01:35:51.653Z"
+    },
+    {
+      "revision": 9,
+      "from": "await_user_test",
+      "event": "accepted",
+      "to": "accepted",
+      "evidence": {
+        "user_acceptance": {
+          "path": "work-items/DRIVER-MAP-003/user-acceptance.json",
+          "sha256": "77264631d6e396df4f67e7611b491f095d700a10911e1343b2e9fcd06275d145"
+        }
+      },
+      "snapshot": "0964372aadb7fd3eda30b460d0b16bacd9c0081b0e79f9b21cf4813aa5c958b1",
+      "time": "2026-10-11T07:54:22.881Z"
+    },
+    {
+      "revision": 10,
+      "from": "accepted",
+      "event": "finish",
+      "to": "done",
+      "evidence": {
+        "closure": {
+          "path": "work-items/DRIVER-MAP-003/closure.md",
+          "sha256": "ac82ec35f046c4c7c6693d4454b3253474a758175916f46da095e925fb625c85"
+        }
+      },
+      "snapshot": "0964372aadb7fd3eda30b460d0b16bacd9c0081b0e79f9b21cf4813aa5c958b1",
+      "time": "2026-10-11T07:54:46.733Z"
+    }
+  ],
+  "handoff": "0964372aadb7fd3eda30b460d0b16bacd9c0081b0e79f9b21cf4813aa5c958b1",
+  "returnTo": null
+}
