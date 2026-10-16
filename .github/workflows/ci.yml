@@ -18,7 +18,7 @@ jobs:
     name: Secret scan (gitleaks)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       # Scans the commits of this push / pull request, not the whole history.
@@ -35,7 +35,7 @@ jobs:
       run:
         working-directory: GVRP_Engine_API
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -60,7 +60,7 @@ jobs:
       run:
         working-directory: GVRP_Entry_API
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -83,7 +83,7 @@ jobs:
       run:
         working-directory: GVRP_Entry_client_v2
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -104,7 +104,7 @@ jobs:
       run:
         working-directory: GVRP_Entry_client_v2
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -122,7 +122,7 @@ jobs:
     name: Workflow tool tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
