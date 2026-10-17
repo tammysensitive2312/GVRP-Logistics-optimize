@@ -16,8 +16,10 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.truong.gvrp_entry_api.security.UserPrincipal;
 
 import java.io.IOException;
+import java.util.Objects;
 
 /**
  * JWT Authentication Filter
@@ -50,32 +52,53 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 Long branchId = tokenProvider.getBranchIdFromToken(jwt);
                 String role = tokenProvider.getRoleFromToken(jwt);
 
-                // Create authentication
-                UsernamePasswordAuthenticationToken authentication =
-                        new UsernamePasswordAuthenticationToken(
-                                userDetails,
-                                null,
-                                userDetails.getAuthorities()
-                        );
+                if (isUsable(userDetails, userId)) {
+                    // Create authentication
+                    UsernamePasswordAuthenticationToken authentication =
+                            new UsernamePasswordAuthenticationToken(
+                                    userDetails,
+                                    null,
+                                    userDetails.getAuthorities()
+                            );
 
-                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
-                // Set authentication in Security Context
-                SecurityContextHolder.getContext().setAuthentication(authentication);
+                    // Set authentication in Security Context
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
 
-                // Store userId, branchId in request attributes for easy access
-                request.setAttribute("userId", userId);
-                request.setAttribute("branchId", branchId);
-                request.setAttribute("role", role);
+                    // Store userId, branchId in request attributes for easy access
+                    request.setAttribute("userId", userId);
+                    request.setAttribute("branchId", branchId);
+                    request.setAttribute("role", role);
 
-                logger.debug("Set Authentication for user: {}, branchId: {}, role: {}",
-                        username, branchId, role);
+                    logger.debug("Set Authentication for user: {}, branchId: {}, role: {}",
+                            username, branchId, role);
+                } else {
+                    // Disabled/locked account or userId mismatch: leave the request
+                    // unauthenticated so protected endpoints answer 401 (SS-001..SS-003).
+                    logger.warn("Rejected authentication for user '{}': account disabled/locked "
+                            + "or token/user id mismatch", username);
+                }
             }
         } catch (Exception ex) {
             logger.error("Could not set user authentication in security context", ex);
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    /**
+     * A token is usable only when its user is enabled and unlocked, and the
+     * {@code userId} claim matches the user loaded from the database.
+     */
+    private boolean isUsable(UserDetails userDetails, Long userIdFromToken) {
+        if (!userDetails.isEnabled() || !userDetails.isAccountNonLocked()) {
+            return false;
+        }
+        if (!(userDetails instanceof UserPrincipal principal)) {
+            return false;
+        }
+        return Objects.equals(principal.getUser().getId(), userIdFromToken);
     }
 
     /**

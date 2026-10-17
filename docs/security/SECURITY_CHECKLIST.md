@@ -17,10 +17,10 @@ Never write secret values into this file. Name the file and property only.
 | SEC-003 | High | Audit of all Entry API controllers (2026-10-16) found the same pattern in vehicle create/update, fleet create (foreign depots/types) and route send history. | `work-items/SEC-TENANT-001/context.md` | FIXED on branch `fix/sec-tenant-001` (`work-items/SEC-TENANT-001`) |
 | SEC-004 | Low | Engine callback API key is compared with `String.equals` (not constant-time) in `ApiKeyAuthenticationFilter`. The callback path is `permitAll` in `SecurityConfig` but is protected by this filter. | Static inspection. | OPEN |
 | SEC-005 | Low | `work-items/DRIVER-MAP-004/request.md` contains local test-account credentials, now tracked in git. | File content (2026-10-16). | OPEN: change those test passwords; never reuse them |
-| SEC-006 | Medium | No role checks outside `RouteSendService`: a DRIVER token can call planner endpoints of its own branch (orders with customer data, vehicles, solutions). Conflicts with the intent of DRIVER-DELIVERY-001 DD-022. | Static inspection of all controllers (2026-10-16). | IN PROGRESS: `work-items/SEC-ROLE-001` (policy: DRIVER only driver API, CUSTOMER blocked; user decision 2026-10-16) |
+| SEC-006 | Medium | No role checks outside `RouteSendService`: a DRIVER token can call planner endpoints of its own branch (orders with customer data, vehicles, solutions). Conflicts with the intent of DRIVER-DELIVERY-001 DD-022. | Static inspection of all controllers (2026-10-16). | FIXED on branch `fix/sec-role-001` (`work-items/SEC-ROLE-001`, done 2026-10-16; policy: DRIVER only driver API, CUSTOMER blocked) |
 | SEC-007 | Low | `VehicleService.createVehicle` checks license-plate uniqueness globally, revealing whether a plate exists in another branch. | Static inspection. | OPEN |
 | SEC-008 | Low | `POST /api/v1/auth/register` (public) returns "User registered successfully" without creating a user. | Static inspection of `AuthController`. | OPEN |
-| SEC-009 | Medium | `JwtAuthenticationFilter` does not check `UserDetails.isEnabled()`: a disabled user keeps API access until the token expires (24 h). | Static inspection (2026-10-16). | OPEN |
+| SEC-009 | Medium | `JwtAuthenticationFilter` does not check `UserDetails.isEnabled()`: a disabled user keeps API access until the token expires (24 h). | Static inspection (2026-10-16). | FIXED on branch `fix/sec-session-001` (`work-items/SEC-SESSION-001`, done 2026-10-17) |
 
 ### Required actions for SEC-001 (user decision)
 
