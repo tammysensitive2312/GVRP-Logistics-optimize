@@ -42,4 +42,17 @@ public class AppConstant {
      */
     public static final int CLUSTER_TARGET_SIZE = 150;
 
+    /**
+     * Pareto weight sampler: number of intervals N (N + 1 weight points) — PAR-004.
+     * Shared by {@code OptimizationService.optimizeMultiObjective} and {@code SolutionConverter}
+     * so the payload cannot drift from the sampler actually used.
+     */
+    public static final int PARETO_SAMPLER_N = 4;
+
+    /**
+     * Pareto weight sampler exponent p. {@code w_cost(k) = (k / N)^p}; p > 1 biases the sample
+     * towards small cost weights (the non-linear part of the cost/CO2 trade-off).
+     */
+    public static final double PARETO_SAMPLER_P = 2.0;
+
 }

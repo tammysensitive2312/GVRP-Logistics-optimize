@@ -33,6 +33,8 @@ import org.truong.gvrp_engine_api.job.JobRegistry;
 
 import static org.truong.gvrp_engine_api.utils.AppConstant.CLUSTER_FIRST_ORDER_THRESHOLD;
 import static org.truong.gvrp_engine_api.utils.AppConstant.CLUSTER_TARGET_SIZE;
+import static org.truong.gvrp_engine_api.utils.AppConstant.PARETO_SAMPLER_N;
+import static org.truong.gvrp_engine_api.utils.AppConstant.PARETO_SAMPLER_P;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -141,17 +143,35 @@ public class OptimizationService {
         OptimizationConfig config = request.getConfig();
         validateConfig(config);
 
+        // Cluster-first applies to BOTH branches (PAR-001). The assignment depends only on
+        // order coordinates/demands/depots — never on weights — so it is computed ONCE per job
+        // and shared by every weight point. This is a problem approximation (AGENTS.md §9): the
+        // reported Pareto frontier is the frontier of the clustered problem.
+        Map<String, Integer> clusterAssignment = buildClusterAssignmentIfEligible(context);
+        MatrixMask mask = MatrixMask.fromClusters(context, clusterAssignment);
+        DistanceTimeMatrix matrix = calculateDistanceMatrix(context, mask, handle);
+
         if (Boolean.TRUE.equals(config.getEnableParetoAnalysis())) {
-            DistanceTimeMatrix matrix = calculateDistanceMatrix(context, null, handle);
-            return optimizeMultiObjective(context, matrix, config, request, handle);
-        } else {
-            // 1) Cluster TRƯỚC (chỉ cần toạ độ order)
-            Map<String, Integer> clusterAssignment = buildClusterAssignmentIfEligible(context);
-            // 2) Dựng mask từ cluster, rồi build matrix thưa
-            MatrixMask mask = MatrixMask.fromClusters(context, clusterAssignment);
-            DistanceTimeMatrix matrix = calculateDistanceMatrix(context, mask, handle);
-            return optimizeSingleObjective(context, matrix, config, request, clusterAssignment, handle);
+            return optimizeMultiObjective(context, matrix, config, request, clusterAssignment, handle);
         }
+        return optimizeSingleObjective(context, matrix, config, request, clusterAssignment, handle);
+    }
+
+    /**
+     * Number of distinct clusters among the {@code "order-*"} keys of the assignment, or
+     * {@code null} when cluster-first was not applied (job below threshold / C == 1).
+     */
+    private static Integer clusterCount(Map<String, Integer> clusterAssignment) {
+        if (clusterAssignment == null) {
+            return null;
+        }
+        Set<Integer> clusters = new HashSet<>();
+        for (Map.Entry<String, Integer> entry : clusterAssignment.entrySet()) {
+            if (entry.getKey().startsWith("order-")) {
+                clusters.add(entry.getValue());
+            }
+        }
+        return clusters.size();
     }
 
     /**
@@ -347,17 +367,23 @@ public class OptimizationService {
             DistanceTimeMatrix matrix,
             OptimizationConfig config,
             EngineOptimizationRequest request,
+            Map<String, Integer> clusterAssignment,
             JobRegistry.JobHandle handle) {
 
         log.info("🎯 Running MULTI-OBJECTIVE optimization (Pareto analysis)");
-        log.info("   This will run {} optimization scenarios", ObjectivePreset.values().length);
 
         List<SolutionCandidate> candidates = new ArrayList<>();
         Map<String, VehicleRoutingProblem> candidateProblems = new HashMap<>();
-        List<ParetoWeightSampler.WeightPoint> weightPoints = ParetoWeightSampler.generate(4, 2.0);
+        List<ParetoWeightSampler.WeightPoint> weightPoints =
+                ParetoWeightSampler.generate(PARETO_SAMPLER_N, PARETO_SAMPLER_P);
+        log.info("   This will run {} optimization scenarios", weightPoints.size());
+
+        handle.setScenarioCount(weightPoints.size());
 
         // Run optimization for each preset
-        for (ParetoWeightSampler.WeightPoint point : weightPoints) {
+        for (int k = 0; k < weightPoints.size(); k++) {
+            ParetoWeightSampler.WeightPoint point = weightPoints.get(k);
+            handle.setScenarioIndex(k);
             log.info("Running {} optimization...", point.label());
 
             // Override weights for this run
@@ -365,13 +391,11 @@ public class OptimizationService {
             presetConfig.setCostWeight(point.costWeight());
             presetConfig.setCo2Weight(point.co2Weight());
 
-            // Build and solve VRP
+            // Build and solve VRP — every weight point uses the SAME cluster assignment
+            // computed once for the job (PAR-001).
             VehicleRoutingProblem vrp = buildGreenVRP(context, matrix, presetConfig);
             candidateProblems.put(point.label(), vrp);
-            // Cluster-first CHƯA áp dụng cho nhánh Pareto (quyết định đã chốt) — truyền
-            // null tường minh, KHÔNG phải quên set. Mỗi weight-point trong Pareto vẫn
-            // giải trên toàn bộ order set, không phân vùng cluster.
-            VehicleRoutingAlgorithm algorithm = createAlgorithm(vrp, context, presetConfig, null, handle);
+            VehicleRoutingAlgorithm algorithm = createAlgorithm(vrp, context, presetConfig, clusterAssignment, handle);
             addProgressListener(algorithm, request.getJobId(), presetConfig, handle);
             handle.setPhase(JobRegistry.Phase.SOLVING);
             Collection<VehicleRoutingProblemSolution> solutions = algorithm.searchSolutions();
@@ -404,40 +428,75 @@ public class OptimizationService {
                     point.label(), metrics.getTotalCostVnd(), metrics.getTotalCo2Kg());
         }
 
-        // Build Pareto frontier
-        List<SolutionCandidate> paretoFrontier = buildParetoFrontier(candidates);
+        // Service-first classification (PAR-002) and unbiased min-max selection (PAR-003)
+        List<FrontierStatus> statuses = ParetoFrontierSelector.classify(candidates);
+
+        List<SolutionCandidate> paretoFrontier = new ArrayList<>();
+        for (int i = 0; i < candidates.size(); i++) {
+            if (statuses.get(i) == FrontierStatus.FRONTIER) {
+                paretoFrontier.add(candidates.get(i));
+            }
+        }
         log.info("   📊 Pareto frontier size: {} (from {} candidates)",
                 paretoFrontier.size(),
                 candidates.size());
 
-        // Select best solution based on user preferences
-        SolutionCandidate selected = selectFromPareto(paretoFrontier, config);
+        double[] effectiveWeights = config.getEffectiveWeights();
+        int selectedIndex = ParetoFrontierSelector.select(
+                candidates, statuses, effectiveWeights[0], effectiveWeights[1]);
+        SolutionCandidate selected = candidates.get(selectedIndex);
         log.info("   ✅ Selected: {} (cost={}, CO2={})",
                 selected.getPresetName(),
                 selected.getCostWeight(),
                 selected.getCo2Weight());
 
-        // Extract route details from selected solution
-        OptimizationResultExtractor.RouteExtractionResult result = extractRouteDetails(
-                selected.getSolution(),
-                context,
-                matrix
-        );
-        List<UnassignedOrder> unassigned = extractUnassignedOrders(
-                selected.getSolution(),
-                context,
-                UnassignedOrderDiagnosticService.diagnose(
-                        candidateProblems.get(selected.getPresetName()), selected.getSolution(),
-                        null, handle::isCancelRequested, 1000)
-        );
+        // Extract routes + unassigned diagnosis for EVERY frontier point (PAR-004). The
+        // top-level routes/unassignedOrders are the selected candidate's objects (no re-extraction).
+        List<ParetoAlternative> alternatives = new ArrayList<>(candidates.size());
+        List<RouteDetail> selectedRoutes = null;
+        List<UnassignedOrder> selectedUnassigned = null;
+
+        for (int i = 0; i < candidates.size(); i++) {
+            SolutionCandidate candidate = candidates.get(i);
+            FrontierStatus status = statuses.get(i);
+
+            List<RouteDetail> routes = null;
+            List<UnassignedOrder> unassigned = null;
+
+            if (status == FrontierStatus.FRONTIER) {
+                routes = extractRouteDetails(candidate.getSolution(), context, matrix).routes();
+                unassigned = extractUnassignedOrders(
+                        candidate.getSolution(),
+                        context,
+                        UnassignedOrderDiagnosticService.diagnose(
+                                candidateProblems.get(candidate.getPresetName()), candidate.getSolution(),
+                                clusterAssignment, handle::isCancelRequested, 1000)
+                );
+                if (i == selectedIndex) {
+                    selectedRoutes = routes;
+                    selectedUnassigned = unassigned;
+                }
+            }
+
+            alternatives.add(ParetoAlternative.builder()
+                    .index(i)
+                    .candidate(candidate)
+                    .status(status)
+                    .selected(i == selectedIndex)
+                    .routes(routes)
+                    .unassignedOrders(unassigned)
+                    .build());
+        }
 
         return OptimizationResult.pareto(
                 request.getJobId(),
                 selected,
                 paretoFrontier,
+                alternatives,
+                clusterCount(clusterAssignment),
                 matrix,
-                result.routes(),
-                unassigned
+                selectedRoutes,
+                selectedUnassigned
         );
     }
 
@@ -701,70 +760,6 @@ public class OptimizationService {
         log.info("====================================");
 
         return algorithm;
-    }
-
-
-    /**
-     * Build Pareto frontier from candidates
-     * Returns only non-dominated solutions
-     */
-    private List<SolutionCandidate> buildParetoFrontier(List<SolutionCandidate> candidates) {
-        List<SolutionCandidate> pareto = new ArrayList<>();
-
-        for (SolutionCandidate candidate : candidates) {
-            boolean isDominated = false;
-
-            for (SolutionCandidate other : candidates) {
-                if (other.dominates(candidate)) {
-                    isDominated = true;
-                    break;
-                }
-            }
-
-            if (!isDominated) {
-                pareto.add(candidate);
-            }
-        }
-
-        return pareto;
-    }
-
-    /**
-     * Select best solution from Pareto frontier based on user weights
-     */
-    private SolutionCandidate selectFromPareto(
-            List<SolutionCandidate> pareto,
-            OptimizationConfig config) {
-
-        double[] weights = config.getEffectiveWeights();
-        double costWeight = weights[0];
-        double co2Weight = weights[1];
-
-        // Normalize objectives
-        double minCost = pareto.stream()
-                .mapToDouble(c -> c.getMetrics().getTotalCostVnd())
-                .min()
-                .orElse(1.0);
-        double maxCost = pareto.stream()
-                .mapToDouble(c -> c.getMetrics().getTotalCostVnd())
-                .max()
-                .orElse(1.0);
-        double minCO2 = pareto.stream()
-                .mapToDouble(c -> c.getMetrics().getTotalCo2Kg())
-                .min()
-                .orElse(1.0);
-        double maxCO2 = pareto.stream()
-                .mapToDouble(c -> c.getMetrics().getTotalCo2Kg())
-                .max()
-                .orElse(1.0);
-
-        return pareto.stream()
-                .min(Comparator.comparingDouble(c -> {
-                    double normCost = (c.getMetrics().getTotalCostVnd() - minCost) / (maxCost - minCost + 1);
-                    double normCO2 = (c.getMetrics().getTotalCo2Kg() - minCO2) / (maxCO2 - minCO2 + 1);
-                    return costWeight * normCost + co2Weight * normCO2;
-                }))
-                .orElseThrow(() -> new RuntimeException("No solution in Pareto frontier"));
     }
 
 

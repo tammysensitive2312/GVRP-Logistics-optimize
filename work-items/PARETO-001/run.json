@@ -1,0 +1,121 @@
+{
+  "id": "PARETO-001",
+  "root": "E:\\OR-tools java example\\GVRP-Logistics_Optimize",
+  "scope": [
+    "GVRP_Engine_API/src",
+    "GVRP_Entry_API/src"
+  ],
+  "graphHash": "dd102f16a0bb44c675032aab0813a841f1b446ea1fa8d99958fa094d0e8de614",
+  "state": "done",
+  "revision": 7,
+  "history": [
+    {
+      "revision": 1,
+      "from": "intake",
+      "event": "ready",
+      "to": "discover",
+      "evidence": {
+        "request": {
+          "path": "work-items/PARETO-001/request.md",
+          "sha256": "eff7e13ffc4a6cd27c3127d577485f5575d5e6e5da75204508b7ed36faf09a4a"
+        }
+      },
+      "snapshot": "95268c2b3b238b23222402f53ab541c4e56943b571b1243eef0b66dfa19b9bb8",
+      "time": "2026-10-18T06:34:51.548Z"
+    },
+    {
+      "revision": 2,
+      "from": "discover",
+      "event": "ready",
+      "to": "design",
+      "evidence": {
+        "context": {
+          "path": "work-items/PARETO-001/context.md",
+          "sha256": "68647799d86aeb264b374ca521a6183a6dedb7064e5488c634ec842fa76a7d3e"
+        }
+      },
+      "snapshot": "95268c2b3b238b23222402f53ab541c4e56943b571b1243eef0b66dfa19b9bb8",
+      "time": "2026-10-18T06:34:52.108Z"
+    },
+    {
+      "revision": 3,
+      "from": "design",
+      "event": "ready",
+      "to": "implement",
+      "evidence": {
+        "design": {
+          "path": "work-items/PARETO-001/design.md",
+          "sha256": "6b26babdf4cea2409990055aeb7e93f3fc05998b56856208d8e6370d38b24982"
+        },
+        "traceability": {
+          "path": "work-items/PARETO-001/traceability.md",
+          "sha256": "af97fd4f60a9b502f0818997deafd949d996156e07f5ec982cd1889c546003ce"
+        }
+      },
+      "snapshot": "95268c2b3b238b23222402f53ab541c4e56943b571b1243eef0b66dfa19b9bb8",
+      "time": "2026-10-18T06:34:52.477Z"
+    },
+    {
+      "revision": 4,
+      "from": "implement",
+      "event": "ready",
+      "to": "verify",
+      "evidence": {
+        "implementation": {
+          "path": "work-items/PARETO-001/implementation.md",
+          "sha256": "40c8c2504ecdb1d7df7e4bb6ef226837e1fd1ee705a7803cbb2d82b6d36e4c71"
+        }
+      },
+      "snapshot": "cae3c20525da780d2804d31c4033d615d47931e5da82f30579e841bffa82923f",
+      "time": "2026-10-18T09:39:29.048Z"
+    },
+    {
+      "revision": 5,
+      "from": "verify",
+      "event": "pass",
+      "to": "await_user_test",
+      "evidence": {
+        "verification": {
+          "path": "work-items/PARETO-001/verification.md",
+          "sha256": "5b8c53cc360b82b94c2274493e369d0dbf28dfc71f41c3539374df9f97e41e6e"
+        },
+        "handoff": {
+          "path": "work-items/PARETO-001/handoff.md",
+          "sha256": "7c81953424bd926d4b4fed3b461b16d989f4b06edc3556960e698331cd0ea649"
+        }
+      },
+      "snapshot": "c2899acf850929be1eb602e5c2fbd2323e0ed7371d5bf8a2e03afb161b5c3f10",
+      "time": "2026-10-18T11:06:09.934Z"
+    },
+    {
+      "revision": 6,
+      "from": "await_user_test",
+      "event": "accepted",
+      "to": "accepted",
+      "evidence": {
+        "user_acceptance": {
+          "path": "work-items/PARETO-001/user-acceptance.json",
+          "sha256": "af902548ef9f79e7aefa12a0dc1a948dedf6c3b10a356e2d3ab16655958b3a78"
+        }
+      },
+      "snapshot": "c2899acf850929be1eb602e5c2fbd2323e0ed7371d5bf8a2e03afb161b5c3f10",
+      "time": "2026-10-18T11:06:10.211Z"
+    },
+    {
+      "revision": 7,
+      "from": "accepted",
+      "event": "finish",
+      "to": "done",
+      "evidence": {
+        "closure": {
+          "path": "work-items/PARETO-001/closure.md",
+          "sha256": "aa323d19c9ff0e45dc90c03351f515d7fcb6ac33873609edc0d3997e1700d8bc"
+        }
+      },
+      "snapshot": "c2899acf850929be1eb602e5c2fbd2323e0ed7371d5bf8a2e03afb161b5c3f10",
+      "time": "2026-10-18T11:06:10.348Z"
+    }
+  ],
+  "handoff": "c2899acf850929be1eb602e5c2fbd2323e0ed7371d5bf8a2e03afb161b5c3f10",
+  "returnTo": null
+}

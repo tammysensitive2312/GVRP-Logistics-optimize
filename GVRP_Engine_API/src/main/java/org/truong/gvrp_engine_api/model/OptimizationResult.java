@@ -20,6 +20,17 @@ public class OptimizationResult {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private final List<SolutionCandidate> paretoFrontier;
 
+    /**
+     * Every weight-point outcome with service-first status and (for frontier points) full
+     * routes. Null for single-objective results (PAR-004).
+     */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private final List<ParetoAlternative> paretoAlternatives;
+
+    /** Number of clusters shared by all weight points; null when cluster-first was not applied. */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private final Integer clusterCount;
+
     private final List<RouteDetail> routes;
     private final List<UnassignedOrder> unassignedOrders;
 
@@ -67,6 +78,8 @@ public class OptimizationResult {
                 .optimizationMode(OptimizationMode.SINGLE_WEIGHTED)
                 .selected(candidate)
                 .paretoFrontier(null)
+                .paretoAlternatives(null)
+                .clusterCount(null)
                 .distanceTimeMatrix(matrix)
                 .routes(routes)
                 .unassignedOrders(unassigned)
@@ -80,6 +93,8 @@ public class OptimizationResult {
             Long jobId,
             SolutionCandidate selected,
             List<SolutionCandidate> paretoFrontier,
+            List<ParetoAlternative> paretoAlternatives,
+            Integer clusterCount,
             DistanceTimeMatrix matrix,
             List<RouteDetail> routes,
             List<UnassignedOrder> unassigned
@@ -89,6 +104,8 @@ public class OptimizationResult {
                 .optimizationMode(OptimizationMode.MULTI_PARETO)
                 .selected(selected)
                 .paretoFrontier(paretoFrontier)
+                .paretoAlternatives(paretoAlternatives)
+                .clusterCount(clusterCount)
                 .distanceTimeMatrix(matrix)
                 .routes(routes)
                 .unassignedOrders(unassigned)

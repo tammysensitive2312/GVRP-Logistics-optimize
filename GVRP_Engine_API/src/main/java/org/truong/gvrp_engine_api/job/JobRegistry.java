@@ -52,12 +52,26 @@ public class JobRegistry {
         private final Instant startedAt = Instant.now();
         private volatile Instant finishedAt;
 
+        /** 0-based index of the weight point currently being solved (Pareto only). */
+        private volatile int scenarioIndex;
+
+        /** Number of weight points; 0 = not a Pareto run. */
+        private volatile int scenarioCount;
+
         private JobHandle(long jobId) {
             this.jobId = jobId;
         }
 
         public long jobId() {
             return jobId;
+        }
+
+        public int scenarioIndex() {
+            return scenarioIndex;
+        }
+
+        public int scenarioCount() {
+            return scenarioCount;
         }
 
         public boolean isCancelRequested() {

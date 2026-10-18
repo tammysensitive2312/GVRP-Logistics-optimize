@@ -11,5 +11,6 @@ public interface SolutionMapper {
     @Mapping(source = "job.id", target = "jobId")
     @Mapping(source = "branch.id", target = "branchId")
     @Mapping(source = "routes", target = "routes")
+    @Mapping(source = "paretoCandidate.id", target = "paretoCandidateId")
     SolutionDetailResponseDTO toDTO(Solution entity);
 }

@@ -1,5 +1,7 @@
 package org.truong.gvrp_entry_api.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -13,7 +15,6 @@ import org.truong.gvrp_entry_api.entity.enums.*;
 import org.truong.gvrp_entry_api.exception.DataInvalidException;
 import org.truong.gvrp_entry_api.exception.ErrorDetail;
 import org.truong.gvrp_entry_api.exception.JobNotReadyException;
-import org.truong.gvrp_entry_api.mapper.GeometryMapper;
 import org.truong.gvrp_entry_api.repository.*;
 import org.truong.gvrp_entry_api.service.orders.OrderStatusTransitionService;
 import org.truong.gvrp_entry_api.service.event.JobCompletionEvent;
@@ -36,8 +37,10 @@ public class OptimizationCallbackService {
     private final RouteStopRepository routeStopRepository;
     private final OrderRepository orderRepository;
     private final VehicleRepository vehicleRepository;
+    private final ParetoCandidateRepository paretoCandidateRepository;
     private final EmailService emailService;
-    private final GeometryMapper geometryMapper;
+    private final ObjectMapper objectMapper;
+    private final EnginePlanMaterializer enginePlanMaterializer;
     private final ApplicationEventPublisher eventPublisher;
     private final JobStatusUpdater jobStatusUpdater;
     private final OrderStatusTransitionService orderStatusTransitionService;
@@ -336,7 +339,7 @@ public class OptimizationCallbackService {
         Map<Long, Order> orderMap = orders.stream().collect(Collectors.toMap(Order::getId, o -> o));
 
         if (solutionData.getUnassignedOrders() != null && !solutionData.getUnassignedOrders().isEmpty()) {
-            List<UnassignedOrder> unassignedList = buildUnassignedOrder(solution, solutionData.getUnassignedOrders(), orderMap);
+            List<UnassignedOrder> unassignedList = enginePlanMaterializer.buildUnassignedOrder(solution, solutionData.getUnassignedOrders(), orderMap);
             solution.getUnassignedOrders().addAll(unassignedList);
 
             if (!unassignedList.isEmpty()) {
@@ -369,7 +372,7 @@ public class OptimizationCallbackService {
             }
 
             List<Route> routes = solutionData.getRoutes().stream()
-                    .map(routeData -> buildRoute(
+                    .map(routeData -> enginePlanMaterializer.buildRoute(
                             solution,
                             routeData,
                             vehicleMap,
@@ -385,7 +388,7 @@ public class OptimizationCallbackService {
                 EngineCallbackRequest.RouteData routeData = solutionData.getRoutes().get(i);
 
                 if (routeData.getStops() != null) {
-                    List<RouteStop> stops = buildStop(route, routeData.getStops(), orderMap);
+                    List<RouteStop> stops = enginePlanMaterializer.buildStop(route, routeData.getStops(), orderMap);
                     route.getSegments().addAll(stops);
                     allStops.addAll(stops);
                 }
@@ -403,22 +406,122 @@ public class OptimizationCallbackService {
             }
         }
 
+        // Pareto candidates (PARETO-001): persisted branch-scoped and linked to the
+        // engine-selected row; order statuses above are driven by the top-level
+        // routes/unassigned only, so this does not change single-objective behaviour.
+        ParetoCandidate engineSelected = saveParetoCandidates(job, solutionData.getPareto());
+        if (engineSelected != null) {
+            solution.setParetoCandidate(engineSelected);
+        }
+
         return solutionRepository.save(solution);
     }
 
-    private List<UnassignedOrder> buildUnassignedOrder(Solution solution, List<EngineCallbackRequest.UnassignedOrderData> solutionData, Map<Long, Order> orderMap) {
-        return solutionData.stream()
-                .map(uaData -> {
-                    Order order = orderMap.get(uaData.getOrderId());
-                    if (order == null) return null;
-                    return UnassignedOrder.builder()
-                            .solution(solution)
-                            .order(order)
-                            .reason(uaData.getReason())
-                            .build();
-                })
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
+    /**
+     * Persist every Pareto candidate of a job and return the engine-selected row
+     * (null when the callback carries no Pareto block). Validation failures raise
+     * {@link DataInvalidException} so the existing catch marks the job FAILED and
+     * the engine moves the payload to {@code poison/}.
+     */
+    private ParetoCandidate saveParetoCandidates(OptimizationJob job, EngineCallbackRequest.ParetoData pareto) {
+        if (pareto == null || pareto.getCandidates() == null || pareto.getCandidates().isEmpty()) {
+            return null;
+        }
+
+        List<EngineCallbackRequest.ParetoCandidateData> candidates = pareto.getCandidates();
+        validateParetoCandidates(candidates);
+
+        boolean clustered = Boolean.TRUE.equals(pareto.getClustered());
+        ParetoCandidate selected = null;
+        List<ParetoCandidate> rows = new ArrayList<>();
+
+        for (EngineCallbackRequest.ParetoCandidateData candidate : candidates) {
+            ParetoFrontierStatus status = ParetoFrontierStatus.valueOf(candidate.getFrontierStatus());
+            boolean isFrontier = status == ParetoFrontierStatus.FRONTIER;
+            boolean isSelected = Boolean.TRUE.equals(candidate.getSelected());
+
+            ParetoCandidate row = ParetoCandidate.builder()
+                    .job(job)
+                    .branch(job.getBranch())
+                    .candidateIndex(candidate.getIndex())
+                    .label(candidate.getLabel())
+                    .costWeight(candidate.getCostWeight())
+                    .co2Weight(candidate.getCo2Weight())
+                    .totalCost(candidate.getTotalCost())
+                    .totalDistance(candidate.getTotalDistance())
+                    .totalCO2(candidate.getTotalCO2())
+                    .totalTime(candidate.getTotalTime())
+                    .totalVehiclesUsed(candidate.getTotalVehiclesUsed())
+                    .servedOrders(candidate.getServedOrders())
+                    .unservedOrders(candidate.getUnservedOrders())
+                    .frontierStatus(status)
+                    .engineSelected(isSelected)
+                    .clustered(clustered)
+                    .clusterCount(pareto.getClusterCount())
+                    .planJson(isFrontier
+                            ? serializePlan(candidate.getRoutes(), candidate.getUnassignedOrders())
+                            : null)
+                    .createdAt(LocalDateTime.now())
+                    .build();
+
+            if (isSelected) {
+                selected = row;
+            }
+            rows.add(row);
+        }
+
+        paretoCandidateRepository.saveAll(rows);
+        return selected;
+    }
+
+    private void validateParetoCandidates(List<EngineCallbackRequest.ParetoCandidateData> candidates) {
+        Set<Integer> indices = new HashSet<>();
+        int selectedCount = 0;
+        EngineCallbackRequest.ParetoCandidateData selected = null;
+
+        for (EngineCallbackRequest.ParetoCandidateData candidate : candidates) {
+            if (candidate.getIndex() == null || !indices.add(candidate.getIndex())) {
+                throw paretoInvalid("Pareto candidate indices must be present and unique.");
+            }
+            if (candidate.getFrontierStatus() == null) {
+                throw paretoInvalid("Every Pareto candidate needs a frontier_status.");
+            }
+            try {
+                ParetoFrontierStatus.valueOf(candidate.getFrontierStatus());
+            } catch (IllegalArgumentException e) {
+                throw paretoInvalid("Unknown frontier_status: " + candidate.getFrontierStatus());
+            }
+            if (Boolean.TRUE.equals(candidate.getSelected())) {
+                selectedCount++;
+                selected = candidate;
+            }
+        }
+
+        if (selectedCount != 1) {
+            throw paretoInvalid("Exactly one Pareto candidate must be marked selected (found "
+                    + selectedCount + ").");
+        }
+        if (!ParetoFrontierStatus.FRONTIER.name().equals(selected.getFrontierStatus())) {
+            throw paretoInvalid("The selected Pareto candidate must be on the FRONTIER.");
+        }
+    }
+
+    private String serializePlan(List<EngineCallbackRequest.RouteData> routes,
+                                 List<EngineCallbackRequest.UnassignedOrderData> unassignedOrders) {
+        try {
+            return objectMapper.writeValueAsString(
+                    new EnginePlanMaterializer.PlanPayload(routes, unassignedOrders));
+        } catch (JsonProcessingException e) {
+            throw paretoInvalid("Failed to serialize Pareto plan: " + e.getMessage());
+        }
+    }
+
+    private DataInvalidException paretoInvalid(String message) {
+        return new DataInvalidException(List.of(
+                ErrorDetail.builder()
+                        .code(ErrorCode.VALIDATION_ERROR.getCode())
+                        .message(message)
+                        .build()));
     }
 
     private SolutionStatus calculateSolutionStatus(EngineCallbackRequest.CompletionCallback callback) {
@@ -446,61 +549,5 @@ public class OptimizationCallbackService {
         }
 
         return SolutionStatus.INFEASIBLE;
-    }
-
-    private Route buildRoute(
-            Solution solution,
-            EngineCallbackRequest.RouteData routeData,
-            Map<Long, Vehicle> vehicleMap,
-            Map<Long, Order> orderMap
-    ) {
-
-        return Route.builder()
-                .solution(solution)
-                .vehicle(vehicleMap.get(routeData.getVehicleId()))
-                .routeOrder(routeData.getRouteOrder() != null ? routeData.getRouteOrder() : 1)
-                .distance(routeData.getDistance())
-                .serviceTime(routeData.getDuration())
-                .co2Emission(routeData.getCo2Emission())
-                .orderCount(routeData.getOrderCount())
-                .loadUtilization(routeData.getLoadUtilization())
-                .segments(new ArrayList<>())
-                .build();
-    }
-
-    private List<RouteStop> buildStop(Route route, List<EngineCallbackRequest.StopData> stopData, Map<Long, Order> orderMap) {
-        return stopData.stream()
-                .map(stop -> {
-                    Order order = null;
-
-                    if ("ORDER".equals(stop.getType()) || "CUSTOMER".equals(stop.getType())) {
-                        order = orderMap.get(stop.getOrderId());
-                    }
-
-                    if (order == null && ("ORDER".equals(stop.getType())
-                            || "CUSTOMER".equals(stop.getType()))) {
-                        log.warn("Order not found for stop: {}", stop.getOrderId());
-                        return null;
-                    }
-
-                    return RouteStop.builder()
-                            .route(route)
-                            .order(order)
-                            .sequenceNumber(stop.getSequenceNumber())
-                            .type(RouteStopSupport.mapLocationType(stop.getType()))
-                            .locationId(stop.getLocationId())
-                            .locationName(stop.getLocationName())
-                            .location(geometryMapper.createPoint(stop.getLatitude(), stop.getLongitude()))
-                            .arrivalTime(RouteStopSupport.parseEngineTime(stop.getArrivalTime()))
-                            .departureTime(RouteStopSupport.parseEngineTime(stop.getDepartureTime()))
-                            .serviceTime(stop.getWaitTime())
-                            .demand(stop.getDemand())
-                            .loadAfter(stop.getLoadAfter())
-                            .distanceToNext(stop.getDistanceToNext())
-                            .timeToNext(stop.getTimeToNext())
-                            .build();
-                })
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
     }
 }

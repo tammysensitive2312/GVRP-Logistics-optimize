@@ -93,6 +93,12 @@ public class EngineCallbackRequest {
         private Integer totalVehiclesUsed;
         private Integer servedOrders;
         private Integer unservedOrders;
+
+        /**
+         * Pareto block (PARETO-001). Absent/empty for single-objective callbacks, which
+         * keeps the payload unchanged for those jobs.
+         */
+        private ParetoData pareto;
     }
 
     /**
@@ -155,5 +161,47 @@ public class EngineCallbackRequest {
         private Long orderId;
         private String orderCode;
         private String reason;
+    }
+
+    /**
+     * Pareto block of a multi-objective completion callback (PARETO-001).
+     *
+     * <p>Field names follow the existing camelCase style; the global snake_case
+     * mapping turns {@code totalCO2} into {@code total_co2}, as for
+     * {@link SolutionData#getTotalCO2()}.
+     */
+    @Data
+    public static class ParetoData {
+
+        private Integer samplerN;
+        private Double samplerP;
+        private Boolean clustered;
+        private Integer clusterCount;
+        private String selectionRule;
+        private List<ParetoCandidateData> candidates;
+    }
+
+    /**
+     * One candidate of a Pareto job. {@code routes} / {@code unassignedOrders} are
+     * only present for {@code FRONTIER} candidates.
+     */
+    @Data
+    public static class ParetoCandidateData {
+
+        private Integer index;
+        private String label;
+        private BigDecimal costWeight;
+        private BigDecimal co2Weight;
+        private BigDecimal totalCost;
+        private BigDecimal totalDistance;
+        private BigDecimal totalCO2;
+        private BigDecimal totalTime;
+        private Integer totalVehiclesUsed;
+        private Integer servedOrders;
+        private Integer unservedOrders;
+        private String frontierStatus;
+        private Boolean selected;
+        private List<RouteData> routes;
+        private List<UnassignedOrderData> unassignedOrders;
     }
 }
