@@ -36,6 +36,10 @@ export interface JobProgressDTO {
   unassigned?: number;
   bestCost?: number;
   elapsedSeconds?: number;
+  /** 1-based scenario index while a Pareto job solves (PARETO-002). */
+  scenario?: number;
+  /** Total number of weighted scenarios; 0/absent for a single-objective run. */
+  scenarioCount?: number;
 }
 
 export interface RoutePlanningRequest {

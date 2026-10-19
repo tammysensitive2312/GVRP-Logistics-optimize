@@ -74,7 +74,9 @@
       </mat-checkbox>
       <mat-checkbox [(ngModel)]="form.enablePareto">
         Enable Pareto Analysis
-        <span class="hint">Generate multiple solutions for trade-off analysis</span>
+        <span class="hint">{{ form.enablePareto
+          ? 'Runs 5 weighted scenarios and lets you switch between the best trade-offs.'
+          : 'Generate multiple solutions for trade-off analysis' }}</span>
       </mat-checkbox>
     </div>
   </div>
@@ -82,7 +84,7 @@
   <div class="info-box">
     <span class="info-icon">⏱️</span>
     <div class="info-content">
-      <span><strong>Estimated Processing Time:</strong> {{ estimatedTime }}</span>
+      <span><strong>Estimated Processing Time:</strong> {{ estimatedTime }}@if (form.enablePareto) { × 5 scenarios (Pareto) }</span>
       <p>You can monitor progress in real-time and cancel anytime.</p>
     </div>
   </div>

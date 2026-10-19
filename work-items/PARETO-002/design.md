@@ -51,7 +51,11 @@ export interface ParetoFrontierDTO {
 Orders section: 4th `mat-tab` "Pareto" (icon `insights`), rendered with `@if` only when
 `paretoState().candidates.length > 0`. `OrdersSectionComponent` loads the frontier
 whenever `solution()` changes (effect + `queueMicrotask`, same pattern as `RouteViewComponent`
-assignees); a failed load hides the tab silently and logs once.
+assignees); a failed load hides the tab silently and logs once. Call `getPareto` **only when
+`solution()` is non-null** and clear the state when it becomes null — the existing
+`orders-section.component.spec.ts` mocks `ApiService` without `getPareto` and runs with a null
+solution, so it must not reach the new call. When the active solution changes to an id
+already shown, do not refetch.
 
 New component `C/features/main/orders/pareto-view/pareto-view.component.{ts,html,scss}`,
 inputs `solution: SolutionDTO`, `frontier: ParetoFrontierDTO`; output `reload`.
@@ -117,7 +121,10 @@ Layout top to bottom (panel width 380–640 px, so stack, never side-by-side):
   switch between the best trade-offs."
 
 ## 5. Send dialog
-Map `PARETO_ALTERNATIVE` to the label "Pareto plan" wherever revision types are displayed.
+In `send-route-dialog.component.html` the option text is
+`Solution #{{ revision.id }} ({{ revision.type }}, {{ revision.status }})`. Show
+"Pareto plan" instead of the raw type **only** for `PARETO_ALTERNATIVE` (small component
+method `typeLabel(type)`); every other type keeps its raw text so existing specs stay valid.
 
 ## 6. Tests (new specs only)
 
@@ -129,6 +136,7 @@ Map `PARETO_ALTERNATIVE` to the label "Pareto plan" wherever revision types are 
 | U-T4 | apply success | confirm true -> API called with (solution.id, candidate.id) -> store.setSolution called -> reload emitted |
 | U-T5 | apply 409 / 422 | banner + load-latest button / toast with server message; store untouched |
 | U-T6 | orders section | Pareto tab absent for empty candidates, present otherwise |
-| U-T7 | monitoring | "Scenario 3 of 5" rendered when progress has scenario keys |
+| U-T7 | monitoring | "Scenario 3 of 5" rendered when progress has scenario keys; absent otherwise |
+| U-T8 | send dialog (new spec file or new `it` in a new file) | `PARETO_ALTERNATIVE` shows "Pareto plan"; `ENGINE_GENERATED` unchanged |
 
 Existing specs unchanged; `npm test` and `npm run build` green.

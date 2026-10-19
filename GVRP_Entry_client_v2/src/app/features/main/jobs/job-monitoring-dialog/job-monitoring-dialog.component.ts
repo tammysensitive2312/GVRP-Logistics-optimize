@@ -118,6 +118,27 @@ export class JobMonitoringDialogComponent implements OnInit, OnDestroy {
       elapsedSeconds: live.elapsedSeconds ?? null
     };
   });
+
+  /**
+   * Pareto scenario progress (PARETO-002). Present only when the progress
+   * payload carries `scenarioCount > 0`; the overall percent comes from the
+   * engine, this only labels which weighted scenario is being solved.
+   */
+  readonly scenarioProgress = computed(() => {
+    const live = this.progressInfo();
+    const count = live?.scenarioCount ?? 0;
+    if (!live || count <= 0) return null;
+
+    const current = clampScenario(live.scenario ?? 1, count);
+    return {
+      current,
+      count,
+      dots: Array.from({ length: count }, (_, index) => index + 1)
+    };
+  });
+
+  /** One-line Pareto result summary, shown once the solution is loaded. */
+  readonly paretoLine = signal<string | null>(null);
   readonly isRunning = computed(() => {
     const status = this.currentJob().status;
     return status === 'PENDING' || status === 'PROCESSING';
@@ -264,6 +285,7 @@ export class JobMonitoringDialogComponent implements OnInit, OnDestroy {
           this.solution.set(solution);
           this.isLoadingSolution.set(false);
           this.fetchingSolution = false;
+          this.loadParetoSummary(solution.id);
         },
         error: (error: unknown) => {
           console.error('Failed to fetch solution:', error);
@@ -274,6 +296,34 @@ export class JobMonitoringDialogComponent implements OnInit, OnDestroy {
         }
       });
   }
+
+  /**
+   * Best-effort Pareto summary for the completed run. Non-Pareto solutions
+   * return an empty candidate list, so no line is shown.
+   */
+  private loadParetoSummary(solutionId: number): void {
+    this.api
+      .getPareto(solutionId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: frontier => {
+          const onFrontier = frontier.candidates.filter(
+            candidate => candidate.frontier_status === 'FRONTIER').length;
+          this.paretoLine.set(
+            onFrontier > 0
+              ? `Pareto: ${onFrontier} plan${onFrontier === 1 ? '' : 's'} on the frontier`
+                + ' — open the Pareto tab to compare.'
+              : null
+          );
+        },
+        error: () => this.paretoLine.set(null)
+      });
+  }
+}
+
+function clampScenario(value: number, count: number): number {
+  if (!Number.isFinite(value)) return 1;
+  return Math.max(1, Math.min(count, Math.round(value)));
 }
 
 function clampProgress(progress: number | null | undefined): number {

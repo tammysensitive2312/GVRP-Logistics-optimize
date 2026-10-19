@@ -9,8 +9,8 @@ Depends on: PARETO-001 accepted and merged (API `GET /solutions/{id}/pareto`,
 `POST /solutions/{id}/pareto/{candidateId}/apply`, progress keys `scenario`,
 `scenarioCount`, `SolutionDetailResponseDTO.pareto_candidate_id`).
 
-Status: design only. `task-opencode.md` is issued after PARETO-001 is accepted, so the
-task can quote the merged API exactly.
+Status: PARETO-001 accepted and merged to master `4e2f928` (2026-10-18). Task issued
+2026-10-18 18:08 (+07:00) after the user's message "đã xong, hãy tiếp tục PARETO-002".
 
 ## Requirements
 

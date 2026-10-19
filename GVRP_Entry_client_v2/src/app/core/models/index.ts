@@ -8,3 +8,4 @@ export * from './solution.model';
 export * from './driver.model';
 export * from './job.model';
 export * from './stats.model'
+export * from './pareto.model';

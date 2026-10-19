@@ -14,6 +14,8 @@
           <span class="progress-hint">
             @if (isCompleted()) {
               Finalizing results...
+            } @else if (scenarioProgress()) {
+              Scenario {{ scenarioProgress()!.current }} of {{ scenarioProgress()!.count }} · Solving…
             } @else if (phaseLabel()) {
               {{ phaseLabel() }}...
             } @else {
@@ -23,6 +25,18 @@
           <span class="progress-percent">{{ progress() | number: '1.0-0' }}%</span>
         </div>
         <mat-progress-bar mode="determinate" [value]="progress()" color="primary"/>
+
+        <!-- Pareto scenario dots (PARETO-002): done / current / pending -->
+        @if (scenarioProgress(); as sp) {
+          <div class="scenario-dots"
+               [attr.aria-label]="'Scenario ' + sp.current + ' of ' + sp.count">
+            @for (n of sp.dots; track n) {
+              <span class="scenario-dot"
+                    [class.done]="n < sp.current"
+                    [class.current]="n === sp.current">{{ n < sp.current ? '●' : n === sp.current ? '◉' : '○' }}</span>
+            }
+          </div>
+        }
 
         <!-- Live solver telemetry (GET /jobs/{id}/progress) -->
         @if (solverStats(); as stats) {
@@ -149,6 +163,10 @@
             </div>
           }
         </div>
+      }
+
+      @if (paretoLine(); as paretoNote) {
+        <p class="pareto-note">{{ paretoNote }}</p>
       }
     </div>
   }

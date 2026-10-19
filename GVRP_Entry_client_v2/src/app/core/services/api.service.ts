@@ -18,6 +18,7 @@ import {
   OrderFilter,
   OrderInputDTO,
   PaginatedResponse,
+  ParetoFrontierDTO,
   RevisionDTO,
   RoutePlanningRequest,
   RouteSendDTO,
@@ -175,6 +176,21 @@ export class ApiService {
 
   getSolutionById(solutionId: number): Observable<SolutionDTO> {
     return this.http.get<SolutionDTO>(`${this.apiUrl}/solutions/${solutionId}`);
+  }
+
+  /** Pareto frontier of the job at the root of the solution's revision chain. */
+  getPareto(solutionId: number): Observable<ParetoFrontierDTO> {
+    return this.http.get<ParetoFrontierDTO>(
+      `${this.apiUrl}/solutions/${solutionId}/pareto`
+    );
+  }
+
+  /** Materialise a Pareto candidate as a new PARETO_ALTERNATIVE revision. */
+  applyParetoCandidate(solutionId: number, candidateId: number): Observable<SolutionDTO> {
+    return this.http.post<SolutionDTO>(
+      `${this.apiUrl}/solutions/${solutionId}/pareto/${candidateId}/apply`,
+      {}
+    );
   }
 
   evaluateRoutes(solutionId: number, payload: CustomizeRoutesPayload): Observable<EvaluatePreviewDTO> {

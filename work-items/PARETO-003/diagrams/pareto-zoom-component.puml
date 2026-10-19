@@ -1,0 +1,53 @@
+@startuml pareto-zoom-component
+title PARETO-003 - zoom/pan wiring in the Pareto tab
+
+skinparam componentStyle rectangle
+skinparam shadowing false
+skinparam defaultFontSize 12
+
+actor "Planner" as user
+
+package "GVRP_Entry_client_v2 (Angular 18, signals, OnPush)" {
+  component "ParetoViewComponent" as pv
+  component "chart() computed\n(points, ticks, frontier path)" as chart
+  component "zoom signal\nChartWindow | null" as zsig
+  component "wheel handler\n(+ ctrl = pinch)" as wheel
+  component "drag handler\ndocument pointermove/up" as drag
+  component "pointer -> viewBox\ngetScreenCTM().inverse()" as conv
+  component "pareto-chart.utils.ts\n(DOM-free, unit tested)" as utils
+  component "ApiService\n(getPareto / applyParetoCandidate)" as api
+  component "SolutionStore" as store
+}
+
+component "<svg class=pareto-chart>\nviewBox 0 0 560 300 (fixed)" as svg
+component "<g class=point>\nclick / keydown (unchanged)" as pts
+component "zoom controls\nzoom_in | zoom_out | restart_alt" as ctl
+
+user --> svg : wheel, drag, pinch
+user --> pts : click, Enter, Space
+user --> ctl : click / keyboard
+
+svg --> wheel : (wheel) $event
+svg --> conv : (pointerdown/move/up)
+wheel --> utils : zoomWindow()
+drag --> utils : panWindow(), clampWindow()
+zsig --> chart
+chart --> utils : scaleLinear, niceTicks, frontierPath
+chart --> svg : point and tick geometry
+pv --> api
+pv --> store
+
+note top of drag
+  Document-level listeners, no setPointerCapture:
+  capture would retarget pointerup to the <svg>
+  and therefore move the click target away from
+  <g class="point">, breaking selection.
+end note
+
+note bottom of zsig
+  null = default view (full padded domain).
+  Reset on frontier change; kept while selecting.
+  Max magnification 8x, wheel step 1.25x.
+end note
+
+@enduml
