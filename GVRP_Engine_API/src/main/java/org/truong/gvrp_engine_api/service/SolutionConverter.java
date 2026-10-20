@@ -5,9 +5,15 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.truong.gvrp_engine_api.model.DistanceTimeMatrix;
+import org.truong.gvrp_engine_api.model.FrontierStatus;
+import org.truong.gvrp_engine_api.model.OptimizationMode;
 import org.truong.gvrp_engine_api.model.OptimizationResult;
+import org.truong.gvrp_engine_api.model.ParetoAlternative;
 import org.truong.gvrp_engine_api.model.RouteDetail;
+import org.truong.gvrp_engine_api.model.SolutionCandidate;
+import org.truong.gvrp_engine_api.model.SolutionMetrics;
 import org.truong.gvrp_engine_api.model.Stop;
+import org.truong.gvrp_engine_api.utils.AppConstant;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -45,7 +51,62 @@ public class SolutionConverter {
         if (result.getUnassignedOrders() != null && !result.getUnassignedOrders().isEmpty()) {
             solutionData.put("unassigned_orders", result.getUnassignedOrders());
         }
+
+        // ===== Pareto block (PAR-004) — only for multi-objective runs =====
+        if (result.getOptimizationMode() == OptimizationMode.MULTI_PARETO
+                && result.getParetoAlternatives() != null) {
+            solutionData.put("pareto", convertPareto(result));
+        }
         return solutionData;
+    }
+
+    // --------------------------------------------------
+
+    /**
+     * Build the {@code "pareto"} block shared with the Entry callback. Single-objective
+     * payloads never reach this method, so their key set is unchanged.
+     */
+    private Map<String, Object> convertPareto(OptimizationResult result) {
+        Map<String, Object> pareto = new HashMap<>();
+        pareto.put("sampler_n", AppConstant.PARETO_SAMPLER_N);
+        pareto.put("sampler_p", AppConstant.PARETO_SAMPLER_P);
+
+        Integer clusterCount = result.getClusterCount();
+        pareto.put("clustered", clusterCount != null);
+        pareto.put("cluster_count", clusterCount);
+        pareto.put("selection_rule", "SERVICE_FIRST_MIN_MAX");
+
+        List<Map<String, Object>> candidates = new ArrayList<>();
+        for (ParetoAlternative alternative : result.getParetoAlternatives()) {
+            SolutionCandidate candidate = alternative.getCandidate();
+            SolutionMetrics metrics = candidate.getMetrics();
+
+            Map<String, Object> row = new HashMap<>();
+            row.put("index", alternative.getIndex());
+            row.put("label", candidate.getPresetName());
+            row.put("cost_weight", candidate.getCostWeight());
+            row.put("co2_weight", candidate.getCo2Weight());
+            row.put("total_cost", metrics.getTotalCostVnd());
+            row.put("total_distance", metrics.getTotalDistance());
+            row.put("total_co2", metrics.getTotalCo2Kg());
+            row.put("total_time", metrics.getTotalTime());
+            row.put("total_vehicles_used", metrics.getVehiclesUsed());
+            row.put("served_orders", metrics.getOrdersServed());
+            row.put("unserved_orders", metrics.getOrdersUnserved());
+            row.put("frontier_status",
+                    alternative.getStatus() == null ? null : alternative.getStatus().name());
+            row.put("selected", alternative.isSelected());
+
+            // Full plan only for FRONTIER points; unassigned_orders may be an empty list.
+            if (alternative.getStatus() == FrontierStatus.FRONTIER) {
+                row.put("routes", convertRoutes(alternative.getRoutes(), result.getDistanceTimeMatrix()));
+                row.put("unassigned_orders", alternative.getUnassignedOrders());
+            }
+
+            candidates.add(row);
+        }
+        pareto.put("candidates", candidates);
+        return pareto;
     }
 
     // --------------------------------------------------

@@ -1,0 +1,38 @@
+{
+  "revision": 5,
+  "completed": [
+    "Step 0-4 of the work item executed on branch fix/ci-client-001 (base 21d2805)",
+    "D1: package-lock.json regenerated (transloco 7.5.1 subtree only, 0 version changes); npm ci exit 0 after deleting node_modules",
+    "D2: login.component.scss flattened; compiled 9,429 B -> 6,216 B (-34.1%); 218 declarations identical, 0 value changes",
+    "D3: 15 before/after browser captures (1280/900/400 x default/username-focus/password-focus/error/filled) -> 0 computed-style diffs, 15/15 PNG byte-identical",
+    "Verification gates: npm run build exit 0 (login ERROR gone), npm test unchanged (245 executed, 5 FAILED / 240 SUCCESS, same five names), 0 spec/src/testing files differ from HEAD",
+    "implementation.md, verification.md, handoff.md written; traceability.md statuses updated; ledger advanced implement -> verify -> await_user_test"
+  ],
+  "remaining": [
+    "User runs the handoff test steps and accepts or rejects the handoff",
+    "On acceptance: closure for accepted -> done (CCI-005 CI run still pending an authorised push)",
+    "Optionally: resolve the residual 4.10 kB warning and the 216 B over the 6 kB aim (needs a design decision, not an implementation step)"
+  ],
+  "read_next": [
+    "work-items/CI-CLIENT-001/handoff.md",
+    "work-items/CI-CLIENT-001/verification.md",
+    "work-items/CI-CLIENT-001/implementation.md"
+  ],
+  "evidence": [
+    "work-items/CI-CLIENT-001/implementation.md",
+    "work-items/CI-CLIENT-001/verification.md",
+    "work-items/CI-CLIENT-001/handoff.md",
+    "work-items/CI-CLIENT-001/traceability.md"
+  ],
+  "blockers": [],
+  "decisions": [
+    "User accepted the residual 4.10 kB anyComponentStyle warning for login.component.scss (6.19 kB total) and the 216 B over the 6 kB design aim, per design.md section 43; option 2 of the presented choice",
+    "No commit, push or merge: forbidden by the work item"
+  ],
+  "processes": [
+    "user dev server on port 4200 (npm run start) - running, HTTP 200, restarted by this session after npm ci needed node_modules deleted",
+    "temporary ng serve on port 4300 used for the D3 captures - stopped",
+    "bsk browser sessions used for captures and audits - all stopped"
+  ],
+  "next_action": "Present the handoff (handoff hash e60c55f4db19359b83a0337a432bea6e818c1e2c3f0037bdc2e3bb724db4b543) and wait for the user's actual test decision; do not record acceptance without a real user message"
+}

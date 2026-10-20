@@ -3,6 +3,8 @@ package org.truong.gvrp_entry_api.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.BatchSize;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 import org.truong.gvrp_entry_api.entity.enums.SolutionStatus;
 import org.truong.gvrp_entry_api.entity.enums.SolutionType;
 
@@ -39,6 +41,16 @@ public class Solution {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_solution_id")
     private Solution parentSolution;
+
+    /**
+     * Pareto candidate this solution materialises (PARETO-001); null otherwise.
+     * Set on the root solution (engine-selected candidate) and on every
+     * {@code PARETO_ALTERNATIVE} revision created by the apply endpoint.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "pareto_candidate_id")
+    @OnDelete(action = OnDeleteAction.SET_NULL)
+    private ParetoCandidate paretoCandidate;
 
     @OneToMany(mappedBy = "parentSolution")
     @Builder.Default

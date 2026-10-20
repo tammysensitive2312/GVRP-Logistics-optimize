@@ -36,6 +36,10 @@ export interface SolutionDTO {
   served_orders: number;
   unserved_orders: number;
   routes: RouteDTO[];
+  /** Pareto candidate this solution materialises; null/absent otherwise (PARETO-002). */
+  pareto_candidate_id?: number | null;
+  /** Solution type, e.g. ENGINE_GENERATED / MANUAL_EDITED / PARETO_ALTERNATIVE. */
+  type?: string;
 }
 
 export interface RouteSequencePayload {

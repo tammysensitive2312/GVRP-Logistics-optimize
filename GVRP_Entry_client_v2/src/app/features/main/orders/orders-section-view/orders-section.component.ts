@@ -1,4 +1,4 @@
-import {Component, computed, inject, OnInit, OnDestroy, EventEmitter, Output, signal} from '@angular/core';
+import {Component, computed, effect, inject, OnInit, OnDestroy, EventEmitter, Output, signal} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
@@ -13,6 +13,7 @@ import { ToastService } from '@shared/services/toast.service';
 
 import {OrderDTO, OrderFilter, RoutePlanningRequest, SolutionDTO} from '@core/models';
 import {BulkStatusResult, BulkStatusRow} from '@core/models';
+import {ParetoFrontierDTO} from '@core/models';
 import {SolutionStore} from '@core/services/solution.store';
 import {
   BackgroundJobDialogComponent,
@@ -26,6 +27,7 @@ import { OrdersFiltersComponent } from '../components/orders-filters/orders-filt
 import { OrdersTableComponent } from '../components/orders-table/orders-table.component';
 import {TimelineViewComponent} from '@features/main/orders/timeline-view/timeline-view.component';
 import {RouteViewComponent} from '@features/main/orders/route-view/route-view.component';
+import {ParetoViewComponent} from '@features/main/orders/pareto-view/pareto-view.component';
 import {VehicleSelectionService} from '@shared/services/vehicle-selection.service';
 import {
   BulkStatusDialogComponent,
@@ -60,6 +62,7 @@ import {JobMonitoringDialogComponent} from '@features/main/jobs/job-monitoring-d
     OrdersTableComponent,
     TimelineViewComponent,
     RouteViewComponent,
+    ParetoViewComponent,
   ],
   templateUrl: './orders-section.component.html',
   styleUrl: './orders-section.component.scss'
@@ -114,6 +117,16 @@ export class OrdersSectionComponent implements OnInit, OnDestroy {
   private solutionStore = inject(SolutionStore);
   readonly solution = this.solutionStore.solution;
 
+  /**
+   * Pareto frontier of the active solution's chain (PARETO-002). Loaded lazily;
+   * the Pareto tab only appears when candidates exist.
+   */
+  readonly paretoFrontier = signal<ParetoFrontierDTO | null>(null);
+  readonly paretoCandidates = computed(() => this.paretoFrontier()?.candidates ?? []);
+  readonly showParetoTab = computed(() => this.paretoCandidates().length > 0);
+  /** Solution id whose frontier is already (or last attempted to be) loaded. */
+  private paretoLoadedForId: number | null = null;
+
   totalElements = 0;
   pageSize = 5;
   currentPage = 0;
@@ -126,7 +139,15 @@ export class OrdersSectionComponent implements OnInit, OnDestroy {
   selectedVehiclesCount = 0;
   private destroy$ = new Subject<void>();
 
-  constructor(private vehicleSelectionService: VehicleSelectionService) {}
+  constructor(private vehicleSelectionService: VehicleSelectionService) {
+    // Refetch the frontier whenever the active solution changes. Deferred past
+    // the effect context so signal writes in the subscribe callback do not hit
+    // NG0600 when the source resolves synchronously (same pattern as RouteView).
+    effect(() => {
+      this.solution();
+      queueMicrotask(() => this.loadParetoFrontier());
+    });
+  }
 
   ngOnInit(): void {
     this.loadOrders();
@@ -471,6 +492,47 @@ export class OrdersSectionComponent implements OnInit, OnDestroy {
   clearSolution(): void {
     this.solutionStore.clear();
     this.selectedTabIndex = 0; // Back to Orders tab
+  }
+
+  /**
+   * Load the Pareto frontier for the active solution. A failed load hides the
+   * tab silently (logs once); a null solution clears the state without calling
+   * the API. Selecting an id already shown does not refetch.
+   */
+  private loadParetoFrontier(): void {
+    const solution = this.solution();
+    if (!solution) {
+      this.paretoFrontier.set(null);
+      this.paretoLoadedForId = null;
+      return;
+    }
+
+    const id = solution.id;
+    if (this.paretoLoadedForId === id) return;
+
+    this.apiService
+      .getPareto(id)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: frontier => {
+          // Ignore a stale response for a solution that is no longer active.
+          if (this.solution()?.id !== id) return;
+          this.paretoFrontier.set(frontier);
+          this.paretoLoadedForId = id;
+        },
+        error: (err: unknown) => {
+          if (this.solution()?.id !== id) return;
+          this.paretoFrontier.set(null);
+          this.paretoLoadedForId = id;
+          console.warn('Failed to load the Pareto frontier:', err);
+        }
+      });
+  }
+
+  /** Emitted by the Pareto view after an apply; refetch for the new revision. */
+  onParetoReload(): void {
+    this.paretoLoadedForId = null;
+    this.loadParetoFrontier();
   }
 
   /**

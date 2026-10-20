@@ -28,4 +28,5 @@ public class SolutionDetailResponseDTO {
     private LocalDateTime createdAt;
     private List<RouteDetailResponseDTO> routes;
     private List<Integer> unassignedOrderIds;
+    private Long paretoCandidateId;
 }

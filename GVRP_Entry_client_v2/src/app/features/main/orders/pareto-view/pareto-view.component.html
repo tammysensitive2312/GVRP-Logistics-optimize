@@ -1,0 +1,199 @@
+<div class="pareto-panel">
+
+  <!-- 1. Summary strip -->
+  <div class="summary-strip">
+    <span class="summary-text">{{ summary() }}</span>
+    @if (clustered()) {
+      <span class="cluster-chip"
+            title="Computed on the clustered problem. Each vehicle is limited to one area for all scenarios, so the CO₂ range may be narrower than without clustering.">
+        <mat-icon class="chip-icon">info</mat-icon>
+        Clustered · {{ frontier().cluster_count }} clusters
+      </span>
+    } @else {
+      <span class="cluster-chip full-problem">Full problem</span>
+    }
+  </div>
+
+  <!-- 2. Active plan line -->
+  <p class="active-plan-line">{{ activePlanLine() }}</p>
+
+  <!-- 3. Trade-off chart (inline SVG, no chart dependency) -->
+  <div class="chart-wrap">
+    <div class="chart-controls" role="group" aria-label="Chart zoom">
+      <button mat-icon-button type="button" class="zoom-in" aria-label="Zoom in" title="Zoom in"
+              [disabled]="atMaxZoom()" (click)="zoomIn()">
+        <mat-icon>zoom_in</mat-icon>
+      </button>
+      <button mat-icon-button type="button" class="zoom-out" aria-label="Zoom out" title="Zoom out"
+              [disabled]="atFullWindow()" (click)="zoomOut()">
+        <mat-icon>zoom_out</mat-icon>
+      </button>
+      <button mat-icon-button type="button" class="zoom-reset" aria-label="Reset zoom" title="Reset zoom"
+              [disabled]="isDefaultView()" (click)="resetZoom()">
+        <mat-icon>restart_alt</mat-icon>
+      </button>
+    </div>
+    <svg #chartSvg class="pareto-chart" [class.dragging]="dragging()" [attr.viewBox]="viewBox" role="img"
+         aria-label="Pareto trade-off chart: total cost versus CO₂"
+         (wheel)="onWheel($event)"
+         (pointerdown)="onPointerDown($event)">
+      @for (tick of chart().yTicks; track tick.value) {
+        <line class="grid-line" [attr.x1]="plotLeft" [attr.x2]="plotRight"
+              [attr.y1]="tick.pos" [attr.y2]="tick.pos"/>
+        <text class="axis-label y-label" [attr.x]="plotLeft - 6" [attr.y]="tick.pos + 3">{{ tick.label }}</text>
+      }
+      @for (tick of chart().xTicks; track tick.value) {
+        <line class="grid-line" [attr.x1]="tick.pos" [attr.x2]="tick.pos"
+              [attr.y1]="plotTop" [attr.y2]="plotBottom"/>
+        <text class="axis-label x-label" [attr.x]="tick.pos" [attr.y]="plotBottom + 16">{{ tick.label }}</text>
+      }
+      <line class="axis-line" [attr.x1]="plotLeft" [attr.x2]="plotRight"
+            [attr.y1]="plotBottom" [attr.y2]="plotBottom"/>
+      <line class="axis-line" [attr.x1]="plotLeft" [attr.x2]="plotLeft"
+            [attr.y1]="plotTop" [attr.y2]="plotBottom"/>
+      <text class="axis-title" [attr.x]="plotLeft + 220" [attr.y]="plotBottom + 34">Cost (VND)</text>
+      <text class="axis-title" x="14" y="150" transform="rotate(-90 14 150)">CO₂ (kg)</text>
+
+      @if (chart().path) {
+        <path class="frontier-line" [attr.d]="chart().path"/>
+      }
+
+      @for (point of chart().points; track point.candidate.id) {
+        <g class="point"
+           [attr.data-candidate-id]="point.candidate.id"
+           [class.selected]="point.candidate.id === selectedId()"
+           role="button" tabindex="0"
+           [attr.aria-label]="ariaLabel(point.candidate)"
+           (click)="onPointClick(point.candidate.id)"
+           (keydown)="onPointKey($event, point.candidate.id)">
+          <title>{{ point.candidate.label }}</title>
+          @if (point.candidate.id === frontier().active_candidate_id) {
+            <circle class="active-ring" [attr.cx]="point.x" [attr.cy]="point.y" r="11"/>
+          }
+          @if (point.candidate.frontier_status === 'FRONTIER') {
+            <circle class="point-marker point-marker--frontier"
+                    [attr.cx]="point.x" [attr.cy]="point.y" r="6"/>
+          } @else if (point.candidate.frontier_status === 'DOMINATED') {
+            <circle class="point-marker point-marker--dominated"
+                    [attr.cx]="point.x" [attr.cy]="point.y" r="6"/>
+          } @else {
+            <g class="point-cross">
+              <line [attr.x1]="point.x - 5" [attr.y1]="point.y - 5"
+                    [attr.x2]="point.x + 5" [attr.y2]="point.y + 5"/>
+              <line [attr.x1]="point.x - 5" [attr.y1]="point.y + 5"
+                    [attr.x2]="point.x + 5" [attr.y2]="point.y - 5"/>
+            </g>
+          }
+          @if (point.candidate.engine_selected) {
+            <text class="engine-star" [attr.x]="point.x" [attr.y]="point.y - 12">★</text>
+          }
+          @if (point.candidate.id === selectedId()) {
+            <text class="point-label" [attr.x]="point.x" [attr.y]="point.y + 20">{{ point.candidate.label }}</text>
+          }
+        </g>
+      }
+      <text class="better-hint" [attr.x]="plotRight - 4" [attr.y]="plotTop + 4">↙ better</text>
+    </svg>
+
+    <div class="legend">
+      <span class="legend-item">
+        <svg class="legend-svg" viewBox="0 0 20 12"><circle class="legend-marker legend-marker--frontier" cx="10" cy="6" r="5"/></svg>
+        Frontier point
+      </span>
+      <span class="legend-item">
+        <svg class="legend-svg" viewBox="0 0 20 12"><circle class="legend-marker legend-marker--dominated" cx="10" cy="6" r="5"/></svg>
+        Dominated
+      </span>
+      <span class="legend-item"><span class="legend-cross">×</span> Serves fewer orders</span>
+      <span class="legend-item">
+        <svg class="legend-svg" viewBox="0 0 20 20"><circle class="legend-ring-circle" cx="10" cy="10" r="8"/></svg>
+        Active plan
+      </span>
+      <span class="legend-item"><span class="legend-star">★</span> Recommended</span>
+    </div>
+  </div>
+
+  <!-- 4. Candidate list -->
+  <div class="candidate-list">
+    @for (row of rows(); track row.candidate.id) {
+      <div class="candidate-row" role="button" tabindex="0"
+           [attr.data-candidate-id]="row.candidate.id"
+           [class.selected]="row.isSelected" [class.active]="row.isActive"
+           (click)="select(row.candidate.id)"
+           (keydown)="onPointKey($event, row.candidate.id)">
+        <div class="row-head">
+          <span class="row-label" [class.bold]="row.isSelected">{{ row.candidate.label }}</span>
+          <span class="weight-bar"
+                [title]="'cost ' + row.weightCostPct + '% / CO₂ ' + row.weightCo2Pct + '%'">
+            <span class="weight-cost" [style.width.%]="row.weightCostPct"></span>
+            <span class="weight-co2" [style.width.%]="row.weightCo2Pct"></span>
+          </span>
+          <span [class]="statusClass(row.candidate.frontier_status)">
+            {{ statusLabel(row.candidate.frontier_status) }}
+          </span>
+        </div>
+        <div class="row-metrics">
+          <span class="metric cost">{{ formatCost(row.candidate.total_cost) }} VND</span>
+          <span class="metric co2">{{ row.candidate.total_co2 | number: '1.1-1' }} kg</span>
+          <span class="metric km">{{ row.candidate.total_distance | number: '1.1-1' }} km</span>
+          <span class="metric vehicles">{{ row.candidate.total_vehicles_used }} veh</span>
+          <span class="metric served" [class.low]="row.servedLow">{{ row.servedText }} served</span>
+        </div>
+        @if (row.deltaCost || row.deltaCo2) {
+          <div class="row-deltas">
+            @if (row.deltaCost; as d) {
+              <span class="delta" [class.up]="d.direction === 'up'" [class.down]="d.direction === 'down'">
+                {{ d.text }} cost
+              </span>
+            }
+            @if (row.deltaCo2; as d) {
+              <span class="delta" [class.up]="d.direction === 'up'" [class.down]="d.direction === 'down'">
+                {{ d.text }} CO₂
+              </span>
+            }
+          </div>
+        }
+      </div>
+    }
+  </div>
+
+  <!-- 5. Selection panel -->
+  @if (showSelectionPanel()) {
+    <div class="selection-panel">
+      @if (selected(); as sel) {
+        <h4 class="panel-title">Compare {{ sel.label }} with the active plan</h4>
+        @if (comparison().length > 0) {
+          <dl class="comparison-grid">
+            @for (row of comparison(); track row.label) {
+              <div class="comparison-row">
+                <dt>{{ row.label }}</dt>
+                <dd [class.up]="row.direction === 'up'" [class.down]="row.direction === 'down'">
+                  {{ row.deltaText }}
+                </dd>
+              </div>
+            }
+          </dl>
+        }
+        @if (selectionReason(); as reason) {
+          <p class="reason-text">{{ reason }}</p>
+        }
+        <button mat-raised-button color="primary" type="button" class="btn-apply"
+                [disabled]="!canApply()" (click)="apply()">
+          @if (applying()) {
+            <mat-spinner diameter="18"></mat-spinner>
+          } @else {
+            Apply this plan
+          }
+        </button>
+      }
+    </div>
+  }
+
+  @if (conflict()) {
+    <div class="conflict-banner" role="alert">
+      <span>A newer revision exists.</span>
+      <button mat-button type="button" (click)="loadLatest()">Load latest revision</button>
+    </div>
+  }
+
+</div>

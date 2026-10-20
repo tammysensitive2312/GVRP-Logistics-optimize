@@ -77,6 +77,15 @@ export class SendRouteDialogComponent implements OnInit {
     return current ? current.driver_name : null;
   }
 
+  /**
+   * Friendly label for the revision picker (PARETO-002). Only
+   * PARETO_ALTERNATIVE is translated; every other type keeps its raw text so
+   * the existing option format is unchanged.
+   */
+  typeLabel(type: string | null): string {
+    return type === 'PARETO_ALTERNATIVE' ? 'Pareto plan' : (type ?? '');
+  }
+
   canSubmit(): boolean {
     return !this.loading && this.loadError === null
       && this.selectedDriverId !== null && this.selectedSolutionId !== null;

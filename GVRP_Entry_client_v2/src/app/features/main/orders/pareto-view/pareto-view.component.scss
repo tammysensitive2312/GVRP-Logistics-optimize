@@ -1,0 +1,375 @@
+@import '../../../../../assets/styles/variables';
+
+:host {
+  display: block;
+  height: 100%;
+  overflow-y: auto;
+  background: var(--white);
+}
+
+.pareto-panel {
+  display: flex;
+  flex-direction: column;
+  gap: $space-md;
+  padding: $space-lg;
+  max-width: 640px;
+  min-width: 380px;
+}
+
+.summary-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $space-sm;
+  flex-wrap: wrap;
+}
+
+.summary-text {
+  font-size: $font-size-base;
+  font-weight: $font-weight-semibold;
+  color: $text-dark;
+}
+
+.cluster-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: $space-xs;
+  padding: 2px $space-sm;
+  border-radius: $radius-full;
+  background: $primary-blue-light;
+  color: $primary-blue;
+  font-size: $font-size-xs;
+
+  &.full-problem {
+    background: $bg-light;
+    color: $text-gray;
+  }
+
+  .chip-icon {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+  }
+}
+
+.active-plan-line {
+  margin: 0;
+  font-size: $font-size-sm;
+  color: $text-gray;
+}
+
+.chart-wrap {
+  position: relative;
+}
+
+.chart-controls {
+  display: flex;
+  justify-content: flex-end;
+  gap: $space-xs;
+  margin-bottom: $space-xs;
+}
+
+.pareto-chart {
+  width: 100%;
+  height: auto;
+  display: block;
+  cursor: grab;
+  touch-action: none;
+
+  &.dragging {
+    cursor: grabbing;
+  }
+}
+
+.grid-line {
+  stroke: $border-color;
+  stroke-width: 1;
+}
+
+.axis-line {
+  stroke: $border-color-dark;
+  stroke-width: 1;
+}
+
+.axis-label {
+  font-size: 10px;
+  fill: $text-light;
+}
+
+.x-label {
+  text-anchor: middle;
+}
+
+.y-label {
+  text-anchor: end;
+}
+
+.axis-title {
+  font-size: 11px;
+  fill: $text-gray;
+  text-anchor: middle;
+}
+
+.frontier-line {
+  fill: none;
+  stroke: $primary-blue;
+  stroke-width: 2;
+}
+
+.point {
+  cursor: pointer;
+}
+
+.point-marker--frontier {
+  fill: $primary-blue;
+  stroke: $primary-blue;
+  stroke-width: 1;
+}
+
+.point-marker--dominated {
+  fill: $white;
+  stroke: $text-gray;
+  stroke-width: 2;
+}
+
+.point-cross line {
+  stroke: $text-gray;
+  stroke-width: 2;
+  stroke-dasharray: 2 2;
+}
+
+.active-ring {
+  fill: none;
+  stroke: $warning-orange;
+  stroke-width: 2;
+}
+
+.engine-star {
+  fill: $warning-orange;
+  font-size: 14px;
+  text-anchor: middle;
+}
+
+.point-label {
+  font-size: 11px;
+  font-weight: $font-weight-bold;
+  fill: $text-dark;
+  text-anchor: middle;
+}
+
+.better-hint {
+  font-size: 10px;
+  fill: $text-light;
+  text-anchor: end;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $space-sm $space-md;
+  margin-top: $space-xs;
+}
+
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: $space-xs;
+  font-size: $font-size-xs;
+  color: $text-gray;
+}
+
+.legend-svg {
+  width: 20px;
+  height: 12px;
+}
+
+.legend-marker--frontier {
+  fill: $primary-blue;
+}
+
+.legend-marker--dominated {
+  fill: $white;
+  stroke: $text-gray;
+  stroke-width: 2;
+}
+
+.legend-ring-circle {
+  fill: none;
+  stroke: $warning-orange;
+  stroke-width: 2;
+}
+
+.legend-cross,
+.legend-star {
+  font-weight: $font-weight-bold;
+  color: $warning-orange;
+}
+
+.candidate-list {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid $border-color;
+  border-radius: $radius-md;
+  overflow: hidden;
+}
+
+.candidate-row {
+  padding: $space-sm $space-md;
+  border-bottom: 1px solid $border-color;
+  cursor: pointer;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &:hover {
+    background: $bg-light;
+  }
+
+  &.selected {
+    background: $primary-blue-light;
+  }
+}
+
+.row-head {
+  display: flex;
+  align-items: center;
+  gap: $space-sm;
+}
+
+.row-label {
+  min-width: 34px;
+  font-size: $font-size-sm;
+  color: $text-dark;
+
+  &.bold {
+    font-weight: $font-weight-bold;
+  }
+}
+
+.weight-bar {
+  display: flex;
+  flex: 1;
+  height: 6px;
+  border-radius: $radius-full;
+  overflow: hidden;
+  background: $border-color;
+}
+
+.weight-cost {
+  background: $primary-blue;
+}
+
+.weight-co2 {
+  background: $success-green;
+}
+
+.status-chip {
+  font-size: 10px;
+  padding: 1px $space-sm;
+  border-radius: $radius-full;
+  background: $bg-light;
+  color: $text-gray;
+
+  &.status-frontier {
+    background: $primary-blue-light;
+    color: $primary-blue;
+  }
+
+  &.status-service_dominated {
+    background: rgba(245, 166, 35, 0.15);
+    color: #8a5300;
+  }
+}
+
+.row-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $space-xs $space-md;
+  margin-top: 2px;
+  font-size: $font-size-xs;
+  color: $text-gray;
+}
+
+.served.low {
+  color: $warning-orange;
+  font-weight: $font-weight-semibold;
+}
+
+.row-deltas {
+  display: flex;
+  gap: $space-md;
+  margin-top: 2px;
+  font-size: $font-size-xs;
+}
+
+.delta.down {
+  color: $success-green-hover;
+}
+
+.delta.up {
+  color: $danger-red;
+}
+
+.selection-panel {
+  border: 1px solid $border-color;
+  border-radius: $radius-md;
+  padding: $space-md;
+  background: $bg-light;
+}
+
+.panel-title {
+  margin: 0 0 $space-sm;
+  font-size: $font-size-sm;
+  color: $text-dark;
+}
+
+.comparison-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: $space-xs $space-sm;
+  margin: 0 0 $space-sm;
+  font-size: $font-size-xs;
+
+  dt {
+    color: $text-gray;
+  }
+
+  dd {
+    margin: 0;
+    font-weight: $font-weight-semibold;
+
+    &.down {
+      color: $success-green-hover;
+    }
+
+    &.up {
+      color: $danger-red;
+    }
+  }
+}
+
+.reason-text {
+  margin: 0 0 $space-sm;
+  font-size: $font-size-xs;
+  color: $warning-orange;
+}
+
+.btn-apply {
+  display: inline-flex;
+  align-items: center;
+  gap: $space-xs;
+}
+
+.conflict-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $space-sm;
+  padding: $space-sm $space-md;
+  border: 1px solid $warning-orange;
+  border-radius: $radius-md;
+  background: #FFFBF2;
+  color: #8a5300;
+  font-size: $font-size-sm;
+}

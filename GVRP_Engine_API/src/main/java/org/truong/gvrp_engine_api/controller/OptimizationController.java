@@ -122,12 +122,28 @@ public class OptimizationController {
         body.put("startedAt", h.startedAt());
         body.put("finishedAt", h.finishedAt());
 
+        int scenarioCount = h.scenarioCount();
+        if (scenarioCount > 0) {
+            body.put("scenario", h.scenarioIndex() + 1);
+            body.put("scenarioCount", scenarioCount);
+        }
+
         JobRegistry.ProgressSnapshot snap = h.snapshot();
         if (snap != null) {
+            int maxIterations = snap.maxIterations();
             body.put("iteration", snap.iteration());
-            body.put("maxIterations", snap.maxIterations());
-            body.put("percent", snap.maxIterations() > 0
-                    ? (100 * snap.iteration() / snap.maxIterations()) : 0);
+            body.put("maxIterations", maxIterations);
+            Object percent;
+            if (scenarioCount > 0 && maxIterations > 0) {
+                // Overall progress across scenarios: scenarioIndex is 0-based, so add the
+                // current iteration inside the whole-run denominator.
+                percent = 100L * ((long) h.scenarioIndex() * maxIterations + snap.iteration())
+                        / ((long) scenarioCount * maxIterations);
+            } else {
+                percent = maxIterations > 0
+                        ? (100 * snap.iteration() / maxIterations) : 0;
+            }
+            body.put("percent", percent);
             body.put("bestCost", snap.bestCost());
             body.put("routes", snap.routes());
             body.put("unassigned", snap.unassigned());

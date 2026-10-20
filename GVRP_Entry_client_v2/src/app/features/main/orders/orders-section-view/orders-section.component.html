@@ -122,6 +122,27 @@
       </div>
     </mat-tab>
 
+  @if (showParetoTab()) {
+    <mat-tab>
+      <!-- Tab Label -->
+      <ng-template mat-tab-label>
+        <mat-icon class="tab-icon">insights</mat-icon>
+        <span>Pareto</span>
+      </ng-template>
+
+      <!-- Tab Content -->
+      @if (solution(); as activeSolution) {
+        @if (paretoFrontier(); as frontier) {
+          <app-pareto-view
+            [solution]="activeSolution"
+            [frontier]="frontier"
+            (reload)="onParetoReload()">
+          </app-pareto-view>
+        }
+      }
+    </mat-tab>
+  }
+
   </mat-tab-group>
 
   <!-- Loading Overlay (over entire section) -->

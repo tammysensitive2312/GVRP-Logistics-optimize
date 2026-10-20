@@ -1,0 +1,44 @@
+@startuml pareto-zoom-sequence
+title PARETO-003 - wheel zoom, drag pan, and point selection
+
+skinparam shadowing false
+skinparam defaultFontSize 12
+autonumber
+
+actor Planner as P
+participant "svg.pareto-chart" as S
+participant "ParetoViewComponent" as C
+participant "pareto-chart.utils" as U
+
+== wheel zoom ==
+P -> S : wheel (pointer inside the plot rectangle)
+S -> C : (wheel) $event
+C -> C : clientX/Y -> viewBox via getScreenCTM().inverse()
+C -> U : zoomWindow(window, full, fx, fy, 1/1.25)
+U --> C : window clamped to [full/8, full] and to the full bounds
+C -> C : zoom.set(window)
+C --> S : chart() recomputes points, ticks, frontier path
+C --> P : preventDefault() - the page does not scroll
+
+== drag pan ==
+P -> S : pointerdown
+S -> C : record start point, dragMoved = false
+P -> S : pointermove (more than 4 px)
+S -> C : document pointermove (registered with Renderer2)
+C -> C : dragMoved = true
+C -> U : panWindow(window, full, dx/renderedPlotW, dy/renderedPlotH)
+U --> C : window clamped inside the full domain
+P -> S : pointerup / pointercancel
+S -> C : document listener removed
+
+== selection must still work ==
+P -> S : click on <g class="point">
+S -> C : (click)
+C -> C : if dragMoved then ignore (drag, not a click)
+note over C
+  dragMoved is cleared on the next pointerdown,
+  so a plain click always selects its point.
+end note
+C -> C : select(candidate.id) as before
+
+@enduml
