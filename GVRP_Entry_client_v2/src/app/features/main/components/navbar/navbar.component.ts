@@ -72,13 +72,13 @@ export class NavbarComponent {
 
     switch (tab) {
       case 'dashboard':
-        this.router.navigate(['/main']).then();
+        void this.router.navigate(['/main']);
         break;
       case 'analysis':
         this.showComingSoon('Analysis');
         break;
       case 'history':
-        this.router.navigate(['/jobs']).then();
+        void this.router.navigate(['/jobs']);
         break;
     }
   }
@@ -92,12 +92,12 @@ export class NavbarComponent {
   }
 
   onAdminClick(): void {
-    this.router.navigate(['/admin']).then();
+    void this.router.navigate(['/admin']);
   }
 
   onLogout(): void {
     this.clearUserSession();
-    this.router.navigate(['/login']).then();
+    void this.router.navigate(['/login']);
   }
 
   private loadBranchName(): void {

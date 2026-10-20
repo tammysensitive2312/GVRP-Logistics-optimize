@@ -42,16 +42,27 @@ export class CollectionCache<T> {
     this._loading.set(true);
     this._error.set(null);
 
+    // Settle state in `tap` / `catchError`, i.e. BEFORE the value or error
+    // reaches subscribers. `finalize` runs only after their callbacks, so a
+    // caller reading `loading()` or calling `load()` again from inside its own
+    // callback would otherwise still see the old request. `finalize` remains
+    // the fallback for a request torn down before it settles.
+    const settle = () => {
+      this._loading.set(false);
+      this.inFlight$ = null;
+    };
+
     this.inFlight$ = this.config.fetch().pipe(
-      tap(items => this._items.set(items ?? [])),
+      tap(items => {
+        this._items.set(items ?? []);
+        settle();
+      }),
       catchError((error: unknown) => {
         this._error.set(resolveErrorMessage(error, this.config.fallbackError));
+        settle();
         return throwError(() => error);
       }),
-      finalize(() => {
-        this._loading.set(false);
-        this.inFlight$ = null;
-      }),
+      finalize(settle),
       shareReplay({ bufferSize: 1, refCount: false })
     );
 

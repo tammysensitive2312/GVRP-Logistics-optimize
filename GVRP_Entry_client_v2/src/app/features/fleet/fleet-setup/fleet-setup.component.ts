@@ -95,9 +95,14 @@ export class FleetSetupComponent implements OnInit {
     vehicles: new FormArray<FormGroup<VehicleRowControls>>([])
   });
 
+  /**
+   * FormArray mutates its `controls` array in place, so the computed must
+   * return a copy: returning the same reference makes the signal equality
+   * check treat every add/remove as "unchanged" and dependants go stale.
+   */
   readonly vehicleRows = computed(() => {
     this.vehicleRevision();
-    return this.form.controls.vehicles.controls;
+    return [...this.form.controls.vehicles.controls];
   });
 
   readonly totalVehicles = computed(() => this.vehicleRows().length);
