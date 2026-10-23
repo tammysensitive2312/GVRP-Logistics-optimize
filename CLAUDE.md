@@ -9,6 +9,11 @@ AGENTS.md, AGENTS.md wins and the conflict must be reported to the user.
 
 ## Session start
 
+Follow AGENTS.md §16: start by running `node tools/session-brief.mjs`
+(read-only). Claude may have no shell on the user's machine; then read the
+same sources directly (`work-items/*/run.json`, the security checklist,
+`docs/engineering/LESSONS.md`) or ask the engineer agent for the output.
+
 For research tasks, read `docs/research/PROJECT_STATE.md` before acting
 (AGENTS.md §7). Durable conclusions go into `docs/research/*` files, not
 into chat or auto memory — auto memory is a convenience, not project truth.
@@ -33,7 +38,7 @@ into chat or auto memory — auto memory is a convenience, not project truth.
 | GVRP_Engine_API | `mvnw.cmd test` (single test: `mvnw.cmd -Dtest=ClassName test`) |
 | GVRP_Entry_API | `mvnw.cmd test` |
 | GVRP_Entry_client_v2 | `npm test`, `npm run build` |
-| tools | `node tools/feature-workflow/workflow.test.mjs`, `python tools/experiment_validator.py` |
+| tools | `node --test tools/feature-workflow/workflow.test.mjs tools/session-brief.test.mjs`, `python tools/experiment_validator.py` |
 
 Ports: Entry API 8080, Engine API 8081, MySQL 3306.
 
