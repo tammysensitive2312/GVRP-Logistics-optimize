@@ -7,8 +7,8 @@
     "GVRP_Document"
   ],
   "graphHash": "dd102f16a0bb44c675032aab0813a841f1b446ea1fa8d99958fa094d0e8de614",
-  "state": "await_user_test",
-  "revision": 13,
+  "state": "done",
+  "revision": 18,
   "history": [
     {
       "revision": 1,
@@ -207,8 +207,82 @@
       },
       "snapshot": "1de49bc84f82a1d8d891323b89a9c99f1f4a7fa02842ff028500de3eb404e236",
       "time": "2026-10-07T23:36:42.482Z"
+    },
+    {
+      "revision": 14,
+      "from": "await_user_test",
+      "event": "changed",
+      "to": "implement",
+      "evidence": {
+        "findings": {
+          "path": "work-items/DRIVER-DELIVERY-001/findings-scope-drift.md",
+          "sha256": "c76559fbe7847058e4808d547417be25763706a5e6c4fe42105089c1425409f1"
+        }
+      },
+      "snapshot": "947e3cdc3afdeaf375045742a6f4d74c8da612efd53f4d70fc29b8dad538e53d",
+      "time": "2026-10-23T02:28:35.709Z"
+    },
+    {
+      "revision": 15,
+      "from": "implement",
+      "event": "ready",
+      "to": "verify",
+      "evidence": {
+        "implementation": {
+          "path": "work-items/DRIVER-DELIVERY-001/implementation-rereview.md",
+          "sha256": "c05ca86e3f00c499a474f5fb4780d7d1c9809c5c96c6632fe22417f6f0590c98"
+        }
+      },
+      "snapshot": "947e3cdc3afdeaf375045742a6f4d74c8da612efd53f4d70fc29b8dad538e53d",
+      "time": "2026-10-23T02:30:08.856Z"
+    },
+    {
+      "revision": 16,
+      "from": "verify",
+      "event": "pass",
+      "to": "await_user_test",
+      "evidence": {
+        "verification": {
+          "path": "work-items/DRIVER-DELIVERY-001/verification-rereview.md",
+          "sha256": "8cc073e5088ff0b2f68b71aba202c64d31deb436beef55fe8e97b47a3b70ea87"
+        },
+        "handoff": {
+          "path": "work-items/DRIVER-DELIVERY-001/handoff-rereview.md",
+          "sha256": "4beb2a258d09abed753761aa94d00501195015b9016e411066bd8b0c0106a6a9"
+        }
+      },
+      "snapshot": "947e3cdc3afdeaf375045742a6f4d74c8da612efd53f4d70fc29b8dad538e53d",
+      "time": "2026-10-23T02:30:09.002Z"
+    },
+    {
+      "revision": 17,
+      "from": "await_user_test",
+      "event": "accepted",
+      "to": "accepted",
+      "evidence": {
+        "user_acceptance": {
+          "path": "work-items/DRIVER-DELIVERY-001/user-acceptance-rereview.json",
+          "sha256": "47cd52f51c580bc861b4b0a33990b9e1880ae2c5ded99da202950d3eadf0f386"
+        }
+      },
+      "snapshot": "947e3cdc3afdeaf375045742a6f4d74c8da612efd53f4d70fc29b8dad538e53d",
+      "time": "2026-10-23T02:30:26.815Z"
+    },
+    {
+      "revision": 18,
+      "from": "accepted",
+      "event": "finish",
+      "to": "done",
+      "evidence": {
+        "closure": {
+          "path": "work-items/DRIVER-DELIVERY-001/closure.md",
+          "sha256": "9638e2edad7d099732a412785a5c5ad989dc4e1bad38abd1067691ec1f2622c8"
+        }
+      },
+      "snapshot": "947e3cdc3afdeaf375045742a6f4d74c8da612efd53f4d70fc29b8dad538e53d",
+      "time": "2026-10-23T02:30:26.963Z"
     }
   ],
-  "handoff": "1de49bc84f82a1d8d891323b89a9c99f1f4a7fa02842ff028500de3eb404e236",
+  "handoff": "947e3cdc3afdeaf375045742a6f4d74c8da612efd53f4d70fc29b8dad538e53d",
   "returnTo": null
 }

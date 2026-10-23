@@ -93,13 +93,11 @@ jobs:
       - run: npm run build
 
   client-test:
-    name: Client v2 (unit tests, non-blocking)
+    name: Client v2 (unit tests)
     runs-on: ubuntu-latest
-    # Non-blocking until the 5 known pre-existing failures are fixed
-    # (FleetSetup, Navbar, 3x CollectionCache; recorded in
-    # work-items/DRIVER-MAP-004/verification.md). Make it blocking afterwards
-    # by removing continue-on-error.
-    continue-on-error: true
+    # Blocking since 2026-10-23: the 5 former pre-existing failures are fixed
+    # (TEST-CLIENT-001; full suite 245/245, see
+    # work-items/DRIVER-MAP-004/verification-rereview.md).
     defaults:
       run:
         working-directory: GVRP_Entry_client_v2
@@ -126,4 +124,4 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - run: node --test tools/feature-workflow/workflow.test.mjs
+      - run: node --test tools/feature-workflow/workflow.test.mjs tools/session-brief.test.mjs

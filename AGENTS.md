@@ -42,6 +42,7 @@ Major components include:
 * `GVRP_Document` — architecture and design documentation
 * `docs/research` — durable research knowledge
 * `docs/security` — security checklist and open findings
+* `docs/engineering` — engineering lessons (build, CI, tooling, workflow traps)
 * `work-items` — business feature runs and their evidence
 * `.github` — CI and Dependabot configuration
 * `.agents/skills` — specialized scientific skills
@@ -381,6 +382,8 @@ Use:
 * `docs/research/EXPERIMENT_PROTOCOL.md` — experiment rules
 * `docs/research/LITERATURE.md` — reviewed literature
 * `docs/research/RESEARCH_LOG.md` — chronological research decisions
+* `docs/engineering/LESSONS.md` — how-to-work lessons: build, test, CI, tooling, workflow and delegation traps (defects of the system itself stay in `KNOWN_ISSUES.md`)
+* `docs/security/SECURITY_CHECKLIST.md` — security findings and their status
 
 A claim should not be promoted to verified project knowledge merely because an agent produced it.
 
@@ -512,7 +515,44 @@ Reviewers must check changed code for:
 
 ---
 
-## 16. Final Principle
+## 16. Session Protocol and Memory Hygiene
+
+Agents do not remember previous sessions. Continuity comes only from repository files, and each kind of fact has exactly one home.
+
+| Layer | Home | Written by |
+|---|---|---|
+| Rules | `AGENTS.md`, `CLAUDE.md`, `.opencode/agents/` | only on explicit user request |
+| Verified project knowledge | `docs/research/*` | under the section 12 promotion rules |
+| Security state | `docs/security/SECURITY_CHECKLIST.md` | when a finding is opened or its status changes |
+| Engineering lessons | `docs/engineering/LESSONS.md` | when a work item hits a non-obvious trap |
+| Task state | `work-items/<ID>/run.json` | only `tools/feature-workflow/workflow.mjs` |
+| Machine-specific facts | user-level agent file (e.g. `~/.config/opencode/AGENTS.md`) | the user; never in the repository |
+
+### Session start
+
+1. Run `node tools/session-brief.mjs`. It recomputes open work items, security findings not FIXED, the lesson index and knowledge-file freshness from the files above. It writes nothing.
+2. Before continuing a work item, run `node tools/feature-workflow/workflow.mjs recover work-items/<ID>/run.json` and resolve every reported issue first.
+3. Treat the brief as an index, not as evidence: re-read the source file before relying on a detail.
+4. Report stale work items (flagged STALE) to the user; do not resume, cancel or close them without the user's decision.
+
+### Session end
+
+1. For an unfinished run, record a `checkpoint` with a concrete `next_action`.
+2. Before declaring a task done, check whether anything stated in `PROJECT_STATE.md`, `KNOWN_ISSUES.md`, `SECURITY_CHECKLIST.md`, `LESSONS.md`, `CLAUDE.md` or `AGENTS.md` became false or incomplete. Update it in the same change, or say in the handoff why not. Rule files still need user approval.
+3. If the work hit a trap the next agent would hit again, add a `LESSONS.md` entry.
+
+### Keeping memory correct
+
+* Do not store what can be recomputed from code, git or `run.json`; compute it instead.
+* State each fact in one place and link to it from elsewhere.
+* Every entry carries a date and a source.
+* Do not delete outdated entries; mark them superseded or obsolete with a date.
+* When the brief shows work items finished after a knowledge file last changed, check that file for stale statements.
+* Agent-private memory (auto memory, chat history) is a convenience, never project truth (section 12).
+
+---
+
+## 17. Final Principle
 
 Always distinguish:
 

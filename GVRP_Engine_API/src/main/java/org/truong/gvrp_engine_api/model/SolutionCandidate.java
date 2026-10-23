@@ -27,9 +27,14 @@ public class SolutionCandidate {
     private Double co2Weight;          // Weight used for this solution
 
     /**
-     * Check if this solution dominates another in Pareto sense
-     * A dominates B if A is better in ALL objectives
+     * Plain two-objective (cost, CO2) dominance. It ignores served orders and delivered demand,
+     * so it must NOT be used to build the Pareto frontier.
+     *
+     * @deprecated Not used by the engine. Pareto classification is service-first and lives in
+     * {@code ParetoFrontierSelector.classify}; kept only so existing callers fail loudly at
+     * review time rather than silently compiling against a different rule.
      */
+    @Deprecated
     public boolean dominates(SolutionCandidate other) {
         boolean betterCost = this.metrics.getTotalCostVnd() <= other.metrics.getTotalCostVnd();
         boolean betterCO2 = this.metrics.getTotalCo2Kg() <= other.metrics.getTotalCo2Kg();

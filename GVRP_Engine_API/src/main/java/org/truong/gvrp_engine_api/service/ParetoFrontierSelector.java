@@ -11,10 +11,18 @@ import java.util.List;
  * <p>
  * No Spring, no shared state — safe to unit test in isolation.
  * <p>
- * <b>Classification</b> is service-first: only candidates with the maximum served-order count
- * compete on the (cost, CO2) frontier; the rest are {@code SERVICE_DOMINATED}. Among eligible
- * candidates, dominance on both objectives yields {@code FRONTIER} / {@code DOMINATED};
- * identical objective vectors keep only the lowest index on the frontier.
+ * <b>Classification</b> is service-first and lexicographic: a candidate is eligible only if it
+ * serves the maximum number of orders <em>and</em>, among those, the maximum delivered demand
+ * ({@code SolutionMetrics.servedDemand}, compared with a relative tolerance). Every other
+ * candidate is {@code SERVICE_DOMINATED}. The demand tier stops a plan that serves the same
+ * number of orders but drops heavier ones from competing on cost/CO2 with a plan that delivers
+ * more (AGENTS.md §9, service parity). A {@code null} served demand counts as 0, so callers that
+ * do not populate it keep the order-count-only behaviour. Among eligible candidates, dominance on
+ * both objectives yields {@code FRONTIER} / {@code DOMINATED}; identical objective vectors keep
+ * only the lowest index on the frontier.
+ * <p>
+ * Equal count and equal demand do not imply the same order set; that residual case is still
+ * compared on cost/CO2 (the Entry API refuses to apply a plan whose order set differs).
  * <p>
  * <b>Selection</b> min-max normalises cost and CO2 over the frontier <em>without</em> the
  * {@code +1} denominator of the legacy formula, guards against a zero range, and breaks ties
@@ -23,6 +31,9 @@ import java.util.List;
 public final class ParetoFrontierSelector {
 
     private static final double TIE_EPSILON = 1e-12;
+
+    /** Relative tolerance for comparing delivered demand (sums of doubles). */
+    private static final double DEMAND_REL_TOLERANCE = 1e-9;
 
     private ParetoFrontierSelector() {
     }
@@ -45,10 +56,19 @@ public final class ParetoFrontierSelector {
             }
         }
 
+        // Tier 2: highest delivered demand among the candidates with the maximum order count.
+        double maxDemand = 0.0;
         for (SolutionCandidate candidate : candidates) {
-            statuses.add(servedCount(candidate) < maxServed
-                    ? FrontierStatus.SERVICE_DOMINATED
-                    : FrontierStatus.FRONTIER);
+            if (servedCount(candidate) == maxServed) {
+                maxDemand = Math.max(maxDemand, servedDemand(candidate));
+            }
+        }
+        double demandTolerance = DEMAND_REL_TOLERANCE * Math.max(1.0, maxDemand);
+
+        for (SolutionCandidate candidate : candidates) {
+            boolean eligible = servedCount(candidate) == maxServed
+                    && servedDemand(candidate) >= maxDemand - demandTolerance;
+            statuses.add(eligible ? FrontierStatus.FRONTIER : FrontierStatus.SERVICE_DOMINATED);
         }
 
         for (int j = 0; j < candidates.size(); j++) {
@@ -143,5 +163,10 @@ public final class ParetoFrontierSelector {
     private static int servedCount(SolutionCandidate candidate) {
         Integer served = candidate.getMetrics().getOrdersServed();
         return served == null ? 0 : served;
+    }
+
+    private static double servedDemand(SolutionCandidate candidate) {
+        Double demand = candidate.getMetrics().getServedDemand();
+        return demand == null || !Double.isFinite(demand) ? 0.0 : demand;
     }
 }

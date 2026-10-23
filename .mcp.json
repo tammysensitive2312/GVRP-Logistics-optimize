@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "dbhub": {
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx",
+        "-y",
+        "@bytebase/dbhub@latest",
+        "--transport",
+        "stdio",
+        "--config",
+        "${CLAUDE_PROJECT_DIR:-.}/.opencode/dbhub.toml"
+      ]
+    }
+  }
+}
