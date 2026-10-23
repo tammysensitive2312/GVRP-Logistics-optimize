@@ -33,6 +33,11 @@ public class SolutionMetrics {
     private Integer vehiclesUsed;
     private Integer ordersServed;
     private Integer ordersUnserved;
+    /**
+     * Sum of the demand of served orders, in raw order-demand units (NOT multiplied by
+     * DEMAND_SCALE). Second service tier of the Pareto classification.
+     */
+    private Double servedDemand;
 
     // Utilization metrics
     private Double avgLoadUtilization; // % - average capacity utilization

@@ -39,6 +39,7 @@ public class SolutionMetricsCalculator {
         double totalCO2 = 0.0;           // kg
         int vehiclesUsed = solution.getRoutes().size();
         int ordersServed = 0;
+        double servedDemand = 0.0;       // raw demand units of served orders
         double totalLoadUtilization = 0.0;
         double totalTimeUtilization = 0.0;
 
@@ -115,6 +116,7 @@ public class SolutionMetricsCalculator {
                         return 0.0;
                     })
                     .sum();
+            servedDemand += routeLoad;
             double loadUtil = (routeLoad / typeDTO.getCapacity()) * 100.0;
             totalLoadUtilization += loadUtil;
 
@@ -152,6 +154,7 @@ public class SolutionMetricsCalculator {
                 .vehiclesUsed(vehiclesUsed)
                 .ordersServed(ordersServed)
                 .ordersUnserved(solution.getUnassignedJobs().size())
+                .servedDemand(servedDemand)
                 .avgLoadUtilization(avgLoadUtil)
                 .avgTimeUtilization(avgTimeUtil)
                 .jspritCost(solution.getCost())
