@@ -1,0 +1,23 @@
+@startuml lez-state-route-compliance
+title LEZ-001 - Route.lezStatus lifecycle (proposal)
+
+!theme plain
+skinparam shadowing false
+skinparam defaultFontSize 12
+
+[*] --> UNCHECKED : route materialised\n(callback / saved revision)
+UNCHECKED --> COMPLIANT : ComplianceChecker: no violation
+UNCHECKED --> VIOLATION : ZONE_ACCESS | ZONE_TRANSIT | LEZ_DATA_MISSING
+COMPLIANT --> STALE : ruleset hash changed\n(template version, copy edit, permit,\nvehicle legal data, zone enabled/disabled)
+VIOLATION --> STALE : ruleset hash changed
+STALE --> COMPLIANT : re-check (send or on demand)
+STALE --> VIOLATION : re-check
+VIOLATION --> VIOLATION : edit saved as new revision\n(new route rows, re-certified)
+COMPLIANT --> [*] : sent to driver
+
+note right of COMPLIANT
+  Only COMPLIANT routes can be sent,
+  and only after a fresh re-check
+  at send time.
+end note
+@enduml

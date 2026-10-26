@@ -1,0 +1,31 @@
+@startuml lez-seq-driver-view
+title LEZ-001 - Driver view renders the certified server path (proposal, R12)
+
+!theme plain
+skinparam shadowing false
+skinparam defaultFontSize 12
+autonumber
+
+actor Driver as D
+participant "Driver view" as UI
+participant "Server-geometry renderer «new»" as R
+participant "DriverController" as Ctl
+participant "RouteSendService" as Send
+database "MySQL" as DB
+participant "OSRM (public)" as O
+
+D -> UI : open route
+UI -> Ctl : GET /api/v1/driver/routes/{sendId}
+Ctl -> Send : driverRoute(sendId)
+Send -> Send : existing ownership check (send belongs to this driver)
+Send -> DB : route stops + geometryToNext + instructionsToNext\n+ zone flags of stops
+DB --> Send : data
+Send --> UI : DriverRouteDTO (+ legs, + inZone per stop)
+UI -> R : draw legs (decode polylines), mark in-zone stops
+UI -> UI : maneuver list from stored instructions
+UI -[#gray]x O : no OSRM call for this route
+note right of R
+  The path shown is the path that
+  ComplianceChecker certified.
+end note
+@enduml

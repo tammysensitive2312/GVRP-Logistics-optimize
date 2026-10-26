@@ -1,0 +1,58 @@
+@startuml lez-seq-optimization
+title LEZ-001 - Optimisation with zones: compile, enforce, certify (proposal)
+
+!theme plain
+skinparam shadowing false
+skinparam defaultFontSize 12
+autonumber
+
+actor Planner as P
+participant "OptimizationJobService" as Job
+participant "RestrictionCompiler «new»" as Comp
+participant "RuleEvaluator «new»" as Rule
+database "MySQL" as DB
+participant "EngineApiClient" as EC
+participant "OptimizationService\n(Engine)" as Opt
+participant "GraphHoperDistanceProvider" as GH
+participant "LegGeometryService «new»" as Leg
+participant "OptimizationCallbackService" as CB
+participant "ComplianceChecker «new»" as Chk
+
+P -> Job : submit job (orders of ONE delivery date)
+Job -> Job : reject if orders span several dates
+Job -> Comp : compile(branch, serviceDate, vehicles, depots, orders)
+Comp -> DB : enabled branch_zone (+template latest version | copy),\nrules, permits, vehicle legal attributes
+loop each (vehicle, zone)
+  Comp -> Rule : evaluate(vehicleType, zone rules, permits, date)
+  Rule --> Comp : ALLOWED | ALL_DAY | PARTIAL(intervals) (+MISSING_ATTRIBUTE)
+end
+Comp -> Comp : JTS: orderZones, depotZones;\nunusableVehicles (depot in zone, ALL_DAY)
+Comp --> Job : CompiledRestrictions + hash
+Job -> DB : optimization_jobs.lez_snapshot = compiled + template versions
+Job -> EC : afterCommit: submitOptimizationAsync(request\n+ serviceDate, zones, vehicleRestrictions, order.zoneKeys)
+EC -> Opt : POST /api/v1/optimization
+
+Opt -> Opt : drop unusable vehicles
+Opt -> Opt : order in Z -> addRequiredSkill("LEZ_Z")\nvehicle not ALL_DAY in Z -> addSkill("LEZ_Z")
+Opt -> GH : distance/time matrix (profile car)
+Opt -> Opt : jsprit search (P2: + LezTimeConstraint)
+Opt -> Opt : post-solve asserts (max distance, LEZ skills)
+Opt -> Opt : unassigned with no LEZ-capable vehicle\n-> reason LEZ_NO_COMPLIANT_VEHICLE (zones)
+loop each consecutive stop pair of each route
+  Opt -> Leg : leg(from, to)
+  Leg -> GH : route(profile car, locale vi)
+  GH --> Leg : points + instructions
+  Leg --> Opt : encoded polyline + instructions
+end
+Opt -> CB : POST /solutions/callbacks/complete\n(routes + legs + unassigned reasons)
+
+CB -> DB : materialise Solution, Route, RouteStop\n(+ geometryToNext, instructionsToNext)
+loop each route
+  CB -> Chk : certify(route, vehicle, snapshot restrictions)
+  Chk -> Chk : stops/depot in Z vs ALL_DAY or PARTIAL\nleg polyline intersects Z vs ALL_DAY or PARTIAL
+  Chk --> CB : violations[] (ZONE_ACCESS, ZONE_TRANSIT, LEZ_DATA_MISSING)
+  CB -> DB : route.lezStatus = COMPLIANT | VIOLATION,\nlezViolations, lezRulesetHash, lezCheckedAt
+end
+CB --> P : job completed (notification)
+P -> P : review compliance panel
+@enduml

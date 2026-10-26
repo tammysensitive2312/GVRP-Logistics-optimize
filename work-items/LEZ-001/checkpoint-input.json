@@ -1,0 +1,36 @@
+{
+  "revision": 2,
+  "completed": [
+    "Intake: request.md (LEZ-R01..R18, decisions 2026-10-24/25)",
+    "Discover: context.md at master@617b720 (static inspection only)",
+    "Design draft: design.md, business-flows.md, traceability.md",
+    "PlantUML diagrams (10) with rendered SVG and PNG in work-items/LEZ-001/diagrams via the architecture-diagrams skill"
+  ],
+  "remaining": [
+    "User review of design.md and business-flows.md",
+    "User answers D1 (planner map on server geometry), D2 (templates migration-only), D3 (this run = P1 only)",
+    "Then record the design transition (design -> implement) only after explicit implementation authorization"
+  ],
+  "read_next": [
+    "work-items/LEZ-001/request.md",
+    "work-items/LEZ-001/design.md",
+    "work-items/LEZ-001/business-flows.md"
+  ],
+  "evidence": [
+    "work-items/LEZ-001/design.md",
+    "work-items/LEZ-001/business-flows.md",
+    "work-items/LEZ-001/traceability.md",
+    "work-items/LEZ-001/diagrams/lez-component.puml",
+    "work-items/LEZ-001/diagrams/lez-domain-model.puml",
+    "work-items/LEZ-001/diagrams/lez-seq-optimization.puml",
+    "work-items/LEZ-001/diagrams/lez-seq-edit-and-send.puml"
+  ],
+  "blockers": [
+    "run.json root was recorded as the Cowork VM path (/sessions/.../mnt/GVRP-Logistics_Optimize) because init ran in the session shell; on Windows the CLI cannot resolve it. Needs a user decision: re-init on Windows or allow a one-line root correction"
+  ],
+  "decisions": [
+    "Design-level: ComplianceChecker evaluates PARTIAL restrictions already in P1; only optimiser avoidance waits for P2 (design 5.3)"
+  ],
+  "processes": [],
+  "next_action": "Wait for the user's design review and answers to D1-D3; do not implement without explicit authorization"
+}

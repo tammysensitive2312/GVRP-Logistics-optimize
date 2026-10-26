@@ -1,0 +1,29 @@
+@startuml lez-state-branch-zone
+title LEZ-001 - BranchZone lifecycle: LINKED vs COPIED (proposal)
+
+!theme plain
+skinparam shadowing false
+skinparam defaultFontSize 12
+
+[*] --> Linked : Enable template
+[*] --> Copied : Copy template (version v)
+
+state Linked {
+  [*] --> LinkedEnabled
+  LinkedEnabled --> LinkedDisabled : disable
+  LinkedDisabled --> LinkedEnabled : enable
+  LinkedEnabled --> LinkedEnabled : template v -> v+1\n(follows automatically;\nroutes become STALE)
+}
+
+state Copied {
+  [*] --> InSync
+  InSync --> UpdateAvailable : template v -> v+1\n(copy NOT changed)
+  UpdateAvailable --> InSync : acknowledge v+1\n(keep own geometry/rules)
+  InSync --> InSync : planner edits geometry / rules\n(routes become STALE)
+  UpdateAvailable --> UpdateAvailable : planner edits
+  InSync : enabled / disabled flag
+}
+
+Copied --> Linked : delete copy, enable template instead
+Linked --> Copied : copy latest version (new row)
+@enduml

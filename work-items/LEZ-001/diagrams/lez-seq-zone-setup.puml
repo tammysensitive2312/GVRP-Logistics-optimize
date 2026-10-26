@@ -1,0 +1,69 @@
+@startuml lez-seq-zone-setup
+title LEZ-001 - Enable / copy a zone template, and a template update (proposal)
+
+!theme plain
+skinparam shadowing false
+skinparam defaultFontSize 12
+autonumber
+
+actor Planner as P
+participant "Zones page «new»" as UI
+participant "ZoneController «new»" as Ctl
+participant "ZoneService «new»" as Svc
+database "MySQL" as DB
+actor "System maintainer" as M
+
+== Browse templates ==
+P -> UI : open Zones
+UI -> Ctl : GET /api/v1/zone-templates
+Ctl -> Svc : listTemplates()
+Svc -> DB : select zone_template (no branch filter: system data)
+DB --> Svc : templates (code, version, confidence, legal basis)
+Svc --> UI : list
+UI -> Ctl : GET /api/v1/zones
+Ctl -> Svc : listZones(branchId from principal)
+Svc -> DB : select branch_zone where branch_id = :principalBranch
+Svc --> UI : branch zones + "update available" flags
+
+== Enable (LINKED) ==
+P -> UI : Enable "HN-LEZ-VD1-KV1"
+UI -> Ctl : POST /api/v1/zones {templateId, mode: LINKED}
+Ctl -> Svc : enable(branchId, templateId)
+Svc -> DB : insert branch_zone(mode=LINKED, enabled=true)\n(unique per branch+template)
+Svc -> Svc : depotsInside(zone)?
+alt a depot lies inside the zone
+  Svc --> UI : created + warning DEPOT_IN_ZONE (vehicles affected)
+else
+  Svc --> UI : created
+end
+
+== Copy to edit (COPIED) ==
+P -> UI : Copy "HN-LEZ-VD1-KV1"
+UI -> Ctl : POST /api/v1/zones {templateId, mode: COPIED}
+Ctl -> Svc : copy(branchId, templateId)
+Svc -> DB : insert branch_zone(mode=COPIED, geometry, sourceTemplateVersion=v)
+Svc -> DB : insert branch_zone_rule(branch_id, ...) copied from template v
+Svc --> UI : created
+P -> UI : edit polygon / rules
+UI -> Ctl : PUT /api/v1/zones/{id}/geometry | /rules
+Ctl -> Svc : findByIdAndBranchId(id, principalBranch)
+alt not found or LINKED
+  Svc --> UI : 404 / 409
+else COPIED and owned
+  Svc -> DB : update
+  Svc --> UI : 200
+end
+
+== Law changes: template update ==
+M -> DB : migration: update zone_template, version v -> v+1,\ninsert zone_rule_template(templateVersion = v+1)
+note over DB
+  LINKED zones read the latest version on next use.
+  The ruleset hash changes, so routes that used the zone become STALE.
+end note
+P -> UI : open Zones
+UI -> Ctl : GET /api/v1/zones
+Svc --> UI : COPIED zone flagged: source v < template v+1
+P -> UI : view diff, then Acknowledge (or Copy again)
+UI -> Ctl : POST /api/v1/zones/{id}/acknowledge {version: v+1}
+Svc -> DB : branch_zone.acknowledgedTemplateVersion = v+1\n(geometry and rules unchanged)
+@enduml

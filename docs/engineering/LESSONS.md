@@ -163,3 +163,15 @@ without one always reports `changes: []`, even when later commits changed the
 scope. Before promising `accepted` or `finish`, compare `snapshot(root, scope)`
 with `run.handoff`. If they differ, route `changed` → implement → verify to get
 a new handoff, then take acceptance for that handoff.
+
+## L-2026-014 — Workflow and git from the Cowork Linux VM shell
+Date: 2026-10-26
+Source: Claude session 2026-10-25/26 (LEZ-001 init); `createRun()` in `tools/feature-workflow/workflow.mjs`
+Applies to: agents running commands through the Claude desktop VM shell (`$HOME/mnt/GVRP-Logistics_Optimize`)
+Status: ACTIVE
+Lesson: `init` stores `fs.realpathSync(root)` in `run.json`, so a run created
+from the VM records `/sessions/.../mnt/...` and the Windows CLI cannot resolve
+it (LEZ-001 has this). Create runs on Windows, or keep using the VM shell for
+that run. In the VM, plain `git status` shows every file modified because of
+CRLF; use `git -c core.autocrlf=true status`. The CLI deletes `.lock` files,
+so the VM shell needs delete permission for the folder first.

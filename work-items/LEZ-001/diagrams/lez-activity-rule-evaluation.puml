@@ -1,0 +1,51 @@
+@startuml lez-activity-rule-evaluation
+title LEZ-001 - RuleEvaluator: one (vehicle, zone, service date) (proposal)
+
+!theme plain
+skinparam shadowing false
+skinparam defaultFontSize 12
+
+start
+:Input: vehicle v (type + legal attributes),
+zone z (LINKED -> template latest version,
+COPIED -> branch rules), service date d,
+permits of v;
+:forbidden := {} ; missing := {};
+partition "For each rule r of z" {
+  while (next rule r?) is (yes)
+    if (effectiveFrom <= d <= effectiveTo?) then (yes)
+      if (r.daysOfWeek empty or contains weekday(d)?) then (yes)
+        :match selector fields (AND):
+        legalClass, energyType, weight (GROSS|PAYLOAD),
+        emissionStandardBelow, appBased;
+        if (a needed attribute is null?) then (yes)
+          :treat as MATCH;
+          :missing += attribute;
+        endif
+        if (selector matches?) then (yes)
+          :normalise schedule to forbidden minutes:
+          ALWAYS_FORBIDDEN -> [0,1440)
+          FORBIDDEN_DURING -> intervals
+          ALLOWED_ONLY -> complement
+          split intervals that cross midnight;
+          :forbidden := forbidden ∪ that set;
+        endif
+      endif
+    endif
+  endwhile (no)
+}
+partition "Permits" {
+  :for each valid permit of v for z on d:
+  forbidden := forbidden − permit window
+  (no schedule = whole day);
+}
+if (forbidden is empty?) then (yes)
+  :ALLOWED;
+elseif (forbidden == [0,1440)?) then (yes)
+  :ALL_DAY;
+else
+  :PARTIAL(forbidden);
+endif
+:return verdict + missing attributes;
+stop
+@enduml

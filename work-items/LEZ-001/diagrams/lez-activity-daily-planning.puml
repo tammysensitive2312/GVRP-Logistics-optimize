@@ -1,0 +1,59 @@
+@startuml lez-activity-daily-planning
+title LEZ-001 - Business flow: a planning day with low-emission zones (BF-04..BF-07)
+
+!theme plain
+skinparam shadowing false
+skinparam defaultFontSize 12
+
+|#E3F2FD|Planner|
+start
+:Import / create orders for delivery date D;
+|#E8F5E9|System|
+:Mark orders inside enabled zones (LEZ badge);
+|Planner|
+:Start optimisation for D;
+|System|
+:Compile rules effective on D
+(zones, vehicle legal data, permits);
+:Store snapshot with the job;
+:Optimise: in-zone orders only on allowed vehicles;
+:Certify every route
+(stops, depot, road path of every leg);
+|Planner|
+:Review compliance panel;
+while (Unassigned for LEZ or route not COMPLIANT?) is (yes)
+  switch (Choose a fix)
+  case (add / assign allowed vehicle)
+    :Assign an EV or another allowed vehicle;
+  case (permit)
+    :Register a vehicle permit (BF-03);
+  case (reschedule)
+    :Move the order to another date / time window;
+  case (manual edit)
+    :Edit the route (BF-05);
+  case (accept)
+    :Keep the order unassigned, inform the customer;
+  endswitch
+  |System|
+  :Re-optimise or re-certify;
+  |Planner|
+endwhile (no)
+:Send routes to drivers;
+|System|
+:Re-check each route with CURRENT data
+(permits, templates, vehicle data);
+if (Compliant?) then (yes)
+  :Send route (supersede older send);
+  |#FFF8E1|Driver|
+  :Open route: map shows the certified server path
+  and turn-by-turn instructions;
+  :Deliver;
+  stop
+else (no)
+  |System|
+  :Refuse (422) with reasons;
+  |Planner|
+  :Fix the plan, then send again;
+  stop
+endif
+@enduml

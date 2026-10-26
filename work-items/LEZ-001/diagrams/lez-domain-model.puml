@@ -1,0 +1,131 @@
+@startuml lez-domain-model
+title LEZ-001 - Domain model (proposal). Green = new; white = existing entity at 617b720
+
+!theme plain
+skinparam shadowing false
+skinparam defaultFontSize 11
+skinparam class {
+  BackgroundColor<<new>> #E8F5E9
+  BorderColor<<new>> #2E7D32
+}
+hide empty methods
+
+package "System level (no branch_id, read-only for branches)" {
+  class ZoneTemplate <<new>> {
+    id
+    code : unique
+    name
+    jurisdiction
+    geometry : MULTIPOLYGON 4326
+    version : int
+    boundaryConfidence : SURVEYED | DIGITISED_APPROX | WARD_PROXY
+    boundarySource
+    legalBasis
+  }
+  class ZoneRuleTemplate <<new>> {
+    id
+    templateVersion : int
+    selector : JSON
+    schedule : JSON
+    effectiveFrom : date
+    effectiveTo : date?
+    legalBasis
+  }
+}
+
+package "Branch level (branch_id from the principal)" {
+  class Branch {
+    id
+    name
+  }
+  class BranchZone <<new>> {
+    id
+    mode : LINKED | COPIED
+    sourceTemplateVersion : int?
+    acknowledgedTemplateVersion : int?
+    name? / geometry? (COPIED only)
+    enabled : bool
+  }
+  class BranchZoneRule <<new>> {
+    id
+    selector : JSON
+    schedule : JSON
+    effectiveFrom / effectiveTo
+  }
+  class VehiclePermit <<new>> {
+    id
+    permitNo
+    schedule : JSON?
+    validFrom / validTo
+  }
+  class VehicleType {
+    capacity : int  (optimisation load)
+    vehicleFeatures : JSON
+    --
+    + legalClass : MOTORBIKE|CAR|TRUCK|BUS|NON_MOTORIZED
+    + grossWeightKg : int?
+    + energyType : ELECTRIC|HYBRID|PETROL|DIESEL|OTHER
+    + emissionStandard : int?
+  }
+  class Vehicle
+  class Order {
+    location : POINT 4326
+    deliveryDate
+    timeWindowStart / End
+  }
+  class Depot {
+    location : POINT 4326
+  }
+  class OptimizationJob {
+    inputData
+    + lezSnapshot : JSON
+  }
+  class Solution
+  class Route {
+    + lezStatus : UNCHECKED|COMPLIANT|VIOLATION|STALE
+    + lezCheckedAt
+    + lezRulesetHash
+    + lezViolations : JSON
+  }
+  class RouteStop {
+    arrivalTime / departureTime
+    distanceToNext / timeToNext
+    + geometryToNext : encoded polyline
+    + instructionsToNext : JSON
+  }
+  class UnassignedOrder {
+    reason
+    + reasonCode
+  }
+}
+
+ZoneTemplate "1" *-- "0..*" ZoneRuleTemplate
+Branch "1" *-- "0..*" BranchZone
+BranchZone "0..*" --> "1" ZoneTemplate : source
+BranchZone "1" *-- "0..*" BranchZoneRule : COPIED only
+Branch "1" *-- "0..*" VehiclePermit
+VehiclePermit "0..*" --> "1" Vehicle
+VehiclePermit "0..*" --> "1" BranchZone
+Vehicle "0..*" --> "1" VehicleType
+Branch "1" *-- "0..*" VehicleType
+Branch "1" *-- "0..*" Order
+Branch "1" *-- "0..*" Depot
+Branch "1" *-- "0..*" OptimizationJob
+OptimizationJob "1" --> "0..1" Solution
+Solution "1" *-- "0..*" Route
+Solution "1" *-- "0..*" UnassignedOrder
+Route "1" *-- "1..*" RouteStop
+Route "0..*" --> "1" Vehicle
+
+note right of VehiclePermit
+  Server check: vehicle AND zone
+  belong to the caller's branch.
+end note
+note bottom of ZoneRuleTemplate
+  selector example:
+  {legalClasses:[TRUCK], weightMeasure:GROSS,
+   weightKg:{gt:3500}}
+  schedule: ALWAYS_FORBIDDEN | FORBIDDEN_DURING |
+  ALLOWED_ONLY (+ daysOfWeek, intervals)
+end note
+@enduml

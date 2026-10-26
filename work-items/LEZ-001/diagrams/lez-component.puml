@@ -1,0 +1,107 @@
+@startuml lez-component
+title LEZ-001 - Component view (proposal). «new» = to be built, others exist at 617b720
+
+!theme plain
+skinparam shadowing false
+skinparam defaultFontSize 12
+skinparam componentStyle rectangle
+skinparam rectangle {
+  BackgroundColor<<new>> #E8F5E9
+  BorderColor<<new>> #2E7D32
+}
+skinparam component {
+  BackgroundColor<<new>> #E8F5E9
+  BorderColor<<new>> #2E7D32
+}
+
+actor Planner
+actor Driver
+actor "System maintainer" as Maint
+
+package "GVRP_Entry_client_v2 (Angular)" as Client {
+  [Zones page] <<new>> as ZonesUI
+  [Vehicle-type dialog\n+ legal attributes] as VtUI
+  [Permits tab] <<new>> as PermitUI
+  [Orders table\n+ LEZ badge] as OrdersUI
+  [Route view\n+ compliance panel] as RouteUI
+  [Driver view] as DriverUI
+  [Server-geometry renderer] <<new>> as GeoRender
+  [RoutingService (OSRM)] as Osrm
+}
+
+package "GVRP_Entry_API (Spring)" as Entry {
+  [ZoneController /\nZoneTemplateController] <<new>> as ZoneCtl
+  [VehiclePermitController] <<new>> as PermitCtl
+  [ZoneService] <<new>> as ZoneSvc
+  [RestrictionCompiler] <<new>> as Compiler
+  [RuleEvaluator] <<new>> as RuleEval
+  [ComplianceChecker] <<new>> as Checker
+  [OptimizationJobService] as JobSvc
+  [OptimizationCallbackService] as CbSvc
+  [RouteCustomizationService] as CustSvc
+  [RouteSendService\n+ send guard] as SendSvc
+  [EngineApiClient] as EngClient
+}
+
+package "GVRP_Engine_API (Spring)" as Engine {
+  [OptimizationController] as OptCtl
+  [OptimizationService\n+ LEZ skills, post-solve assert] as OptSvc
+  [RouteEvaluationService] as EvalSvc
+  [LegGeometryService] <<new>> as LegGeo
+  [GraphHoperDistanceProvider\n(profile car, CH)] as GH
+  [LezTimeConstraint (P2)] <<new>> as TimeC
+}
+
+database "MySQL gvrp_db" as DB {
+  [zone_template / zone_rule_template] <<new>> as TTpl
+  [branch_zone / branch_zone_rule /\nvehicle_permit] <<new>> as TBranch
+  [vehicle_types (+legal)\nroutes (+lez_status)\nroute_stops (+geometry)\noptimization_jobs (+lez_snapshot)] as TExist
+}
+
+Planner --> ZonesUI
+Planner --> VtUI
+Planner --> PermitUI
+Planner --> OrdersUI
+Planner --> RouteUI
+Driver --> DriverUI
+Maint ..> TTpl : migration / seed
+
+ZonesUI --> ZoneCtl : REST
+PermitUI --> PermitCtl : REST
+RouteUI --> SendSvc : send
+RouteUI --> GeoRender
+DriverUI --> GeoRender
+GeoRender ..> Osrm : replaced for\nLEZ routes (R12)
+
+ZoneCtl --> ZoneSvc
+PermitCtl --> ZoneSvc
+ZoneSvc --> TTpl
+ZoneSvc --> TBranch
+JobSvc --> Compiler : compile(date)
+Compiler --> RuleEval
+Compiler --> TBranch
+Compiler --> TTpl
+JobSvc --> EngClient
+CustSvc --> EngClient
+EngClient --> OptCtl : POST /optimization\nPOST /optimization/evaluate
+CbSvc --> Checker : certify
+CustSvc --> Checker : certify revision
+SendSvc --> Compiler : current rules
+SendSvc --> Checker : re-check
+Checker --> TExist
+
+OptCtl --> OptSvc
+OptCtl --> EvalSvc
+OptSvc --> GH : matrix
+OptSvc --> LegGeo
+EvalSvc --> LegGeo
+LegGeo --> GH : leg path + instructions
+OptSvc ..> TimeC : P2
+OptSvc --> CbSvc : callback (routes + legs)
+
+note bottom of Checker
+  Single compliance verdict.
+  Runs on stored leg geometry,
+  never on OSRM paths.
+end note
+@enduml

@@ -1,0 +1,56 @@
+@startuml lez-seq-edit-and-send
+title LEZ-001 - Manual edit and the hard send guard (proposal)
+
+!theme plain
+skinparam shadowing false
+skinparam defaultFontSize 12
+autonumber
+
+actor Planner as P
+participant "Route view" as UI
+participant "RouteCustomizationService" as Cust
+participant "EngineApiClient" as EC
+participant "RouteEvaluationService\n(Engine)" as Eval
+participant "RestrictionCompiler «new»" as Comp
+participant "ComplianceChecker «new»" as Chk
+participant "RouteSendService" as Send
+database "MySQL" as DB
+
+== Preview an edit (never persisted) ==
+P -> UI : reorder stops / move orders
+UI -> Cust : evaluate(baseSolutionId, routes)
+Cust -> EC : evaluateRoutes(plan)
+EC -> Eval : POST /api/v1/optimization/evaluate
+Eval --> EC : existing violations + legs (polyline, instructions)
+Cust -> Comp : compile(branch, deliveryDate) with current data
+Cust -> Chk : certify(edited routes, compiled)
+Chk --> Cust : ZONE_ACCESS / ZONE_TRANSIT / LEZ_DATA_MISSING
+Cust --> UI : all violations; offending leg highlighted
+
+== Save a revision ==
+P -> UI : save
+UI -> Cust : saveRevision(...)
+Cust -> EC : evaluate again (server side)
+Cust -> Chk : certify
+Cust -> DB : new solution revision; route.lezStatus = COMPLIANT | VIOLATION
+note right of Cust
+  A violating revision may be saved
+  for discussion. It cannot be sent.
+end note
+
+== Send to a driver (hard guard) ==
+P -> UI : send route to driver
+UI -> Send : POST /api/v1/routes/{id}/send
+Send -> Send : existing checks: branch ownership,\nhas order stops, enabled driver of branch
+Send -> Comp : compile(branch, route deliveryDate) with CURRENT data
+Send -> Chk : re-check route on stored geometry
+Chk --> Send : violations[]
+Send -> DB : persist lezStatus / violations / hash
+alt any violation or missing data
+  Send --> UI : 422 UnprocessablePlanException + violations
+  UI --> P : "Cannot send: permit expired / path crosses Z / ..."
+else compliant
+  Send -> DB : supersede CURRENT sends, insert RouteSend (existing)
+  Send --> UI : 200 RouteSendDTO
+end
+@enduml
