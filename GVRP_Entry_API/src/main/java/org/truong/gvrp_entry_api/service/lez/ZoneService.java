@@ -35,6 +35,10 @@ import org.truong.gvrp_entry_api.util.AppConstant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Branch zones: enable (LINKED) or copy (COPIED) a template, edit a copy,
@@ -52,6 +56,9 @@ public class ZoneService {
 
     /** P1 serves internal fleets only (request §1, 2026-10-25 23:24). */
     static final boolean BRANCH_APP_BASED = false;
+
+    /** Length of {@code branch_zones.name}. */
+    private static final int NAME_MAX_LENGTH = 200;
 
     private final BranchZoneRepository zoneRepository;
     private final BranchZoneRuleRepository zoneRuleRepository;
@@ -115,7 +122,7 @@ public class ZoneService {
                     .mode(BranchZoneMode.COPIED)
                     .sourceTemplate(template)
                     .sourceTemplateVersion(template.getVersion())
-                    .name(template.getName())
+                    .name(uniqueName(template.getName(), branchId))
                     .geometry((MultiPolygon) template.getGeometry().copy())
                     .enabled(Boolean.TRUE)
                     .build();
@@ -144,10 +151,36 @@ public class ZoneService {
     @Transactional
     public BranchZoneDTO updateZone(Long id, BranchZoneUpdateRequest request, Long branchId) {
         BranchZone zone = findZone(id, branchId);
-        if (request == null || request.getEnabled() == null) {
-            throw LezSupport.invalid("enabled is required");
+        if (request == null || (request.getEnabled() == null && request.getName() == null)) {
+            throw LezSupport.invalid("enabled or name is required");
         }
-        zone.setEnabled(request.getEnabled());
+        String name = null;
+        if (request.getName() != null) {
+            if (zone.getMode() == BranchZoneMode.LINKED) {
+                throw new LezConflictException("Zone " + zone.getId() + " is LINKED to its template and cannot be renamed");
+            }
+            name = request.getName().trim();
+            if (name.isEmpty()) {
+                throw LezSupport.invalid("name must not be blank");
+            }
+            if (name.length() > NAME_MAX_LENGTH) {
+                throw LezSupport.invalid("name must be at most " + NAME_MAX_LENGTH + " characters");
+            }
+            String key = nameKey(name);
+            boolean taken = zoneRepository.findByBranchIdOrderByIdAsc(branchId).stream()
+                    .filter(other -> !other.getId().equals(zone.getId()))
+                    .map(ZoneService::effectiveName)
+                    .anyMatch(other -> other != null && nameKey(other).equals(key));
+            if (taken) {
+                throw LezSupport.invalid("Another zone of this branch is already named " + name);
+            }
+        }
+        if (request.getEnabled() != null) {
+            zone.setEnabled(request.getEnabled());
+        }
+        if (name != null) {
+            zone.setName(name);
+        }
         BranchZone saved = zoneRepository.save(zone);
         return toDTO(saved, Boolean.TRUE.equals(saved.getEnabled()) ? depotWarnings(saved, branchId) : List.of());
     }
@@ -249,6 +282,43 @@ public class ZoneService {
         LezSupport.requireBranch(branchId);
         return zoneRepository.findByIdAndBranchId(id, branchId)
                 .orElseThrow(() -> new LezNotFoundException(AppConstant.BRANCH_ZONE));
+    }
+
+    /**
+     * Name of a new COPIED zone that no other zone of the branch uses (BROWSER-FIX-001, E7):
+     * the template name when free, else {@code "<base> (copy)"}, {@code "<base> (copy 2)"}, ...
+     * The base is shortened so the result fits the column.
+     */
+    private String uniqueName(String base, Long branchId) {
+        Set<String> taken = zoneRepository.findByBranchIdOrderByIdAsc(branchId).stream()
+                .map(ZoneService::effectiveName)
+                .filter(Objects::nonNull)
+                .map(ZoneService::nameKey)
+                .collect(Collectors.toSet());
+        String safeBase = base == null ? "" : base;
+        for (int n = 1; ; n++) {
+            String suffix = n == 1 ? "" : n == 2 ? " (copy)" : " (copy " + (n - 1) + ")";
+            String head = safeBase.length() + suffix.length() > NAME_MAX_LENGTH
+                    ? safeBase.substring(0, NAME_MAX_LENGTH - suffix.length())
+                    : safeBase;
+            String candidate = head + suffix;
+            if (!taken.contains(nameKey(candidate))) {
+                return candidate;
+            }
+        }
+    }
+
+    /** The name a zone shows: LINKED from its template, COPIED its own. */
+    private static String effectiveName(BranchZone zone) {
+        if (zone.getMode() == BranchZoneMode.LINKED) {
+            return zone.getSourceTemplate() != null ? zone.getSourceTemplate().getName() : null;
+        }
+        return zone.getName();
+    }
+
+    /** Names are compared trimmed and case-insensitive. */
+    private static String nameKey(String name) {
+        return name.trim().toLowerCase(Locale.ROOT);
     }
 
     private static void requireCopied(BranchZone zone) {

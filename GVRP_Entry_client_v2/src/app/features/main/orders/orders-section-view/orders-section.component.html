@@ -22,11 +22,21 @@
           [loading]="isLoading"
           (importClick)="onImportClick()"
           (addClick)="onAddClick()"
+          (selectAllClick)="onSelectAllClick()"
           (planRoutesClick)="onPlanRoutesClick()"
           (deleteSelectedClick)="onDeleteSelected()"
           (exportClick)="onExportClick()"
           (bulkEditClick)="onBulkEditStatus()">
         </app-orders-action-toolbar>
+
+        <!-- Select-all notice: the selection spans every page of the filters -->
+        @if (allMatchingSelected) {
+          <div class="bulk-report select-all-notice" role="status">
+            <mat-icon class="bulk-icon">select_all</mat-icon>
+            <span class="bulk-summary">All {{ selectedOrders.length }} orders matching the filters are selected.</span>
+            <button type="button" class="bulk-dismiss" (click)="onClearSelection()">Clear selection</button>
+          </div>
+        }
 
         <!-- Bulk result report: compact banner + grouped details -->
         @if (bulkResult(); as result) {

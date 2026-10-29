@@ -42,6 +42,9 @@ export interface ZoneEditorDialogData {
 /** Largest accepted GeoJSON file; the server applies its own vertex limit. */
 const MAX_FILE_BYTES = 2 * 1024 * 1024;
 
+/** Length of the server's zone name column. */
+const MAX_NAME_LENGTH = 200;
+
 const DAYS: readonly DayOfWeekCode[] = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
 const SCHEDULE_TYPES: readonly ScheduleType[] = [
   'ALWAYS_FORBIDDEN',
@@ -79,6 +82,8 @@ export class ZoneEditorDialogComponent {
   readonly scheduleTypes = SCHEDULE_TYPES;
   readonly weightMeasures = WEIGHT_MEASURES;
 
+  /** Name of the COPIED zone; a changed name is sent before the geometry. */
+  readonly name = signal(this.data.zone.name ?? '');
   readonly geometryText = signal('');
   readonly geometry = signal<unknown | null>(this.data.zone.geometry ?? null);
   readonly geometryErrors = signal<string[]>([]);
@@ -233,6 +238,15 @@ export class ZoneEditorDialogComponent {
     if (!this.isCopied() || this.busy()) {
       return;
     }
+    const name = this.name().trim();
+    if (!name) {
+      this.formErrors.set(['Name is required.']);
+      return;
+    }
+    if (name.length > MAX_NAME_LENGTH) {
+      this.formErrors.set([`Name must be at most ${MAX_NAME_LENGTH} characters.`]);
+      return;
+    }
     const geometry = this.geometry();
     if (!geometry) {
       this.formErrors.set(['Add the zone geometry first.']);
@@ -255,6 +269,21 @@ export class ZoneEditorDialogComponent {
     this.formErrors.set([]);
     this.busy.set(true);
 
+    // Rename first: a refused name (duplicate in the branch) sends nothing else.
+    if (name !== (this.data.zone.name ?? '').trim()) {
+      this.lez.renameZone(this.data.zone.id, name).subscribe({
+        next: () => this.saveGeometryAndRules(geometry, payload),
+        error: (error: unknown) => {
+          this.busy.set(false);
+          this.formErrors.set([serverErrorMessage(error, 'Failed to rename the zone')]);
+        }
+      });
+      return;
+    }
+    this.saveGeometryAndRules(geometry, payload);
+  }
+
+  private saveGeometryAndRules(geometry: unknown, payload: ZoneRuleInput[]): void {
     // Geometry first: a refused polygon must not leave new rules behind.
     this.lez.replaceZoneGeometry(this.data.zone.id, geometry).subscribe({
       next: () => {

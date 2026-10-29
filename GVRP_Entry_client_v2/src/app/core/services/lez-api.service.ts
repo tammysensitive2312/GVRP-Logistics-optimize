@@ -58,6 +58,11 @@ export class LezApiService {
     return this.http.patch<BranchZoneDTO>(`${this.apiUrl}/zones/${zoneId}`, { enabled });
   }
 
+  /** New name of a COPIED zone, unique within the branch (BROWSER-FIX-001, C7). */
+  renameZone(zoneId: number, name: string): Observable<BranchZoneDTO> {
+    return this.http.patch<BranchZoneDTO>(`${this.apiUrl}/zones/${zoneId}`, { name });
+  }
+
   /** Raw GeoJSON Polygon, MultiPolygon or Feature; COPIED zones only. */
   replaceZoneGeometry(zoneId: number, geometry: unknown): Observable<BranchZoneDTO> {
     return this.http.put<BranchZoneDTO>(`${this.apiUrl}/zones/${zoneId}/geometry`, geometry);

@@ -9,4 +9,10 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class BranchZoneUpdateRequest {
     private Boolean enabled;
+    /** New name of a COPIED zone; null keeps the current name (BROWSER-FIX-001, E7). */
+    private String name;
+
+    public BranchZoneUpdateRequest(Boolean enabled) {
+        this.enabled = enabled;
+    }
 }

@@ -1,0 +1,75 @@
+{
+  "id": "BROWSER-FIX-001",
+  "root": "E:\\OR-tools java example\\GVRP-Logistics_Optimize",
+  "scope": [
+    "GVRP_Entry_API/src",
+    "GVRP_Entry_client_v2/src"
+  ],
+  "graphHash": "dd102f16a0bb44c675032aab0813a841f1b446ea1fa8d99958fa094d0e8de614",
+  "state": "verify",
+  "revision": 4,
+  "history": [
+    {
+      "revision": 1,
+      "from": "intake",
+      "event": "ready",
+      "to": "discover",
+      "evidence": {
+        "request": {
+          "path": "work-items/BROWSER-FIX-001/request.md",
+          "sha256": "472e35c4a24e1cf48a6656959c62de08f642d867303a695cb3238ccbfd9bf752"
+        }
+      },
+      "snapshot": "c762f08a27c20b49a621ad6bbb687252a8f1e25b441283c8c483f9d297d25811",
+      "time": "2026-10-29T00:42:13.540Z"
+    },
+    {
+      "revision": 2,
+      "from": "discover",
+      "event": "ready",
+      "to": "design",
+      "evidence": {
+        "context": {
+          "path": "work-items/BROWSER-FIX-001/context.md",
+          "sha256": "ae24013595147d31e12a8582f7d7d26f1afd38f73f292cb8d574571e5476d0e4"
+        }
+      },
+      "snapshot": "c762f08a27c20b49a621ad6bbb687252a8f1e25b441283c8c483f9d297d25811",
+      "time": "2026-10-29T00:42:13.705Z"
+    },
+    {
+      "revision": 3,
+      "from": "design",
+      "event": "ready",
+      "to": "implement",
+      "evidence": {
+        "design": {
+          "path": "work-items/BROWSER-FIX-001/design.md",
+          "sha256": "2f01d4c6848acc22b654e9432dea36be73ff1256a44da04df33849c8186726dc"
+        },
+        "traceability": {
+          "path": "work-items/BROWSER-FIX-001/traceability.md",
+          "sha256": "fa0a70471181ae54f42a4531c530d9247206d2f87e294301b91fdf8386ad0d9f"
+        }
+      },
+      "snapshot": "c762f08a27c20b49a621ad6bbb687252a8f1e25b441283c8c483f9d297d25811",
+      "time": "2026-10-29T00:42:13.866Z"
+    },
+    {
+      "revision": 4,
+      "from": "implement",
+      "event": "ready",
+      "to": "verify",
+      "evidence": {
+        "implementation": {
+          "path": "work-items/BROWSER-FIX-001/implementation.md",
+          "sha256": "ebf94040cc2edd974d1475bef9c3ac2150238b7cb2f2afad81437beeccae254e"
+        }
+      },
+      "snapshot": "60aae80d107257e5378073e86e1cf4e1744f533a2f5a12d3211d7adf106f85c8",
+      "time": "2026-10-29T00:55:13.484Z"
+    }
+  ],
+  "handoff": null,
+  "returnTo": null
+}

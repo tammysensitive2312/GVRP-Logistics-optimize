@@ -52,7 +52,7 @@
                   <span class="text-muted">N/A</span>
                 }
               </td>
-              <td>{{ vehicle.capacity }} kg</td>
+              <td>{{ vehicle.capacity != null ? vehicle.capacity + ' kg' : '—' }}</td>
               <td>
                 <span [class]="statusBadgeClass(vehicle.status)">
                   {{ statusLabel(vehicle.status) }}

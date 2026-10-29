@@ -18,6 +18,11 @@
   }
 }
 
+.actions-cell {
+  white-space: nowrap;
+  width: 1%;
+}
+
 .row-actions {
   display: flex;
   gap: $space-sm;

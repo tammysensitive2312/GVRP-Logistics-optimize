@@ -21,6 +21,7 @@ public interface VehicleMapper {
     @Mapping(source = "endDepot.name", target = "endDepotName")
     @Mapping(source = "vehicleType.id", target = "vehicleTypeId")
     @Mapping(source = "vehicleType.typeName", target = "vehicleTypeName")
+    @Mapping(source = "vehicleType.capacity", target = "capacity")
     VehicleDTO toDTO(Vehicle entity);
 
     @Mapping(source = "startDepot.id", target = "startDepotId")

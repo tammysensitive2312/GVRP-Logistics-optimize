@@ -12,6 +12,8 @@ import { ToastService } from '@shared/services/toast.service';
 import { OrderDTO, OrderInputDTO, VEHICLE_SKILLS } from '@core/models';
 import {MatProgressSpinner} from '@angular/material/progress-spinner';
 import {MapPickerDialogComponent} from '@features/main/orders/components/map-picker-dialog/map-picker-dialog.component';
+import { serverErrorMessage } from '@shared/utils/api-error.utils';
+import { localDateIso } from '@shared/utils/date.utils';
 
 export interface EditOrderDialogData {
   orderId?: number;
@@ -56,7 +58,7 @@ export class EditOrderDialogComponent implements OnInit {
     delivery_notes: '',
     required_skills: [],
     status: 'SCHEDULED',
-    delivery_date: new Date().toISOString().split('T')[0]
+    delivery_date: localDateIso()
   };
 
   get title(): string {
@@ -171,7 +173,7 @@ export class EditOrderDialogComponent implements OnInit {
             this.dialogRef.close(true);
           },
           error: (err) => {
-            this.toast.error(err.message || 'Failed to update order');
+            this.toast.error(serverErrorMessage(err, 'Failed to update order'));
             this.isSaving = false;
           }
         });
@@ -186,7 +188,7 @@ export class EditOrderDialogComponent implements OnInit {
             this.dialogRef.close(true);
           },
           error: (err) => {
-            this.toast.error(err.message || 'Failed to create order');
+            this.toast.error(serverErrorMessage(err, 'Failed to create order'));
             this.isSaving = false;
           }
         });

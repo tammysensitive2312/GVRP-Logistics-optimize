@@ -24,6 +24,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Applies the {@link ComplianceChecker} verdict to stored routes (LEZ-001,
@@ -304,7 +305,17 @@ public class RouteComplianceService {
 
     /** Human reason naming the order's zones. */
     public static String noCompliantVehicleReason(CompiledRestrictions restrictions, Long orderId) {
-        return "No compliant vehicle for zone " + String.join(", ", restrictions.orderZoneKeys(orderId));
+        // Zone names, not internal keys (BROWSER-FIX-001, E6); an uncompiled key is printed as is.
+        List<CompiledRestrictions.CompiledZone> zones =
+                restrictions.getZones() != null ? restrictions.getZones() : List.of();
+        return "No compliant vehicle for zone " + restrictions.orderZoneKeys(orderId).stream()
+                .map(key -> zones.stream()
+                        .filter(zone -> key.equals(zone.getKey()))
+                        .findFirst()
+                        .map(ComplianceChecker::label)
+                        .orElse(key))
+                .map(label -> "\"" + label + "\"")
+                .collect(Collectors.joining(", "));
     }
 
     // ---------- helpers ----------

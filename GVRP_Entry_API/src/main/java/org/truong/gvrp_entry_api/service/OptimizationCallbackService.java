@@ -350,7 +350,6 @@ public class OptimizationCallbackService {
             List<UnassignedOrder> unassignedList = enginePlanMaterializer.buildUnassignedOrder(solution, solutionData.getUnassignedOrders(), orderMap);
             applyLezUnassignedReasons(job, unassignedList);
             solution.getUnassignedOrders().addAll(unassignedList);
-            solution.getUnassignedOrders().addAll(unassignedList);
 
             if (!unassignedList.isEmpty()) {
                 List<Order> unassignedOrders = unassignedList.stream()

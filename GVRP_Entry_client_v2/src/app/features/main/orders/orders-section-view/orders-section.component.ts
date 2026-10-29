@@ -95,6 +95,13 @@ export class OrdersSectionComponent implements OnInit, OnDestroy {
 
   orders: OrderDTO[] = [];
   selectedOrders: OrderDTO[] = [];
+  /**
+   * True while `selectedOrders` holds every order matching the filters, across
+   * all pages ("Select All Orders", BROWSER-FIX-001 C2). Any filter, page or
+   * row change ends it.
+   */
+  allMatchingSelected = false;
+  private selectAllLoading = false;
 
   /**
    * Ordered low-emission zone names per order id (LEZ-001 P1c, C5). Empty when
@@ -269,6 +276,34 @@ export class OrdersSectionComponent implements OnInit, OnDestroy {
     this.openEditDialog();
   }
 
+  /**
+   * Selects every order matching the current filters (all pages) in one
+   * request, with the table's filter object. The table keeps its page.
+   */
+  onSelectAllClick(): void {
+    if (this.selectAllLoading) return;
+    if (this.totalElements === 0) {
+      this.toastService.info('No order matches the filters.');
+      return;
+    }
+
+    this.selectAllLoading = true;
+    this.apiService.getOrders(this.currentFilters, 0, this.totalElements)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response) => {
+          this.selectAllLoading = false;
+          this.selectedOrders = response.content ?? [];
+          this.allMatchingSelected = true;
+          this.toastService.success(`Selected ${this.selectedOrders.length} orders matching the filters.`);
+        },
+        error: (err) => {
+          this.selectAllLoading = false;
+          this.toastService.error(serverErrorMessage(err, 'Failed to select all orders'));
+        }
+      });
+  }
+
   onPlanRoutesClick(): void {
     // D4 (LEZ-001): one plan serves one delivery date. Refuse locally, before
     // the dialog, and name the dates so the planner can fix the selection.
@@ -434,6 +469,7 @@ export class OrdersSectionComponent implements OnInit, OnDestroy {
           // collapsed behind "View details" so the table keeps its space.
           this.bulkDetailsOpen.set(report.failed.length > 0 && report.failed.length <= 5);
           this.selectedOrders = [];
+          this.allMatchingSelected = false;
           this.loadOrders();
           this.toastService.success(
             `${report.updated.length} updated`
@@ -473,6 +509,7 @@ export class OrdersSectionComponent implements OnInit, OnDestroy {
 
   onClearSelection(): void {
     this.selectedOrders = [];
+    this.allMatchingSelected = false;
     // The table component will handle clearing its own selection
     // via the selectionChange event
   }
@@ -483,6 +520,7 @@ export class OrdersSectionComponent implements OnInit, OnDestroy {
     this.currentFilters = { ...newFilters };
     this.currentPage = 0; // Reset to first page
     this.selectedOrders = []; // Single-page selection: never carry across reloads
+    this.allMatchingSelected = false;
     this.loadOrders();
   }
 
@@ -490,11 +528,13 @@ export class OrdersSectionComponent implements OnInit, OnDestroy {
     this.currentPage = event.pageIndex;
     this.pageSize = event.pageSize;
     this.selectedOrders = []; // Single-page selection: never carry across reloads
+    this.allMatchingSelected = false;
     this.loadOrders();
   }
 
   onOrderSelectionChange(selected: OrderDTO[]): void {
     this.selectedOrders = selected;
+    this.allMatchingSelected = false;
     console.log(`${selected.length} orders selected`);
   }
 

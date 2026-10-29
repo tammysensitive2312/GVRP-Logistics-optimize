@@ -72,6 +72,6 @@ public class OrderInputDTO {
     private LocalDate deliveryDate;
 
     @Null(groups = OnCreate.class, message = "Order status must be null when creating")
-    private OrderStatus status = OrderStatus.SCHEDULED;
+    private OrderStatus status;
 
 }

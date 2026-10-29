@@ -8,6 +8,16 @@
     </p>
   } @else {
     <section class="editor-section">
+      <h3 class="section-title">Name</h3>
+      <input
+        type="text"
+        class="name-input"
+        [ngModel]="name()"
+        (ngModelChange)="name.set($event)"
+        aria-label="Zone name"/>
+    </section>
+
+    <section class="editor-section">
       <h3 class="section-title">Geometry</h3>
       <p class="form-hint">
         Paste a GeoJSON Polygon or MultiPolygon (x = longitude, y = latitude), or

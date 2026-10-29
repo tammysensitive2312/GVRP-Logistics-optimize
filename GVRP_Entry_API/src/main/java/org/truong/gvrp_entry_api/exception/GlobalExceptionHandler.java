@@ -3,7 +3,10 @@ package org.truong.gvrp_entry_api.exception;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.validation.BindingResult;
+import org.springframework.validation.FieldError;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.slf4j.Logger;
@@ -147,6 +150,31 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .body(new ErrorResponse(List.of(detail)));
+    }
+
+    /**
+     * 400 — bean-validation failure of a request body, one detail per error in
+     * the order Spring reports them. It used to fall through to the generic
+     * handler (500), which also logged the rejected values (customer data).
+     * The log line carries the count and the object name only.
+     */
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ErrorResponse> handleValidationFailure(MethodArgumentNotValidException ex) {
+        BindingResult result = ex.getBindingResult();
+        logger.warn("Request validation failed: {} error(s) on {}",
+                result.getErrorCount(), result.getObjectName());
+
+        List<ErrorDetail> details = result.getAllErrors().stream()
+                .map(error -> ErrorDetail.builder()
+                        .code(ErrorCode.VALIDATION_ERROR.getCode())
+                        .message(error.getDefaultMessage())
+                        .field(error instanceof FieldError fieldError ? fieldError.getField() : null)
+                        .build())
+                .toList();
+
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(new ErrorResponse(details));
     }
 
     /**

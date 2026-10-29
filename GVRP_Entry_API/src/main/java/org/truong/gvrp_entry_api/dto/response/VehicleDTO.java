@@ -17,6 +17,8 @@ public class VehicleDTO {
     private String vehicleLicensePlate;
     private Long vehicleTypeId;
     private String vehicleTypeName;
+    /** Capacity of the vehicle's type (BROWSER-FIX-001, E3). */
+    private Integer capacity;
     private VehicleStatus status;
     private Long startDepotId;
     private String startDepotName;

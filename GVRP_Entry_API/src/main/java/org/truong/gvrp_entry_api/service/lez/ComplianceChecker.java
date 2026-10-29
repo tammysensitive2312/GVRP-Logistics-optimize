@@ -93,10 +93,10 @@ public final class ComplianceChecker {
                                     + String.join(", ", restriction.getMissingAttributes())));
                 } else if (restriction.isAllDay()) {
                     violations.add(new Violation(ZONE_ACCESS, i, stop.orderId(), zone.getKey(),
-                            "Stop is in zone " + zone.getKey() + " and the vehicle is banned all day there"));
+                            "Stop is in zone \"" + label(zone) + "\" and the vehicle is banned all day there"));
                 } else if (window != null && overlaps(restriction.getForbidden(), window.get(0), window.get(1))) {
                     violations.add(new Violation(ZONE_ACCESS, i, stop.orderId(), zone.getKey(),
-                            "Stop is in zone " + zone.getKey() + " during its forbidden hours"));
+                            "Stop is in zone \"" + label(zone) + "\" during its forbidden hours"));
                 }
             }
         }
@@ -131,19 +131,28 @@ public final class ComplianceChecker {
                 }
                 if (!restriction.getMissingAttributes().isEmpty() && restricted(restriction)) {
                     violations.add(new Violation(LEZ_DATA_MISSING, i, from.orderId(), zone.getKey(),
-                            "Missing vehicle data decides transit through " + zone.getKey() + ": "
+                            "Missing vehicle data decides transit through \"" + label(zone) + "\": "
                                     + String.join(", ", restriction.getMissingAttributes())));
                 } else if (restriction.isAllDay()) {
                     violations.add(new Violation(ZONE_TRANSIT, i, from.orderId(), zone.getKey(),
-                            "Leg crosses zone " + zone.getKey() + " where the vehicle is banned all day"));
+                            "Leg crosses zone \"" + label(zone) + "\" where the vehicle is banned all day"));
                 } else if (window != null && overlaps(restriction.getForbidden(), window.get(0), window.get(1))) {
                     violations.add(new Violation(ZONE_TRANSIT, i, from.orderId(), zone.getKey(),
-                            "Leg crosses zone " + zone.getKey() + " during its forbidden hours"));
+                            "Leg crosses zone \"" + label(zone) + "\" during its forbidden hours"));
                 }
             }
         }
 
         return violations;
+    }
+
+    /**
+     * Zone name for user-facing texts: the trimmed name, or the key when the
+     * name is blank (BROWSER-FIX-001, E6). Codes and {@code zoneKey} keep the key.
+     */
+    public static String label(CompiledRestrictions.CompiledZone zone) {
+        String name = zone.getName();
+        return name != null && !name.isBlank() ? name.trim() : zone.getKey();
     }
 
     /** True when any violation blocks the plan (every code does in P1). */

@@ -317,10 +317,18 @@ public class OptimizationJobService {
                 .filter(o -> o.getStatus() != OrderStatus.SCHEDULED)
                 .toList();
         if (!invalidStatus.isEmpty()) {
+            // The message names at most 10 orders; `field` keeps the full list.
+            List<String> codes = invalidStatus.stream().map(Order::getOrderCode).toList();
+            int more = codes.size() - 10;
+            String message = "Only SCHEDULED orders can be planned. These orders are already planned,"
+                    + " delivered or left unassigned: "
+                    + String.join(", ", codes.subList(0, Math.min(codes.size(), 10)))
+                    + (more > 0 ? " (+" + more + " more)" : "")
+                    + ".";
             throw new DataInvalidException(List.of(
                     ErrorDetail.builder()
                             .code(ErrorCode.RESOURCE_CONFLICT.getCode())
-                            .message(ErrorCode.RESOURCE_CONFLICT.getMessage())
+                            .message(message)
                             .resource(AppConstant.ORDER)
                             .field(invalidStatus.stream().map(Order::getOrderCode).collect(Collectors.joining(", ")))
                             .build()

@@ -30,13 +30,15 @@
                   <span class="text-muted">Unlimited</span>
                 }
               </td>
-              <td class="row-actions">
-                <button type="button" class="btn btn-secondary" (click)="startEdit(permit)">
-                  Edit
-                </button>
-                <button type="button" class="btn-icon danger" title="Delete"
-                        [attr.aria-label]="'Delete permit ' + permit.permit_no"
-                        (click)="remove(permit)">🗑️</button>
+              <td class="actions-cell">
+                <div class="row-actions">
+                  <button type="button" class="btn btn-secondary" (click)="startEdit(permit)">
+                    Edit
+                  </button>
+                  <button type="button" class="btn-icon danger" title="Delete"
+                          [attr.aria-label]="'Delete permit ' + permit.permit_no"
+                          (click)="remove(permit)">🗑️</button>
+                </div>
               </td>
             </tr>
           }
