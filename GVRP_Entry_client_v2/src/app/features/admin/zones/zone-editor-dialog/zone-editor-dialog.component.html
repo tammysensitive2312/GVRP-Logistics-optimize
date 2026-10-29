@@ -1,0 +1,276 @@
+<h2 mat-dialog-title>Edit zone: {{ data.zone.name }}</h2>
+
+<mat-dialog-content>
+  @if (!isCopied()) {
+    <p class="form-hint">
+      This zone is linked to a system template. Its geometry and rules follow the
+      template and cannot be edited here.
+    </p>
+  } @else {
+    <section class="editor-section">
+      <h3 class="section-title">Geometry</h3>
+      <p class="form-hint">
+        Paste a GeoJSON Polygon or MultiPolygon (x = longitude, y = latitude), or
+        upload a file of at most 2 MB.
+      </p>
+      <textarea
+        class="geometry-text"
+        rows="6"
+        [ngModel]="geometryText()"
+        (ngModelChange)="geometryText.set($event)"
+        aria-label="GeoJSON geometry"></textarea>
+
+      <div class="geometry-actions">
+        <button type="button" class="btn btn-secondary" (click)="applyPastedGeometry()">
+          Preview geometry
+        </button>
+        <input
+          #geometryFile
+          type="file"
+          accept=".json,.geojson,application/geo+json,application/json"
+          class="file-input"
+          aria-label="Upload GeoJSON file"
+          (change)="onFileSelected($event)"/>
+      </div>
+
+      @for (message of geometryErrors(); track message) {
+        <p class="form-error">{{ message }}</p>
+      }
+
+      <app-zone-map [geometry]="geometry()" height="260px"/>
+    </section>
+
+    <section class="editor-section">
+      <div class="section-header">
+        <h3 class="section-title">Rules</h3>
+        <button type="button" class="btn btn-secondary" (click)="addRule()">+ Add rule</button>
+      </div>
+
+      @if (rules().length === 0) {
+        <p class="form-hint">No rule: this zone does not restrict any vehicle.</p>
+      }
+
+      @for (rule of rules(); track $index; let ruleIndex = $index) {
+        <article class="rule-card">
+          <div class="rule-header">
+            <span class="rule-title">Rule {{ ruleIndex + 1 }}</span>
+            <button
+              type="button"
+              class="btn-icon"
+              title="Remove rule"
+              aria-label="Remove rule"
+              (click)="removeRule(ruleIndex)">✕</button>
+          </div>
+
+          @if (isEveryVehicle(ruleIndex)) {
+            <p class="form-hint">Applies to every vehicle.</p>
+          }
+
+          <div class="form-row">
+            <div class="form-group">
+              <label [attr.for]="'rule-legal-' + ruleIndex">Legal classes</label>
+              <div class="checkbox-grid" [id]="'rule-legal-' + ruleIndex">
+                @for (legalClass of legalClassOptions; track legalClass) {
+                  <label class="checkbox">
+                    <input
+                      type="checkbox"
+                      [checked]="rule.legalClasses.includes(legalClass)"
+                      (change)="toggleLegalClass(ruleIndex, legalClass, $any($event.target).checked)"/>
+                    {{ legalClass }}
+                  </label>
+                }
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label [attr.for]="'rule-energy-' + ruleIndex">Energy types</label>
+              <div class="checkbox-grid" [id]="'rule-energy-' + ruleIndex">
+                @for (energyType of energyTypeOptions; track energyType) {
+                  <label class="checkbox">
+                    <input
+                      type="checkbox"
+                      [checked]="rule.energyTypes.includes(energyType)"
+                      (change)="toggleEnergyType(ruleIndex, energyType, $any($event.target).checked)"/>
+                    {{ energyType }}
+                  </label>
+                }
+              </div>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label [attr.for]="'rule-weight-measure-' + ruleIndex">Weight bound reads</label>
+              <select
+                [id]="'rule-weight-measure-' + ruleIndex"
+                [ngModel]="rule.weightMeasure"
+                (ngModelChange)="patchRule(ruleIndex, { weightMeasure: $event })">
+                <option [ngValue]="null">Not set</option>
+                @for (measure of weightMeasures; track measure) {
+                  <option [ngValue]="measure">{{ measure }}</option>
+                }
+              </select>
+            </div>
+            <div class="form-group">
+              <label [attr.for]="'rule-emission-' + ruleIndex">Emission standard below</label>
+              <input
+                [id]="'rule-emission-' + ruleIndex"
+                type="number"
+                min="0"
+                step="1"
+                [ngModel]="rule.emissionStandardBelow"
+                (ngModelChange)="patchRule(ruleIndex, { emissionStandardBelow: $event })"/>
+            </div>
+          </div>
+
+          <div class="form-row weight-row">
+            <div class="form-group">
+              <label [attr.for]="'rule-gt-' + ruleIndex">Weight &gt; (kg)</label>
+              <input
+                [id]="'rule-gt-' + ruleIndex"
+                type="number"
+                min="0"
+                step="1"
+                [ngModel]="rule.weightGt"
+                (change)="setNumber(ruleIndex, 'weightGt', $event)"/>
+            </div>
+            <div class="form-group">
+              <label [attr.for]="'rule-lte-' + ruleIndex">Weight &le; (kg)</label>
+              <input
+                [id]="'rule-lte-' + ruleIndex"
+                type="number"
+                min="0"
+                step="1"
+                [ngModel]="rule.weightLte"
+                (change)="setNumber(ruleIndex, 'weightLte', $event)"/>
+            </div>
+          </div>
+
+          <label class="checkbox">
+            <input
+              type="checkbox"
+              [checked]="rule.appBased"
+              (change)="patchRule(ruleIndex, { appBased: $any($event.target).checked })"/>
+            Applies to app-based services only
+          </label>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label [attr.for]="'rule-schedule-' + ruleIndex">Time rule</label>
+              <select
+                [id]="'rule-schedule-' + ruleIndex"
+                [ngModel]="rule.scheduleType"
+                (ngModelChange)="patchRule(ruleIndex, { scheduleType: $event })">
+                @for (scheduleType of scheduleTypes; track scheduleType) {
+                  <option [ngValue]="scheduleType">{{ scheduleType }}</option>
+                }
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Days (empty = every day)</label>
+              <div class="checkbox-grid">
+                @for (day of dayOptions; track day) {
+                  <label class="checkbox">
+                    <input
+                      type="checkbox"
+                      [checked]="rule.daysOfWeek.includes(day)"
+                      (change)="toggleDay(ruleIndex, day, $any($event.target).checked)"/>
+                    {{ day }}
+                  </label>
+                }
+              </div>
+            </div>
+          </div>
+
+          @if (rule.scheduleType !== 'ALWAYS_FORBIDDEN') {
+            <div class="interval-block">
+              @for (interval of rule.intervals; track $index; let intervalIndex = $index) {
+                <div class="interval-row">
+                  <input
+                    type="text"
+                    class="interval-input"
+                    placeholder="HH:mm"
+                    [attr.aria-label]="'Interval ' + (intervalIndex + 1) + ' start'"
+                    [ngModel]="interval.start"
+                    (change)="setInterval(ruleIndex, intervalIndex, 'start', $any($event.target).value)"/>
+                  <span class="interval-sep">–</span>
+                  <input
+                    type="text"
+                    class="interval-input"
+                    placeholder="HH:mm"
+                    [attr.aria-label]="'Interval ' + (intervalIndex + 1) + ' end'"
+                    [ngModel]="interval.end"
+                    (change)="setInterval(ruleIndex, intervalIndex, 'end', $any($event.target).value)"/>
+                  <button
+                    type="button"
+                    class="btn-icon"
+                    title="Remove interval"
+                    aria-label="Remove interval"
+                    (click)="removeInterval(ruleIndex, intervalIndex)">✕</button>
+                </div>
+              }
+              <button type="button" class="btn btn-secondary" (click)="addInterval(ruleIndex)">
+                + Add interval
+              </button>
+            </div>
+          }
+
+          <div class="form-row">
+            <div class="form-group">
+              <label [attr.for]="'rule-from-' + ruleIndex">Effective from</label>
+              <input
+                [id]="'rule-from-' + ruleIndex"
+                type="date"
+                [ngModel]="rule.effectiveFrom"
+                (ngModelChange)="patchRule(ruleIndex, { effectiveFrom: $event })"/>
+            </div>
+            <div class="form-group">
+              <label [attr.for]="'rule-to-' + ruleIndex">Effective to</label>
+              <input
+                [id]="'rule-to-' + ruleIndex"
+                type="date"
+                [ngModel]="rule.effectiveTo"
+                (ngModelChange)="patchRule(ruleIndex, { effectiveTo: $event })"/>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label [attr.for]="'rule-basis-' + ruleIndex">Legal basis</label>
+            <input
+              [id]="'rule-basis-' + ruleIndex"
+              type="text"
+              [ngModel]="rule.legalBasis"
+              (ngModelChange)="patchRule(ruleIndex, { legalBasis: $event })"/>
+          </div>
+
+          <div class="form-group">
+            <label [attr.for]="'rule-note-' + ruleIndex">Note</label>
+            <input
+              [id]="'rule-note-' + ruleIndex"
+              type="text"
+              [ngModel]="rule.note"
+              (ngModelChange)="patchRule(ruleIndex, { note: $event })"/>
+          </div>
+        </article>
+      }
+
+      @for (message of formErrors(); track message) {
+        <p class="form-error">{{ message }}</p>
+      }
+    </section>
+  }
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button type="button" (click)="cancel()">Cancel</button>
+  @if (isCopied()) {
+    <button
+      mat-flat-button
+      color="primary"
+      type="button"
+      [disabled]="busy()"
+      (click)="save()">
+      {{ busy() ? 'Saving…' : 'Save zone' }}
+    </button>
+  }
+</mat-dialog-actions>

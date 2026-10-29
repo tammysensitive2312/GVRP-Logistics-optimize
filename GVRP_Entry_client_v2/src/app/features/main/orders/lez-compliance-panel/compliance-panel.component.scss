@@ -1,0 +1,138 @@
+@import '../../../../../assets/styles/variables';
+
+.compliance-panel {
+  border: 1px solid $border-color;
+  border-radius: $radius-md;
+  background: $white;
+  padding: $space-lg;
+  margin-bottom: $space-lg;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: $space-md;
+  margin-bottom: $space-sm;
+}
+
+.panel-title {
+  font-size: $font-size-base;
+  font-weight: $font-weight-semibold;
+  color: $text-dark;
+  margin: 0;
+}
+
+.btn-recheck {
+  padding: 4px $space-md;
+  border: 1px solid $primary-blue;
+  border-radius: $radius-sm;
+  background: $white;
+  color: $primary-blue;
+  font-size: $font-size-sm;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.panel-hint {
+  font-size: $font-size-sm;
+  color: $text-gray;
+  margin: $space-xs 0;
+}
+
+.panel-error {
+  font-size: $font-size-sm;
+  color: $danger-red;
+  margin: $space-xs 0;
+}
+
+.route-statuses {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: $space-xs;
+}
+
+.route-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: $space-sm;
+  padding: $space-xs $space-sm;
+  border-left: 3px solid $border-color;
+  background: $bg-light;
+
+  &.status-violation {
+    border-left-color: $danger-red;
+  }
+
+  &.status-compliant {
+    border-left-color: $success-green;
+  }
+
+  &.status-stale,
+  &.status-unchecked {
+    border-left-color: $warning-orange;
+  }
+}
+
+.plate {
+  font-weight: $font-weight-semibold;
+  color: $text-dark;
+}
+
+.status-chip {
+  font-size: $font-size-sm;
+  color: $text-gray;
+
+  &.status-violation {
+    color: $danger-red;
+    font-weight: $font-weight-semibold;
+  }
+
+  &.status-compliant {
+    color: $success-green;
+    font-weight: $font-weight-semibold;
+  }
+}
+
+.checked-at {
+  font-size: $font-size-sm;
+  color: $text-gray;
+}
+
+.violations {
+  flex-basis: 100%;
+  margin: 0;
+  padding-left: $space-lg;
+  font-size: $font-size-sm;
+  color: $danger-red;
+}
+
+.violation-link {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: $danger-red;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.unassigned {
+  margin-top: $space-md;
+  font-size: $font-size-sm;
+  color: $text-dark;
+
+  ul {
+    margin: $space-xs 0 0;
+    padding-left: $space-lg;
+  }
+}

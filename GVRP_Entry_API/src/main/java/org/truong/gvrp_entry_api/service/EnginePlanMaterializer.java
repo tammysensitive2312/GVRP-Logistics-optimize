@@ -84,6 +84,7 @@ public class EnginePlanMaterializer {
                             .loadAfter(stop.getLoadAfter())
                             .distanceToNext(stop.getDistanceToNext())
                             .timeToNext(stop.getTimeToNext())
+                            .geometryToNext(stop.getGeometryToNext())
                             .build();
                 })
                 .filter(Objects::nonNull)

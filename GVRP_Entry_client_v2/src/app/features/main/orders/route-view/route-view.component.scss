@@ -22,6 +22,18 @@
   padding: 0.5rem 0.75rem;
   font-size: 0.8rem;
   .copy-error { color: #b42318; }
+  // LEZ-001 P1c: why "Send to driver" is disabled (compliance not COMPLIANT).
+  .send-blocked {
+    flex-basis: 100%;
+    margin: 0;
+    color: #b42318;
+  }
+  // review-p1c R1: the only open question is road geometry, which the send fetches.
+  .send-note {
+    flex-basis: 100%;
+    margin: 0;
+    color: $text-dark;
+  }
 }
 
 // Merged base: `.btn-copy` and `.btn-toolbar` shared every declaration except

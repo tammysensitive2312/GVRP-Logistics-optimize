@@ -30,7 +30,8 @@ export class AdminLayoutComponent {
   readonly menuItems: readonly AdminMenuItem[] = [
     { path: 'vehicle-types', icon: '🚚', label: 'Vehicle Types' },
     { path: 'vehicles', icon: '🚗', label: 'Vehicles' },
-    { path: 'depots', icon: '🏢', label: 'Depots' }
+    { path: 'depots', icon: '🏢', label: 'Depots' },
+    { path: 'zones', icon: '🌿', label: 'Low-emission zones' }
   ];
 
   /** Mobile drawer state (V1: `AdminSettings.toggleSidebar()`). */

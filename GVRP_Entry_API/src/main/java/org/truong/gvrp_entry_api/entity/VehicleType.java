@@ -6,6 +6,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
+import org.truong.gvrp_entry_api.entity.enums.EnergyType;
+import org.truong.gvrp_entry_api.entity.enums.LegalClass;
 
 import java.math.BigDecimal;
 
@@ -51,4 +53,19 @@ public class VehicleType extends BaseEntity {
 
     @Column(name = "max_duration", precision = 10, scale = 2)
     private BigDecimal maxDuration;
+
+    // Legal attributes for zone rules (LEZ-R04); separate from capacity on purpose.
+    @Enumerated(EnumType.STRING)
+    @Column(name = "legal_class", length = 20)
+    private LegalClass legalClass;
+
+    @Column(name = "gross_weight_kg")
+    private Integer grossWeightKg;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "energy_type", length = 20)
+    private EnergyType energyType;
+
+    @Column(name = "emission_standard")
+    private Integer emissionStandard;
 }

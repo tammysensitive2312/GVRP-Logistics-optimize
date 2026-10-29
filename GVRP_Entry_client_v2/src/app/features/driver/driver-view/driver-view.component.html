@@ -89,6 +89,9 @@
                 <span>📞 <a href="tel:{{ stop.customer_phone }}">{{ stop.customer_phone }}</a></span>
               }
               @if (stop.delivery_notes) { <span>📝 {{ stop.delivery_notes }}</span> }
+              @for (zoneName of stop.zone_names ?? []; track zoneName) {
+                <span class="driver-zone">LEZ: {{ zoneName }}</span>
+              }
               @if (googleMapsUrl(stop)) {
                 <span>🧭 <a [href]="googleMapsUrl(stop)" target="_blank" rel="noopener"
                   [attr.aria-label]="'Navigate to ' + stop.location_name">Navigate</a></span>

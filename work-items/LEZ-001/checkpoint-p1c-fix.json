@@ -1,0 +1,70 @@
+{
+  "revision": 8,
+  "completed": [
+    "Live browser test of the P1c screens against Branch Huge 1 / hien produced findings A-D plus cosmetic/operational issues; the user authorized the repair (\"hợp lý, bạn sửa ngay đi\")",
+    "A (FIXED): VehicleTypeInputDTO.features carries @JsonAlias(\"vehicle_features\"); the canonical wire name stays features, so no client payload, spec or V1 consumer changed",
+    "B (FIXED): vehicle-permits-dialog startCreate() prefills today -> same day next year with a locally formatted date, validate() requires both bounds for a new permit only (the edit fixture has no dates), and the form shows the hint; server/DB NOT NULL is unchanged and no migration was written",
+    "C (FIXED): error.interceptor.ts keeps its thrown shape {message, status, originalError} but message now prefers errors[0].message then message; shared/utils/api-error.utils.ts serverErrorMessage() resolves the wrapper, originalError.error and a raw HttpErrorResponse body, then falls back",
+    "D (FIXED): GlobalExceptionHandler maps HttpMessageNotReadableException to 400 VALIDATION_ERROR with the most specific Jackson cause; only the cause is logged, never the payload",
+    "D2 (FIXED): GlobalExceptionHandler maps HttpRequestMethodNotSupportedException to 405 with the new ErrorCode.METHOD_NOT_ALLOWED(\"0040501\"); adjacent defect of the same family, found while probing A with GET on a PUT-only URL",
+    "New tests only, no existing test modified: VehicleTypeInputDeserializationTest (3), GlobalExceptionHandlerClientErrorsTest (4), api-error.utils.spec.ts (4)",
+    "Entry full suite without exclusions: 270 run, 0 failures, 0 errors, 0 skipped, BUILD SUCCESS, EXIT=0 (p1c-fix-entry-final.log); 270 = 263 + 7 new",
+    "Client: ng test --watch=false --browsers=ChromeHeadless -> 323 SUCCESS, EXIT=0 (p1c-fix-client2.log); npm run build -> EXIT=0 (p1c-fix-build.log)",
+    "Live API probes on 8080: PUT vehicle-types/9004 with vehicle_features -> 200 and legal_class=MOTORBIKE persisted; broken JSON -> 400 with cause; unknown field -> 400 with cause; permit without dates -> 400 'validFrom and validTo are required'; GET /vehicle-types/9004 (PUT-only) -> 405 0040501",
+    "Browser UI proof: vehicle-type edit dialog Save -> PUT /api/v1/vehicle-types/9004 200; + Add permit opens with 2026-10-28 -> 2027-10-28 and Save permit -> POST 201 with the range listed; clearing Valid from shows '\"Valid from\" is required.' with no POST; a 101-character permit number surfaces the server text 'permitNo is longer than 100 characters' in the dialog (C proof); permit delete -> DELETE 204 and 'Permit deleted'",
+    "Test data cleaned: both TEST-P1C-FIX permits on vehicle 109010 deleted (GET .../permits -> []); vehicle type 9004 deliberately keeps legal_class=MOTORBIKE with the other legal fields still null",
+    "work-items/LEZ-001/implementation.md gained the section '## P1c follow-up - live browser findings (2026-10-28)' with scope table A/B/C/D/D2, baseline, changes, commands, verification table, new tests, security, remaining uncertainty and handoff"
+  ],
+  "remaining": [
+    "User re-runs the browser acceptance for the cosmetic findings if they matter for the demo: vehicle table capacity column renders only 'kg'; 'Test zone' listed twice in two dropdowns and in 'Zones in force'; label 'Weight bound reads'; duplicated 'Zone saved' toast; Leaflet marker icon 404s",
+    "The generic 400 for a negative weight still answers the DB-style field name grossWeightKg with the message 'Invalid data validation.' - accurate but not user-oriented; deliberately not changed in this follow-up",
+    "D4 / LEZ badge and multi-date refusal stay NOT_VERIFIED end to end: 0 of 25,054 orders lie inside the 'Test zone' polygon",
+    "Recheck still marks legacy routes VIOLATION / LEZ_GEOMETRY_MISSING and blocks Send to driver because 0 of 215,251 route_stops rows have geometry_to_next; this is data, not a defect of these fixes, and it stays open",
+    "P1b manual send test remains postponed by the user's own decision, so the send guard is still NOT_VERIFIED",
+    "P1c is still awaiting Claude/reviewer acceptance of both the increment and this follow-up; nothing was committed or pushed",
+    "Open elsewhere and untouched: F2-F8, Deviation 2/10/13/14 decisions, SEC-010"
+  ],
+  "read_next": [
+    "work-items/LEZ-001/implementation.md",
+    "work-items/LEZ-001/design-p1c.md",
+    "work-items/LEZ-001/context-p1c.md",
+    "work-items/LEZ-001/task-opencode-p1c.md"
+  ],
+  "blockers": [
+    "0 of 215,251 route_stops rows carry geometry_to_next, so any pre-P1b route fails Recheck with LEZ_GEOMETRY_MISSING and cannot be sent; agents must not backfill geometry",
+    "0 of 25,054 orders lie inside the 'Test zone' polygon, so the D4 badge and the mult-date refusal cannot be demonstrated on current data without a user decision on the dataset",
+    "Cosmetic findings above are unfixed by design; none blocks the P1c behaviour",
+    "The Entry API on 8080 is served by an agent-started mvnw spring-boot:run instance whose log is p1c-fix-app.log (the earlier IDE-launched JVM was stopped because stale classes answered 500 to /api/v1/vehicle-types/**); the IDE instance must be restarted by the user when convenient"
+  ],
+  "decisions": [
+    "A fixed server-side with @JsonAlias instead of renaming the response field: the web clients and their specs stay untouched and the canonical wire name remains features",
+    "D2 (wrong method -> 500) was fixed in the same change because it is the same handler-gap family as D; recorded as adjacent scope, not as a silent expansion of the original task",
+    "B resolved on the client contract (prefill + create-only validation) because the DB column is NOT NULL and no migration is allowed in this scope; the server keeps its 400 message and the client now displays it",
+    "C keeps the interceptor's thrown shape unchanged so existing callers are unaffected; only the message selection order changed, plus a wrapper-aware helper used by the LEZ screens",
+    "Only new test files were added; no existing test was modified, deleted, skipped, focused or excluded"
+  ],
+  "processes": [
+    "Entry API (agent) on 8080: mvnw.cmd -B spring-boot:run, log p1c-fix-app.log",
+    "Engine API on 8081",
+    "Angular dev server on 4200",
+    "MySQL on 3306"
+  ],
+  "next_action": "Ask the user whether to hand the P1c increment plus this follow-up to review (task-opencode-p1c.md allowlist, uncommitted tree), or to fix the remaining cosmetic findings first; do not commit or push either way",
+  "evidence": [
+    "work-items/LEZ-001/implementation.md",
+    "p1c-fix-entry-final.log",
+    "p1c-fix-client2.log",
+    "p1c-fix-build.log",
+    "p1c-fix-app.log",
+    "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/dto/request/VehicleTypeInputDTO.java",
+    "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/exception/GlobalExceptionHandler.java",
+    "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/util/ErrorCode.java",
+    "GVRP_Entry_API/src/test/java/org/truong/gvrp_entry_api/dto/request/VehicleTypeInputDeserializationTest.java",
+    "GVRP_Entry_API/src/test/java/org/truong/gvrp_entry_api/exception/GlobalExceptionHandlerClientErrorsTest.java",
+    "GVRP_Entry_client_v2/src/app/core/interceptors/error.interceptor.ts",
+    "GVRP_Entry_client_v2/src/app/shared/utils/api-error.utils.ts",
+    "GVRP_Entry_client_v2/src/app/shared/utils/api-error.utils.spec.ts",
+    "GVRP_Entry_client_v2/src/app/features/admin/vehicles/vehicle-permits-dialog/vehicle-permits-dialog.component.ts",
+    "GVRP_Entry_client_v2/src/app/features/admin/vehicles/vehicle-permits-dialog/vehicle-permits-dialog.component.html"
+  ]
+}

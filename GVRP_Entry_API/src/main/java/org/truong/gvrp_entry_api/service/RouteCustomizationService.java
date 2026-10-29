@@ -2,6 +2,7 @@ package org.truong.gvrp_entry_api.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.truong.gvrp_entry_api.dto.request.CustomizeRoutesRequest;
@@ -40,10 +41,14 @@ import org.truong.gvrp_entry_api.repository.OrderRepository;
 import org.truong.gvrp_entry_api.repository.SolutionRepository;
 import org.truong.gvrp_entry_api.repository.VehicleRepository;
 import org.truong.gvrp_entry_api.service.integration.external_api.EngineApiClient;
+import org.truong.gvrp_entry_api.service.lez.CompiledRestrictions;
+import org.truong.gvrp_entry_api.service.lez.ComplianceChecker;
+import org.truong.gvrp_entry_api.service.lez.RouteComplianceService;
 import org.truong.gvrp_entry_api.util.AppConstant;
 import org.truong.gvrp_entry_api.util.ErrorCode;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
@@ -77,6 +82,15 @@ public class RouteCustomizationService {
     private final GeometryMapper geometryMapper;
     private final SolutionMapper solutionMapper;
     private final EngineApiClient engineApiClient;
+
+    /**
+     * LEZ certification (LEZ-001 N6c). Field-injected and optional so the
+     * historical unit tests, which build this service without it, keep their
+     * exact behaviour; a null field disables the LEZ findings.
+     */
+    @Autowired(required = false)
+    private RouteComplianceService routeComplianceService;
+
     @Transactional(readOnly = true)
     public RouteEvaluateResponseDTO evaluate(Long baseSolutionId, Long branchId,
                                              CustomizeRoutesRequest request) {
@@ -107,7 +121,9 @@ public class RouteCustomizationService {
         }
 
         EngineEvaluateResponseDTO engine = engineApiClient.evaluateRoutes(plan.engineRequest());
+        CompiledRestrictions restrictions = currentRestrictions(plan);
         List<RouteViolationDTO> violations = mergeViolations(plan.entryViolations(), engine);
+        violations.addAll(lezViolations(engine, restrictions));
         List<RouteViolationDTO> hard = violations.stream()
                 .filter(v -> !"UNASSIGNED_INCREASE".equals(v.getCode()))
                 .toList();
@@ -118,7 +134,7 @@ public class RouteCustomizationService {
             throw new UnprocessablePlanException("Route plan violates hard constraints: " + summary);
         }
 
-        Solution revision = persistRevision(plan, engine);
+        Solution revision = persistRevision(plan, engine, restrictions);
         return solutionMapper.toDTO(revision);
     }
 
@@ -286,6 +302,8 @@ public class RouteCustomizationService {
 
     private RouteEvaluateResponseDTO toPreview(ValidatedPlan plan, EngineEvaluateResponseDTO engine) {
         List<RouteViolationDTO> violations = mergeViolations(plan.entryViolations(), engine);
+        // LEZ findings are additive: the engine knows nothing about the zones (N6c).
+        violations.addAll(lezViolations(engine, currentRestrictions(plan)));
         boolean feasible = engine.isFeasible() && violations.stream()
                 .noneMatch(v -> !"UNASSIGNED_INCREASE".equals(v.getCode()));
 
@@ -364,7 +382,8 @@ public class RouteCustomizationService {
         }
     }
 
-    private Solution persistRevision(ValidatedPlan plan, EngineEvaluateResponseDTO engine) {
+    private Solution persistRevision(ValidatedPlan plan, EngineEvaluateResponseDTO engine,
+                                     CompiledRestrictions restrictions) {
         Solution base = plan.base();
         Map<Long, Order> orderMap = orderRepository.findAllById(plan.baseOrderIds()).stream()
                 .collect(Collectors.toMap(Order::getId, o -> o));
@@ -431,6 +450,7 @@ public class RouteCustomizationService {
                         .loadAfter(toBigDecimal(stopData.getLoadAfter()))
                         .distanceToNext(toBigDecimal(stopData.getDistanceToNext()))
                         .timeToNext(toBigDecimal(stopData.getTimeToNext()))
+                        .geometryToNext(stopData.getGeometryToNext())
                         .build());
                 position++;
             }
@@ -442,12 +462,78 @@ public class RouteCustomizationService {
                     .solution(revision)
                     .order(baseRow.getOrder())
                     .reason(baseRow.getReason())
+                    .reasonCode(baseRow.getReasonCode())
                     .build());
         }
+
+        // Certify the saved revision with the CURRENT rules (N6c): the verdict is
+        // written in the same save as the routes it describes.
+        certifyRoutes(revision.getRoutes(), restrictions);
 
         // Order statuses are intentionally untouched: membership is unchanged and every
         // assigned order already transitioned through the callback path.
         return solutionRepository.save(revision);
+    }
+
+    // --------------------------------------------------
+
+    /** Current restrictions of the plan's branch and date; null when not certifiable. */
+    private CompiledRestrictions currentRestrictions(ValidatedPlan plan) {
+        if (routeComplianceService == null || plan == null || plan.base() == null) {
+            return null;
+        }
+        return routeComplianceService.currentFor(plan.base());
+    }
+
+    /**
+     * LEZ findings of the engine's preview under the given restrictions (N6c).
+     * The engine response carries the stop geometry, so no extra routing is needed.
+     */
+    private List<RouteViolationDTO> lezViolations(EngineEvaluateResponseDTO engine,
+                                                  CompiledRestrictions restrictions) {
+        List<RouteViolationDTO> findings = new ArrayList<>();
+        if (routeComplianceService == null || restrictions == null || !restrictions.hasZones()
+                || engine == null) {
+            return findings;
+        }
+        int routeIndex = 0;
+        for (EngineEvaluateResponseDTO.EngineEvaluatedRouteDTO route
+                : Optional.ofNullable(engine.getRoutes()).orElse(List.of())) {
+            List<ComplianceChecker.StopView> stops = new ArrayList<>();
+            for (EngineEvaluateResponseDTO.EngineEvaluatedStopDTO stop
+                    : Optional.ofNullable(route.getStops()).orElse(List.of())) {
+                stops.add(new ComplianceChecker.StopView(
+                        RouteStopSupport.mapLocationType(stop.getType()),
+                        stop.getOrderId(),
+                        ComplianceChecker.point(stop.getLatitude(), stop.getLongitude()),
+                        RouteStopSupport.parseEngineTime(stop.getArrivalTime()),
+                        RouteStopSupport.parseEngineTime(stop.getDepartureTime()),
+                        stop.getGeometryToNext()));
+            }
+            for (ComplianceChecker.Violation violation
+                    : routeComplianceService.check(route.getVehicleId(), stops, restrictions)) {
+                findings.add(RouteViolationDTO.builder()
+                        .code(violation.code())
+                        .routeIndex(routeIndex)
+                        .orderId(violation.orderId())
+                        .detail(violation.detail()
+                                + (violation.zoneKey() != null ? " (zone " + violation.zoneKey() + ")" : ""))
+                        .build());
+            }
+            routeIndex++;
+        }
+        return findings;
+    }
+
+    /** Certifies the routes of a new revision; a null compilation leaves them untouched. */
+    private void certifyRoutes(List<Route> routes, CompiledRestrictions restrictions) {
+        if (routeComplianceService == null || restrictions == null || routes == null) {
+            return;
+        }
+        for (Route route : routes) {
+            routeComplianceService.certify(route,
+                    routeComplianceService.check(route, restrictions), restrictions);
+        }
     }
 
     // --------------------------------------------------

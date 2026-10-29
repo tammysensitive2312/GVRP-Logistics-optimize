@@ -1,0 +1,41 @@
+{
+  "revision": 4,
+  "completed": [
+    "Step 0: session brief, clean scope check, branch feature/lez-001",
+    "Step 1: recover (design rev 3) and step ready -> implement rev 4",
+    "Step 2: baseline mvnw.cmd -B test = 105 run, 0 failures, 0 errors, 0 skipped",
+    "P1a sections A-F implemented in GVRP_Entry_API (enums, entities, migration 2026-10-27-lez-zones.sql, RuleEvaluator, GeoJSON parser, zone/template/permit services and controllers, vehicle-type legal attributes)",
+    "85 new DB-free tests (RE-T1..T11, GJ-T1, ZS-T1..T7, VP-T1..T2, VT-T1, RA-T1, HTTP status mapping); no existing test modified",
+    "mvnw.cmd -B clean test with the ci.yml exclusion = 187 run, 0 failures; full clean test = 190 run, 3 errors only in DepotMapperTest and GvrpEntryApiApplicationTests (schema validation: new tables missing locally)",
+    "work-items/LEZ-001/implementation.md (## P1a)"
+  ],
+  "remaining": [
+    "User applies GVRP_Entry_API/src/main/resources/database/migrations/2026-10-27-lez-zones.sql to the local database, then repeat mvnw.cmd -B clean test (expected 190/0/0/0) and a manual polygon write/read",
+    "Claude review of P1a, including decisions on implementation.md Deviations 1, 2, 3 and 9",
+    "P1-seed task (Hanoi templates from a documented boundary source)",
+    "P1b and P1c increments; ready -> verify only after P1c"
+  ],
+  "read_next": [
+    "work-items/LEZ-001/implementation.md",
+    "work-items/LEZ-001/design.md",
+    "work-items/LEZ-001/task-opencode-p1a.md"
+  ],
+  "evidence": [
+    "work-items/LEZ-001/implementation.md",
+    "GVRP_Entry_API/src/main/resources/database/migrations/2026-10-27-lez-zones.sql",
+    "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/service/lez/RuleEvaluator.java",
+    "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/service/lez/ScheduleNormalizer.java",
+    "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/service/lez/ZoneService.java",
+    "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/service/lez/VehiclePermitService.java"
+  ],
+  "blockers": [
+    "Full local clean build is red until the user runs the P1a migration (agents must not run it)"
+  ],
+  "decisions": [
+    "404/409 through new LezNotFoundException/LezConflictException in service/lez, mapped in GlobalExceptionHandler (implementation.md Deviation 1)",
+    "Permit schedule covers the complement of its forbidden set; ALWAYS_FORBIDDEN refused for permits (Deviation 2)",
+    "Selector/schedule JSON is camelCase in storage and on the wire (Deviation 3)"
+  ],
+  "processes": [],
+  "next_action": "Claude reviews P1a; then P1-seed/P1b task"
+}

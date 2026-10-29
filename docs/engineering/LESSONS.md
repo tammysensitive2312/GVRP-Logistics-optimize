@@ -171,7 +171,8 @@ Applies to: agents running commands through the Claude desktop VM shell (`$HOME/
 Status: ACTIVE
 Lesson: `init` stores `fs.realpathSync(root)` in `run.json`, so a run created
 from the VM records `/sessions/.../mnt/...` and the Windows CLI cannot resolve
-it (LEZ-001 has this). Create runs on Windows, or keep using the VM shell for
-that run. In the VM, plain `git status` shows every file modified because of
+it (LEZ-001 had this; its `root` was corrected by hand on 2026-10-26 with the
+user's explicit permission). Create runs on Windows, or keep using the VM shell
+for that run. In the VM, plain `git status` shows every file modified because of
 CRLF; use `git -c core.autocrlf=true status`. The CLI deletes `.lock` files,
 so the VM shell needs delete permission for the folder first.

@@ -60,6 +60,8 @@ public class EngineEvaluateResponseDTO {
         private Double timeToNext;
         private Double latitude;
         private Double longitude;
+        /** Encoded polyline of the leg to the next stop (LEZ-001). */
+        private String geometryToNext;
     }
 
     @Data

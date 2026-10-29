@@ -19,11 +19,12 @@ Code and test links are **Planned**. Nothing is implemented (implementation is n
 | LEZ-R09 | Depot in zone = presence; config warning (23:51) | §4, §5.1 | Planned: `RestrictionCompiler.unusableVehicles` | AC-06 | None | NOT_VERIFIED |
 | LEZ-R10 | Evaluate reports ZONE_ACCESS / ZONE_TRANSIT | §5.3 trigger (b), §7 | Planned: `RouteCustomizationService` + checker | AC-05 | None | NOT_VERIFIED |
 | LEZ-R11 | Send guard (21:20 decision context) | §5.4 | Planned: `RouteSendService.send` | AC-03, AC-05, AC-12 | None | NOT_VERIFIED |
-| LEZ-R12 | Driver map uses server geometry + instructions, P1 (23:24, 23:51) | §5.2, §8 | Planned: `RouteStop.geometry_to_next`, driver DTO, `driver-view.component` | AC-09 | None | NOT_VERIFIED |
+| LEZ-R12 | Driver map uses server geometry + instructions, P1 (23:24, 23:51) | §5.2, §8 | Planned: `RouteStop.geometry_to_next`, driver DTO, `driver-view.component`, planner `route-view` / `map.service` (D1) | AC-09 | None | NOT_VERIFIED |
 | LEZ-R13 | Rule snapshot per job | §4 | Planned: `OptimizationJob.lez_snapshot` | AC-10 | None | NOT_VERIFIED |
 | LEZ-R14 | Tenant isolation | §10 | Planned: repositories `findByIdAndBranchId` | AC-08 | None | NOT_VERIFIED |
 | LEZ-R15 | Badge + compliance panel | §7, §8 | Planned: client orders table, compliance panel | AC-02 (UI) | None | NOT_VERIFIED |
 | LEZ-R16 | Hanoi seed phase 2–3, not phase 1 (23:51) | §3.5 | Planned: seed migration | AC-11 | None | NOT_VERIFIED |
+| LEZ-R19 | One delivery date per optimisation job, every branch (D4, scope addition by user decision 2026-10-27 09:45) | §16.1, `task-opencode-p1b.md` N4 | Planned: `OptimizationJobService.submitJob` | JS-T1 | None | NOT_VERIFIED |
 | LEZ-R17 | Avoidance routing | §13 | **P3 run** | — | None | NOT_VERIFIED |
 | LEZ-R18 | Reporting + experiment | — | **P4 run**; experiment under `docs/research` protocol | — | None | NOT_VERIFIED |
 
@@ -38,8 +39,16 @@ Code and test links are **Planned**. Nothing is implemented (implementation is n
 | Scope = internal fleets | 23:24 | R03 (`appBased`) | — |
 | Driver map on server geometry and instructions in P1 | 23:24; 23:51 | R12 | — |
 | Do not seed Hanoi phase 1 | 23:51 | R16 | — |
-| **Design-level:** checker evaluates PARTIAL in P1; only optimiser avoidance waits for P2 | Agent proposal, consistent with hard mode | R07, R08, R11 | User review of design §5.3 |
-| Open: D1 planner map, D2 template authoring, D3 run split | — | R12, R01, R07/R17/R18 | Ask at design review |
+| **Design-level:** checker evaluates PARTIAL in P1; only optimiser avoidance waits for P2 | Agent proposal; accepted with the design 2026-10-26 22:49 | R07, R08, R11 | — |
+| D1: the planner map also uses server geometry | 2026-10-26 22:49 (`user-decision-01.md`) | R12 | Client planner route view in P1 scope |
+| D2: templates are migration/seed only | 2026-10-26 22:49 | R01 | Admin role deferred |
+| D3: LEZ-001 = P1 only; P2/P3/P4 are linked runs | 2026-10-26 22:49 | R07, R17, R18 | Open linked runs later |
+| Design accepted | 2026-10-26 22:49 | All | — |
+| D4: one delivery date per job for every branch (option a) | 2026-10-27 09:45 "tôi chọn a", after Claude explained daily dispatch practice and the engine's one-day assumption | R19, R06, R13 | P1b N4 |
+| D5: LEZ violations are hard on revision save | 2026-10-27, question round answer "Chặn lưu như ràng buộc khác" | R10, R11 | P1b N6c; design §13 note superseded |
+| D6: exclude `JspritConvergenceBenchmarkTest`, `CircuityFactorMeasurementTest` from LEZ-001 Engine runs (command line only) | 2026-10-27, question round answer "Cho phép loại 2 test này" | — | Listed in Deviations |
+| P1a accepted after manual test | 2026-10-27 08:25 | R01–R05, R09, R14 | `review-p1a.md` §5 |
+| Implementation of P1 authorized; one-line `run.json` root correction allowed | 2026-10-26 22:54 ("hãy bắt đầu triển khai P1, và tôi cho phép bạn sửa một dòng `root`…") | R01–R16 (P1) | Increments P1a → P1-seed → P1b → P1c (design §15); delegated through `/delegate` |
 
 ## Synchronization review
 

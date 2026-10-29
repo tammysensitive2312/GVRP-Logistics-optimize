@@ -1,0 +1,72 @@
+{
+  "revision": 9,
+  "completed": [
+    "Step 0: session-brief, git status (only the expected pre-existing P1a/P1b/P1c tree), workflow recover -> state implement rev 9, ng serve PID 23376 stopped and port 4200 verified free",
+    "Step 1 baseline: ng test --watch=false --browsers=ChromeHeadless -> 323 SUCCESS, EXIT=0 (p1c-review-fix-baseline-test.log); npm run build -> EXIT=0, 12 warnings, 0 ERROR, initial total 665.96 kB, orders-table scss 7.93 kB, route-view scss 4.68 kB (p1c-review-fix-baseline-build.log)",
+    "R1 (FIXED, client): sendBlockedReason returns null when a VIOLATION is made only of LEZ_GEOMETRY_MISSING (isGeometryOnly); new sendNote() renders 'Road geometry is fetched and checked when you send.' with a .send-note style; any other code and an empty list keep the blocking text; the compliance panel is unchanged",
+    "R2 (FIXED): the send error handler, describeEvaluateError and describeSaveError call serverErrorMessage(error, <current fallback>); the 0/502-first order, 409 saveConflict + ' Load the latest revision to continue.' and the 422 complianceRecheckNeeded emit are unchanged",
+    "R3 (FIXED): new pure shared/utils/map-focus.utils.ts violationFocus(code, seq, detail) decides leg vs stop; map.service.ts keeps a per-route focus registry {planMarkers (plan order via orderStops), planStops, legPaths}; focusLeg(routeId, seq, code, detail?) draws the offending leg (stored leg polyline or a straight segment) in a separate #b42318 weight-8 highlightLayer, cleared on the next call and in clearRoutes, and centres/fits the view; storedPath() now also returns the per-leg paths through the new storedLegPaths(); the whole-route recolour is gone",
+    "R5 (FIXED, client): vehicle-permits-dialog validate() requires both valid_from and valid_to on create and on edit; the one-year default for a new permit and the date-order check are unchanged; hint text updated",
+    "R6 (FIXED, client): zone-rule-form validateRuleForm adds '\"Effective from\" is required.' for a blank effectiveFrom, mirroring RuleValidator",
+    "Tests: 16 new (route-view-lez 5 = FR1-T1, FR1-T2, FR2-T1, FR2-T2 422/409; route-geometry.utils 2 = FR3-T1; new map-focus.utils.spec.ts 6 = FR3-T2; compliance-panel 1 = FR3-T3; vehicle-permits-dialog 1 = FR5-T1; zone-rule-form 1 = FR6-T1). Three existing P1c assertions/fixtures changed because the fix makes them wrong by design: compliance-panel focusLeg arguments (review-p1c R3), the edit permit fixture without dates (review-p1c R5), the valid interval rule fixture without effectiveFrom (review-p1c R6). No test deleted, skipped, focused or excluded; zone-editor-dialog.component.spec.ts did not need a change",
+    "Step 2 verification: ng test -> 339 SUCCESS, 0 failed, EXIT=0 (p1c-review-fix-step2-test.log; 339 = 323 + 16); npm run build -> EXIT=0, 0 ERROR, same 12 warnings, initial total 665.96 kB unchanged, orders-table scss 7.93 kB unchanged, route-view scss 4.68 -> 4.74 kB (p1c-review-fix-step2-build.log)",
+    "Static: exactly 16 changed files, all inside the task allowance; forbidden files untouched (error.interceptor.ts, api-error.utils.ts, the five D8 specs, zone-editor-dialog spec, package*.json, angular.json, public/**, Entry/Engine); router.project-osrm.org still only in shared/services/routing.service.ts",
+    "Step 3 record: implementation.md gained '## P1c review fix' (Scope, Baseline, Changes Made, Commands Executed, Verification Results, Modified Tests, Remaining Uncertainty, Handoff) and §P1c C9 item 10 gained the one line 'focusLeg corrected by §P1c review fix (review-p1c R3).' with the rest of §P1c untouched"
+  ],
+  "remaining": [
+    "The R3 map highlight and the R1 send note are NOT_VERIFIED in a browser until the user runs the P1c browser check; no server was started and no live data was used in this fix",
+    "The P1b manual send test is still postponed by the user's decision, so the send guard stays NOT_VERIFIED end to end",
+    "R1 depends on RouteSendService.enforceLezCompliance calling fillMissingLegs before the compliance check; that was read in the Entry source by the reviewer, not executed here",
+    "Pre-P1b routes (0 of 215,251 route_stops rows carry geometry_to_next) are now sendable from the UI; if the send-time fetch still leaves a leg unrouted the server refuses the send and R2 surfaces its text. This is data, not a defect of this fix",
+    "R4, R7, R8 and R9 of review-p1c.md remain open; they are outside this task",
+    "P1c and its follow-up are still awaiting reviewer acceptance; nothing is committed or pushed",
+    "Cosmetic findings from the P1c follow-up (capacity column 'kg', duplicate 'Test zone', 'Weight bound reads', duplicated toast, Leaflet icon 404s) remain open by decision"
+  ],
+  "read_next": [
+    "work-items/LEZ-001/implementation.md",
+    "work-items/LEZ-001/review-p1c.md",
+    "work-items/LEZ-001/design-p1c.md",
+    "work-items/LEZ-001/task-opencode-p1c-review-fix.md"
+  ],
+  "blockers": [
+    "None for the fix itself. The browser proof of R1 and R3 needs the user's own pass: the client must be served and a plan with a stored compliance verdict and a zone-tagged violation must exist"
+  ],
+  "decisions": [
+    "R1 solved entirely on the client (violation-set test + a note next to the button); no server, endpoint or compliance-panel change, so the send guard stays the authority",
+    "R3 extracted the leg-versus-stop decision into a new pure shared/utils/map-focus.utils.ts instead of growing MapService, keeping the Leaflet-free P1c test style; MapService only applies the decision",
+    "The focus registry indexes stops by orderStops(route.stops) and maps them to markers by object identity, so the arrival-time order in which markers are drawn stays exactly as before",
+    "The highlight lives in its own layer (cleared on the next focus and in clearRoutes) rather than restyling the route polyline, so the route keeps its colour",
+    "R5 and R6 are client-side mirrors of existing server validation; no server contract changed",
+    "Only three existing P1c expectations changed, each because the fix makes it wrong by design and each tagged review-p1c R3/R5/R6 in implementation.md"
+  ],
+  "processes": [
+    "Entry API on 8080: LISTEN pid 7652 at the time of this checkpoint (not started by this fix)",
+    "Engine API on 8081: stopped",
+    "Angular dev server on 4200: stopped (stopped in Step 0, L-2026-011)",
+    "MySQL on 3306: running"
+  ],
+  "next_action": "Claude re-reviews; user runs the P1c browser check and the P1b review §5 step 4",
+  "evidence": [
+    "work-items/LEZ-001/implementation.md",
+    "p1c-review-fix-baseline-test.log",
+    "p1c-review-fix-baseline-build.log",
+    "p1c-review-fix-step2-test.log",
+    "p1c-review-fix-step2-build.log",
+    "GVRP_Entry_client_v2/src/app/features/main/orders/route-view/route-view.component.ts",
+    "GVRP_Entry_client_v2/src/app/features/main/orders/route-view/route-view.component.html",
+    "GVRP_Entry_client_v2/src/app/features/main/orders/route-view/route-view.component.scss",
+    "GVRP_Entry_client_v2/src/app/features/main/orders/route-view/route-view-lez.component.spec.ts",
+    "GVRP_Entry_client_v2/src/app/shared/services/map.service.ts",
+    "GVRP_Entry_client_v2/src/app/shared/utils/map-focus.utils.ts",
+    "GVRP_Entry_client_v2/src/app/shared/utils/map-focus.utils.spec.ts",
+    "GVRP_Entry_client_v2/src/app/shared/utils/route-geometry.utils.ts",
+    "GVRP_Entry_client_v2/src/app/shared/utils/route-geometry.utils.spec.ts",
+    "GVRP_Entry_client_v2/src/app/features/main/orders/lez-compliance-panel/compliance-panel.component.ts",
+    "GVRP_Entry_client_v2/src/app/features/main/orders/lez-compliance-panel/compliance-panel.component.spec.ts",
+    "GVRP_Entry_client_v2/src/app/features/admin/vehicles/vehicle-permits-dialog/vehicle-permits-dialog.component.ts",
+    "GVRP_Entry_client_v2/src/app/features/admin/vehicles/vehicle-permits-dialog/vehicle-permits-dialog.component.html",
+    "GVRP_Entry_client_v2/src/app/features/admin/vehicles/vehicle-permits-dialog/vehicle-permits-dialog.component.spec.ts",
+    "GVRP_Entry_client_v2/src/app/features/admin/zones/zone-rule-form.utils.ts",
+    "GVRP_Entry_client_v2/src/app/features/admin/zones/zone-rule-form.utils.spec.ts"
+  ]
+}

@@ -81,6 +81,16 @@ public class RouteStop {
     @Column(name = "time_to_next", precision = 10, scale = 2)
     private BigDecimal timeToNext;
 
+    // ==================== LEZ GEOMETRY (LEZ-001) ====================
+
+    /** Encoded polyline (precision 1e5, {@code [lat, lon]}) of the leg to the next stop. */
+    @Column(name = "geometry_to_next", columnDefinition = "MEDIUMTEXT")
+    private String geometryToNext;
+
+    /** JSON array of turn-by-turn instructions for the leg to the next stop. */
+    @Column(name = "instructions_to_next", columnDefinition = "JSON")
+    private String instructionsToNext;
+
     public boolean isDepot() {
         return type == LocationType.DEPOT;
     }

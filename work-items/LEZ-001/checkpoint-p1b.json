@@ -1,0 +1,55 @@
+{
+  "revision": 5,
+  "completed": [
+    "Step 0: session brief and workflow recover -> state implement, revision 5; the only reported issue is the accepted historical-evidence change of design.md and traceability.md from P1a",
+    "Baselines taken before any P1b code: Entry mvnw.cmd -B clean test = 190 run, 0 failures, 0 errors, 0 skipped (1:40); Engine with the D6 exclusions = 142 run, 0 failures, 0 errors, 0 skipped (1:16 h); no pre-existing failing test in either module",
+    "Engine E1-E4: Order.lezSkills and Vehicle.lezSkills wired beside the existing skills; RoutePathProvider + PolylineEncoder + LegGeometryService with geometry on the single result, every Pareto alternative and evaluate; POST /api/v1/optimization/legs returning one leg per point pair with locale and instructions",
+    "Entry N1-N8: migration 2026-10-28-lez-compliance.sql, entity/enum/DTO fields, EngineLegs request/response and client, ZoneRuleLoader + CompiledRestrictions + RestrictionCompiler, job submit (single delivery date, snapshot, LEZ_ skills, unusable vehicles), ComplianceChecker (JTS, ALL_DAY and PARTIAL), four certification hooks (callback, Pareto apply, customization preview/save, send guard with REQUIRES_NEW violation persistence), compliance/recheck/geometry read APIs with tenant scoping",
+    "73 new DB-free, graph-free tests in new files only: 20 Engine (PolylineEncoderTest 4, LegGeometryServiceTest 3, LegsEndpointTest 7, LezSkillMappingTest 4, LezSkillAssignmentTest 2) and 53 Entry (ComplianceCheckerTest 11, RestrictionCompilerTest 8, OptimizationJobLezTest 5, OptimizationCallbackServiceLezTest 5, RouteCustomizationServiceLezTest 3, RouteSendServiceLezTest 4, ComplianceReadServiceTest 8, LezComplianceRoleAccessTest 9)",
+    "Step 3 Entry: 240 run, 0 failures, 0 errors, 0 skipped, BUILD SUCCESS (187 existing + 53 new) with GvrpEntryApiApplicationTests and DepotMapperTest excluded because the P1b migration is not applied locally",
+    "Step 3 Engine: 162 run, 0 failures, 0 errors, 0 skipped, BUILD SUCCESS, 37:09 (142 baseline + 20 new), the D6 exclusions on the command line only",
+    "Measurements for the record: GraphHopper 11.0 TranslationMap maps vi -> vi-VN, vi_VN -> en-US, unknown -> en-US; a 20-stop / 19-leg 18.14 km Hanoi route gives 1365 UTF-8 bytes of polyline and 4818 UTF-8 bytes of Vietnamese instructions in 176 steps",
+    "work-items/LEZ-001/implementation.md (## P1b) with Scope, Baseline, Changes Made, Commands Executed, Verification Results, Modified Tests (none), Security-Relevant Changes, Deviations (14), Remaining Uncertainty, Lesson Candidates and Handoff"
+  ],
+  "remaining": [
+    "User applies GVRP_Entry_API/src/main/resources/database/migrations/2026-10-28-lez-compliance.sql (after 2026-10-27-lez-zones.sql), then repeats mvnw.cmd -B clean test in GVRP_Entry_API (expected 243/0/0/0) and smoke-tests one send and one compliance recheck",
+    "Claude review of P1b, including Deviations 2 (ruleset hash scope), 10 (200 with a per-leg error), 13 (coordinate-safe routing logs in a file outside the strict list), 14 (snapshot written for zone-free branches) and D4 (mixed delivery dates now answer 400 for every branch)",
+    "Decide whether the unauthenticated Engine POST /api/v1/optimization/legs is a security-checklist finding or an accepted internal-network posture",
+    "P1c increment; ready -> verify only after P1c unless the user decides otherwise"
+  ],
+  "read_next": [
+    "work-items/LEZ-001/implementation.md",
+    "work-items/LEZ-001/design.md",
+    "work-items/LEZ-001/task-opencode-p1b.md",
+    "work-items/LEZ-001/review-p1a.md"
+  ],
+  "blockers": [
+    "The full Entry clean build is red until the user applies the P1b migration (agents must not run migrations); the two @SpringBootTest classes are excluded for that reason and have not been run against the new schema",
+    "Engine JspritConvergenceBenchmarkTest and CircuityFactorMeasurementTest are NOT_VERIFIED on this branch because of D6"
+  ],
+  "decisions": [
+    "Ruleset hash scope: the verdict uses the job snapshot, the stored lez_ruleset_hash uses a solution-scoped currentFor(Solution) compile (implementation.md Deviation 2)",
+    "Optional @Autowired(required = false) collaborators (RouteComplianceService in callback/Pareto/customization/send, EngineApiClient in send) plus a one-arg constructor kept beside the new two-arg one, so no historical test or constructor changes (Deviation 4); consequence: a missing bean silently disables a hook",
+    "CompiledRestrictions is a JSON-friendly POJO stored as JSON text, and the global SNAKE_CASE mapper names the wire fields distance_m, time_ms, geometry_to_next, street_name (Deviations 3 and 5)",
+    "POST /legs answers 200 with a per-leg error ROUTE_NOT_FOUND and the send guard then fails closed through LEZ_GEOMETRY_MISSING (Deviation 10)",
+    "D6: JspritConvergenceBenchmarkTest and CircuityFactorMeasurementTest are excluded on the command line only (user decision 2026-10-27); no file, surefire config or CI workflow was touched",
+    "Coordinate-safe routing logs: path() and the pre-existing fetch() log only the error count, never GraphHopper's text that names the point (Deviation 13)"
+  ],
+  "processes": [],
+  "next_action": "Claude reviews P1b; user applies 2026-10-28 migration",
+  "evidence": [
+    "work-items/LEZ-001/implementation.md",
+    "GVRP_Entry_API/src/main/resources/database/migrations/2026-10-28-lez-compliance.sql",
+    "GVRP_Engine_API/src/main/java/org/truong/gvrp_engine_api/service/LegsService.java",
+    "GVRP_Engine_API/src/main/java/org/truong/gvrp_engine_api/service/LegGeometryService.java",
+    "GVRP_Engine_API/src/main/java/org/truong/gvrp_engine_api/distance_matrix/Impl/GraphHoperDistanceProvider.java",
+    "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/service/lez/RestrictionCompiler.java",
+    "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/service/lez/ComplianceChecker.java",
+    "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/service/lez/RouteComplianceService.java",
+    "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/service/RouteSendService.java",
+    "baseline-entry-p1b.log",
+    "baseline-engine-p1b.log",
+    "step3-entry-p1b.log",
+    "step3-engine-p1b.log"
+  ]
+}

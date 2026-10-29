@@ -1,3 +1,5 @@
+import type { EnergyType, LegalClass } from './lez.model';
+
 export const VEHICLE_SKILLS = [
   'ELECTRIC',
   'HYBRID',
@@ -10,6 +12,24 @@ export const VEHICLE_SKILLS = [
 ] as const;
 
 export type VehicleSkill = (typeof VEHICLE_SKILLS)[number];
+
+/** Legal vehicle classes a zone rule may select (LEZ-001). */
+export const LEGAL_CLASSES: readonly LegalClass[] = [
+  'MOTORBIKE',
+  'CAR',
+  'TRUCK',
+  'BUS',
+  'NON_MOTORIZED'
+];
+
+/** Energy types stored on a vehicle type (LEZ-001). */
+export const ENERGY_TYPES: readonly EnergyType[] = [
+  'ELECTRIC',
+  'HYBRID',
+  'PETROL',
+  'DIESEL',
+  'OTHER'
+];
 
 /**
  * Free-form feature bag the backend stores per vehicle type.
@@ -25,6 +45,10 @@ export interface VehicleFeatures {
  *
  * Note the asymmetry, kept because it is what the backend expects:
  * the write payload uses `type_name`, while the read model returns `name`.
+ *
+ * The four legal keys are optional in the type so historical fixtures that
+ * predate LEZ stay valid, but the admin dialog always sends all four (null when
+ * empty) because the server PUT is a full replacement (P1a deviation 9).
  */
 export interface VehicleTypeInputDTO {
   type_name: string;
@@ -35,6 +59,10 @@ export interface VehicleTypeInputDTO {
   max_distance?: number;
   max_duration?: number;
   vehicle_features?: VehicleFeatures;
+  legal_class?: LegalClass | null;
+  gross_weight_kg?: number | null;
+  energy_type?: EnergyType | null;
+  emission_standard?: number | null;
 }
 
 export interface VehicleTypeDTO {
@@ -47,6 +75,12 @@ export interface VehicleTypeDTO {
   max_distance?: number;
   max_duration?: number;
   vehicle_features?: VehicleFeatures;
+  legal_class?: LegalClass | null;
+  gross_weight_kg?: number | null;
+  energy_type?: EnergyType | null;
+  emission_standard?: number | null;
+  /** Read-only suggestion from the vehicle category; never written silently. */
+  suggested_legal_class?: LegalClass | null;
 }
 
 export interface VehicleInputDTO {

@@ -8,6 +8,10 @@ import { DriverRouteDTO, DriverStopDTO, RouteSendDTO } from '@core/models';
 import { ApiService } from '@core/services/api.service';
 import { AuthService } from '@core/services/auth.service';
 import { ManeuverStep, RoutingService, formatLegDistance } from '@shared/services/routing.service';
+import {
+  completeDriverLegs,
+  driverInstructionSteps
+} from '@shared/utils/route-geometry.utils';
 
 /** Leaflet pane for the live GPS dot (stacked above stop markers). */
 const GPS_PANE = 'driverGps';
@@ -233,40 +237,67 @@ export class DriverViewComponent implements OnInit, OnDestroy, AfterViewChecked 
       });
 
       const coords = points.map(stop => [stop.longitude as number, stop.latitude as number]);
-      this.routing.getRouteGeometry(coords).subscribe(geometry => {
-        if (!this.map) return;
-        const line = geometry?.coordinates
-          ? L.polyline(geometry.coordinates, { color: '#1976d2', weight: 5, opacity: 0.8 })
-          : L.polyline(latLngs, {
-            color: '#1976d2', weight: 4, opacity: 0.6, dashArray: '10, 10'
-          });
-        line.addTo(this.map);
-        L.polylineDecorator(line, {
-          patterns: [{
-            offset: 50,
-            repeat: 120,
-            symbol: L.Symbol.arrowHead({
-              pixelSize: 12, polygon: true, pathOptions: { color: '#1976d2', fillOpacity: 1 }
-            })
-          }]
-        }).addTo(this.map);
-        const bounds = L.latLngBounds(latLngs);
-        if (bounds.isValid()) this.map.fitBounds(bounds.pad(0.1));
-      });
 
-      this.routing.getRouteLegs(coords).subscribe(legs => {
-        if (!legs) {
-          this.maneuvers.set([]);
-          return;
+      // Geometry source rule (design §3.4): stored leg polylines replace the
+      // OSRM path when every stop pair has one, so no getRouteGeometry call.
+      const storedLegs = completeDriverLegs(detail.stops);
+      if (storedLegs) {
+        for (const leg of storedLegs) {
+          const path = L.polyline(leg, { color: '#1976d2', weight: 5, opacity: 0.8 })
+            .addTo(map);
+          this.decorate(path);
         }
-        // Drop zero-length depart/arrive noise; every real maneuver has distance.
-        this.maneuvers.set(legs.flatMap(leg => leg.steps).filter(step => step.distanceM > 0));
-      });
+        const bounds = L.latLngBounds(latLngs);
+        if (bounds.isValid()) map.fitBounds(bounds.pad(0.1));
+      } else {
+        this.routing.getRouteGeometry(coords).subscribe(geometry => {
+          if (!this.map) return;
+          const line = geometry?.coordinates
+            ? L.polyline(geometry.coordinates, { color: '#1976d2', weight: 5, opacity: 0.8 })
+            : L.polyline(latLngs, {
+              color: '#1976d2', weight: 4, opacity: 0.6, dashArray: '10, 10'
+            });
+          line.addTo(this.map);
+          this.decorate(line);
+          const bounds = L.latLngBounds(latLngs);
+          if (bounds.isValid()) this.map.fitBounds(bounds.pad(0.1));
+        });
+      }
+
+      // Instruction rule (design §3.5): stored maneuvers replace the OSRM list
+      // only when the geometry is complete and an instruction list exists.
+      const storedSteps = driverInstructionSteps(detail.stops);
+      if (storedSteps) {
+        this.maneuvers.set(storedSteps);
+      } else {
+        this.routing.getRouteLegs(coords).subscribe(legs => {
+          if (!legs) {
+            this.maneuvers.set([]);
+            return;
+          }
+          // Drop zero-length depart/arrive noise; every real maneuver has distance.
+          this.maneuvers.set(legs.flatMap(leg => leg.steps).filter(step => step.distanceM > 0));
+        });
+      }
 
       this.startGeoWatch(map);
     } catch {
       this.destroyMap();
     }
+  }
+
+  /** Direction arrows of one drawn line (same symbol as the planner map). */
+  private decorate(line: L.Polyline): void {
+    const decorator = L.polylineDecorator(line, {
+      patterns: [{
+        offset: 50,
+        repeat: 120,
+        symbol: L.Symbol.arrowHead({
+          pixelSize: 12, polygon: true, pathOptions: { color: '#1976d2', fillOpacity: 1 }
+        })
+      }]
+    });
+    if (this.map) decorator.addTo(this.map);
   }
 
   private startGeoWatch(map: L.Map): void {

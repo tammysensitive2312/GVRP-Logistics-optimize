@@ -178,6 +178,9 @@ public class SolutionConverter {
             stopData.put("demand", stop.getDemand());
             stopData.put("load_after", stop.getLoadAfter());
 
+            // ===== Geometry to next stop (LEZ-001) =====
+            stopData.put("geometry_to_next", stop.getGeometryToNext());
+
             // ===== Enrichment: distance & time to next =====
             if (i < stops.size() - 1 && matrix != null) {
                 Stop next = stops.get(i + 1);

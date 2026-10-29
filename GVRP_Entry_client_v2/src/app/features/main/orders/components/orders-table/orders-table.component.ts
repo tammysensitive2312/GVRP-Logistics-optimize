@@ -32,6 +32,12 @@ export class OrdersTableComponent {
   @Input() pageSize: number = 0;
   @Input() currentPage: number = 0;
 
+  /**
+   * Ordered low-emission zone names per order id (LEZ-001 P1c, C5).
+   * Absent / empty keeps the cell exactly as before.
+   */
+  @Input() zoneNamesByOrder: Record<number, string[]> = {};
+
   @Output() pageChange = new EventEmitter<PageEvent>();
   @Output() selectionChange = new EventEmitter<OrderDTO[]>();
   @Output() editOrder = new EventEmitter<number>();
@@ -165,10 +171,14 @@ export class OrdersTableComponent {
     return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
   }
 
+  /** Zone names of an order, or an empty list when the badge data has none. */
+  zonesFor(order: OrderDTO): string[] {
+    return this.zoneNamesByOrder[order.id] ?? [];
+  }
+
   /**
    * Handle row click
-   */
-  onRowClick(row: OrderDTO, event: Event): void {
+   */  onRowClick(row: OrderDTO, event: Event): void {
     // Don't toggle if clicking on action buttons
     const target = event.target as HTMLElement;
     if (target.closest('button') || target.closest('mat-checkbox')) {

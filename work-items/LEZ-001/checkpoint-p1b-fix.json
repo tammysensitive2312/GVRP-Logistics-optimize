@@ -1,0 +1,53 @@
+{
+  "revision": 6,
+  "completed": [
+    "Step 0: session brief and recover -> state implement, revision 6; the only reported issue is the accepted historical-evidence change of design.md and traceability.md from P1a; git status showed only the expected P1a/P1b/work-item/lesson/security paths plus one stray ghcp.txt of my own from P1b, which was deleted",
+    "Step 0.4 hierarchy check: no class in the repository extends UnprocessablePlanException (0 matches); RevisionConflictException and DataInvalidException are direct RuntimeException siblings, so noRollbackFor cannot commit a half-done send",
+    "Baseline before any fix (GVRP_Entry_API, clean test with GvrpEntryApiApplicationTests and DepotMapperTest excluded because 2026-10-28-lez-compliance.sql is not applied): 240 run, 0 failures, 0 errors, 0 skipped, BUILD SUCCESS, 30.117 s (baseline-entry-p1bfix.log)",
+    "C1: sendRoute is @Transactional(noRollbackFor = UnprocessablePlanException.class); the persistViolation call is removed from enforceLezCompliance and the javadoc/guard step list now say the 422 commits the verdict and the filled legs; LEZ_MIXED_DATES is unchanged",
+    "C2: RouteComplianceService.persistViolation deleted (its only caller was the removed one), together with EntityManager, @PersistenceContext, Propagation and Transactional imports and the @PersistenceContext field; RouteComplianceService is now lock-free and transaction-free",
+    "C3: RouteSendServiceLezTest SG-T2 no longer mocks EntityManager/Query or verifies a bulk update; it asserts the managed route carries lezStatus VIOLATION, lezCheckedAt non-null, lezRulesetHash non-blank and equal to currentFor(solution).getHash(), and lezViolations contains ZONE_ACCESS; the 422 message, the never-call-engine check and the no-save/no-supersede checks are unchanged",
+    "C4: new RouteSendTransactionTest (3 DB-free reflection tests) pins the noRollbackFor entry, the absence of REQUIRES_NEW on public RouteComplianceService methods, and the sibling relationship of RevisionConflictException and DataInvalidException to UnprocessablePlanException",
+    "Step 2.1 targeted: RouteSendServiceLezTest, RouteSendTransactionTest, RouteSendServiceTest -> 19 run (4 + 3 + 12), 0 failures, 0 errors, 0 skipped, BUILD SUCCESS, 15.546 s (targeted-entry-p1bfix.log)",
+    "Step 2.2 full clean test with the baseline command -> 243 run, 0 failures, 0 errors, 0 skipped, BUILD SUCCESS, 23.083 s (step2-entry-p1bfix.log)",
+    "Step 2.3 static: only the four allowed source/test files changed after the baseline (mtime check); REQUIRES_NEW in src/main remains only in EmailService (2x) and JobStatusUpdater (1x), none in service/lez; persistViolation has 0 references",
+    "work-items/LEZ-001/implementation.md: new ## P1b fix (Scope, Baseline, Changes Made, Commands Executed, Verification Results, Modified Tests, Security-Relevant Changes, Remaining Uncertainty, Handoff) and the one-line supersede note in P1b Deviation 7; no state transition"
+  ],
+  "remaining": [
+    "User applies 2026-10-27-lez-zones.sql then 2026-10-28-lez-compliance.sql and repeats the full Entry clean test without exclusions (expected 245 = 243 + the two @SpringBootTest classes, NOT_VERIFIED)",
+    "User runs review-p1b section 5 step 4: a zone banning the route's vehicle all day covering one stop must produce 422 within a few seconds, GET /api/v1/solutions/{id}/compliance must show VIOLATION, and a second send must not call the engine again",
+    "Claude review of the P1b fix record and of the remaining P1b findings F2-F8, which are handled separately and are not addressed by this fix",
+    "P1c increment; ready -> verify only after P1c unless the user decides otherwise"
+  ],
+  "read_next": [
+    "work-items/LEZ-001/review-p1b.md",
+    "work-items/LEZ-001/task-opencode-p1b-fix.md",
+    "work-items/LEZ-001/implementation.md",
+    "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/service/RouteSendService.java"
+  ],
+  "blockers": [
+    "No MySQL and no migration in the agent environment: the real row-lock behaviour and the committed verdict are NOT_VERIFIED until the user runs review-p1b section 5 step 4; agents must not run migrations",
+    "The full Entry clean build stays red until the migration is applied; the two @SpringBootTest classes are excluded on the command line only and have not run against the new schema",
+    "The noRollbackFor exemption also covers future subclasses of UnprocessablePlanException; RouteSendTransactionTest fails if RevisionConflictException or DataInvalidException ever becomes one"
+  ],
+  "decisions": [
+    "C1 shape accepted after the hierarchy check: no existing subclass of UnprocessablePlanException, so the exempted refusal cannot commit a half-done send; the check is pinned by RouteSendTransactionTest.failuresAfterTheGuardStillRollBack",
+    "The verdict is committed by the caller's commit because certify mutates the managed, locked route; no second transaction, no EntityManager bulk update, no re-attachment",
+    "LEZ_MIXED_DATES keeps its 422 and commits nothing because it is thrown before fillMissingLegs and certify; a future mutation before that check must revisit the exemption",
+    "RouteSendServiceLezTest is a P1b file that was not yet accepted, so its SG-T2 persistViolation expectations were replaced; every changed assertion is listed in implementation.md with the reason reviewer rejected Deviation 7 (review-p1b F1), and no historical test was touched"
+  ],
+  "processes": [],
+  "next_action": "User applies both LEZ migrations and runs review-p1b section 5 step 4: full Entry build, then a refused send must answer 422 in a few seconds with a committed VIOLATION and no second engine call",
+  "evidence": [
+    "work-items/LEZ-001/implementation.md",
+    "work-items/LEZ-001/review-p1b.md",
+    "work-items/LEZ-001/task-opencode-p1b-fix.md",
+    "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/service/RouteSendService.java",
+    "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/service/lez/RouteComplianceService.java",
+    "GVRP_Entry_API/src/test/java/org/truong/gvrp_entry_api/service/RouteSendServiceLezTest.java",
+    "GVRP_Entry_API/src/test/java/org/truong/gvrp_entry_api/service/RouteSendTransactionTest.java",
+    "baseline-entry-p1bfix.log",
+    "targeted-entry-p1bfix.log",
+    "step2-entry-p1bfix.log"
+  ]
+}

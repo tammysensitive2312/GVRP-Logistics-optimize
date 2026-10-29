@@ -1,6 +1,7 @@
 package org.truong.gvrp_engine_api.service;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -9,6 +10,7 @@ import org.springframework.web.server.ResponseStatusException;
 import org.truong.gvrp_engine_api.distance_matrix.DistanceMatrixEntry;
 import org.truong.gvrp_engine_api.distance_matrix.DistanceProvider;
 import org.truong.gvrp_engine_api.distance_matrix.OptCoordinates;
+import org.truong.gvrp_engine_api.distance_matrix.RoutePathProvider;
 import org.truong.gvrp_engine_api.model.*;
 
 import java.math.BigDecimal;
@@ -32,10 +34,26 @@ import java.util.Set;
 public class RouteEvaluationService {
 
     private final DistanceProvider distanceProvider;
+    private final LegGeometryService legGeometryService;
 
+    /**
+     * Backward-compatible constructor for direct unit tests: no path provider,
+     * so {@code geometryToNext} stays null.
+     */
+    public RouteEvaluationService(DistanceProvider distanceProvider) {
+        this(distanceProvider, null);
+    }
+
+    /**
+     * Production path: the same GraphHopper router fills per-leg polylines
+     * (LEZ-001, design §16.2-3).
+     */
+    @Autowired
     public RouteEvaluationService(
-            @Qualifier("graphHoperDistanceProvider") DistanceProvider distanceProvider) {
+            @Qualifier("graphHoperDistanceProvider") DistanceProvider distanceProvider,
+            RoutePathProvider routePathProvider) {
         this.distanceProvider = distanceProvider;
+        this.legGeometryService = routePathProvider != null ? new LegGeometryService(routePathProvider) : null;
     }
 
     /** Upper bound on evaluated stops per request (provider calls stay linear). */
@@ -217,6 +235,9 @@ public class RouteEvaluationService {
         double routeCO2 = GreenVRPCostCalculator.calculateRouteCO2(routeDistanceKm, type);
 
         stops.add(depotStop(route.getEndDepot(), formatTime(currentSeconds), null, 0.0));
+        if (legGeometryService != null) {
+            legGeometryService.fillGeometry(stops, routeIndex);
+        }
 
         RouteDetail detail = new RouteDetail(
                 route.getVehicleId(), route.getVehicleLicensePlate(),

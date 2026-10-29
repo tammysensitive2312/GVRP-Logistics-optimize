@@ -2,10 +2,14 @@ package org.truong.gvrp_entry_api.exception;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.truong.gvrp_entry_api.service.lez.LezConflictException;
+import org.truong.gvrp_entry_api.service.lez.LezNotFoundException;
 import org.truong.gvrp_entry_api.util.ErrorCode;
 
 import java.util.List;
@@ -33,6 +37,31 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity
                 .status(HttpStatus.FORBIDDEN)
+                .body(new ErrorResponse(List.of(detail)));
+    }
+
+    @ExceptionHandler(LezNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleLezNotFound(LezNotFoundException ex) {
+        ErrorDetail detail = ErrorDetail.builder()
+                .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
+                .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
+                .resource(ex.getResource())
+                .build();
+
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse(List.of(detail)));
+    }
+
+    @ExceptionHandler(LezConflictException.class)
+    public ResponseEntity<ErrorResponse> handleLezConflict(LezConflictException ex) {
+        ErrorDetail detail = ErrorDetail.builder()
+                .code(ErrorCode.RESOURCE_CONFLICT.getCode())
+                .message(ex.getMessage())
+                .build();
+
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
                 .body(new ErrorResponse(List.of(detail)));
     }
 
@@ -96,6 +125,46 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity
                 .status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(new ErrorResponse(List.of(detail)));
+    }
+
+    /**
+     * 400 — unreadable body (malformed JSON, unknown field). This used to fall
+     * through to the generic handler and answer 500, hiding the real cause.
+     */
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ErrorResponse> handleUnreadableBody(HttpMessageNotReadableException ex) {
+        String cause = ex.getMostSpecificCause().getMessage();
+        logger.warn("Malformed request body: {}", cause);
+
+        ErrorDetail detail = ErrorDetail.builder()
+                .code(ErrorCode.VALIDATION_ERROR.getCode())
+                .message(cause == null || cause.isBlank()
+                        ? "Malformed request body."
+                        : "Malformed request body: " + cause)
+                .build();
+
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(new ErrorResponse(List.of(detail)));
+    }
+
+    /**
+     * 405 — a supported URL called with the wrong method (for example GET on a
+     * PUT-only route). Web MVC raises this before the controller runs, so it
+     * used to fall through to the generic handler and answer 500.
+     */
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<ErrorResponse> handleMethodNotSupported(HttpRequestMethodNotSupportedException ex) {
+        logger.warn("Unsupported request method: {}", ex.getMessage());
+
+        ErrorDetail detail = ErrorDetail.builder()
+                .code(ErrorCode.METHOD_NOT_ALLOWED.getCode())
+                .message(ErrorCode.METHOD_NOT_ALLOWED.getMessage())
+                .build();
+
+        return ResponseEntity
+                .status(HttpStatus.METHOD_NOT_ALLOWED)
                 .body(new ErrorResponse(List.of(detail)));
     }
 

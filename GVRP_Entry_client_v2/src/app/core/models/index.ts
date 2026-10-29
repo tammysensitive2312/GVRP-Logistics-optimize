@@ -9,3 +9,4 @@ export * from './driver.model';
 export * from './job.model';
 export * from './stats.model'
 export * from './pareto.model';
+export * from './lez.model';

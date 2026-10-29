@@ -1,0 +1,211 @@
+<div class="admin-content-header">
+  <h1>Low-emission zones</h1>
+  <p>
+    Enable a system template for this branch, or copy one and adjust its
+    geometry and rules. Templates themselves are read-only.
+  </p>
+</div>
+
+@if (warnings().length > 0) {
+  <div class="warnings-banner" role="status">
+    <strong>Configuration warning</strong>
+    <ul>
+      @for (text of warningTexts(); track text) {
+        <li>{{ text }}</li>
+      }
+    </ul>
+    <p class="form-hint">
+      Vehicles leaving from this depot start inside the zone; results may be
+      infeasible.
+    </p>
+  </div>
+}
+
+<div class="admin-content-body">
+  @if (loading()) {
+    <div class="loading-message">Loading low-emission zones...</div>
+  } @else {
+    <section class="zone-section">
+      <h2 class="section-title">Zone templates</h2>
+      @if (templates().length === 0) {
+        <div class="empty-state">
+          <div class="empty-icon">🌿</div>
+          <div class="empty-text">No zone templates available</div>
+          <div class="empty-hint">Zone templates are installed with the system data.</div>
+        </div>
+      } @else {
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th scope="col">Code</th>
+                <th scope="col">Name</th>
+                <th scope="col">Jurisdiction</th>
+                <th scope="col">Version</th>
+                <th scope="col">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (template of templates(); track template.id) {
+                <tr>
+                  <td>{{ template.code }}</td>
+                  <td>{{ template.name }}</td>
+                  <td>{{ template.jurisdiction || '—' }}</td>
+                  <td>v{{ template.version }}</td>
+                  <td class="row-actions">
+                    <button type="button" class="btn btn-secondary" (click)="previewTemplate(template)">
+                      Preview
+                    </button>
+                    @if (linkedExists(template)) {
+                      <span class="badge badge-success">Enabled</span>
+                    } @else {
+                      <button type="button" class="btn btn-primary" (click)="enable(template)">
+                        Enable
+                      </button>
+                    }
+                    <button type="button" class="btn btn-secondary" (click)="copy(template)">
+                      Copy
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </section>
+
+    <section class="zone-section">
+      <h2 class="section-title">My zones</h2>
+      @if (zones().length === 0) {
+        <div class="empty-state">
+          <div class="empty-icon">🌿</div>
+          <div class="empty-text">This branch has no low-emission zone</div>
+          <div class="empty-hint">Enable or copy a template above to add one.</div>
+        </div>
+      } @else {
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th scope="col">Name</th>
+                <th scope="col">Mode</th>
+                <th scope="col">Rules</th>
+                <th scope="col">Enabled</th>
+                <th scope="col">Notice</th>
+                <th scope="col">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (zone of zones(); track zone.id) {
+                <tr [class.selected]="previewTitle() === zone.name">
+                  <td>{{ zone.name }}</td>
+                  <td>
+                    <span class="badge" [class.badge-success]="zone.mode === 'LINKED'"
+                          [class.badge-warning]="zone.mode === 'COPIED'">
+                      {{ zone.mode }}
+                    </span>
+                  </td>
+                  <td>{{ zone.rules?.length ?? 0 }}</td>
+                  <td>
+                    <label class="toggle">
+                      <input
+                        type="checkbox"
+                        [checked]="zone.enabled"
+                        [attr.aria-label]="'Enable ' + zone.name"
+                        (change)="toggleEnabled(zone, $event)"/>
+                      {{ zone.enabled ? 'On' : 'Off' }}
+                    </label>
+                  </td>
+                  <td>
+                    @if (zone.update_available) {
+                      <button type="button" class="link-button" (click)="acknowledge(zone)">
+                        Template updated — acknowledge
+                      </button>
+                    } @else {
+                      <span class="text-muted">Up to date</span>
+                    }
+                  </td>
+                  <td class="row-actions">
+                    <button type="button" class="btn btn-secondary" (click)="previewZone(zone)">
+                      Preview
+                    </button>
+                    @if (zone.mode === 'COPIED') {
+                      <button type="button" class="btn btn-secondary" (click)="openEditor(zone)">
+                        Edit
+                      </button>
+                    }
+                    <button type="button" class="btn-icon danger" title="Delete"
+                            [attr.aria-label]="'Delete ' + zone.name" (click)="remove(zone)">
+                      🗑️
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </section>
+
+    <section class="zone-section preview-grid">
+      <div class="preview-map">
+        <h2 class="section-title">{{ previewTitle() || 'Zone preview' }}</h2>
+        <app-zone-map [geometry]="previewGeometry()" [depots]="depots()"/>
+      </div>
+
+      <div class="verdict-panel">
+        <h2 class="section-title">Check one vehicle</h2>
+        <div class="form-group">
+          <label for="verdict-zone">Zone</label>
+          <select id="verdict-zone" (change)="onVerdictZone($event)">
+            <option value="">Choose a zone</option>
+            @for (zone of zones(); track zone.id) {
+              <option [value]="zone.id">{{ zone.name }}</option>
+            }
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="verdict-vehicle">Vehicle</label>
+          <select id="verdict-vehicle" (change)="onVerdictVehicle($event)">
+            <option value="">Choose a vehicle</option>
+            @for (vehicle of vehicles(); track vehicle.id) {
+              <option [value]="vehicle.id">
+                {{ vehicle.vehicle_license_plate }} ({{ vehicle.vehicle_type_name }})
+              </option>
+            }
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="verdict-date">Date</label>
+          <input id="verdict-date" type="date" [value]="verdictDate()" (change)="onVerdictDate($event)"/>
+        </div>
+        <button type="button" class="btn btn-primary" [disabled]="verdictBusy()" (click)="runVerdict()">
+          {{ verdictBusy() ? 'Checking…' : 'Check verdict' }}
+        </button>
+
+        @if (verdictError()) {
+          <p class="form-error">{{ verdictError() }}</p>
+        }
+
+        @if (verdict(); as result) {
+          <div class="verdict-result">
+            <p class="verdict-kind">{{ verdictKindLabel(result.kind) }}</p>
+            <p class="detail-row">
+              <span class="detail-label">Forbidden</span>
+              <span class="detail-value">{{ forbiddenText(result) }}</span>
+            </p>
+            @if (result.missing_attributes.length > 0) {
+              <p class="form-error">
+                Missing vehicle data: {{ result.missing_attributes.join(', ') }}
+              </p>
+            }
+            @if (result.applied_permit_ids.length > 0) {
+              <p class="form-hint">Permits applied: {{ result.applied_permit_ids.join(', ') }}</p>
+            }
+          </div>
+        }
+      </div>
+    </section>
+  }
+</div>

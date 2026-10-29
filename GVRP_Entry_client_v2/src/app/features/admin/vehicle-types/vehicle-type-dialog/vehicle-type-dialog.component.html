@@ -78,6 +78,72 @@
         }
       </select>
     </div>
+
+    <section class="legal-section">
+      <h3 class="legal-title">Legal attributes (low-emission zones)</h3>
+      @if (missingLegalData) {
+        <p class="form-hint">
+          Some legal attributes are missing: zone rules that select them cannot be
+          explained for this vehicle type.
+        </p>
+      }
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="admin-vtype-legal-class">Legal class</label>
+          <select id="admin-vtype-legal-class" formControlName="legalClass">
+            <option [ngValue]="null">Not set</option>
+            @for (legalClass of legalClassOptions; track legalClass) {
+              <option [ngValue]="legalClass">{{ legalClass }}</option>
+            }
+          </select>
+          @if (suggestedLegalClass) {
+            <p class="form-hint">
+              Suggested: {{ suggestedLegalClass }}
+              <button type="button" class="link-button" (click)="useSuggestion()">
+                Use suggestion
+              </button>
+            </p>
+          }
+        </div>
+        <div class="form-group">
+          <label for="admin-vtype-gross-weight">Gross weight (kg)</label>
+          <input
+            id="admin-vtype-gross-weight"
+            type="number"
+            formControlName="grossWeightKg"
+            min="0"
+            step="1"/>
+          @if (form.controls.grossWeightKg.touched && form.controls.grossWeightKg.invalid) {
+            <p class="form-error">Gross weight must be a non-negative number.</p>
+          }
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="admin-vtype-energy-type">Energy type</label>
+          <select id="admin-vtype-energy-type" formControlName="energyType">
+            <option [ngValue]="null">Not set</option>
+            @for (energyType of energyTypeOptions; track energyType) {
+              <option [ngValue]="energyType">{{ energyType }}</option>
+            }
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="admin-vtype-emission-standard">Emission standard (Euro)</label>
+          <input
+            id="admin-vtype-emission-standard"
+            type="number"
+            formControlName="emissionStandard"
+            min="0"
+            step="1"/>
+          @if (form.controls.emissionStandard.touched && form.controls.emissionStandard.invalid) {
+            <p class="form-error">Emission standard must be a non-negative number.</p>
+          }
+        </div>
+      </div>
+    </section>
   </form>
 </mat-dialog-content>
 

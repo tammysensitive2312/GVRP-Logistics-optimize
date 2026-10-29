@@ -10,6 +10,10 @@ import { MatButtonModule } from '@angular/material/button';
 import { TranslocoPipe } from '@jsverse/transloco';
 
 import {
+  ENERGY_TYPES,
+  EnergyType,
+  LEGAL_CLASSES,
+  LegalClass,
   VEHICLE_SKILLS,
   VehicleFeatures,
   VehicleSkill,
@@ -37,6 +41,10 @@ interface VehicleTypeDialogControls {
   maxDistance: FormControl<number | null>;
   maxDuration: FormControl<number | null>;
   skills: FormControl<VehicleSkill[]>;
+  legalClass: FormControl<LegalClass | null>;
+  grossWeightKg: FormControl<number | null>;
+  energyType: FormControl<EnergyType | null>;
+  emissionStandard: FormControl<number | null>;
 }
 
 /**
@@ -60,12 +68,26 @@ interface VehicleTypeDialogControls {
 })
 export class VehicleTypeDialogComponent {
   readonly skillOptions = VEHICLE_SKILLS;
+  readonly legalClassOptions = LEGAL_CLASSES;
+  readonly energyTypeOptions = ENERGY_TYPES;
   readonly dialogRef =
     inject<MatDialogRef<VehicleTypeDialogComponent, VehicleTypeInputDTO>>(MatDialogRef);
   private readonly data = inject<VehicleTypeDialogData>(MAT_DIALOG_DATA, { optional: true });
 
   readonly isEdit = !!this.data?.vehicleType;
   readonly title = this.isEdit ? 'Edit Vehicle Type' : 'Add Vehicle Type';
+
+  /** Read-only server suggestion; applied only when the planner clicks "Use suggestion". */
+  readonly suggestedLegalClass: LegalClass | null =
+    this.data?.vehicleType?.suggested_legal_class ?? null;
+
+  /** True when an existing type lacks at least one legal attribute (R15 badge hint). */
+  readonly missingLegalData = this.isEdit && (
+    this.data?.vehicleType?.legal_class == null ||
+    this.data?.vehicleType?.gross_weight_kg == null ||
+    this.data?.vehicleType?.energy_type == null ||
+    this.data?.vehicleType?.emission_standard == null
+  );
 
   readonly form = new FormGroup<VehicleTypeDialogControls>({
     typeName: new FormControl('', {
@@ -91,7 +113,15 @@ export class VehicleTypeDialogComponent {
     maxDuration: new FormControl<number | null>(null, {
       validators: [greaterThanZeroWhenPresent()]
     }),
-    skills: new FormControl<VehicleSkill[]>([], { nonNullable: true })
+    skills: new FormControl<VehicleSkill[]>([], { nonNullable: true }),
+    legalClass: new FormControl<LegalClass | null>(null),
+    grossWeightKg: new FormControl<number | null>(null, {
+      validators: [nonNegative()]
+    }),
+    energyType: new FormControl<EnergyType | null>(null),
+    emissionStandard: new FormControl<number | null>(null, {
+      validators: [nonNegative()]
+    })
   });
 
   constructor() {
@@ -106,8 +136,19 @@ export class VehicleTypeDialogComponent {
         costPerHour: vehicleType.cost_per_hour,
         maxDistance: vehicleType.max_distance ?? null,
         maxDuration: vehicleType.max_duration ?? null,
-        skills: vehicleType.vehicle_features?.skills ?? []
+        skills: vehicleType.vehicle_features?.skills ?? [],
+        legalClass: vehicleType.legal_class ?? null,
+        grossWeightKg: vehicleType.gross_weight_kg ?? null,
+        energyType: vehicleType.energy_type ?? null,
+        emissionStandard: vehicleType.emission_standard ?? null
       });
+    }
+  }
+
+  /** Explicit click only: the suggestion never writes itself into the form. */
+  useSuggestion(): void {
+    if (this.suggestedLegalClass) {
+      this.form.controls.legalClass.setValue(this.suggestedLegalClass);
     }
   }
 
@@ -139,7 +180,12 @@ export class VehicleTypeDialogComponent {
       fixed_cost: raw.fixedCost,
       cost_per_km: raw.costPerKm,
       cost_per_hour: raw.costPerHour,
-      vehicle_features: vehicleFeatures
+      vehicle_features: vehicleFeatures,
+      // Always present: the server PUT replaces the whole row (P1a deviation 9).
+      legal_class: raw.legalClass ?? null,
+      gross_weight_kg: raw.grossWeightKg ?? null,
+      energy_type: raw.energyType ?? null,
+      emission_standard: raw.emissionStandard ?? null
     };
 
     if (raw.maxDistance !== null) payload.max_distance = raw.maxDistance;

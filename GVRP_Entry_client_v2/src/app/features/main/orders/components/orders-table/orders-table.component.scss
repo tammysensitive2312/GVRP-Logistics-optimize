@@ -191,6 +191,25 @@
   }
 }
 
+// LEZ-001 P1c: "LEZ: <zone>" chips under the order code. Absent data renders
+// nothing, so the cell is unchanged when the badge request fails.
+.zone-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 2px;
+}
+
+.zone-chip {
+  padding: 1px 6px;
+  border-radius: 10px;
+  background: rgba(39, 174, 96, 0.12);
+  color: #1e8449;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 .customer-info {
   display: flex;
   align-items: center;

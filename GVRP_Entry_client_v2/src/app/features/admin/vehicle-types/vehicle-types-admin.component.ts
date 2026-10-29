@@ -104,6 +104,14 @@ export class VehicleTypesAdminComponent implements OnInit {
       });
   }
 
+  /** True when the type lacks at least one legal attribute (LEZ-001 R15). */
+  missingLezData(type: VehicleTypeDTO): boolean {
+    return type.legal_class == null
+      || type.gross_weight_kg == null
+      || type.energy_type == null
+      || type.emission_standard == null;
+  }
+
   private openDialog(data: VehicleTypeDialogData): Observable<VehicleTypeInputDTO> {
     return this.dialog
       .open<VehicleTypeDialogComponent, VehicleTypeDialogData, VehicleTypeInputDTO>(

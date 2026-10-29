@@ -19,7 +19,9 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
 
     // 2. Error Handling
     catchError((error: HttpErrorResponse) => {
-      const errorMessage = getErrorMessage(error);
+      // The API answers with `{ errors: [{ code, message, field? }] }`; keep that
+      // reason instead of a generic status sentence so callers can show it.
+      const errorMessage = serverDetail(error) ?? getErrorMessage(error);
 
       // Log error
       console.error('HTTP Error:', {
@@ -39,6 +41,24 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
     })
   );
 };
+
+
+/** First `errors[].message` (or `message`) of the API error envelope, if any. */
+function serverDetail(error: HttpErrorResponse): string | null {
+  const body = error.error as {
+    errors?: Array<{ message?: string }>;
+    message?: string;
+  } | null;
+
+  const first = body?.errors?.[0]?.message;
+  if (typeof first === 'string' && first.trim()) {
+    return first;
+  }
+  if (typeof body?.message === 'string' && body.message.trim()) {
+    return body.message;
+  }
+  return null;
+}
 
 
 function getErrorMessage(error: HttpErrorResponse): string {

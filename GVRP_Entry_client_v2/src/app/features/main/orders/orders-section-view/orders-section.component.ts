@@ -9,9 +9,11 @@ import {Subject} from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
 import { ApiService } from '@core/services/api.service';
+import { LezApiService } from '@core/services/lez-api.service';
 import { ToastService } from '@shared/services/toast.service';
 
 import {OrderDTO, OrderFilter, RoutePlanningRequest, SolutionDTO} from '@core/models';
+import {SolutionComplianceDTO} from '@core/models';
 import {BulkStatusResult, BulkStatusRow} from '@core/models';
 import {ParetoFrontierDTO} from '@core/models';
 import {SolutionStore} from '@core/services/solution.store';
@@ -27,6 +29,9 @@ import { OrdersFiltersComponent } from '../components/orders-filters/orders-filt
 import { OrdersTableComponent } from '../components/orders-table/orders-table.component';
 import {TimelineViewComponent} from '@features/main/orders/timeline-view/timeline-view.component';
 import {RouteViewComponent} from '@features/main/orders/route-view/route-view.component';
+import {
+  CompliancePanelComponent
+} from '@features/main/orders/lez-compliance-panel/compliance-panel.component';
 import {ParetoViewComponent} from '@features/main/orders/pareto-view/pareto-view.component';
 import {VehicleSelectionService} from '@shared/services/vehicle-selection.service';
 import {
@@ -47,6 +52,7 @@ import {
   EditOrderDialogData
 } from '@features/main/orders/components/edit-orders-dialog/edit-order-dialog.component';
 import {JobMonitoringDialogComponent} from '@features/main/jobs/job-monitoring-dialog/job-monitoring-dialog.component';
+import { serverErrorMessage } from '@shared/utils/api-error.utils';
 
 
 @Component({
@@ -62,6 +68,7 @@ import {JobMonitoringDialogComponent} from '@features/main/jobs/job-monitoring-d
     OrdersTableComponent,
     TimelineViewComponent,
     RouteViewComponent,
+    CompliancePanelComponent,
     ParetoViewComponent,
   ],
   templateUrl: './orders-section.component.html',
@@ -72,6 +79,7 @@ export class OrdersSectionComponent implements OnInit, OnDestroy {
   @Output() orderClick = new EventEmitter<OrderDTO>();
 
   private apiService = inject(ApiService);
+  private lezApi = inject(LezApiService);
   private toastService = inject(ToastService);
   private dialog = inject(MatDialog);
   private router = inject(Router);
@@ -80,6 +88,19 @@ export class OrdersSectionComponent implements OnInit, OnDestroy {
 
   orders: OrderDTO[] = [];
   selectedOrders: OrderDTO[] = [];
+
+  /**
+   * Ordered low-emission zone names per order id (LEZ-001 P1c, C5). Empty when
+   * the badge request failed: a missing badge is not an error to report.
+   */
+  readonly zoneNamesByOrder = signal<Record<number, string[]>>({});
+
+  /**
+   * Compliance of the active solution, owned by the panel and handed to the
+   * route view (LEZ-001 P1c, design §3.7). Null means "unknown", never
+   * "compliant": the send rule then keeps today's behaviour.
+   */
+  readonly routeCompliance = signal<SolutionComplianceDTO | null>(null);
 
   /** Last bulk-update report (null = none/dismissed). */
   readonly bulkResult = signal<BulkStatusResult | null>(null);
@@ -169,12 +190,40 @@ export class OrdersSectionComponent implements OnInit, OnDestroy {
           this.orders = response.content;
           this.totalElements = response.total_elements;
           this.isLoading = false;
+          this.loadOrderZones(this.orders);
         },
         error: (err) => {
           console.error('Error loading orders:', err);
           this.toastService.error('Failed to load orders');
           this.isLoading = false;
         }
+      });
+  }
+
+  /**
+   * "LEZ: <zone>" badge data for the visible page (LEZ-001 P1c, C5).
+   * One request per page; a failure leaves the table unchanged and is silent,
+   * because the badge is an aid, not a gate.
+   */
+  private loadOrderZones(orders: OrderDTO[]): void {
+    const ids = orders.map(order => order.id);
+    this.zoneNamesByOrder.set({});
+    if (ids.length === 0) {
+      return;
+    }
+    this.lezApi.orderZones(ids)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: rows => {
+          const names: Record<number, string[]> = {};
+          for (const row of rows ?? []) {
+            if (row?.zones?.length) {
+              names[row.order_id] = row.zones.map(zone => zone.name);
+            }
+          }
+          this.zoneNamesByOrder.set(names);
+        },
+        error: () => this.zoneNamesByOrder.set({})
       });
   }
 
@@ -213,6 +262,20 @@ export class OrdersSectionComponent implements OnInit, OnDestroy {
   }
 
   onPlanRoutesClick(): void {
+    // D4 (LEZ-001): one plan serves one delivery date. Refuse locally, before
+    // the dialog, and name the dates so the planner can fix the selection.
+    const dates = [...new Set(
+      this.selectedOrders
+        .map(order => order.delivery_date)
+        .filter((date): date is string => !!date)
+    )].sort();
+    if (dates.length > 1) {
+      this.toastService.error(
+        `Orders on different delivery dates cannot be planned together: ${dates.join(', ')}.`
+      );
+      return;
+    }
+
     const totalDemand = this.selectedOrders.reduce((sum, o) => sum + (o.demand || 0), 0);
 
     const dialogRef = this.dialog.open(RoutePlanningDialogComponent, {
@@ -283,7 +346,10 @@ export class OrdersSectionComponent implements OnInit, OnDestroy {
             }
           },
           error: (err) => {
-            this.toastService.error(err.message || 'Failed to submit optimization job');
+            // The server's D4 refusal is more specific than any local text.
+            this.toastService.error(
+              serverErrorMessage(err, 'Failed to submit optimization job')
+            );
           }
         });
     });
@@ -490,6 +556,7 @@ export class OrdersSectionComponent implements OnInit, OnDestroy {
    * Clear current solution
    */
   clearSolution(): void {
+    this.routeCompliance.set(null);
     this.solutionStore.clear();
     this.selectedTabIndex = 0; // Back to Orders tab
   }
@@ -539,6 +606,7 @@ export class OrdersSectionComponent implements OnInit, OnDestroy {
    * Set solution from external source (e.g., job monitoring)
    */
   setSolution(solution: SolutionDTO): void {
+    this.routeCompliance.set(null);
     this.solutionStore.setSolution(solution);
     this.selectedTabIndex = 1; // Switch to Routes tab
     this.toastService.success('Solution loaded successfully');

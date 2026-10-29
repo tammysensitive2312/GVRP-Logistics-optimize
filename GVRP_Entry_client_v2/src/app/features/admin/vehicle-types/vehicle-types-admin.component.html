@@ -38,7 +38,15 @@
       @for (type of filteredTypes(); track type.id) {
         <article class="item-card">
           <div class="card-header">
-            <div class="card-title">🚚 {{ type.name }}</div>
+            <div class="card-title">
+              🚚 {{ type.name }}
+              @if (missingLezData(type)) {
+                <span class="card-badge"
+                      title="Legal attributes are incomplete; low-emission-zone rules may not be explainable">
+                  LEZ data missing
+                </span>
+              }
+            </div>
             <div class="card-actions">
               <button
                 type="button"

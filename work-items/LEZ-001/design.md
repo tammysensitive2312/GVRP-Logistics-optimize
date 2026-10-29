@@ -1,6 +1,6 @@
 # Design — LEZ-001 (Low-emission / restricted traffic zones)
 
-Status: **PROPOSED**. It waits for the user's review and is not accepted yet.
+Status: **ACCEPTED** by the user on 2026-10-26 22:49 +07:00 ("tôi đồng ý cả 3 đề xuất cho 3 câu hỏi của bạn. Tôi duyệt thiết kế của bạn"). D1–D3 were resolved as recommended (§9; `user-decision-01.md`). Accepting the design does **not** authorise implementation (request §8).
 Inputs: `request.md` (requirements LEZ-R01…R18 and the decisions of 2026-10-25) and `context.md` (code facts at `617b720`).
 Business flows written for reading are in `business-flows.md`. Diagrams are in `diagrams/` (§14).
 
@@ -202,13 +202,13 @@ Engine API: `EngineOptimizationRequest` gains `serviceDate`, `zones[]` and `vehi
 - **Orders table:** an "LEZ: <zone>" badge.
 - **Job result / route view:** a compliance panel (orders in zones, unassigned for LEZ by zone, routes with `VIOLATION`/`STALE`). A violation list per route, with the offending leg highlighted on the map.
 - **Send dialog:** disabled with the reason while the route is not `COMPLIANT`. The server is still the authority (§5.4).
-- **Maps:** the driver view (R12) and, recommended, the planner map (D1) render the stored server polylines. The driver view renders the stored instructions. OSRM is no longer called for these routes.
+- **Maps:** the driver view (R12) and the planner map (D1, accepted) render the stored server polylines. The driver view renders the stored instructions. OSRM is no longer called for these routes.
 
-## 9. Decisions needed from the user
+## 9. Decisions (resolved 2026-10-26 22:49, `user-decision-01.md`)
 
-- **D1:** switch the **planner** map to server geometry too? Recommended: yes. Otherwise the planner sees a different path from the one that was certified.
-- **D2:** the template authoring path stays migration-only until an admin role exists (request §6). Is that OK?
-- **D3:** this run covers P1 only. P2 (time windows), P3 (avoidance) and P4 (reporting and experiment) become linked runs. Is that OK?
+- **D1 — yes:** the **planner** map also renders the stored server geometry. The planner sees exactly the certified path. R12 scope therefore covers both the driver view and the planner route view.
+- **D2 — yes:** zone templates are authored only through migrations and seed data until an administrator role exists (request §6).
+- **D3 — yes:** this run (LEZ-001) covers **P1 only**. P2 (optimiser avoidance of time windows), P3 (avoidance routing) and P4 (reporting and experiment) become separate linked runs.
 
 ## 10. Tenant isolation and security (R14)
 
@@ -275,3 +275,52 @@ Engine API: `EngineOptimizationRequest` gains `serviceDate`, `zones[]` and `vehi
 | `lez-state-branch-zone` | state | LINKED/COPIED lifecycle and template-update notice |
 
 Diagrams marked *proposal* show intended design. Participants that exist today are named after real classes [code]; new ones are marked «new».
+
+## 15. P1 implementation increments and technical refinements (added 2026-10-26, after acceptance)
+
+Implementation was authorized on 2026-10-26 22:54 +07:00 ("hãy bắt đầu triển khai P1"). The run stays in `implement` across three increments. Each increment is reviewed by Claude before the next task is issued, and only after P1c does the run move to `verify`.
+
+| Increment | Content | Requirements |
+|---|---|---|
+| **P1a** | Schema and entities (templates, rules, branch zones, branch rules, permits, vehicle-type legal attributes); GeoJSON polygon parsing; `RuleEvaluator` + schedule normalisation (pure, unit-tested); `ZoneService` + controllers (templates read-only, enable/copy/edit/acknowledge/delete); permits API; legal attributes on the vehicle-type API; depot-in-zone warning on enable/copy | R01–R05, R09 (warning), R14 |
+| **P1-seed** | Hanoi templates and rules (Đề án phases 2–3). The **boundary data is prepared by Claude from a documented source** before the seed SQL is written. Coordinates are never invented | R16 |
+| **P1b** | Engine: `serviceDate`, zones and compiled restrictions in the request, `LEZ_<zone>` skills, unusable vehicles, post-solve assert, `LEZ_NO_COMPLIANT_VEHICLE`, per-leg geometry and instructions (locale `vi`) in results and evaluate. Entry: `RestrictionCompiler`, `ComplianceChecker`, job snapshot, route compliance fields, certification on callback and on revision save, send guard (422) | R06, R08, R09, R10, R11, R13 |
+| **P1c** | Client: zones page, legal attributes in the vehicle-type dialog, permits tab, order badge, compliance panel, driver and planner maps on stored server geometry and instructions | R12, R15 |
+
+Technical refinements (implementation choices, not business changes):
+
+- **No new dependency in P1.** `pom.xml` and `package.json` are outside the run scope.
+  - A copied zone's geometry is edited by **uploading or pasting GeoJSON** (with a Leaflet preview). An in-map drawing tool needs a new dependency and is deferred to a later run.
+  - GeoJSON is parsed with Jackson into JTS, because `jts-core` has no GeoJSON reader.
+  - The client decodes encoded polylines with a small local function.
+- **Schema delivery** follows the repository convention: entities plus a dated SQL file in `database/migrations/` that the user runs manually (`ddl-auto=update` covers new tables and columns) [code: `2026-10-18-pareto-candidates.sql` header].
+- **Geometry storage** follows the existing `Order.location` mapping: JTS with x = longitude, y = latitude, SRID 4326. Polygon read and write through MySQL is checked in the manual test, because only `POINT` has been exercised before. Chưa xác minh for polygons.
+- **Deleting a zone** (`DELETE /api/v1/zones/{id}`) that is referenced by a permit is refused with 409.
+- **New read-only endpoint** `GET /api/v1/zones/{id}/verdict?vehicleId=&date=` returns the `RuleEvaluator` verdict for one vehicle and date. It supports manual testing in P1a and is reused by P1b.
+- **`appBased`** evaluates with `branchAppBased = false` in P1 (internal fleets). No branch flag is added.
+- The P1a task and its test table: `task-opencode-p1a.md`.
+
+## 16. P1b decisions and technical design (added 2026-10-27)
+
+### 16.1 User decisions (2026-10-27)
+- **D4 — one delivery date per optimisation job, for every branch** (09:45, "tôi chọn a"). The engine plans one day: 08:00 start, times of day only (`context-p1b.md` §2). A job whose orders span several `deliveryDate`s is refused with 400 and lists the dates. This also fixes the existing defect for branches without zones, a scope addition by user decision.
+- **D5 — LEZ violations are hard on revision save** (2026-10-27, answer to the question round that preceded the 09:45 message; recommended option). This is consistent with the existing 422 for capacity, time-window and skill violations. Preview still shows them. Engine-generated solutions keep `VIOLATION` and are blocked at send. This replaces the earlier note in §13 ("can still save a violating revision").
+- **D6 — Engine test exclusions** for LEZ-001 runs: `JspritConvergenceBenchmarkTest`, `CircuityFactorMeasurementTest` (not edited, not disabled, only not run; listed under Deviations).
+
+### 16.2 Technical design (refines §4–§5; implementation choices)
+1. **The engine stays law-free and zone-free in P1.** Entry compiles. The engine receives only extra skills:
+   - `lezSkills` (`Set<String>`) on the engine **Order** and **Vehicle** DTOs, on both sides;
+   - the engine adds them with `addRequiredSkill` / `addSkill` beside the existing skills;
+   - vehicles unusable under LEZ (depot in an ALL_DAY zone) are **left out of the request** by Entry.
+2. **Unassigned reason** `LEZ_NO_COMPLIANT_VEHICLE` is assigned by **Entry** at callback time (it knows the compiled restrictions). Rule: an unassigned order with zone keys where no vehicle in the request carried all of its LEZ skills. The text names the zone(s). `unassigned_orders.reason_code` is added.
+3. **Geometry.** The engine fills `Stop.geometryToNext` (encoded polyline, precision 1e5, Google polyline algorithm, `[lat, lon]` order) for every stop except the last:
+   - in the single-objective result;
+   - in **every FRONTIER alternative**;
+   - in the **evaluate** response.
+
+   It uses a new `RoutePathProvider` interface (GraphHopper implementation: profile `car`, the same router as the matrix). A leg that cannot be routed leaves the field null and is logged.
+4. **Turn instructions** are not in optimisation results (payload size). A new engine endpoint `POST /api/v1/optimization/legs` takes ordered points plus a locale and returns, per leg, the polyline, distance, time and instructions. Entry calls it **at send time**, and only when the route lacks geometry or instructions, then stores them on `RouteStop`. Locale `vi` if GraphHopper's translations provide it, else `en` (verify and record).
+5. **Entry `ComplianceChecker` is the only verdict** (§5.3), on stored geometry. In P1 it evaluates ALL_DAY **and PARTIAL** restrictions (§5.3 phase note). Additional code `LEZ_GEOMETRY_MISSING`: a leg without geometry while the branch has enabled zones. It blocks.
+6. **Ruleset hash:** SHA-256 of the canonical compiled restrictions for (branch, date), covering enabled zones with their effective version or copy rules, geometry, rules, permits and vehicle legal facts. `STALE` is computed on read (stored hash ≠ current hash). It is never written by a GET.
+7. **Branch without enabled zones:** compilation is empty, every route is `COMPLIANT`, and no LEZ skill is added. Behaviour is unchanged except for D4.
+8. **Polygons are not sent to the engine** in P1. They are needed only from P3 (avoidance).

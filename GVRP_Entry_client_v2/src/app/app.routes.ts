@@ -93,6 +93,12 @@ export const routes: Routes = [
             .then(m => m.DepotsAdminComponent)
       },
       {
+        path: 'zones',
+        loadComponent: () =>
+          import('./features/admin/zones/zones-admin.component')
+            .then(m => m.ZonesAdminComponent)
+      },
+      {
         path: '',
         redirectTo: 'vehicle-types',
         pathMatch: 'full'

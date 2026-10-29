@@ -1,3 +1,5 @@
+import type { RouteLegInstructionDTO } from './lez.model';
+
 export interface DriverDTO {
   id: number;
   username: string;
@@ -36,6 +38,12 @@ export interface DriverStopDTO {
   customer_phone: string | null;
   delivery_notes: string | null;
   demand: number | null;
+  /** Encoded polyline of the leg to the next stop (LEZ-001, D1); absent on old data. */
+  geometry_to_next?: string | null;
+  /** Turn-by-turn instructions of that leg; absent on old data. */
+  instructions_to_next?: RouteLegInstructionDTO[] | null;
+  /** Enabled low-emission zones covering this stop; absent on old data. */
+  zone_names?: string[] | null;
 }
 
 export interface DriverRouteDTO {

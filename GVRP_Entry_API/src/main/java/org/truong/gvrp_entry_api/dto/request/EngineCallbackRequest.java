@@ -151,6 +151,9 @@ public class EngineCallbackRequest {
 
         private BigDecimal distanceToNext;
         private BigDecimal timeToNext;
+
+        /** Encoded polyline of the leg to the next stop (LEZ-001); null on the last stop. */
+        private String geometryToNext;
     }
 
     /**

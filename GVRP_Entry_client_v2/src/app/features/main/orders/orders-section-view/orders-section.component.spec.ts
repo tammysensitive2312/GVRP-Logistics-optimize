@@ -8,6 +8,7 @@ import { signal } from '@angular/core';
 import { OrderDTO } from '@core/models';
 import { PaginatedResponse } from '@core/models';
 import { ApiService } from '@core/services/api.service';
+import { LezApiService } from '@core/services/lez-api.service';
 import { SolutionStore } from '@core/services/solution.store';
 import { ToastService } from '@shared/services/toast.service';
 import { VehicleSelectionService } from '@shared/services/vehicle-selection.service';
@@ -54,12 +55,16 @@ describe('OrdersSectionComponent bulk edit', () => {
     const store = jasmine.createSpyObj<SolutionStore>('SolutionStore',
       ['loadById', 'setSolution', 'clear']);
     (store as unknown as { solution: unknown }).solution = signal(null).asReadonly();
+    // D8 setup only: the section now asks for the order zone badges (LEZ-001 P1c).
+    const lez = jasmine.createSpyObj<LezApiService>('LezApiService', ['orderZones']);
+    lez.orderZones.and.returnValue(of([]));
     const router = jasmine.createSpyObj<Router>('Router', ['navigate']);
 
     await TestBed.configureTestingModule({
       imports: [OrdersSectionComponent, NoopAnimationsModule],
       providers: [
         { provide: ApiService, useValue: api },
+        { provide: LezApiService, useValue: lez },
         { provide: MatDialog, useValue: dialog },
         { provide: ToastService, useValue: toast },
         { provide: VehicleSelectionService, useValue: vehicles },

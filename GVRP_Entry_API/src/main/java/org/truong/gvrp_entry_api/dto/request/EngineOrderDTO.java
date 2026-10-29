@@ -28,4 +28,12 @@ public class EngineOrderDTO {
     private Integer priority;
 
     private Set<VehicleSkill> requiredSkills = new LinkedHashSet<>();
+
+    /**
+     * LEZ skills compiled by Entry ({@code LEZ_<zoneKey>}): one per enabled zone
+     * the order lies in. Omitted when empty, so jobs without zones send exactly
+     * the previous payload.
+     */
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
+    private Set<String> lezSkills = new LinkedHashSet<>();
 }

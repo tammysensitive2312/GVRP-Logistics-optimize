@@ -21,7 +21,9 @@ import { SolutionDTO } from '@core/models';
 import {
   CustomizeRoutesPayload,
   EvaluatePreviewDTO,
+  RouteComplianceDTO,
   RouteDTO,
+  SolutionComplianceDTO,
   StopDTO
 } from '@core/models';
 import { ApiService } from '@core/services/api.service';
@@ -39,6 +41,7 @@ import {
   orderStops,
   routeColor
 } from '@shared/utils/solution-view.utils';
+import { serverErrorMessage } from '@shared/utils/api-error.utils';
 
 interface StopVM {
   isDepot: boolean;
@@ -105,6 +108,15 @@ const UNDO_DEPTH = 30;
 })
 export class RouteViewComponent implements OnDestroy {
   readonly solution = input.required<SolutionDTO>();
+
+  /**
+   * Compliance of the active solution (LEZ-001 P1c, design §3.6). The default
+   * null means "unknown", which keeps today's send behaviour unchanged.
+   */
+  readonly compliance = input<SolutionComplianceDTO | null>(null);
+
+  /** Emitted after a 422 on send so the panel can refresh its verdict. */
+  readonly complianceRecheckNeeded = output<void>();
 
   /** Emitted when a route card header is clicked (V1 left this as a TODO). */
   readonly routeSelected = output<number>();
@@ -237,9 +249,65 @@ export class RouteViewComponent implements OnDestroy {
     return this.assignees().get(route.routeId) ?? null;
   }
 
+  /**
+   * Why this route may not be sent, or null when sending is allowed (LEZ-001
+   * P1c, design §3.6). Unknown compliance keeps today's behaviour; the server
+   * guard remains the authority.
+   *
+   * A violation made only of `LEZ_GEOMETRY_MISSING` does not block: the send
+   * guard fetches the missing legs from the engine before it checks compliance,
+   * so the same route can pass (review-p1c R1).
+   */
+  sendBlockedReason(route: RouteCardVM): string | null {
+    const row = this.complianceRow(route);
+    if (!row || row.status === 'COMPLIANT') {
+      return null;
+    }
+    if (row.status === 'VIOLATION') {
+      if (this.isGeometryOnly(row)) {
+        return null;
+      }
+      const codes = [...new Set((row.violations ?? []).map(violation => violation.code))];
+      return codes.length > 0
+        ? `Fix the low-emission violations before sending: ${codes.join(', ')}.`
+        : 'This route violates the low-emission zone rules.';
+    }
+    return 'Recheck the low-emission compliance before sending.';
+  }
+
+  /**
+   * Shown next to an enabled send button whose only open question is the road
+   * geometry, so the planner knows the legs are fetched during the send.
+   */
+  sendNote(route: RouteCardVM): string | null {
+    const row = this.complianceRow(route);
+    return row && row.status === 'VIOLATION' && this.isGeometryOnly(row)
+      ? 'Road geometry is fetched and checked when you send.'
+      : null;
+  }
+
+  /** True when every stored violation is `LEZ_GEOMETRY_MISSING` (and there is one). */
+  private isGeometryOnly(row: RouteComplianceDTO): boolean {
+    const codes = (row.violations ?? []).map(violation => violation.code);
+    return codes.length > 0 && codes.every(code => code === 'LEZ_GEOMETRY_MISSING');
+  }
+
+  private complianceRow(route: RouteCardVM): RouteComplianceDTO | null {
+    const compliance = this.compliance();
+    if (!compliance || route.routeId === null) {
+      return null;
+    }
+    return (compliance.routes ?? []).find(row => row.route_id === route.routeId) ?? null;
+  }
+
   openSendDialog(route: RouteCardVM): void {
     if (route.routeId === null) {
       this.toast.error('Route has no id; reload the plan and retry.');
+      return;
+    }
+    const blocked = this.sendBlockedReason(route);
+    if (blocked) {
+      this.toast.error(blocked);
       return;
     }
     const data: SendRouteDialogData = {
@@ -259,9 +327,12 @@ export class RouteViewComponent implements OnDestroy {
             this.refreshAssignees();
           },
           error: (error: unknown) => {
-            const message = (error as { error?: { errors?: { message?: string }[] } })
-              .error?.errors?.[0]?.message;
-            this.toast.error(message ?? 'Could not send the route.');
+            this.toast.error(serverErrorMessage(error, 'Could not send the route.'));
+            // 422 is the server's compliance refusal (design §3.6): the stored
+            // verdict is stale, so ask the panel for a fresh one.
+            if ((error as { status?: number }).status === 422) {
+              this.complianceRecheckNeeded.emit();
+            }
           }
         });
       });
@@ -540,26 +611,22 @@ export class RouteViewComponent implements OnDestroy {
     if (status === 0 || status === 502) {
       return 'Evaluation service is unreachable. Your edits are kept; retry or discard.';
     }
-    const message = (error as { error?: { errors?: { message?: string }[] } })
-      .error?.errors?.[0]?.message;
-    return message ?? 'Could not evaluate the draft. Retry or discard.';
+    return serverErrorMessage(error, 'Could not evaluate the draft. Retry or discard.');
   }
 
   private describeSaveError(error: unknown): string {
     const status = (error as { status?: number }).status;
-    const message = (error as { error?: { errors?: { message?: string }[] } })
-      .error?.errors?.[0]?.message;
     if (status === 409) {
       this.saveConflict.set(true);
-      return (message ?? 'A newer revision exists.')
+      return serverErrorMessage(error, 'A newer revision exists.')
         + ' Load the latest revision to continue.';
     }
     if (status === 422) {
-      return message ?? 'The plan violates hard constraints and was not saved.';
+      return serverErrorMessage(error, 'The plan violates hard constraints and was not saved.');
     }
     if (status === 0 || status === 502) {
       return 'Evaluation service is unreachable. Your edits are kept; retry or discard.';
     }
-    return message ?? 'Could not save the revision. Retry or discard.';
+    return serverErrorMessage(error, 'Could not save the revision. Retry or discard.');
   }
 }

@@ -11,7 +11,10 @@ import org.truong.gvrp_engine_api.model.EngineOptimizationRequest;
 import org.truong.gvrp_engine_api.model.EngineOptimizationResponse;
 import org.truong.gvrp_engine_api.model.RouteEvaluateRequest;
 import org.truong.gvrp_engine_api.model.RouteEvaluateResponse;
+import org.truong.gvrp_engine_api.model.RouteLegsRequest;
+import org.truong.gvrp_engine_api.model.RouteLegsResponse;
 import org.truong.gvrp_engine_api.service.CallbackService;
+import org.truong.gvrp_engine_api.service.LegsService;
 import org.truong.gvrp_engine_api.service.OptimizationService;
 import org.truong.gvrp_engine_api.service.ResultSpool;
 import org.truong.gvrp_engine_api.service.RouteEvaluationService;
@@ -30,6 +33,12 @@ public class OptimizationController {
     private final ResultSpool resultSpool;
     private final CallbackService callbackService;
     private final RouteEvaluationService routeEvaluationService;
+    /**
+     * Leg geometry (LEZ-001 E4). Field-injected so the historical constructor keeps
+     * its five arguments, which the existing controller tests build.
+     */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private LegsService legsService;
 
     @PostMapping
     public ResponseEntity<EngineOptimizationResponse> optimize(
@@ -246,6 +255,34 @@ public class OptimizationController {
             return ResponseEntity.status(e.getStatusCode()).body(body);
         } catch (Exception e) {
             log.error("Unexpected error evaluating routes", e);
+            Map<String, Object> body = new HashMap<>();
+            body.put("status", "ERROR");
+            body.put("message", "Internal server error: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(body);
+        }
+    }
+
+    /**
+     * Per-leg geometry and turn instructions between consecutive points.
+     *
+     * <p>Synchronous: one routing query per leg. Entry calls it at send time,
+     * only for routes whose stops still lack geometry or instructions. A leg the
+     * router cannot serve comes back with {@code polyline: null} and an
+     * {@code error} code; the request itself still succeeds.
+     */
+    @PostMapping("/legs")
+    public ResponseEntity<?> legs(@RequestBody RouteLegsRequest request) {
+        try {
+            RouteLegsResponse response = legsService.build(request);
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            log.warn("Legs rejected: {}", e.getMessage());
+            Map<String, Object> body = new HashMap<>();
+            body.put("status", "REJECTED");
+            body.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(body);
+        } catch (Exception e) {
+            log.error("Unexpected error building legs", e);
             Map<String, Object> body = new HashMap<>();
             body.put("status", "ERROR");
             body.put("message", "Internal server error: " + e.getMessage());

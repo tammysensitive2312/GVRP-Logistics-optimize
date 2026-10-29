@@ -45,6 +45,14 @@ public class OptimizationCallbackService {
     private final JobStatusUpdater jobStatusUpdater;
     private final OrderStatusTransitionService orderStatusTransitionService;
 
+    /**
+     * LEZ certification (LEZ-001). Field-injected and optional so the P1a/earlier
+     * unit tests, which construct this service through @InjectMocks with the
+     * historical collaborators, keep their exact behaviour.
+     */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private org.truong.gvrp_entry_api.service.lez.RouteComplianceService routeComplianceService;
+
     @Transactional
     public void handleCompletion(EngineCallbackRequest.CompletionCallback callback) {
         try {
@@ -340,6 +348,8 @@ public class OptimizationCallbackService {
 
         if (solutionData.getUnassignedOrders() != null && !solutionData.getUnassignedOrders().isEmpty()) {
             List<UnassignedOrder> unassignedList = enginePlanMaterializer.buildUnassignedOrder(solution, solutionData.getUnassignedOrders(), orderMap);
+            applyLezUnassignedReasons(job, unassignedList);
+            solution.getUnassignedOrders().addAll(unassignedList);
             solution.getUnassignedOrders().addAll(unassignedList);
 
             if (!unassignedList.isEmpty()) {
@@ -395,6 +405,7 @@ public class OptimizationCallbackService {
             }
 
 //            routeStopRepository.saveAll(allStops);
+            certifyRoutes(job, routes, orderMap);
             solution.getRoutes().addAll(routes);
 
             if (!assignedOrderIds.isEmpty()) {
@@ -416,6 +427,81 @@ public class OptimizationCallbackService {
 
         return solutionRepository.save(solution);
     }
+
+    /**
+     * Certifies every materialised route against the job snapshot (LEZ-001 N6a).
+     * The snapshot is what the solver ran with, so a template changed after the
+     * job was submitted cannot retroactively rewrite this result.
+     *
+     * <p>The stored {@code lez_ruleset_hash} is the hash of a <em>solution-scoped</em>
+     * compile taken now (same orders and vehicles the read APIs use), not the
+     * snapshot hash: the snapshot covers the job's full vehicle set, so comparing
+     * it later would mark every route {@code STALE} as soon as one vehicle ended
+     * up unused.
+     */
+    private void certifyRoutes(OptimizationJob job, List<Route> routes, Map<Long, Order> orderMap) {
+        if (routeComplianceService == null || routes == null || routes.isEmpty()) {
+            return;
+        }
+        org.truong.gvrp_entry_api.service.lez.CompiledRestrictions verdict =
+                routeComplianceService.readSnapshot(job.getLezSnapshot());
+        if (verdict == null) {
+            return;
+        }
+        org.truong.gvrp_entry_api.service.lez.CompiledRestrictions forHash =
+                currentScope(job, routes, orderMap);
+        for (Route route : routes) {
+            List<org.truong.gvrp_entry_api.service.lez.ComplianceChecker.Violation> violations =
+                    routeComplianceService.check(route, verdict);
+            routeComplianceService.certify(route, violations, forHash != null ? forHash : verdict);
+        }
+    }
+
+    /** Branch, date, orders and vehicles the read APIs will use to recompute the hash. */
+    private org.truong.gvrp_entry_api.service.lez.CompiledRestrictions currentScope(
+            OptimizationJob job, List<Route> routes, Map<Long, Order> orderMap) {
+        if (job.getBranch() == null || orderMap == null || orderMap.isEmpty()) {
+            return null;
+        }
+        java.time.LocalDate serviceDate =
+                org.truong.gvrp_entry_api.service.lez.RouteComplianceService
+                        .serviceDateOf(orderMap.values());
+        if (serviceDate == null) {
+            return null;
+        }
+        List<Vehicle> vehicles = routes.stream()
+                .map(Route::getVehicle)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toMap(Vehicle::getId, vehicle -> vehicle, (a, b) -> a))
+                .values().stream().toList();
+        return routeComplianceService.compileFor(
+                job.getBranch().getId(), serviceDate, orderMap.values(), vehicles);
+    }
+
+    /**
+     * Marks unassigned orders that no vehicle in the request could serve because of
+     * an LEZ ban (design §16.2-2). Orders outside every zone keep the engine reason.
+     */
+    private void applyLezUnassignedReasons(OptimizationJob job, List<UnassignedOrder> unassigned) {
+        if (routeComplianceService == null || unassigned == null || unassigned.isEmpty()) {
+            return;
+        }
+        org.truong.gvrp_entry_api.service.lez.CompiledRestrictions restrictions =
+                routeComplianceService.readSnapshot(job.getLezSnapshot());
+        if (restrictions == null || !restrictions.hasZones()) {
+            return;
+        }
+        for (UnassignedOrder row : unassigned) {
+            Long orderId = row.getOrder() != null ? row.getOrder().getId() : null;
+            if (org.truong.gvrp_entry_api.service.lez.RouteComplianceService
+                    .noCompliantVehicle(restrictions, orderId)) {
+                row.setReasonCode(org.truong.gvrp_entry_api.service.lez.RouteComplianceService.LEZ_NO_COMPLIANT_VEHICLE);
+                row.setReason(org.truong.gvrp_entry_api.service.lez.RouteComplianceService
+                        .noCompliantVehicleReason(restrictions, orderId));
+            }
+        }
+    }
+
 
     /**
      * Persist every Pareto candidate of a job and return the engine-selected row

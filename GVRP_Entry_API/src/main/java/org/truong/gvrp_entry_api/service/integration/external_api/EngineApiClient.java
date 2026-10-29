@@ -1,11 +1,14 @@
 package org.truong.gvrp_entry_api.service.integration.external_api;
 
 import org.truong.gvrp_entry_api.dto.request.EngineEvaluateRequestDTO;
+import org.truong.gvrp_entry_api.dto.request.EngineLegsRequestDTO;
 import org.truong.gvrp_entry_api.dto.request.EngineOptimizationRequest;
 import org.truong.gvrp_entry_api.dto.response.EngineEvaluateResponseDTO;
+import org.truong.gvrp_entry_api.dto.response.EngineLegsResponseDTO;
 import org.truong.gvrp_entry_api.exception.DataInvalidException;
 import org.truong.gvrp_entry_api.exception.EngineUnavailableException;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -38,5 +41,17 @@ public interface EngineApiClient {
      * @throws DataInvalidException khi engine từ chối payload (400/413)
      */
     EngineEvaluateResponseDTO evaluateRoutes(EngineEvaluateRequestDTO request);
+
+    /**
+     * Asks the engine for the geometry and turn instructions of consecutive legs
+     * (LEZ-001). One engine call routes every leg of one route.
+     *
+     * @param points ordered points of the route; at least two
+     * @param locale instruction language tag, e.g. {@code vi}; null for the engine default
+     * @return one leg per consecutive point pair; a leg may carry an error code
+     * @throws EngineUnavailableException khi engine không tới được hoặc lỗi 5xx
+     * @throws DataInvalidException khi engine từ chối payload (400)
+     */
+    EngineLegsResponseDTO legs(List<EngineLegsRequestDTO.Point> points, String locale);
 
 }

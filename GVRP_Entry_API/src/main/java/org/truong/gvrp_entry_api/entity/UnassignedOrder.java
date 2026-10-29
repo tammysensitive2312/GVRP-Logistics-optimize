@@ -32,4 +32,8 @@ public class UnassignedOrder extends BaseEntity{
     @Column(name = "reason")
     private String reason;
 
+    /** Machine-readable engine reason, e.g. {@code LEZ_UNREACHABLE} (LEZ-001). */
+    @Column(name = "reason_code", length = 40)
+    private String reasonCode;
+
 }

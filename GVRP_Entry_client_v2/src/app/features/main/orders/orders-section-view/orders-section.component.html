@@ -68,6 +68,7 @@
           [totalElements]="totalElements"
           [pageSize]="pageSize"
           [currentPage]="currentPage"
+          [zoneNamesByOrder]="zoneNamesByOrder()"
           (pageChange)="onPageChange($event)"
           (selectionChange)="onOrderSelectionChange($event)"
           (editOrder)="onEditOrder($event)"
@@ -88,7 +89,16 @@
       <!-- Tab Content -->
       <div class="routes-tab-content">
         @if (solution(); as activeSolution) {
-          <app-route-view [solution]="activeSolution"></app-route-view>
+          <app-compliance-panel
+            #compliancePanel
+            [solution]="activeSolution"
+            (complianceChange)="routeCompliance.set($event)">
+          </app-compliance-panel>
+          <app-route-view
+            [solution]="activeSolution"
+            [compliance]="routeCompliance()"
+            (complianceRecheckNeeded)="compliancePanel.recheck()">
+          </app-route-view>
         } @else {
           <div class="empty-state">
             <mat-icon>route</mat-icon>

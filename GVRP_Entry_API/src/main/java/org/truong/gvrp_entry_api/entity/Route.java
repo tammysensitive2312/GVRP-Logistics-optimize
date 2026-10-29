@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.CreationTimestamp;
+import org.truong.gvrp_entry_api.entity.enums.LezStatus;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -57,6 +58,24 @@ public class Route {
 
     @Column(name = "load_utilization", precision = 5, scale = 2)
     private BigDecimal loadUtilization;
+
+    // ==================== LEZ COMPLIANCE (LEZ-001) ====================
+
+    /** Outcome of the last compliance check; null on rows created before P1b. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "lez_status", length = 20)
+    private LezStatus lezStatus;
+
+    @Column(name = "lez_checked_at")
+    private LocalDateTime lezCheckedAt;
+
+    /** SHA-256 of the compiled restrictions the check used; {@code STALE} is derived from it. */
+    @Column(name = "lez_ruleset_hash", columnDefinition = "CHAR(64)")
+    private String lezRulesetHash;
+
+    /** JSON array of violations; null when compliant or unchecked. */
+    @Column(name = "lez_violations", columnDefinition = "JSON")
+    private String lezViolations;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

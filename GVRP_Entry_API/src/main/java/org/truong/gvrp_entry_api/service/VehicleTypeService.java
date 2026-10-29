@@ -9,12 +9,14 @@ import org.truong.gvrp_entry_api.entity.Branch;
 import org.truong.gvrp_entry_api.entity.VehicleType;
 import org.truong.gvrp_entry_api.exception.DataInvalidException;
 import org.truong.gvrp_entry_api.exception.ErrorDetail;
+import org.truong.gvrp_entry_api.exception.ErrorDetails;
 import org.truong.gvrp_entry_api.mapper.VehicleTypeMapper;
 import org.truong.gvrp_entry_api.repository.BranchRepository;
 import org.truong.gvrp_entry_api.repository.VehicleTypeRepository;
 import org.truong.gvrp_entry_api.util.AppConstant;
 import org.truong.gvrp_entry_api.util.ErrorCode;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
@@ -37,6 +39,7 @@ public class VehicleTypeService {
                                         .build()
                         )));
 
+        validateLegalAttributes(dto);
         var vehicleTypeEntity = typeMapper.toEntity(dto);
         vehicleTypeEntity.setVehicleFeatures(
                 featuresService.toJson(dto.getFeatures())
@@ -62,6 +65,7 @@ public class VehicleTypeService {
                                         .build()
                         )));
 
+        validateLegalAttributes(input);
         existingType.setTypeName(input.getTypeName());
         existingType.setVehicleFeatures(
                 featuresService.toJson(input.getFeatures())
@@ -73,8 +77,26 @@ public class VehicleTypeService {
         existingType.setCostPerHour(input.getCostPerHour());
         existingType.setMaxDistance(input.getMaxDistance());
         existingType.setMaxDuration(input.getMaxDuration());
+        existingType.setLegalClass(input.getLegalClass());
+        existingType.setGrossWeightKg(input.getGrossWeightKg());
+        existingType.setEnergyType(input.getEnergyType());
+        existingType.setEmissionStandard(input.getEmissionStandard());
 
         var updatedType = typeRepository.save(existingType);
         return typeMapper.toDTO(updatedType);
+    }
+
+    /** Legal attributes are optional (LEZ-R04); numbers must be non-negative. */
+    private void validateLegalAttributes(VehicleTypeInputDTO input) {
+        List<ErrorDetail> errors = new ArrayList<>();
+        if (input.getGrossWeightKg() != null && input.getGrossWeightKg() < 0) {
+            errors.add(ErrorDetails.validationWithField("grossWeightKg"));
+        }
+        if (input.getEmissionStandard() != null && input.getEmissionStandard() < 0) {
+            errors.add(ErrorDetails.validationWithField("emissionStandard"));
+        }
+        if (!errors.isEmpty()) {
+            throw new DataInvalidException(errors);
+        }
     }
 }

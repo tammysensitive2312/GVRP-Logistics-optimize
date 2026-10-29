@@ -1,0 +1,119 @@
+@import '../../../../../assets/styles/variables';
+@import '../../../../../assets/styles/buttons';
+@import '../../../../../assets/styles/tables';
+
+@include admin-button-rules;
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: $space-lg;
+
+  th,
+  td {
+    text-align: left;
+    padding: $space-sm;
+    border-bottom: 1px solid $border-color;
+    font-size: $font-size-base;
+  }
+}
+
+.row-actions {
+  display: flex;
+  gap: $space-sm;
+  align-items: center;
+}
+
+.permit-form {
+  border-top: 1px solid $border-color;
+  padding-top: $space-lg;
+  margin-top: $space-md;
+}
+
+.section-title {
+  font-size: $font-size-base;
+  font-weight: $font-weight-semibold;
+  color: $text-dark;
+  margin: 0 0 $space-md;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: $space-md;
+}
+
+.form-group {
+  margin-bottom: $space-md;
+
+  label {
+    display: block;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    color: $text-dark;
+    margin-bottom: $space-xs;
+  }
+
+  input[type='text'],
+  input[type='date'],
+  select {
+    width: 100%;
+    box-sizing: border-box;
+    padding: $space-sm;
+    border: 1px solid $border-color;
+    border-radius: $radius-sm;
+    font-family: $font-family;
+    font-size: $font-size-base;
+  }
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: $space-sm;
+}
+
+.checkbox-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $space-sm;
+}
+
+.checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: $space-xs;
+  font-size: $font-size-sm;
+  color: $text-dark;
+}
+
+.interval-row {
+  display: flex;
+  align-items: center;
+  gap: $space-xs;
+  margin-bottom: $space-xs;
+}
+
+.interval-input {
+  width: 80px;
+  padding: $space-xs;
+  border: 1px solid $border-color;
+  border-radius: $radius-sm;
+  font-family: $font-family-mono;
+}
+
+.interval-sep {
+  color: $text-gray;
+}
+
+.form-hint {
+  font-size: $font-size-sm;
+  color: $text-gray;
+  margin: 0 0 $space-md;
+}
+
+.form-error {
+  font-size: $font-size-sm;
+  color: $danger-red;
+  margin: $space-xs 0;
+}

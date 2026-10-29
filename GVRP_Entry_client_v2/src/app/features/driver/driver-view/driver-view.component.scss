@@ -248,6 +248,17 @@
   color: #555;
 }
 
+// LEZ-001 P1c: enabled low-emission zones covering a stop (C10).
+.driver-zone {
+  align-self: flex-start;
+  padding: 0.1rem 0.4rem;
+  border-radius: 0.6rem;
+  background: rgba(180, 35, 24, 0.1);
+  color: #b42318;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
 .driver-badge {
   font-size: 0.65rem;
   padding: 0.15rem 0.35rem;

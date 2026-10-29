@@ -1,0 +1,67 @@
+{
+  "revision": 7,
+  "completed": [
+    "Step 0: session brief and recover -> state implement, revision 7; migrations 2026-10-27-lez-zones.sql and 2026-10-28-lez-compliance.sql already applied to the local gvrp_db (verified, not run by the agent); ng serve stopped; no P1b blocker for P1c was found, so the user decision of 2026-10-28 07:43 (P1b manual test postponed, not cancelled) was honoured",
+    "Step 1 baselines, before any P1c change: Entry mvnw.cmd -B clean test -> 246 run, 0 failures, BUILD SUCCESS (baseline-entry-p1c.log); client npx ng test --watch=false --browsers=ChromeHeadless -> 245 SUCCESS (baseline-client-p1c.log); npm run build -> EXIT=0 (baseline-client-build-p1c.log). No pre-existing failure to record",
+    "B1: read-only GET /api/v1/lez/order-zones?orderIds=... (ZoneMembershipService, LezMembershipController, OrderZoneMembershipDTO); branch from the principal only, 1..200 ids, ids of another branch or unknown ids omitted, enabled zones only, effectiveGeometry (LINKED template / COPIED copy) and GeoJsonGeometryParser.covers with boundary = inside; @Transactional(readOnly = true); no coordinates logged",
+    "B2: SolutionComplianceDTO gained zones and lez_unassigned; ComplianceReadService compiles once and reuses the result for the hash and the zone references; LEZ-only unassigned rows (reason_code starting with LEZ_); STALE/UNCHECKED logic and the constructor unchanged",
+    "Part B verification: Entry 263 run, 0 failures, BUILD SUCCESS (p1c-partb-entry.log); new ZoneMembershipServiceTest 9, LezMembershipRoleAccessTest 4, ComplianceReadAdditionsTest 4 = 17 = 263 - 246",
+    "C0: core/models/lez.model.ts (+ index export) with wire-exact snake_case keys, vehicle legal fields typed optional-with-null, DriverStopDTO geometry_to_next / instructions_to_next / zone_names, core/services/lez-api.service.ts, shared/utils/polyline.utils.ts (local decoder 1e5), lez-format.utils.ts, api-error.utils.ts; PU-T1 (3) and 5 format tests",
+    "C3: vehicle-type admin dialog shows the legal fields, the suggested value with an explicit Use suggestion action (never applied silently), a missing-data hint, and always sends all four legal keys (null when empty); list shows a LEZ data missing badge; new vehicle-type-dialog.component.spec.ts (VT-T1, 4)",
+    "C1/C2: features/admin/zones/ page (templates read-only, Enable -> LINKED, Copy -> COPIED, enable toggle, update notice + acknowledge, delete, map preview with depots, DEPOT_IN_ZONE banner, one-vehicle verdict check) and COPIED editor (GeoJSON paste or file <= 2 MB, L.geoJSON preview, structured rule form, client validation mirroring RuleValidator); admin/zones route and menu entry; zone-rule-form.utils.ts (11 RF tests), zones-admin.component.spec.ts (ZP-T1, 6), zone-editor-dialog.component.spec.ts (ZP-T2, 5)",
+    "C4: vehicle-permits-dialog (list/create/edit/delete per vehicle, Whole day -> schedule null, Only during -> ALLOWED_ONLY with intervals and optional days, ALWAYS_FORBIDDEN not offered, delete after confirmation); vehicles admin Permits button and openPermits(); vehicle-permits-dialog.component.spec.ts (VP-T1, 6)",
+    "C5/C6: OrdersSectionComponent loadOrderZones() -> zoneNamesByOrder signal, orders-table zoneNamesByOrder input with LEZ: <zone> chips (silent on error, no toast); plan action refuses a selection with more than one delivery_date and names both dates; submit errors show the server message (D4); orders-section-lez.component.spec.ts (OB-T1/JD-T1, 4)",
+    "C7: features/main/orders/lez-compliance-panel/ (one row per route: status chip, checked-at, violations with stop name from orderStops by seq and zone name from zones, Recheck now, LEZ-unassigned orders, one line when no zone applies and all COMPLIANT; a violation click calls MapService.focusLeg); wired into the Route tab above the route view via complianceChange / complianceRecheckNeeded; compliance-panel.component.spec.ts (CP-T1, 8)",
+    "C8: RouteViewComponent optional compliance input (default null = unknown) + complianceRecheckNeeded output; send disabled with the reason while the route is known not to be COMPLIANT (VIOLATION -> codes, STALE/UNCHECKED -> Recheck...), 422 on send asks the panel for a fresh verdict, null keeps today's behaviour; route-view-lez.component.spec.ts (RV-T1, 6)",
+    "C9: MapService draws the stored geometry when every leg has a polyline (no OSRM request), draws enabled zones once per displaySolution in their own layer (light red fill, name tooltip, cleared with the routes), focusLeg(routeId, seq) highlights the leg/stop and moves the view, failures fall back silently (console.warn); the decision is the pure shared/utils/route-geometry.utils.ts#completeRoutePolyline; route-geometry.utils.spec.ts (MP-T1, 11)",
+    "C10: driver view uses stored leg polylines and stored instruction text instead of OSRM when the geometry is complete and at least one leg carries instructions (same distance > 0 filter), keeps today's path otherwise, and renders LEZ: <name> chips from zone_names; driver-view-lez.component.spec.ts (DV-T1, 5)",
+    "Step 3 verification: Entry mvnw.cmd -B clean test (from GVRP_Entry_API, JAVA_HOME = JDK 21) -> 263 run, 0 failures, 0 errors, 0 skipped, BUILD SUCCESS, EXIT=0, no exclusions; GvrpEntryApiApplicationTests (1) and DepotMapperTest (2) executed and passed (p1c-entry-final3.log)",
+    "Step 3 verification: client npx ng test --watch=false --browsers=ChromeHeadless -> 319 SUCCESS, 0 failed (p1c-client-c9c.log); npm run build -> EXIT=0 (p1c-client-build2.log); 74 new client tests = 319 - 245, counted from it( in the 12 new spec files",
+    "Step 3 static checks: router.project-osrm.org only in shared/services/routing.service.ts; no new console.log (pre-existing ones in orders-section, sidebar, edit-order-dialog, main, auth unchanged); no coordinate, customer or token logging added; no Engine API file written today (mtime); package.json, package-lock.json, angular.json, tsconfig*, public/**, SecurityConfig, pom.xml, application*.properties, .github/, AGENTS.md, docs/ and migrations unchanged; only the two orders-section specs modified, each with the D8 setUp-only provider",
+    "work-items/LEZ-001/implementation.md: new ## P1c section (Scope, Baseline, Changes Made 1-11, Commands Executed, Verification Results, Modified Tests, Security-Relevant Changes, Remaining Uncertainty, Handoff)"
+  ],
+  "remaining": [
+    "P1-seed (Hanoi zone templates) is not installed, so the zones page can only list templates inserted by hand; nothing in P1c seeds data and the LEZ screens were exercised against mocked LezApiService only (NOT_VERIFIED end to end)",
+    "User browser check of the P1c screens: zones page (enable/copy/edit geometry and rules/verdict), vehicle-type legal fields and suggestion, permits dialog, order badge, D4 refusal, compliance panel + Recheck, a disabled Send to driver with its reason, planner map overlay and violation focus, driver view instructions and zone chips",
+    "P1b manual test stays postponed (user decision 2026-10-28 07:43): F1's fix and the whole send guard remain NOT_VERIFIED end to end until the user runs review-p1b section 5 step 4",
+    "Still open from P1b and untouched by P1c: findings F2-F8, the Deviation 2/10/13/14 decisions, and SEC-010 (unauthenticated Engine /legs)",
+    "P1c verified state transition (implement -> verify) is deliberately not recorded here; it belongs to the user's review decision after the browser check",
+    "zones-admin.component.scss (4.97 kB compiled) and orders-table.component.scss (7.93 kB compiled) exceed the 4 kB warning budget; both stay under the 8 kB error budget and angular.json was not changed",
+    "Claude/user review of the P1c implementation record against the allowed-file list of task-opencode-p1c.md; the working tree is still uncommitted on feature/lez-001 (no commit or push was made)"
+  ],
+  "read_next": [
+    "work-items/LEZ-001/task-opencode-p1c.md",
+    "work-items/LEZ-001/implementation.md",
+    "work-items/LEZ-001/design-p1c.md",
+    "work-items/LEZ-001/run.json"
+  ],
+  "blockers": [
+    "No browser check was performed in this session, so screen acceptance (layout, Leaflet zone overlay, violation focus, dialog flows) is unverified",
+    "No MySQL write and no migration was performed by the agent (read-only local database, agent_reader); P1-seed templates and real end-to-end LEZ runs stay with the user"
+  ],
+  "decisions": [
+    "D7 accepted: COPIED zone rules are edited through a structured form and mapped by pure functions (zone-rule-form.utils.ts)",
+    "D8 accepted: only orders-section.component.spec.ts, orders-section-pareto.component.spec.ts, route-view.component.spec.ts, driver-view.component.spec.ts and send-route-dialog.component.spec.ts may gain mock methods/providers in beforeEach; only the first two needed it, each listed under Modified Tests with reason D8 setup only",
+    "The new /api/v1/lez/order-zones endpoint falls under the existing /api/v1/** PLANNER rule; SecurityConfig was not changed",
+    "New vehicle-type legal fields are typed optional-with-null to keep accepted specs compiling, while the admin dialog always sends all four keys (null when empty)",
+    "New client specs were created as separate files so the five named existing specs stay untouched apart from the D8 providers",
+    "MP-T1 is verified as pure functions (completeRoutePolyline, completeDriverLegs, driverInstructionSteps) because a live Leaflet map needs a laid-out container; task-opencode-p1c.md explicitly allows extracting the decision",
+    "The compliance panel lives at features/main/orders/lez-compliance-panel/ (an allowed path) and injects MapService so a violation click calls focusLeg(routeId, seq)"
+  ],
+  "processes": [
+    "Entry build: from GVRP_Entry_API, $env:JAVA_HOME=\"C:\\Program Files\\Java\\jdk-21\"; .\\mvnw.cmd -B clean test (the system mvn/mvn.cmd shim in E:\\apache-maven-3.9.8\\...\\src\\bin is broken: 'Error: -classpath requires class path specification')",
+    "Client tests: from GVRP_Entry_client_v2, npx ng test --watch=false --browsers=ChromeHeadless, with ng serve stopped",
+    "Client build: from GVRP_Entry_client_v2, npm run build"
+  ],
+  "next_action": "Hand P1c to the user for review and browser check; after acceptance and any review findings, record the P1c verify transition. Do not start P1-seed or address P1b F2-F8 without a new decision.",
+  "evidence": [
+    "baseline-entry-p1c.log",
+    "baseline-client-p1c.log",
+    "baseline-client-build-p1c.log",
+    "p1c-partb-entry.log",
+    "p1c-entry-final3.log",
+    "p1c-client-c9c.log",
+    "p1c-client-build2.log",
+    "work-items/LEZ-001/implementation.md"
+  ]
+}

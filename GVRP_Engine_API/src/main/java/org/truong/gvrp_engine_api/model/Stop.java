@@ -23,4 +23,9 @@ public class Stop {
     private Double timeToNext;
     private Double latitude;
     private Double longitude;
+    /**
+     * Encoded polyline (precision 1e5, {@code [lat, lon]}) of the leg to the next
+     * stop; null on the last stop or when the leg could not be routed (LEZ-001).
+     */
+    private String geometryToNext;
 }

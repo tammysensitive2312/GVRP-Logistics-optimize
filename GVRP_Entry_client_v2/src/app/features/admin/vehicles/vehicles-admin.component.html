@@ -37,6 +37,7 @@
             <th scope="col">Type</th>
             <th scope="col">Capacity</th>
             <th scope="col">Status</th>
+            <th scope="col">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -56,6 +57,13 @@
                 <span [class]="statusBadgeClass(vehicle.status)">
                   {{ statusLabel(vehicle.status) }}
                 </span>
+              </td>
+              <td>
+                <button type="button" class="btn btn-secondary"
+                        [attr.aria-label]="'Permits for ' + vehicle.vehicle_license_plate"
+                        (click)="openPermits(vehicle)">
+                  Permits
+                </button>
               </td>
             </tr>
           }

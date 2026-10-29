@@ -19,8 +19,13 @@ public class AppConstant {
     public static String VEHICLE_FEATURES = "features";
     public static String ROUTE = "routes";
     public static String PARETO_CANDIDATE = "pareto_candidates";
+    public static String ZONE_TEMPLATE = "zone_templates";
+    public static String BRANCH_ZONE = "zones";
+    public static String ZONE_RULE = "rules";
+    public static String VEHICLE_PERMIT = "permits";
 
     public static String LOCATION = "location";
     public static String LATITUDE = "lat";
     public static String LONGITUDE = "long";
+    public static String GEOMETRY = "geometry";
 }

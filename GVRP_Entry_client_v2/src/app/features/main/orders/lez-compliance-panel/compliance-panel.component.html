@@ -1,0 +1,65 @@
+<section class="compliance-panel">
+  <header class="panel-header">
+    <h3 class="panel-title">Low-emission compliance</h3>
+    <button
+      type="button"
+      class="btn-recheck"
+      [disabled]="rechecking() || loading()"
+      (click)="recheck()">
+      {{ rechecking() ? 'Rechecking…' : 'Recheck now' }}
+    </button>
+  </header>
+
+  @if (loading()) {
+    <p class="panel-hint">Checking compliance…</p>
+  } @else if (error()) {
+    <p class="panel-error">{{ error() }}</p>
+  } @else if (compliance()) {
+    @if (noZoneApplies()) {
+      <p class="panel-hint">No low-emission zone applies to this plan.</p>
+    } @else {
+      <ul class="route-statuses">
+        @for (row of rows(); track row.routeId) {
+          <li [class]="'route-status status-' + row.status.toLowerCase()">
+            <span class="plate">{{ row.licensePlate }}</span>
+            <span [class]="'status-chip status-' + row.status.toLowerCase()">
+              {{ row.statusLabel }}
+            </span>
+            @if (row.checkedAtText) {
+              <span class="checked-at">checked {{ row.checkedAtText }}</span>
+            }
+            @if (row.violations.length > 0) {
+              <ul class="violations">
+                @for (violation of row.violations; track $index) {
+                  <li>
+                    <button type="button" class="violation-link"
+                            (click)="focusViolation(row, violation)">
+                      {{ violation.text }}
+                    </button>
+                  </li>
+                }
+              </ul>
+            }
+          </li>
+        }
+      </ul>
+
+      @if (zoneNames().length > 0) {
+        <p class="panel-hint">Zones in force: {{ zoneNames().join(', ') }}</p>
+      }
+    }
+
+    @if (lezUnassigned().length > 0) {
+      <div class="unassigned">
+        <strong>Orders left out for low-emission reasons</strong>
+        <ul>
+          @for (row of lezUnassigned(); track row.order_id) {
+            <li>
+              {{ row.order_code || ('Order ' + row.order_id) }} — {{ row.reason || row.reason_code }}
+            </li>
+          }
+        </ul>
+      </div>
+    }
+  }
+</section>

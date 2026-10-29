@@ -12,8 +12,10 @@ import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestTemplate;
 import org.truong.gvrp_entry_api.dto.request.EngineEvaluateRequestDTO;
+import org.truong.gvrp_entry_api.dto.request.EngineLegsRequestDTO;
 import org.truong.gvrp_entry_api.dto.request.EngineOptimizationRequest;
 import org.truong.gvrp_entry_api.dto.response.EngineEvaluateResponseDTO;
+import org.truong.gvrp_entry_api.dto.response.EngineLegsResponseDTO;
 import org.truong.gvrp_entry_api.dto.response.EngineOptimizationResponse;
 import org.truong.gvrp_entry_api.entity.OptimizationJob;
 import org.truong.gvrp_entry_api.entity.enums.OptimizationJobStatus;
@@ -154,8 +156,33 @@ public class EngineApiClientImpl implements EngineApiClient{
         }
     }
 
-    private void updateJobStatus(Long jobId, OptimizationJobStatus status, String errorMessage, String externalJobId) {
+    @Override
+    public EngineLegsResponseDTO legs(List<EngineLegsRequestDTO.Point> points, String locale) {
+        String url = engineBaseUrl + "/optimization/legs";
+        EngineLegsRequestDTO request = new EngineLegsRequestDTO();
+        request.setPoints(points);
+        request.setLocale(locale);
         try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            ResponseEntity<EngineLegsResponseDTO> response = restTemplate.postForEntity(
+                    url, new HttpEntity<>(request, headers), EngineLegsResponseDTO.class);
+            if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
+                throw new EngineUnavailableException(
+                        "Engine returned " + response.getStatusCode() + " for leg geometry.", null);
+            }
+            return response.getBody();
+        } catch (HttpClientErrorException e) {
+            throw new DataInvalidException(List.of(
+                    ErrorDetails.validation("Engine rejected leg points: " + e.getResponseBodyAsString())));
+        } catch (HttpServerErrorException | ResourceAccessException e) {
+            throw new EngineUnavailableException(
+                    "Cannot reach optimization engine for leg geometry. Retry later; the route was not sent.",
+                    e);
+        }
+    }
+
+    private void updateJobStatus(Long jobId, OptimizationJobStatus status, String errorMessage, String externalJobId) {        try {
             OptimizationJob job = jobRepository.findById(jobId)
                     .orElseThrow(() -> new DataInvalidException(List.of(
                             ErrorDetails.notFound(AppConstant.JOB)

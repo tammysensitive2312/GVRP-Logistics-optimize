@@ -13,6 +13,9 @@ import { finalize } from 'rxjs/operators';
 import { VehicleDTO } from '@core/models';
 import { ApiService } from '@core/services/api.service';
 import { ToastService } from '@shared/services/toast.service';
+import { MatDialog } from '@angular/material/dialog';
+
+import { VehiclePermitsDialogComponent } from './vehicle-permits-dialog/vehicle-permits-dialog.component';
 
 /**
  * Vehicles management (read-only)
@@ -36,6 +39,7 @@ import { ToastService } from '@shared/services/toast.service';
 export class VehiclesAdminComponent implements OnInit {
   private readonly api = inject(ApiService);
   private readonly toast = inject(ToastService);
+  private readonly dialog = inject(MatDialog);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly vehicles = signal<readonly VehicleDTO[]>([]);
@@ -75,6 +79,16 @@ export class VehiclesAdminComponent implements OnInit {
 
   statusLabel(status: string | null | undefined): string {
     return status ?? 'AVAILABLE';
+  }
+
+  /** Permits of one vehicle (LEZ-001 P1c, C4); the dialog owns its own calls. */
+  openPermits(vehicle: VehicleDTO): void {
+    this.dialog.open(VehiclePermitsDialogComponent, {
+      data: { vehicle },
+      width: '760px',
+      maxWidth: '95vw',
+      autoFocus: 'first-tabbable'
+    });
   }
 
   private load(): void {

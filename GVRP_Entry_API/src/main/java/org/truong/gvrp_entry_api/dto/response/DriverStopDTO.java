@@ -25,4 +25,15 @@ public class DriverStopDTO {
     private String customerPhone;
     private String deliveryNotes;
     private BigDecimal demand;
+
+    // ---------- LEZ (LEZ-001, D1) ----------
+
+    /** Encoded polyline of the leg to the next stop; null on the last stop. */
+    private String geometryToNext;
+
+    /** Turn-by-turn instructions of that leg; empty when none were produced. */
+    private List<RouteLegInstructionDTO> instructionsToNext;
+
+    /** Names of the branch's enabled zones covering this stop (current data). */
+    private List<String> zoneNames;
 }

@@ -3,6 +3,7 @@ package org.truong.gvrp_entry_api.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.truong.gvrp_entry_api.dto.request.EngineCallbackRequest;
@@ -28,11 +29,15 @@ import org.truong.gvrp_entry_api.repository.OrderRepository;
 import org.truong.gvrp_entry_api.repository.ParetoCandidateRepository;
 import org.truong.gvrp_entry_api.repository.SolutionRepository;
 import org.truong.gvrp_entry_api.repository.VehicleRepository;
+import org.truong.gvrp_entry_api.service.lez.CompiledRestrictions;
+import org.truong.gvrp_entry_api.service.lez.RouteComplianceService;
 import org.truong.gvrp_entry_api.util.AppConstant;
 import org.truong.gvrp_entry_api.util.ErrorCode;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -65,6 +70,14 @@ public class ParetoService {
     private final EnginePlanMaterializer enginePlanMaterializer;
     private final SolutionMapper solutionMapper;
     private final ObjectMapper objectMapper;
+
+    /**
+     * LEZ certification (LEZ-001 N6b). Field-injected and optional so the
+     * historical unit tests, which build this service without it, keep their
+     * exact behaviour; a null field leaves the routes {@code UNCHECKED}.
+     */
+    @Autowired(required = false)
+    private RouteComplianceService routeComplianceService;
 
     @Transactional(readOnly = true)
     public ParetoFrontierDTO getFrontier(Long solutionId, Long branchId) {
@@ -200,6 +213,10 @@ public class ParetoService {
             routes.add(route);
         }
         revision.getRoutes().addAll(routes);
+
+        // LEZ certification with the CURRENT rules (LEZ-001 N6b): applying a stored
+        // candidate must not certify against a snapshot that may be older than now.
+        certifyRoutes(base, routes);
 
         if (plan.getUnassignedOrders() != null && !plan.getUnassignedOrders().isEmpty()) {
             revision.getUnassignedOrders().addAll(
@@ -371,6 +388,29 @@ public class ParetoService {
             }
         }
         return vehicleMap;
+    }
+
+    /**
+     * Certifies the routes of a newly applied revision against the branch's
+     * <em>current</em> restrictions (LEZ-001 N6b): the stored candidate plan may
+     * be older than a permit or a rule change, so the job snapshot is not used
+     * here. The compilation is scoped to the base solution's orders and vehicles,
+     * the same scope the read APIs use, so the stored hash stays comparable.
+     * Runs before the revision is saved, so the verdict is persisted with it.
+     */
+    private void certifyRoutes(Solution base, List<Route> routes) {
+        if (routeComplianceService == null || base == null || routes == null || routes.isEmpty()) {
+            return;
+        }
+        CompiledRestrictions restrictions = routeComplianceService.currentFor(base);
+        if (restrictions == null) {
+            // Mixed dates cannot be certified for one day; D4 only stops new jobs.
+            return;
+        }
+        for (Route route : routes) {
+            routeComplianceService.certify(route,
+                    routeComplianceService.check(route, restrictions), restrictions);
+        }
     }
 
     private DataInvalidException candidateNotFound() {

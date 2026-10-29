@@ -42,6 +42,10 @@ public class OptimizationJob {
     @Column(name = "input_data", columnDefinition = "JSON")
     private String inputData;
 
+    /** Compiled LEZ restrictions the job ran with; null when no zone applied. */
+    @Column(name = "lez_snapshot", columnDefinition = "JSON")
+    private String lezSnapshot;
+
     @Column(name = "estimated_duration_minutes")
     private Integer estimatedDurationMinutes;
 

@@ -18,7 +18,8 @@
     font-size: $font-size-base;
   }
 
-  input {
+  input,
+  select {
     width: 100%;
     padding: $space-md;
     border: 1px solid $border-color;
@@ -27,6 +28,7 @@
     font-family: $font-family;
     box-sizing: border-box;
     transition: border-color $transition-base;
+    background: $white;
 
     &:focus {
       outline: none;
@@ -55,3 +57,33 @@
   color: $danger-red;
   margin: $space-xs 0 0;
 }
+
+.form-hint {
+  font-size: $font-size-sm;
+  color: $text-gray;
+  margin: $space-xs 0 0;
+}
+
+.legal-section {
+  border-top: 1px solid $border-color;
+  padding-top: $space-lg;
+  margin-top: $space-sm;
+}
+
+.legal-title {
+  font-size: $font-size-base;
+  font-weight: $font-weight-semibold;
+  color: $text-dark;
+  margin: 0 0 $space-md;
+}
+
+.link-button {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: $primary-blue;
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+}
+

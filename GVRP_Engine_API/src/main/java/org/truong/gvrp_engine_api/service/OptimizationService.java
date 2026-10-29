@@ -22,6 +22,7 @@ import com.graphhopper.jsprit.core.util.Coordinate;
 import com.graphhopper.jsprit.core.util.Solutions;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.truong.gvrp_engine_api.distance_matrix.*;
 import org.truong.gvrp_engine_api.model.*;
@@ -83,6 +84,14 @@ public class OptimizationService {
     private final DistanceMatrixService distanceMatrixService;
     private final CallbackService callbackService;
     private final JobRegistry jobRegistry;
+
+    /**
+     * Fills {@code Stop.geometryToNext} on final routes (LEZ-001). Field-injected
+     * and optional because the existing unit tests construct this service with
+     * the historical three-argument constructor.
+     */
+    @Autowired(required = false)
+    private LegGeometryService legGeometryService;
 
     // ==================== ASYNC ENTRY POINT ====================
 
@@ -333,6 +342,7 @@ public class OptimizationService {
 
         // Extract route details
         OptimizationResultExtractor.RouteExtractionResult routeResult = extractRouteDetails(bestSolution, context, matrix);
+        fillLegGeometry(routeResult.routes());
         List<UnassignedOrder> unassigned = extractUnassignedOrders(bestSolution, context,
                 UnassignedOrderDiagnosticService.diagnose(vrp, bestSolution,
                         clusterAssignment, handle::isCancelRequested, 1000));
@@ -465,6 +475,7 @@ public class OptimizationService {
 
             if (status == FrontierStatus.FRONTIER) {
                 routes = extractRouteDetails(candidate.getSolution(), context, matrix).routes();
+                fillLegGeometry(routes);
                 unassigned = extractUnassignedOrders(
                         candidate.getSolution(),
                         context,
@@ -600,6 +611,7 @@ public class OptimizationService {
         long earliestStart = 8 * 3600;
         VehicleType vt = context.vehicleTypeDTOs().get(vehicleDTO.getVehicleTypeId());
         addVehicleSkills(vehicleBuilder, vt.getSkills());
+        addVehicleSkills(vehicleBuilder, vehicleDTO.getLezSkills());
         double maxDurationHours = vt.getMaxDuration() != null ? vt.getMaxDuration() : 12.0;
         long maxDurationSeconds = (long) (maxDurationHours * 3600);
         long latestArrival = earliestStart + maxDurationSeconds;
@@ -652,8 +664,22 @@ public class OptimizationService {
         }
 
         addRequiredSkills(serviceBuilder, orderDTO.getRequiredSkills());
+        addRequiredSkills(serviceBuilder, orderDTO.getLezSkills());
 
         return serviceBuilder.build();
+    }
+
+    /** Fills leg geometry for every route of a result; one place for solve and Pareto paths. */
+    private void fillLegGeometry(List<RouteDetail> routes) {
+        if (legGeometryService == null || routes == null) {
+            return;
+        }
+        for (int i = 0; i < routes.size(); i++) {
+            RouteDetail route = routes.get(i);
+            if (route != null && route.getStops() != null) {
+                legGeometryService.fillGeometry(route.getStops(), i);
+            }
+        }
     }
 
     static List<String> normalizedSkills(Set<String> skills) {

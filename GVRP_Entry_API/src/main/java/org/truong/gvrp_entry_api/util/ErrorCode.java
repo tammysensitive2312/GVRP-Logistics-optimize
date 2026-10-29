@@ -22,6 +22,9 @@ public enum ErrorCode {
     // 404
     RESOURCE_NOT_FOUND("0040402", "Resource not found."),
 
+    // 405
+    METHOD_NOT_ALLOWED("0040501", "Method not allowed."),
+
     // 409
     RESOURCE_CONFLICT("0040901", "Resource conflict."),
     INVALID_ORDER_TRANSITION("0040902", "Invalid order status transition."),

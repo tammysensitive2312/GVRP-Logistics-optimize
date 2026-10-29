@@ -18,3 +18,12 @@
   white-space: nowrap;
   border: 0;
 }
+
+.card-badge {
+  font-size: $font-size-sm;
+  font-weight: $font-weight-semibold;
+  color: $warning-orange;
+  background: rgba(243, 156, 18, 0.12);
+  border-radius: $radius-sm;
+  padding: 2px $space-xs;
+}

@@ -193,11 +193,18 @@
               {{ copyStatus().get(route) === 'pending' ? 'Copying…' : 'Copy delivery stops' }}
             </button>
             <button type="button" class="btn-copy"
-              [disabled]="route.routeId === null"
+              [disabled]="route.routeId === null || sendBlockedReason(route) !== null"
               [attr.aria-label]="'Send ' + route.licensePlate + ' to driver'"
+              [attr.title]="sendBlockedReason(route)"
               (click)="openSendDialog(route)">
               Send to driver
             </button>
+            @if (sendNote(route); as note) {
+              <p class="send-note">{{ note }}</p>
+            }
+            @if (sendBlockedReason(route); as blocked) {
+              <p class="send-blocked">{{ blocked }}</p>
+            }
             @if (assigneeOf(route)) {
               <span class="assignee">Driver: {{ assigneeOf(route) }}</span>
             }

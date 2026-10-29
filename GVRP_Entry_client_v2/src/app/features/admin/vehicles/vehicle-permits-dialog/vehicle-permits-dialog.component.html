@@ -1,0 +1,168 @@
+<h2 mat-dialog-title>Permits: {{ data.vehicle.vehicle_license_plate }}</h2>
+
+<mat-dialog-content>
+  @if (loading()) {
+    <p class="form-hint">Loading permits...</p>
+  } @else {
+    @if (permits().length === 0) {
+      <p class="form-hint">This vehicle has no permit.</p>
+    } @else {
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th scope="col">Zone</th>
+            <th scope="col">Permit</th>
+            <th scope="col">Schedule</th>
+            <th scope="col">Valid</th>
+            <th scope="col">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (permit of permits(); track permit.id) {
+            <tr>
+              <td>{{ zoneName(permit.branch_zone_id) }}</td>
+              <td>{{ permit.permit_no }}</td>
+              <td>{{ scheduleText(permit) }}</td>
+              <td>
+                @if (permit.valid_from || permit.valid_to) {
+                  {{ permit.valid_from || '…' }} – {{ permit.valid_to || '…' }}
+                } @else {
+                  <span class="text-muted">Unlimited</span>
+                }
+              </td>
+              <td class="row-actions">
+                <button type="button" class="btn btn-secondary" (click)="startEdit(permit)">
+                  Edit
+                </button>
+                <button type="button" class="btn-icon danger" title="Delete"
+                        [attr.aria-label]="'Delete permit ' + permit.permit_no"
+                        (click)="remove(permit)">🗑️</button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+
+    @if (!formOpen()) {
+      <button type="button" class="btn btn-primary" (click)="startCreate()">
+        + Add permit
+      </button>
+    } @else {
+      <section class="permit-form">
+        <h3 class="section-title">
+          {{ editingId() == null ? 'New permit' : 'Edit permit' }}
+        </h3>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="permit-zone">Zone</label>
+            <select id="permit-zone" [ngModel]="zoneId()" (ngModelChange)="zoneId.set($event)">
+              <option [ngValue]="null">Choose a zone</option>
+              @for (zone of zones(); track zone.id) {
+                <option [ngValue]="zone.id">{{ zone.name }}</option>
+              }
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="permit-no">Permit number</label>
+            <input id="permit-no" type="text" [ngModel]="permitNo()"
+                   (ngModelChange)="permitNo.set($event)"/>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="checkbox">
+            <input type="checkbox" [checked]="wholeDay()"
+                   (change)="wholeDay.set($any($event.target).checked)"/>
+            Whole day
+          </label>
+        </div>
+
+        @if (!wholeDay()) {
+          <div class="form-group">
+            <label>Only during</label>
+            @for (interval of intervals(); track $index; let i = $index) {
+              <div class="interval-row">
+                <input
+                  type="text"
+                  class="interval-input"
+                  placeholder="HH:mm"
+                  [attr.aria-label]="'Interval ' + (i + 1) + ' start'"
+                  [ngModel]="interval.start"
+                  (change)="setInterval(i, 'start', $any($event.target).value)"/>
+                <span class="interval-sep">–</span>
+                <input
+                  type="text"
+                  class="interval-input"
+                  placeholder="HH:mm"
+                  [attr.aria-label]="'Interval ' + (i + 1) + ' end'"
+                  [ngModel]="interval.end"
+                  (change)="setInterval(i, 'end', $any($event.target).value)"/>
+                <button type="button" class="btn-icon" title="Remove interval"
+                        aria-label="Remove interval" (click)="removeInterval(i)">✕</button>
+              </div>
+            }
+            <button type="button" class="btn btn-secondary" (click)="addInterval()">
+              + Add interval
+            </button>
+          </div>
+
+          <div class="form-group">
+            <label>Days (empty = every day)</label>
+            <div class="checkbox-grid">
+              @for (day of dayOptions; track day) {
+                <label class="checkbox">
+                  <input type="checkbox" [checked]="days().includes(day)"
+                         (change)="toggleDay(day, $any($event.target).checked)"/>
+                  {{ day }}
+                </label>
+              }
+            </div>
+          </div>
+        }
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="permit-from">Valid from</label>
+            <input id="permit-from" type="date" [ngModel]="validFrom()"
+                   (ngModelChange)="validFrom.set($event)"/>
+          </div>
+          <div class="form-group">
+            <label for="permit-to">Valid to</label>
+            <input id="permit-to" type="date" [ngModel]="validTo()"
+                   (ngModelChange)="validTo.set($event)"/>
+          </div>
+        </div>
+        <p class="form-hint">
+          Both dates are required for a new or edited permit; a new permit opens with a one-year window.
+        </p>
+
+        <div class="form-group">
+          <label for="permit-note">Note</label>
+          <input id="permit-note" type="text" [ngModel]="note()"
+                 (ngModelChange)="note.set($event)"/>
+        </div>
+
+        @for (message of formErrors(); track message) {
+          <p class="form-error">{{ message }}</p>
+        }
+
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" (click)="cancelForm()">Cancel</button>
+          <button type="button" class="btn btn-primary" [disabled]="busy()" (click)="save()">
+            {{ busy() ? 'Saving…' : 'Save permit' }}
+          </button>
+        </div>
+      </section>
+    }
+
+    @if (error()) {
+      <p class="form-error">{{ error() }}</p>
+    }
+  }
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button type="button" (click)="close()">Close</button>
+</mat-dialog-actions>
