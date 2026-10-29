@@ -9,11 +9,12 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { ApiService } from '@core/services/api.service';
 import { ToastService } from '@shared/services/toast.service';
-import { OrderDTO, OrderInputDTO, VEHICLE_SKILLS } from '@core/models';
+import { OrderDTO, VEHICLE_SKILLS } from '@core/models';
 import {MatProgressSpinner} from '@angular/material/progress-spinner';
 import {MapPickerDialogComponent} from '@features/main/orders/components/map-picker-dialog/map-picker-dialog.component';
 import { serverErrorMessage } from '@shared/utils/api-error.utils';
 import { localDateIso } from '@shared/utils/date.utils';
+import { coordinateValue, isBlankCoordinate, OrderFormModel, toOrderPayload } from './order-payload.utils';
 
 export interface EditOrderDialogData {
   orderId?: number;
@@ -43,13 +44,14 @@ export class EditOrderDialogComponent implements OnInit {
   isSaving = false;
   private originalFormSnapshot: string = '';
 
-  form: OrderInputDTO & { status?: string; delivery_date?: string } = {
+  // Coordinates start empty: the server geocodes the address (UX-ORDERS-001, C1).
+  form: OrderFormModel = {
     order_code: '',
     customer_name: '',
     customer_phone: '',
     address: '',
-    latitude: 0,
-    longitude: 0,
+    latitude: null,
+    longitude: null,
     demand: 0,
     service_time: 5,
     time_window_start: '',
@@ -129,7 +131,20 @@ export class EditOrderDialogComponent implements OnInit {
     if (!this.form.order_code?.trim()) errors.push('Order code is required');
     if (!this.form.customer_name?.trim()) errors.push('Customer name is required');
     if (!this.form.address?.trim()) errors.push('Address is required');
-    if (!this.form.latitude || !this.form.longitude) errors.push('Coordinates are required');
+    const latitudeBlank = isBlankCoordinate(this.form.latitude);
+    const longitudeBlank = isBlankCoordinate(this.form.longitude);
+    if (latitudeBlank !== longitudeBlank) {
+      errors.push('Enter both latitude and longitude, or leave both empty.');
+    } else if (!latitudeBlank) {
+      const latitude = coordinateValue(this.form.latitude);
+      const longitude = coordinateValue(this.form.longitude);
+      if (latitude === null || latitude < -90 || latitude > 90) {
+        errors.push('Latitude must be between -90 and 90');
+      }
+      if (longitude === null || longitude < -180 || longitude > 180) {
+        errors.push('Longitude must be between -180 and 180');
+      }
+    }
     if (!this.form.demand || this.form.demand <= 0) errors.push('Demand must be greater than 0');
     if (this.form.time_window_start && this.form.time_window_end) {
       if (this.form.time_window_start >= this.form.time_window_end) {
@@ -165,7 +180,7 @@ export class EditOrderDialogComponent implements OnInit {
 
     if (this.isEditMode) {
       this.isSaving = true;
-      this.apiService.updateOrder(this.data.orderId!, this.form)
+      this.apiService.updateOrder(this.data.orderId!, toOrderPayload(this.form))
         .subscribe({
           next: () => {
             this.toast.success('Order updated successfully');
@@ -179,7 +194,7 @@ export class EditOrderDialogComponent implements OnInit {
         });
     } else {
       this.isSaving = true;
-      const { status, ...createPayload } = this.form;
+      const { status, ...createPayload } = toOrderPayload(this.form);
       this.apiService.addOrder(createPayload)
         .subscribe({
           next: () => {

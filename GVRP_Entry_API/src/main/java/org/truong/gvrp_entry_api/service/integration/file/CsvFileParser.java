@@ -103,11 +103,19 @@ public class CsvFileParser implements FileParser<OrderInputDTO> {
 
     private OrderInputDTO parseRecord(CSVRecord record, int lineNumber) throws ParseException {
         try {
+            Double latitude = parseOptionalDouble(record, "latitude", lineNumber);
+            Double longitude = parseOptionalDouble(record, "longitude", lineNumber);
+            if ((latitude == null) != (longitude == null)) {
+                throw new ParseException(latitude == null ? "latitude" : "longitude", lineNumber,
+                        "latitude and longitude must be given together");
+            }
             return OrderInputDTO.builder()
                     .orderCode(parseRequiredString(record, "orderCode", lineNumber))
                     .customerName(parseRequiredString(record, "customerName", lineNumber))
                     .customerPhone(parseOptionalString(record, "customerPhone"))
                     .address(parseRequiredString(record, "address", lineNumber))
+                    .latitude(latitude)
+                    .longitude(longitude)
                     .demand(parseRequiredBigDecimal(record, "demand", lineNumber))
                     .serviceTime(parseOptionalInteger(record, "serviceTime"))
                     .timeWindowStart(parseOptionalTime(record, "timeWindowStart"))
@@ -141,6 +149,23 @@ public class CsvFileParser implements FileParser<OrderInputDTO> {
             return new BigDecimal(value.trim());
         } catch (NumberFormatException e) {
             throw new ParseException(columnName, lineNumber, String.format("Invalid decimal format for '%s': %s", columnName, value));
+        }
+    }
+
+    /**
+     * Optional coordinate column (UX-ORDERS-001, S2): blank → null; not a number
+     * → error naming the column. Range checks stay with Bean Validation.
+     */
+    private Double parseOptionalDouble(CSVRecord record, String columnName, int lineNumber) throws ParseException {
+        String value = safeGet(record, columnName);
+        if (value == null || value.trim().isEmpty()) {
+            return null;
+        }
+        try {
+            return Double.parseDouble(value.trim());
+        } catch (NumberFormatException e) {
+            throw new ParseException(columnName, lineNumber,
+                    String.format("Invalid number format for '%s'", columnName));
         }
     }
 

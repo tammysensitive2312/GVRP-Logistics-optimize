@@ -1,0 +1,75 @@
+{
+  "id": "UX-ORDERS-001",
+  "root": "E:\\OR-tools java example\\GVRP-Logistics_Optimize",
+  "scope": [
+    "GVRP_Entry_API/src",
+    "GVRP_Entry_client_v2/src"
+  ],
+  "graphHash": "dd102f16a0bb44c675032aab0813a841f1b446ea1fa8d99958fa094d0e8de614",
+  "state": "verify",
+  "revision": 4,
+  "history": [
+    {
+      "revision": 1,
+      "from": "intake",
+      "event": "ready",
+      "to": "discover",
+      "evidence": {
+        "request": {
+          "path": "work-items/UX-ORDERS-001/request.md",
+          "sha256": "b214b9c85374b2472d7d985f3fbaa9d04715f3f27b39b7703a51dc4e738b2355"
+        }
+      },
+      "snapshot": "60aae80d107257e5378073e86e1cf4e1744f533a2f5a12d3211d7adf106f85c8",
+      "time": "2026-10-29T15:27:30.672Z"
+    },
+    {
+      "revision": 2,
+      "from": "discover",
+      "event": "ready",
+      "to": "design",
+      "evidence": {
+        "context": {
+          "path": "work-items/UX-ORDERS-001/context.md",
+          "sha256": "865a6d91b3e56083050ddb12c0f014b35f44b886364361a22ae289f205db2c24"
+        }
+      },
+      "snapshot": "60aae80d107257e5378073e86e1cf4e1744f533a2f5a12d3211d7adf106f85c8",
+      "time": "2026-10-29T15:27:30.891Z"
+    },
+    {
+      "revision": 3,
+      "from": "design",
+      "event": "ready",
+      "to": "implement",
+      "evidence": {
+        "design": {
+          "path": "work-items/UX-ORDERS-001/design.md",
+          "sha256": "f0618fd2aed38d5bd0f5fb0ffa68b5f994032d163405bd67191f2430a7a28ccc"
+        },
+        "traceability": {
+          "path": "work-items/UX-ORDERS-001/traceability.md",
+          "sha256": "e588633dacc3bf94d5086e9b38d20ca0628ff275996ea56aa00ba3a3ca55a5cd"
+        }
+      },
+      "snapshot": "60aae80d107257e5378073e86e1cf4e1744f533a2f5a12d3211d7adf106f85c8",
+      "time": "2026-10-29T15:27:31.130Z"
+    },
+    {
+      "revision": 4,
+      "from": "implement",
+      "event": "ready",
+      "to": "verify",
+      "evidence": {
+        "implementation": {
+          "path": "work-items/UX-ORDERS-001/implementation.md",
+          "sha256": "fb44003de9abc34065c872fed5d12361b5d3c3a09cb9e0d703e759e19e939eca"
+        }
+      },
+      "snapshot": "613ea196674cf19edc75b3d02c8a7d555c82e630a7f3e2df53190ed0f0ea85f9",
+      "time": "2026-10-29T15:37:24.474Z"
+    }
+  ],
+  "handoff": null,
+  "returnTo": null
+}

@@ -12,7 +12,7 @@
   <div class="form-row-inline">
     <span class="row-label">Import method:</span>
     <mat-radio-group [(ngModel)]="method" class="radio-group">
-      <mat-radio-button value="file">📁 File (CSV/Excel)</mat-radio-button>
+      <mat-radio-button value="file">📁 File (CSV/JSON)</mat-radio-button>
       <mat-radio-button value="text">📝 Raw Text</mat-radio-button>
     </mat-radio-group>
   </div>
@@ -32,7 +32,7 @@
 
   <!-- File Upload -->
   <div *ngIf="method === 'file'">
-    <input #fileInput type="file" accept=".csv,.xlsx"
+    <input #fileInput type="file" accept=".csv,.json"
            (change)="onFileSelected($event)" hidden>
 
     <div class="drop-zone"
@@ -47,7 +47,7 @@
       <ng-container *ngIf="!selectedFile">
         <div class="drop-icon">📁</div>
         <p><strong>Click to select file</strong> or drag and drop</p>
-        <p class="drop-hint">CSV or Excel files (max 10MB)</p>
+        <p class="drop-hint">CSV or JSON files (max 10MB)</p>
       </ng-container>
 
       <!-- File selected -->
@@ -70,13 +70,14 @@
   <!-- Text Input -->
   <div *ngIf="method === 'text'">
     <div class="format-hint">
-      <strong>Format:</strong> OrderCode|Name|Phone|Address|Demand|TWStart|TWEnd|Priority|Notes
+      <strong>Format (10 fields):</strong> OrderCode|Name|Phone|Address|Demand|TWStart|TWEnd|Priority|Notes|ServiceTime
+      <br>Coordinates are found from the address automatically.
     </div>
     <textarea
       [(ngModel)]="textData"
       rows="8"
       class="text-input"
-      placeholder="ORD001|John|0901234567|123 Main St|50.5|08:00|12:00|1|Handle with care">
+      placeholder="ORD001|Nguyen Van A|0901234567|1 Trang Tien, Ha Noi|25.5|08:00|11:00|1|Call first|10">
     </textarea>
   </div>
 

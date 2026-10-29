@@ -12,11 +12,13 @@ import {
   EvaluatePreviewDTO,
   FleetDTO,
   FleetInputDTO,
+  ImportResultDTO,
   JobDTO,
   JobProgressDTO,
   OrderDTO,
   OrderFilter,
   OrderInputDTO,
+  OrderWritePayload,
   PaginatedResponse,
   ParetoFrontierDTO,
   RevisionDTO,
@@ -111,7 +113,7 @@ export class ApiService {
     return this.http.post<FleetDTO>(`${this.apiUrl}/fleets`, fleet);
   }
 
-  updateOrder(orderId: number, updateData: OrderInputDTO): Observable<OrderDTO> {
+  updateOrder(orderId: number, updateData: OrderInputDTO | OrderWritePayload): Observable<OrderDTO> {
     return this.http.put<OrderDTO>(
       `${this.apiUrl}/orders/${orderId}`,
       updateData
@@ -125,11 +127,19 @@ export class ApiService {
     );
   }
 
-  addOrder(createData: OrderInputDTO): Observable<OrderDTO> {
+  addOrder(createData: OrderInputDTO | OrderWritePayload): Observable<OrderDTO> {
     return this.http.post<OrderDTO>(
       `${this.apiUrl}/orders`,
       createData
     )
+  }
+
+  /**
+   * Multipart import (file or text) of `POST /orders/import` (UX-ORDERS-001, C2).
+   * No explicit Content-Type: the browser sets the multipart boundary.
+   */
+  importOrders(formData: FormData): Observable<ImportResultDTO> {
+    return this.http.post<ImportResultDTO>(`${this.apiUrl}/orders/import`, formData);
   }
 
   getOrderById(orderId: number): Observable<OrderDTO> {

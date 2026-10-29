@@ -77,6 +77,8 @@ public class OrderService {
                         )
                 ));
 
+        // After the branch-scoped lookup: another branch's id never triggers a geocoding call.
+        resolveCoordinates(inputDTO);
         order = orderMapper.updateEntityFromDTO(inputDTO, order);
         orderRepository.save(order);
         OrderDTO orderDTO = orderMapper.toDTO(order);
@@ -87,6 +89,7 @@ public class OrderService {
             OrderInputDTO input,
             Long branchId
     ) {
+        resolveCoordinates(input);
         validateBusinessLogic(input);
         Branch branch = branchRepository.findById(branchId).orElseThrow(() -> new DataInvalidException(
                 List.of(
@@ -161,6 +164,42 @@ public class OrderService {
         ));
 
         return orderMapper.toDTO(order);
+    }
+
+    /**
+     * Coordinates of a created or updated order (UX-ORDERS-001, S1): kept when
+     * both are given, refused when only one is, otherwise geocoded from the
+     * address. Nothing here logs the address or the coordinates.
+     */
+    private void resolveCoordinates(OrderInputDTO input) {
+        boolean hasLatitude = input.getLatitude() != null;
+        boolean hasLongitude = input.getLongitude() != null;
+        if (hasLatitude && hasLongitude) {
+            return;
+        }
+        if (hasLatitude || hasLongitude) {
+            throw invalidField("latitude", "Latitude and longitude must be given together.");
+        }
+        String address = input.getAddress();
+        if (address == null || address.isBlank()) {
+            throw invalidField("address", "Address is required when no coordinates are given.");
+        }
+        GeocodingService.GeocodeResult result = geocodingService.geocode(address);
+        if (result == null) {
+            throw invalidField("address", "Could not find coordinates for this address. "
+                    + "Pick the location on the map or enter latitude and longitude.");
+        }
+        input.setLatitude(result.lat);
+        input.setLongitude(result.lng);
+    }
+
+    private static DataInvalidException invalidField(String field, String message) {
+        return new DataInvalidException(List.of(
+                ErrorDetail.builder()
+                        .code(ErrorCode.VALIDATION_ERROR.getCode())
+                        .message(message)
+                        .field(field)
+                        .build()));
     }
 
     public void validateBusinessLogic(OrderInputDTO dto) {

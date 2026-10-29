@@ -15,6 +15,7 @@ import { ToastService } from '@shared/services/toast.service';
 import {OrderDTO, OrderFilter, RoutePlanningRequest, SolutionDTO} from '@core/models';
 import {SolutionComplianceDTO} from '@core/models';
 import {BulkStatusResult, BulkStatusRow} from '@core/models';
+import {ImportErrorDTO, ImportResultDTO} from '@core/models';
 import {ParetoFrontierDTO} from '@core/models';
 import {SolutionStore} from '@core/services/solution.store';
 import {
@@ -118,6 +119,13 @@ export class OrdersSectionComponent implements OnInit, OnDestroy {
 
   /** Last bulk-update report (null = none/dismissed). */
   readonly bulkResult = signal<BulkStatusResult | null>(null);
+
+  /** Last import report (null = none/dismissed), UX-ORDERS-001 C2. */
+  readonly importResult = signal<ImportResultDTO | null>(null);
+  readonly importDetailsOpen = signal(false);
+  /** At most 100 rows; `raw_data` is never shown (it may hold customer data). */
+  readonly importErrorLines = computed(() =>
+    (this.importResult()?.errors ?? []).slice(0, 100).map(error => importErrorLine(error)));
 
   /** Collapsible per-reason breakdown of refused rows (BE-002). */
   readonly bulkDetailsOpen = signal(false);
@@ -266,10 +274,37 @@ export class OrdersSectionComponent implements OnInit, OnDestroy {
       formData.append('deliveryDate', result.deliveryDate);
       formData.append('serviceTime', String(result.serviceTime));
       formData.append('overwriteExisting', String(result.overwrite));
+      formData.append('skipValidationErrors', String(result.skipValidationErrors));
 
-      // TODO: this.apiService.importOrders(formData).subscribe(...)
-      console.log('Import with:', result);
+      this.apiService.importOrders(formData)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: report => {
+            this.importResult.set(report);
+            this.importDetailsOpen.set(false);
+            const errorCount = report.errors?.length ?? 0;
+            if (report.success) {
+              this.toastService.success(
+                `Imported ${report.imported_count}, skipped ${report.skipped_count}`
+                + (errorCount > 0 ? `, ${errorCount} errors` : ''));
+              this.loadOrders();
+            } else {
+              this.toastService.error(
+                `Import refused: ${errorCount} rows have errors. Nothing was imported.`);
+            }
+          },
+          error: err => this.toastService.error(serverErrorMessage(err, 'Import failed'))
+        });
     });
+  }
+
+  clearImportResult(): void {
+    this.importResult.set(null);
+    this.importDetailsOpen.set(false);
+  }
+
+  toggleImportDetails(): void {
+    this.importDetailsOpen.update(open => !open);
   }
 
   onAddClick(): void {
@@ -673,4 +708,12 @@ export class OrdersSectionComponent implements OnInit, OnDestroy {
   getSolution(): SolutionDTO | null {
     return this.solution();
   }
+}
+
+/** "Line N (code): field — message" of one refused import row, without its raw data. */
+export function importErrorLine(error: ImportErrorDTO): string {
+  const line = error.line_number != null ? `Line ${error.line_number}` : 'Row';
+  const code = error.order_code ? ` (${error.order_code})` : '';
+  const field = error.field ? `${error.field} — ` : '';
+  return `${line}${code}: ${field}${error.error_message}`;
 }

@@ -38,6 +38,29 @@
           </div>
         }
 
+        <!-- Import report: counts + per-line errors (never the raw row data) -->
+        @if (importResult(); as report) {
+          @if (report.errors.length > 0) {
+            <div class="bulk-report has-failures import-report" role="status">
+              <mat-icon class="bulk-icon">warning</mat-icon>
+              <span class="bulk-summary">Import: {{ report.imported_count }} imported · {{ report.skipped_count }} skipped · {{ report.errors.length }} errors</span>
+              <button type="button" class="bulk-toggle" (click)="toggleImportDetails()">
+                {{ importDetailsOpen() ? 'Hide details' : 'View details' }}
+              </button>
+              <button type="button" class="bulk-dismiss" (click)="clearImportResult()">Dismiss</button>
+              @if (importDetailsOpen()) {
+                <div class="bulk-details">
+                  <ul>
+                    @for (line of importErrorLines(); track $index) {
+                      <li>{{ line }}</li>
+                    }
+                  </ul>
+                </div>
+              }
+            </div>
+          }
+        }
+
         <!-- Bulk result report: compact banner + grouped details -->
         @if (bulkResult(); as result) {
           <div class="bulk-report" [class.has-failures]="result.failed.length > 0" role="status">

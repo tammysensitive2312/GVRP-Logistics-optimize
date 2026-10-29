@@ -7,6 +7,23 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatIconModule } from '@angular/material/icon';
 import { MatRadioModule } from '@angular/material/radio';
 
+import { localDateIso } from '@shared/utils/date.utils';
+
+/**
+ * CSV template the server's parser reads (UX-ORDERS-001, C3): 13 columns;
+ * latitude/longitude are optional (both or neither), otherwise the address is
+ * geocoded. `requiredSkills` is `;`-separated.
+ */
+export const ORDER_IMPORT_TEMPLATE_CSV =
+  'orderCode,customerName,customerPhone,address,latitude,longitude,' +
+  'demand,serviceTime,timeWindowStart,timeWindowEnd,priority,deliveryNotes,requiredSkills\n' +
+  'ORD001,Nguyen Van A,0901234567,"1 Trang Tien, Hoan Kiem, Ha Noi",21.0245,105.8572,' +
+  '25.5,10,08:00,11:00,1,Call first,REFRIGERATED;FRAGILE_CAPABLE\n' +
+  'ORD002,Tran Thi B,,"2 Hang Bai, Hoan Kiem, Ha Noi",,,12,5,,,2,,\n';
+
+/** Extensions the server's import parsers accept. */
+const ACCEPTED_EXTENSIONS = ['csv', 'json'];
+
 export interface ImportDialogResult {
   method: 'file' | 'text';
   deliveryDate: string;
@@ -34,7 +51,7 @@ export interface ImportDialogResult {
 })
 export class ImportOrdersDialogComponent {
   method: 'file' | 'text' = 'file';
-  deliveryDate = new Date().toISOString().split('T')[0];
+  deliveryDate = localDateIso();
   serviceTime = 5;
   overwrite = false;
   skipValidationErrors = false;
@@ -90,8 +107,8 @@ export class ImportOrdersDialogComponent {
 
     // Validate extension
     const ext = file.name.split('.').pop()?.toLowerCase();
-    if (!['csv', 'xlsx'].includes(ext || '')) {
-      this.fileError = 'Only CSV and Excel files are allowed';
+    if (!ACCEPTED_EXTENSIONS.includes(ext || '')) {
+      this.fileError = 'Only CSV and JSON files are allowed';
       return;
     }
 
@@ -104,12 +121,7 @@ export class ImportOrdersDialogComponent {
   }
 
   downloadTemplate(): void {
-    const csv =
-      'orderCode,customerName,customerPhone,address,latitude,longitude,' +
-      'demand,serviceTime,timeWindowStart,timeWindowEnd,priority,deliveryNotes,requiredSkills\n' +
-      'ORD001,John Doe,0901234567,123 Main St,21.028511,105.804817,50.5,5,08:00,12:00,1,Handle with care,REFRIGERATED;FRAGILE_CAPABLE\n';
-
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob([ORDER_IMPORT_TEMPLATE_CSV], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;

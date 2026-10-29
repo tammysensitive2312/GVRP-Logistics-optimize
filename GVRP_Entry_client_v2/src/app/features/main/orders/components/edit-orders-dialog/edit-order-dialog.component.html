@@ -63,16 +63,19 @@
 
       <div class="form-row">
         <div class="form-field">
-          <label>Latitude <span class="required">*</span></label>
+          <label>Latitude</label>
           <input type="number" [(ngModel)]="form.latitude"
                  step="any" placeholder="21.028511" class="input-field">
         </div>
         <div class="form-field">
-          <label>Longitude <span class="required">*</span></label>
+          <label>Longitude</label>
           <input type="number" [(ngModel)]="form.longitude"
                  step="any" placeholder="105.804817" class="input-field">
         </div>
       </div>
+      <p class="coordinates-hint">
+        Leave empty to locate the address automatically, or pick the location on the map.
+      </p>
 
       <button mat-stroked-button class="btn-pick-location"
               type="button" (click)="onPickLocation()">

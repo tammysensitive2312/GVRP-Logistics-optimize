@@ -216,6 +216,12 @@
 // ============================================
 // PICK LOCATION BUTTON
 // ============================================
+.coordinates-hint {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--text-secondary, #6b7280);
+}
+
 .btn-pick-location {
   margin-top: 8px;
   height: 32px;

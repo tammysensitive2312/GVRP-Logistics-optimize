@@ -173,6 +173,8 @@ public class OrderImportService {
             if (dto.getServiceTime() == null) {
                 dto.setServiceTime(request.getServiceTime());
             }
+            // Before validation: @NotNull deliveryDate failed every row (UX-ORDERS-001, S2).
+            if (dto.getDeliveryDate() == null) dto.setDeliveryDate(request.getDeliveryDate());
 
             if ((dto.getLatitude() == null || dto.getLongitude() == null)
                     && dto.getAddress() != null && !dto.getAddress().trim().isEmpty()) {

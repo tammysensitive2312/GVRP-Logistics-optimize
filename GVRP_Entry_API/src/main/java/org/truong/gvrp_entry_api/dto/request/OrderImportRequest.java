@@ -3,6 +3,7 @@ package org.truong.gvrp_entry_api.dto.request;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
@@ -18,6 +19,7 @@ import java.time.LocalDate;
         private String textData;
 
         @NotNull(message = "Delivery date is required")
+        @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
         private LocalDate deliveryDate;
 
         @Min(value = 0, message = "Service time must be non-negative")

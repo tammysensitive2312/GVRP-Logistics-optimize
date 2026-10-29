@@ -49,7 +49,7 @@ public class GeocodingService {
                     .encode()
                     .toUriString();
 
-            log.debug("Calling Goong API for address: {}", address.trim());
+            log.debug("Geocoding request sent");
 
             Map<String, Object> response = restTemplate.getForObject(url, Map.class, address.trim());
 
@@ -64,16 +64,17 @@ public class GeocodingService {
                     double lat = Double.parseDouble(location.get("lat").toString());
                     double lng = Double.parseDouble(location.get("lng").toString());
 
-                    log.info("Goong success: '{}' -> ({}, {})", address.trim(), lat, lng);
+                    log.debug("Geocoding succeeded");
                     return new GeocodeResult(lat, lng);
                 }
             }
 
-            log.warn("Goong could not find address: {}", address.trim());
+            log.warn("Geocoding found no result");
             return null;
 
         } catch (Exception e) {
-            log.error("Goong API error: {}", e.getMessage());
+            // Class name only: the message can carry the request URL, which holds the API key.
+            log.error("Geocoding failed: {}", e.getClass().getSimpleName());
             return null;
         }
     }
