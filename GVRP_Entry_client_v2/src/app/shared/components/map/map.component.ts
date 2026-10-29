@@ -43,7 +43,9 @@ export class MapComponent implements OnInit, OnDestroy, OnChanges {
       this.mapService.loadDepots(this.depots);
     }
 
-    if (changes['orders']) {
+    // Order markers stay hidden while a solution is shown; the table's latest
+    // page is drawn again when the solution is cleared (below).
+    if (changes['orders'] && !this.solution) {
       this.loadOrderMarkers();
     }
 
@@ -51,7 +53,11 @@ export class MapComponent implements OnInit, OnDestroy, OnChanges {
       if (this.solution) {
         void this.mapService.displaySolution(this.solution);
       } else {
-        this.mapService.clearAll();
+        // clearAll() used to remove depots and orders too, and nothing drew
+        // them again (MAP-ORDERS-001, D3).
+        this.mapService.clearSolution();
+        this.mapService.loadDepots(this.depots);
+        this.loadOrderMarkers();
       }
     }
 

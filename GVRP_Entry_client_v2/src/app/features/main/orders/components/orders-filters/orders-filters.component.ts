@@ -8,6 +8,7 @@ import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged, takeUntil } from 'rxjs/operators';
 
 import { OrderFilter } from '@core/models';
+import { localDateIso } from '@shared/utils/date.utils';
 
 @Component({
   selector: 'app-orders-filters',
@@ -33,8 +34,8 @@ export class OrdersFiltersComponent implements OnInit, OnDestroy {
   private initialFormValue!: OrderFilter;
 
   constructor(private fb: FormBuilder) {
-    // Set max date to today
-    this.maxDate = new Date().toISOString().split('T')[0];
+    // Set max date to the planner's local today
+    this.maxDate = localDateIso();
     this.initForm();
   }
 
@@ -49,7 +50,7 @@ export class OrdersFiltersComponent implements OnInit, OnDestroy {
   }
 
   private initForm(): void {
-    const today = new Date().toISOString().split('T')[0];
+    const today = localDateIso();
 
     this.filterForm = this.fb.group({
       date: [today],

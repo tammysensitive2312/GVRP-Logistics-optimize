@@ -15,7 +15,7 @@
     <div class="map-section" #mapSection>
       <app-map
         [depots]="depots"
-        [orders]="orders"
+        [orders]="mapOrders"
         [solution]="solution()"
         [highlightedOrderId]="highlightedOrderId"
         (orderClicked)="onOrderClicked($event)"
@@ -38,7 +38,8 @@
     <!-- Table Section (40vh) -->
     <div class="table-section">
       <app-orders-section-view
-        (orderClick)="onOrderClick($event)">
+        (orderClick)="onOrderClick($event)"
+        (ordersLoaded)="onTableOrdersLoaded($event)">
       </app-orders-section-view>
     </div>
   </main>

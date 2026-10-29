@@ -53,6 +53,7 @@ import {
 } from '@features/main/orders/components/edit-orders-dialog/edit-order-dialog.component';
 import {JobMonitoringDialogComponent} from '@features/main/jobs/job-monitoring-dialog/job-monitoring-dialog.component';
 import { serverErrorMessage } from '@shared/utils/api-error.utils';
+import { localDateIso } from '@shared/utils/date.utils';
 
 
 @Component({
@@ -77,6 +78,12 @@ import { serverErrorMessage } from '@shared/utils/api-error.utils';
 export class OrdersSectionComponent implements OnInit, OnDestroy {
 
   @Output() orderClick = new EventEmitter<OrderDTO>();
+  /**
+   * The page just loaded, after every successful `loadOrders()`, so the map
+   * shows exactly the orders the table lists (MAP-ORDERS-001, D1). A failed
+   * load emits nothing: the map keeps its last markers.
+   */
+  @Output() ordersLoaded = new EventEmitter<OrderDTO[]>();
 
   private apiService = inject(ApiService);
   private lezApi = inject(LezApiService);
@@ -153,7 +160,7 @@ export class OrdersSectionComponent implements OnInit, OnDestroy {
   currentPage = 0;
 
   currentFilters: OrderFilter = {
-    date: new Date().toISOString().split('T')[0]
+    date: localDateIso()
   };
 
   isLoading = false;
@@ -191,6 +198,7 @@ export class OrdersSectionComponent implements OnInit, OnDestroy {
           this.totalElements = response.total_elements;
           this.isLoading = false;
           this.loadOrderZones(this.orders);
+          this.ordersLoaded.emit([...(this.orders ?? [])]);
         },
         error: (err) => {
           console.error('Error loading orders:', err);

@@ -11,6 +11,7 @@ import {ToastService} from '@shared/services/toast.service';
 import {ApiService} from '@core/services/api.service';
 import {MapService} from '@shared/services/map.service';
 import {SolutionStore} from '@core/services/solution.store';
+import {localDateIso} from '@shared/utils/date.utils';
 
 interface PaginationState {
   page: number;
@@ -37,6 +38,11 @@ export class MainComponent implements OnInit, OnDestroy {
   depots: DepotDTO[] = [];
   vehicles: VehicleDTO[] = [];
   orders: OrderDTO[] = [];
+  /**
+   * Orders drawn on the map: the page the order table currently lists
+   * (MAP-ORDERS-001, D1). `orders` keeps feeding the sidebar stats only.
+   */
+  mapOrders: OrderDTO[] = [];
 
   /**
    * Read from SolutionStore instead of a local field: the previous local
@@ -71,7 +77,7 @@ export class MainComponent implements OnInit, OnDestroy {
   highlightedOrderId: number | null = null;
 
   private currentFilter: OrderFilter = {
-    date: new Date().toISOString().split('T')[0]
+    date: localDateIso()
   };
 
   private destroy$ = new Subject<void>();
@@ -144,6 +150,11 @@ export class MainComponent implements OnInit, OnDestroy {
       completed: completed,
       unassigned: unAssigned
     };
+  }
+
+  /** Every successful reload of the order table (date, status, search, page, edit). */
+  onTableOrdersLoaded(orders: OrderDTO[]): void {
+    this.mapOrders = [...orders];
   }
 
   onOrderUpdated(updatedOrders: OrderDTO[]): void {

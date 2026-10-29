@@ -1,0 +1,74 @@
+{
+  "id": "MAP-ORDERS-001",
+  "root": "E:\\OR-tools java example\\GVRP-Logistics_Optimize",
+  "scope": [
+    "GVRP_Entry_client_v2/src"
+  ],
+  "graphHash": "dd102f16a0bb44c675032aab0813a841f1b446ea1fa8d99958fa094d0e8de614",
+  "state": "verify",
+  "revision": 4,
+  "history": [
+    {
+      "revision": 1,
+      "from": "intake",
+      "event": "ready",
+      "to": "discover",
+      "evidence": {
+        "request": {
+          "path": "work-items/MAP-ORDERS-001/request.md",
+          "sha256": "89aede145fcc682d18a47ed315f3dc3b5d3b9bf6ce94b2efc63eb3482bd83462"
+        }
+      },
+      "snapshot": "a77f0721cb57c0df7c459afa8625531fa8bd23d463b96576c8531ccff9a5247e",
+      "time": "2026-10-29T00:35:07.132Z"
+    },
+    {
+      "revision": 2,
+      "from": "discover",
+      "event": "ready",
+      "to": "design",
+      "evidence": {
+        "context": {
+          "path": "work-items/MAP-ORDERS-001/context.md",
+          "sha256": "00e10f78938fa87a1d217f6fe6771d05d9ddac07d0e76629b6a8c1b23be25871"
+        }
+      },
+      "snapshot": "a77f0721cb57c0df7c459afa8625531fa8bd23d463b96576c8531ccff9a5247e",
+      "time": "2026-10-29T00:35:07.258Z"
+    },
+    {
+      "revision": 3,
+      "from": "design",
+      "event": "ready",
+      "to": "implement",
+      "evidence": {
+        "design": {
+          "path": "work-items/MAP-ORDERS-001/design.md",
+          "sha256": "82065236313d45481ff04d9f2acfb51ea23ba47cb9916a4a0cf2176c35766463"
+        },
+        "traceability": {
+          "path": "work-items/MAP-ORDERS-001/traceability.md",
+          "sha256": "ddd16feb90b8e7b83ae1923a80b9639b08a6e2435015fd452272ca0f7f3d3d03"
+        }
+      },
+      "snapshot": "a77f0721cb57c0df7c459afa8625531fa8bd23d463b96576c8531ccff9a5247e",
+      "time": "2026-10-29T00:35:07.389Z"
+    },
+    {
+      "revision": 4,
+      "from": "implement",
+      "event": "ready",
+      "to": "verify",
+      "evidence": {
+        "implementation": {
+          "path": "work-items/MAP-ORDERS-001/implementation.md",
+          "sha256": "541e3f82474a42600ec83fe738de875fd492059eb579157b94990f091ebff961"
+        }
+      },
+      "snapshot": "e4ac711a4270d44c1da034c5c2170fa3aabb78aa04c07b9f3596ab4c9e79e1dd",
+      "time": "2026-10-29T00:40:22.157Z"
+    }
+  ],
+  "handoff": null,
+  "returnTo": null
+}

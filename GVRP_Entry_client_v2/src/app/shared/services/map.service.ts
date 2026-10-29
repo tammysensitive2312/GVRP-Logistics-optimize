@@ -10,6 +10,7 @@ import { LezApiService } from '@core/services/lez-api.service';
 import { orderStops, routeColor } from '@shared/utils/solution-view.utils';
 import { violationFocus, LegFocus } from '@shared/utils/map-focus.utils';
 import { completeRoutePolyline, storedLegPaths } from '@shared/utils/route-geometry.utils';
+import { hasMapCoordinates } from '@shared/utils/coordinate.utils';
 import { MarkerService } from './marker.service';
 import { RoutingService } from './routing.service';
 
@@ -104,7 +105,16 @@ export class MapService {
   ): void {
     this.clearOrderMarkers();
 
-    orders.forEach(order => {
+    // L.marker throws on null/NaN coordinates, which used to abort the loop and
+    // leave the rest of the page undrawn (MAP-ORDERS-001, D4). Count only in the
+    // warning: no id, code, address or coordinate (AGENTS.md section 15).
+    const drawable = orders.filter(order => hasMapCoordinates(order));
+    const skipped = orders.length - drawable.length;
+    if (skipped > 0) {
+      console.warn(`${skipped} order(s) without usable coordinates not shown on the map`);
+    }
+
+    drawable.forEach(order => {
       const marker = this.markerService.createOrderMarker(order, onOrderClick, onOrderEdit);
       marker.addTo(this.map);
       this.orderMarkers.push(marker);
@@ -112,7 +122,7 @@ export class MapService {
 
     // Orders load asynchronously and used to arrive after a solution was drawn,
     // yanking the viewport away from the routes. The solution wins.
-    if (orders.length > 0 && !this.solutionDisplayed) {
+    if (drawable.length > 0 && !this.solutionDisplayed) {
       this.fitBoundsToMarkers();
     }
   }
@@ -472,6 +482,15 @@ export class MapService {
     if (this.map) {
       this.map.invalidateSize();
     }
+  }
+
+  /**
+   * Removes what a solution drew - routes, zone overlay, violation highlight
+   * and focus registry - and leaves depot and order markers alone, so the map
+   * can return to the order view (MAP-ORDERS-001, D3).
+   */
+  clearSolution(): void {
+    this.clearRoutes();
   }
 
   clearAll(): void {
