@@ -24,6 +24,8 @@ import {
 } from '@shared/utils/lez-format.utils';
 import { orderStops } from '@shared/utils/solution-view.utils';
 
+import { groupGeometryMissing } from './compliance-rows.utils';
+
 export interface ComplianceViolationRow {
   /** One sentence: code, stop name, zone name, server detail. */
   text: string;
@@ -33,6 +35,8 @@ export interface ComplianceViolationRow {
   detail: string | null;
   /** 0-based plan index of the stop the violation happened at. */
   seq: number;
+  /** Summary of several geometry findings; not clickable (UX-LEZ-001, D9). */
+  summary?: boolean;
 }
 
 export interface ComplianceRouteRow {
@@ -64,6 +68,8 @@ export class CompliancePanelComponent {
   readonly solution = input.required<SolutionDTO>();
   /** Latest known compliance; null means "unknown", not "compliant". */
   readonly complianceChange = output<SolutionComplianceDTO | null>();
+  /** Emitted after a violation moved the planner map (the expanded dialog closes on it). */
+  readonly violationFocused = output<void>();
 
   private readonly lez = inject(LezApiService);
   private readonly mapService = inject(MapService);
@@ -87,7 +93,7 @@ export class CompliancePanelComponent {
     return this.solution().routes.map(route => {
       const row = route.id != null ? byRoute.get(route.id) ?? null : null;
       const stops = orderStops(route.stops);
-      const violations = (row?.violations ?? []).map(violation => {
+      const violations: ComplianceViolationRow[] = (row?.violations ?? []).map(violation => {
         // `seq` is the 0-based plan index of the stop (design §3.8).
         const stopName = stops[violation.seq]?.location_name ?? null;
         const zoneName = zones.find(zone => zone.key === violation.zone_key)?.name
@@ -106,7 +112,7 @@ export class CompliancePanelComponent {
         status: row?.status ?? 'UNKNOWN',
         statusLabel: row ? complianceStatusLabel(row.status) : 'Unknown',
         checkedAtText: row?.checked_at ? row.checked_at.replace('T', ' ').slice(0, 16) : null,
-        violations
+        violations: groupGeometryMissing(violations)
       };
     });
   });
@@ -182,9 +188,10 @@ export class CompliancePanelComponent {
 
   /** Moves the planner map to the offending leg or stop of one violation (C9). */
   focusViolation(row: ComplianceRouteRow, violation: ComplianceViolationRow): void {
-    if (row.routeId === null) {
+    if (row.routeId === null || violation.summary) {
       return;
     }
     this.mapService.focusLeg(row.routeId, violation.seq, violation.code, violation.detail);
+    this.violationFocused.emit();
   }
 }

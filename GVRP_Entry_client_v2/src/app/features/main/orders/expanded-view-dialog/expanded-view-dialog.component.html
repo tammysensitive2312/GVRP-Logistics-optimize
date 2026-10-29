@@ -1,0 +1,25 @@
+<header class="expanded-header">
+  <h2 class="expanded-title">{{ title }}</h2>
+  <button type="button" class="btn-collapse" matTooltip="Collapse" aria-label="Collapse"
+          (click)="collapse()">
+    <mat-icon>close_fullscreen</mat-icon>
+  </button>
+</header>
+
+<div class="expanded-content">
+  @if (data.view === 'route') {
+    <app-compliance-panel
+      #compliancePanel
+      [solution]="data.solution"
+      (complianceChange)="routeCompliance.set($event)"
+      (violationFocused)="collapse()">
+    </app-compliance-panel>
+    <app-route-view
+      [solution]="data.solution"
+      [compliance]="routeCompliance()"
+      (complianceRecheckNeeded)="compliancePanel.recheck()">
+    </app-route-view>
+  } @else {
+    <app-timeline-view [solution]="data.solution"></app-timeline-view>
+  }
+</div>

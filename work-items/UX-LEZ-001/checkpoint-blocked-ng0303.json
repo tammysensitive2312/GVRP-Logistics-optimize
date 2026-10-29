@@ -1,0 +1,32 @@
+{
+  "revision": 3,
+  "completed": [
+    "Step 0: UX-ORDERS-001 at verify; feat/ux-orders-001 committed (64073c0); only work-items/UX-LEZ-001/ uncommitted; session brief run; branch feat/ux-lez-001",
+    "Step 1: init + 01/02/03 ready -> implement rev 3",
+    "Step 2: client baseline 405 SUCCESS; build EXIT 0, 12 warnings; orders-section.component.scss 5.08 kB (warning budget 4.10 kB); assertion check: no compliance-panel spec uses LEZ_GEOMETRY_MISSING, no spec names app-routes-view or routes-tab-content",
+    "Code (uncommitted): D1 zone-draw.utils.ts; D2 zone-map editable mode; D3 editor wiring + hint + Load example; D4 rule help texts; D5 RULE_PRESETS; D6 ruleWarnings; D7 scroll fix; D9 compliance-rows.utils.ts + panel grouping + violationFocused; D8 expanded-view-dialog + Expand buttons"
+  ],
+  "remaining": [
+    "Resolve the NG0303 blocker (user decision)",
+    "New specs UL-T1..UL-T9",
+    "Client tests and clean build; implementation.md; step ready 04-proof.json"
+  ],
+  "read_next": [
+    "work-items/UX-LEZ-001/design.md",
+    "work-items/UX-LEZ-001/task-opencode.md"
+  ],
+  "evidence": [
+    "work-items/UX-LEZ-001/design.md"
+  ],
+  "blockers": [
+    "Existing specs zone-editor-dialog.component.spec.ts (6 tests, LEZ-001) and zone-editor-rename.component.spec.ts (6 tests, BROWSER-FIX-001) fail with NG0303 \"Can't bind to 'editable' since it isn't a known property of 'app-zone-map'\": their ZoneMapStubComponent has inputs geometry/depots/height only, and design D3 binds [editable] on app-zone-map. 10 of 405 tests fail (4 + 6)."
+  ],
+  "decisions": [
+    "Proposed A (minimal test-helper change, needs user approval): add `@Input() editable = false;` and `@Output() polygonDrawn = new EventEmitter<unknown>();` to ZoneMapStubComponent in both spec files; no assertion changes.",
+    "Alternative B (no test edit, deviates from D3): set editable and subscribe to polygonDrawn through @ViewChild(ZoneMapComponent) instead of template bindings."
+  ],
+  "processes": [
+    "ng serve PID 15636 (user's dev server) still running; not touched"
+  ],
+  "next_action": "Wait for the user's decision on the two zone-editor spec stubs (option A or B), then write UL-T1..UL-T9 and verify."
+}

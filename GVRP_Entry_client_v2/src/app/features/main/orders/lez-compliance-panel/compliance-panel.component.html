@@ -32,10 +32,14 @@
               <ul class="violations">
                 @for (violation of row.violations; track $index) {
                   <li>
-                    <button type="button" class="violation-link"
-                            (click)="focusViolation(row, violation)">
-                      {{ violation.text }}
-                    </button>
+                    @if (violation.summary) {
+                      <span class="violation-summary">{{ violation.text }}</span>
+                    } @else {
+                      <button type="button" class="violation-link"
+                              (click)="focusViolation(row, violation)">
+                        {{ violation.text }}
+                      </button>
+                    }
                   </li>
                 }
               </ul>

@@ -1,8 +1,9 @@
-import {Component, computed, effect, inject, OnInit, OnDestroy, EventEmitter, Output, signal} from '@angular/core';
+import {Component, computed, effect, inject, OnInit, OnDestroy, EventEmitter, Output, signal, ViewChild} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDialog } from '@angular/material/dialog';
 import { Router } from '@angular/router';
 import {Subject} from 'rxjs';
@@ -34,6 +35,10 @@ import {
   CompliancePanelComponent
 } from '@features/main/orders/lez-compliance-panel/compliance-panel.component';
 import {ParetoViewComponent} from '@features/main/orders/pareto-view/pareto-view.component';
+import {
+  ExpandedViewDialogComponent,
+  ExpandedViewDialogData
+} from '@features/main/orders/expanded-view-dialog/expanded-view-dialog.component';
 import {VehicleSelectionService} from '@shared/services/vehicle-selection.service';
 import {
   BulkStatusDialogComponent,
@@ -65,6 +70,7 @@ import { localDateIso } from '@shared/utils/date.utils';
     MatTabsModule,
     MatProgressSpinnerModule,
     MatIconModule,
+    MatTooltipModule,
     OrdersActionToolbarComponent,
     OrdersFiltersComponent,
     OrdersTableComponent,
@@ -79,6 +85,9 @@ import { localDateIso } from '@shared/utils/date.utils';
 export class OrdersSectionComponent implements OnInit, OnDestroy {
 
   @Output() orderClick = new EventEmitter<OrderDTO>();
+
+  /** The Route tab's compliance panel, reloaded after the expanded dialog closes. */
+  @ViewChild('compliancePanel') private compliancePanel?: CompliancePanelComponent;
   /**
    * The page just loaded, after every successful `loadOrders()`, so the map
    * shows exactly the orders the table lists (MAP-ORDERS-001, D1). A failed
@@ -633,6 +642,25 @@ export class OrdersSectionComponent implements OnInit, OnDestroy {
           }
         }
       });
+  }
+
+  /**
+   * Opens the Route or Timeline tab content in a large dialog (UX-LEZ-001, D8).
+   * A send or recheck done there is reflected by reloading the tab's panel.
+   */
+  openExpanded(view: ExpandedViewDialogData['view']): void {
+    const solution = this.solution();
+    if (!solution) return;
+    this.dialog
+      .open<ExpandedViewDialogComponent, ExpandedViewDialogData>(ExpandedViewDialogComponent, {
+        width: '95vw',
+        maxWidth: '95vw',
+        height: '90vh',
+        data: { view, solution }
+      })
+      .afterClosed()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => this.compliancePanel?.load());
   }
 
   /**

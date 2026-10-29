@@ -43,6 +43,13 @@
   margin: $space-xs 0;
 }
 
+// Non-blocking rule hints (UX-LEZ-001, D6).
+.form-warning {
+  font-size: $font-size-sm;
+  color: #b45309;
+  margin: $space-xs 0;
+}
+
 .name-input,
 .geometry-text {
   width: 100%;

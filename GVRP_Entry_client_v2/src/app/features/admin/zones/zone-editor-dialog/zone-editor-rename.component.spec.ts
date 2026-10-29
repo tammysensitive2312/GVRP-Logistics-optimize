@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TestBed } from '@angular/core/testing';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
@@ -19,6 +19,8 @@ class ZoneMapStubComponent {
   @Input() geometry: unknown = null;
   @Input() depots: unknown = [];
   @Input() height = '320px';
+  @Input() editable = false;
+  @Output() polygonDrawn = new EventEmitter<unknown>();
 }
 
 /** BF-C6 (BROWSER-FIX-001, C7): renaming a COPIED zone from its editor. */

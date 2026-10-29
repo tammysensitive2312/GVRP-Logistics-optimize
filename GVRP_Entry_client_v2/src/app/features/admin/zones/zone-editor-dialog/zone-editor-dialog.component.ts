@@ -25,10 +25,13 @@ import { ToastService } from '@shared/services/toast.service';
 import { serverErrorMessage } from '@shared/utils/api-error.utils';
 
 import { ZoneMapComponent } from '../zone-map/zone-map.component';
+import { EXAMPLE_ZONE, GeoJsonPolygon } from '../zone-draw.utils';
 import {
   emptyRuleForm,
   fromRuleDTO,
   isSelectorEmpty,
+  RULE_PRESETS,
+  ruleWarnings,
   toRuleInput,
   validateRuleForm,
   ZoneRuleFormModel
@@ -81,6 +84,7 @@ export class ZoneEditorDialogComponent {
   readonly dayOptions = DAYS;
   readonly scheduleTypes = SCHEDULE_TYPES;
   readonly weightMeasures = WEIGHT_MEASURES;
+  readonly rulePresets = RULE_PRESETS;
 
   /** Name of the COPIED zone; a changed name is sent before the geometry. */
   readonly name = signal(this.data.zone.name ?? '');
@@ -145,6 +149,19 @@ export class ZoneEditorDialogComponent {
       input.value = '';
     };
     reader.readAsText(file);
+  }
+
+  /** A polygon finished on the map replaces the geometry and its text (UX-LEZ-001, D3). */
+  onPolygonDrawn(polygon: GeoJsonPolygon): void {
+    this.geometryErrors.set([]);
+    this.geometry.set(polygon);
+    this.geometryText.set(JSON.stringify(polygon, null, 2));
+  }
+
+  /** Fills the text with a small example zone and previews it. */
+  loadExample(): void {
+    this.geometryText.set(JSON.stringify(EXAMPLE_ZONE, null, 2));
+    this.applyPastedGeometry();
   }
 
   private applyGeometry(candidate: unknown): void {
@@ -226,6 +243,23 @@ export class ZoneEditorDialogComponent {
     const value = raw === '' ? null : Number(raw);
     this.patchRule(index, { [key]: Number.isFinite(value as number) ? value : null } as
       Partial<ZoneRuleFormModel>);
+  }
+
+  /** Replaces the rule's selector and schedule with a preset (UX-LEZ-001, D5). */
+  applyPreset(index: number, presetIndex: number | null): void {
+    const preset = presetIndex != null ? this.rulePresets[presetIndex] : undefined;
+    if (!preset) {
+      return;
+    }
+    this.rules.set(
+      this.rules().map((rule, i) => (i === index ? preset.apply(rule) : rule))
+    );
+    this.formErrors.set([]);
+  }
+
+  /** Amber hints under a rule card; they never block the save (D6). */
+  warningsFor(index: number): string[] {
+    return ruleWarnings(this.rules()[index]);
   }
 
   isEveryVehicle(index: number): boolean {

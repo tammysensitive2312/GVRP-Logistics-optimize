@@ -1,6 +1,8 @@
 import {
   DayOfWeekCode,
+  ENERGY_TYPES,
   EnergyType,
+  LEGAL_CLASSES,
   LegalClass,
   RuleSchedule,
   RuleSelector,
@@ -11,6 +13,7 @@ import {
   ZoneRuleInput
 } from '@core/models';
 import { hhMmToMinutes } from '@shared/utils/lez-format.utils';
+import { localDateIso } from '@shared/utils/date.utils';
 
 /** Mirrors `RuleValidator` / `ZoneService` limits on the server. */
 export const MAX_RULES = 50;
@@ -216,4 +219,86 @@ export function validateRuleForm(form: ZoneRuleFormModel, ruleCount: number): st
 function blankToNull(value: string): string | null {
   const trimmed = value.trim();
   return trimmed ? trimmed : null;
+}
+
+// ---------- presets and warnings (UX-LEZ-001, D5/D6) ----------
+
+interface RulePreset {
+  label: string;
+  /** Replaces the selector and schedule; keeps dates, legal basis and note. */
+  apply(form: ZoneRuleFormModel): ZoneRuleFormModel;
+}
+
+/** Selector and schedule of a preset applied over the kept fields of `form`. */
+function presetOver(
+  form: ZoneRuleFormModel,
+  patch: Partial<ZoneRuleFormModel>
+): ZoneRuleFormModel {
+  return {
+    ...emptyRuleForm(),
+    ...patch,
+    effectiveFrom: form.effectiveFrom.trim() ? form.effectiveFrom : localDateIso(),
+    effectiveTo: form.effectiveTo,
+    legalBasis: form.legalBasis,
+    note: form.note
+  };
+}
+
+export const RULE_PRESETS: readonly RulePreset[] = [
+  {
+    label: 'Trucks over 3.5 t, peak hours',
+    apply: form => presetOver(form, {
+      legalClasses: ['TRUCK'],
+      weightMeasure: 'GROSS',
+      weightGt: 3500,
+      scheduleType: 'FORBIDDEN_DURING',
+      intervals: [{ start: '06:00', end: '09:00' }, { start: '16:00', end: '19:30' }]
+    })
+  },
+  {
+    label: 'Below Euro 4, all day',
+    apply: form => presetOver(form, {
+      emissionStandardBelow: 4,
+      scheduleType: 'ALWAYS_FORBIDDEN'
+    })
+  },
+  {
+    label: 'Only electric vehicles',
+    apply: form => presetOver(form, {
+      energyTypes: ['HYBRID', 'PETROL', 'DIESEL', 'OTHER'],
+      scheduleType: 'ALWAYS_FORBIDDEN'
+    })
+  },
+  {
+    label: 'Motorbikes, all day',
+    apply: form => presetOver(form, {
+      legalClasses: ['MOTORBIKE'],
+      scheduleType: 'ALWAYS_FORBIDDEN'
+    })
+  }
+];
+
+/**
+ * Non-blocking hints about a rule that can never or always match by mistake.
+ * Never used to refuse a save; `validateRuleForm` stays the only gate.
+ */
+export function ruleWarnings(form: ZoneRuleFormModel, today: string = localDateIso()): string[] {
+  const warnings: string[] = [];
+  const below = form.emissionStandardBelow;
+  if (below != null && below <= 1) {
+    warnings.push('No vehicle has an emission standard below 1; this rule never matches on emissions.');
+  }
+  if (below != null && below > 6) {
+    warnings.push('Euro levels go up to 6; every vehicle with a known standard matches.');
+  }
+  if (LEGAL_CLASSES.every(value => form.legalClasses.includes(value))) {
+    warnings.push('All classes are ticked; this is the same as leaving them empty.');
+  }
+  if (ENERGY_TYPES.every(value => form.energyTypes.includes(value))) {
+    warnings.push('All energy types are ticked; this is the same as leaving them empty.');
+  }
+  if (form.effectiveTo && form.effectiveTo < today) {
+    warnings.push('This rule has already ended.');
+  }
+  return warnings;
 }

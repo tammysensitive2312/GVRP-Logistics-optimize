@@ -20,6 +20,11 @@
     <section class="editor-section">
       <h3 class="section-title">Geometry</h3>
       <p class="form-hint">
+        Draw the zone on the map (Draw → click the corners → Finish), or paste GeoJSON:
+        a Polygon whose points are [longitude, latitude] and whose last point equals the first.
+        <a href="https://geojson.io" target="_blank" rel="noopener">Draw on geojson.io</a>
+      </p>
+      <p class="form-hint">
         Paste a GeoJSON Polygon or MultiPolygon (x = longitude, y = latitude), or
         upload a file of at most 2 MB.
       </p>
@@ -34,6 +39,9 @@
         <button type="button" class="btn btn-secondary" (click)="applyPastedGeometry()">
           Preview geometry
         </button>
+        <button type="button" class="btn btn-secondary" (click)="loadExample()">
+          Load example
+        </button>
         <input
           #geometryFile
           type="file"
@@ -47,7 +55,11 @@
         <p class="form-error">{{ message }}</p>
       }
 
-      <app-zone-map [geometry]="geometry()" height="260px"/>
+      <app-zone-map
+        [geometry]="geometry()"
+        [editable]="isCopied()"
+        (polygonDrawn)="onPolygonDrawn($event)"
+        height="260px"/>
     </section>
 
     <section class="editor-section">
@@ -72,9 +84,23 @@
               (click)="removeRule(ruleIndex)">✕</button>
           </div>
 
+          <div class="form-group">
+            <label [attr.for]="'rule-preset-' + ruleIndex">Start from a preset</label>
+            <select
+              [id]="'rule-preset-' + ruleIndex"
+              [ngModel]="null"
+              (ngModelChange)="applyPreset(ruleIndex, $event)">
+              <option [ngValue]="null">Choose a preset…</option>
+              @for (preset of rulePresets; track preset.label; let presetIndex = $index) {
+                <option [ngValue]="presetIndex">{{ preset.label }}</option>
+              }
+            </select>
+          </div>
+
           @if (isEveryVehicle(ruleIndex)) {
             <p class="form-hint">Applies to every vehicle.</p>
           }
+          <p class="form-hint">All filled fields must match (AND). A rule with no vehicle field applies to every vehicle.</p>
 
           <div class="form-row">
             <div class="form-group">
@@ -90,6 +116,7 @@
                   </label>
                 }
               </div>
+              <p class="form-hint">Vehicles of any ticked class match. Empty = any class.</p>
             </div>
 
             <div class="form-group">
@@ -105,6 +132,7 @@
                   </label>
                 }
               </div>
+              <p class="form-hint">Vehicles with any ticked energy type match. Empty = any.</p>
             </div>
           </div>
 
@@ -120,6 +148,7 @@
                   <option [ngValue]="measure">{{ measure }}</option>
                 }
               </select>
+              <p class="form-hint">GROSS = vehicle's legal gross weight; PAYLOAD = its load capacity. Needs a bound below.</p>
             </div>
             <div class="form-group">
               <label [attr.for]="'rule-emission-' + ruleIndex">Emission standard below</label>
@@ -130,6 +159,7 @@
                 step="1"
                 [ngModel]="rule.emissionStandardBelow"
                 (ngModelChange)="patchRule(ruleIndex, { emissionStandardBelow: $event })"/>
+              <p class="form-hint">Euro level 1–6. Vehicles with a LOWER standard match. Example: 4 bans Euro 1–3.</p>
             </div>
           </div>
 
@@ -155,6 +185,7 @@
                 (change)="setNumber(ruleIndex, 'weightLte', $event)"/>
             </div>
           </div>
+          <p class="form-hint">Kilograms. Example: trucks over 3.5 t → GROSS, Weight &gt; 3500.</p>
 
           <label class="checkbox">
             <input
@@ -163,6 +194,7 @@
               (change)="patchRule(ruleIndex, { appBased: $any($event.target).checked })"/>
             Applies to app-based services only
           </label>
+          <p class="form-hint">Leave unticked for an internal fleet.</p>
 
           <div class="form-row">
             <div class="form-group">
@@ -175,6 +207,7 @@
                   <option [ngValue]="scheduleType">{{ scheduleType }}</option>
                 }
               </select>
+              <p class="form-hint">ALWAYS_FORBIDDEN: all day. FORBIDDEN_DURING: banned in the intervals. ALLOWED_ONLY: allowed only in the intervals.</p>
             </div>
             <div class="form-group">
               <label>Days (empty = every day)</label>
@@ -189,6 +222,7 @@
                   </label>
                 }
               </div>
+              <p class="form-hint">Empty = every day.</p>
             </div>
           </div>
 
@@ -243,6 +277,7 @@
                 (ngModelChange)="patchRule(ruleIndex, { effectiveTo: $event })"/>
             </div>
           </div>
+          <p class="form-hint">From is required; empty To = no end date.</p>
 
           <div class="form-group">
             <label [attr.for]="'rule-basis-' + ruleIndex">Legal basis</label>
@@ -261,6 +296,10 @@
               [ngModel]="rule.note"
               (ngModelChange)="patchRule(ruleIndex, { note: $event })"/>
           </div>
+
+          @for (warning of warningsFor(ruleIndex); track warning) {
+            <p class="form-warning">{{ warning }}</p>
+          }
         </article>
       }
 

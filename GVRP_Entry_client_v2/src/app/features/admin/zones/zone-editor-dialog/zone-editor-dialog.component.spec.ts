@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
@@ -19,6 +19,8 @@ class ZoneMapStubComponent {
   @Input() geometry: unknown = null;
   @Input() depots: unknown = [];
   @Input() height = '320px';
+  @Input() editable = false;
+  @Output() polygonDrawn = new EventEmitter<unknown>();
 }
 
 /** ZP-T2: geometry of the COPIED editor and what reaches the server. */

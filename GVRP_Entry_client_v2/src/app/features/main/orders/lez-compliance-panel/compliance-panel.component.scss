@@ -115,6 +115,11 @@
   color: $danger-red;
 }
 
+// Repeated geometry findings folded into one line (UX-LEZ-001, D9).
+.violation-summary {
+  font-style: italic;
+}
+
 .violation-link {
   background: none;
   border: 0;
