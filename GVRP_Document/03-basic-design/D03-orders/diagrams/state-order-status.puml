@@ -1,0 +1,36 @@
+@startuml
+!theme plain
+title D03 order status — transitions enforced by OrderStatus
+
+[*] --> SCHEDULED : created (POST /orders)\nstatus must be null in the payload
+
+SCHEDULED --> ON_ROUTE : completion callback\n(planned order)
+SCHEDULED --> UNASSIGNED : completion callback\n(unplanned order)
+SCHEDULED --> REJECTED : PATCH /orders/status
+SCHEDULED --> UNASSIGNED : PATCH /orders/status
+
+ON_ROUTE --> SERVICING : PATCH /orders/status
+SERVICING --> COMPLETED : PATCH /orders/status
+SERVICING --> REJECTED : PATCH /orders/status
+
+COMPLETED --> SCHEDULED : PATCH /orders/status
+UNASSIGNED --> SCHEDULED : PATCH /orders/status
+REJECTED --> SCHEDULED : PATCH /orders/status
+
+note right of SERVICING
+  Allowed transitions come from OrderStatus.allowedTransitions:
+  SCHEDULED   -> ON_ROUTE, UNASSIGNED, REJECTED
+  ON_ROUTE    -> SERVICING
+  SERVICING   -> COMPLETED, REJECTED
+  COMPLETED   -> SCHEDULED
+  UNASSIGNED  -> SCHEDULED
+  REJECTED    -> SCHEDULED
+end note
+
+note bottom
+  The callback path writes ON_ROUTE / UNASSIGNED directly on the entity and
+  therefore does not consult this table; only PATCH /orders/status and the
+  single-order transition service validate it.
+  There is no CANCELLED state: a cancelled job leaves its orders untouched.
+end note
+@enduml

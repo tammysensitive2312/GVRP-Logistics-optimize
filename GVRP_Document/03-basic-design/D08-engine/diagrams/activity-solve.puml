@@ -1,0 +1,68 @@
+@startuml
+' ============================================================
+'  GVRP Engine API - algorithm decision flow (Activity)
+' ============================================================
+skinparam shadowing false
+skinparam defaultFontName "Segoe UI"
+skinparam ActivityBackgroundColor #ECF0F1
+skinparam ActivityBorderColor #34495E
+skinparam ActivityDiamondBackgroundColor #FEF9E7
+skinparam ArrowColor #2C3E50
+
+title GVRP Engine — decision flow inside optimize()
+
+start
+:Receive EngineOptimizationRequest;
+:prepareContext() → OptimizationContext;
+:validateConfig()\n(costWeight + co2Weight > 0);
+
+if (enableParetoAnalysis == true ?) then (Pareto)
+  :DENSE matrix (mask = null);
+  :ParetoWeightSampler.generate(N=4, p=2.0)\n→ 5 weight-point;
+  partition "For each weight point" {
+    :clone config + set (costWeight, co2Weight);
+    :buildGreenVRP();
+    :Jsprit.searchSolutions();
+    :compute SolutionMetrics;
+  }
+  :buildParetoFrontier()\n(drop dominated solutions);
+  :selectFromPareto()\n(normalise + weighted sum);
+else (Weighted - default)
+  if (orders >= 1000\nand C > 1 ?) then (eligible)
+    :K-means (seed 42);
+    :ClusterMergeService.merge()\n(merge small-demand clusters);
+    :VehicleClusterAssigner.assign()\n(quota theo demand);
+    :MatrixMask.fromClusters()\n→ SPARSE matrix (block-diagonal);
+  else (small job)
+    :mask = null → dense matrix;
+  endif
+  :calculateDistanceMatrix()\n(GraphHopper, failed pair = SENTINEL);
+  :buildGreenVRP()\n(cost = fuel·w_cost + CO2·w_co2);
+  :createAlgorithm()\n+ constraints;
+  note right
+    Hard constraints:
+    • NoPrunedEdge (blocks sentinel edges)
+    • MaxDistance (theo xe)
+    • ClusterRoute (when clusters exist)
+  end note
+  :Jsprit.searchSolutions()\n(snapshot updated every 50 iterations);
+endif
+
+if (isCancelRequested() ?) then (yes)
+  :throw JobCancelledException;
+  :sendCancelledCallback();
+  stop
+else (no)
+endif
+
+:assertNoSentinelEdgeTraversed()\n(fail-loud final safety net);
+:SolutionMetricsCalculator.calculate();
+:extractRouteDetails() + extractUnassignedOrders();
+:OptimizationResult (single | pareto);
+
+:markTerminal(COMPLETED);
+:ResultSpool.store() → pending/;
+:CallbackService.deliver() → Entry API;
+
+stop
+@enduml

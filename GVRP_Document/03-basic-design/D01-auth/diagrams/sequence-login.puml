@@ -1,0 +1,48 @@
+@startuml
+!theme plain
+actor Planner
+participant "Login screen\n/login" as UI
+participant "AuthService" as AS
+participant "AuthController\n/api/v1/auth" as API
+participant "BranchRepository" as BR
+participant "AuthenticationManager\n-> BranchAwareProvider" as AM
+participant "JwtTokenProvider" as JWT
+participant "UserRepository" as UR
+database "MySQL" as DB
+
+title D01 S-1 Login
+
+Planner -> UI: branch name, username, password
+UI -> AS: login({branch_name, username, password}, rememberMe)
+AS -> API: POST /api/v1/auth/login
+API -> BR: findByName(branch_name)
+BR -> DB: select branch
+alt branch not found
+  BR --> API: empty
+  API --> AS: 400 + 0040402 resource=branches
+  AS --> UI: error toast, stay on /login
+else branch found
+  API -> AM: authenticate(BranchUsernamePasswordAuthenticationToken)
+  AM -> DB: load user, compare BCrypt hash
+  alt wrong password / disabled / locked
+    AM --> API: AuthenticationException
+    API --> AS: 500 + 0050001
+    note right: no handler matches\nAuthenticationException, so the generic\nhandler answers 500, not 401/0040101
+    AS --> UI: error toast with the server message
+  else authenticated
+    API -> UR: findByUsernameAndBranchId(username, branch.id)
+    UR -> DB: select user
+    alt user row missing
+      API --> AS: 400 + 0040402 resource=users
+    else user present
+      API -> JWT: generateTokenWithClaims(username, userId, branchId, role)
+      JWT --> API: signed JWT, 24 h
+      API --> AS: 200 {access_token, user_id, branch_id, branch_name, role}
+      AS -> AS: store session (localStorage or sessionStorage by rememberMe)
+      UI -> UI: redirect to lastUrl, else /main;\nDRIVER is forced to /driver
+    end
+  end
+end
+
+note over API,DB: The branch name is supplied by the user.\nOne login screen therefore serves every branch,\nand a wrong branch name is answered before\nthe password is checked.
+@enduml

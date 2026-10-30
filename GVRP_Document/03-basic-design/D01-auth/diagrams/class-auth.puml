@@ -1,0 +1,110 @@
+@startuml
+!include ../../../_shared/puml-styling.puml
+
+title D01 authentication and session — classes
+
+package "security" {
+  class SecurityConfig <<Controller>> {
+    +filterChain(http): SecurityFilterChain
+    +authenticationManager(): AuthenticationManager
+    +passwordEncoder(): PasswordEncoder
+  }
+  class JwtAuthenticationFilter <<Controller>> {
+    +doFilterInternal(req, res, chain)
+    -getJwtFromRequest(req): String
+  }
+  class ApiKeyAuthenticationFilter <<Controller>> {
+    +doFilterInternal(req, res, chain)
+  }
+  class JwtAuthenticationEntryPoint <<Controller>>
+  class RoleAccessDeniedHandler <<Controller>>
+  class JwtTokenProvider <<Service>> {
+    +generateTokenWithClaims(username, userId, branchId, role): String
+    +validateToken(token): boolean
+    +getUsernameFromToken / getUserIdFromToken / getBranchIdFromToken / getRoleFromToken
+  }
+  class CustomUserDetailsService <<Service>>
+  class BranchAwareAuthenticationProvider <<Service>> {
+    +authenticate(token): Authentication
+    +supports(token): boolean
+  }
+  class BranchUsernamePasswordAuthenticationToken <<DTO>>
+}
+
+package "controller" {
+  class AuthController <<Controller>> {
+    +login(LoginRequest): LoginResponse
+    +register(RegisterRequest): String
+  }
+}
+
+package "dto" {
+  class LoginRequest <<DTO>> {
+    branchName: String
+    username: String
+    password: String
+  }
+  class LoginResponse <<DTO>> {
+    accessToken: String
+    userId: Long
+    branchId: Long
+    branchName: String
+    role: String
+  }
+  class RegisterRequest <<DTO>> {
+    username/email/fullName/password: String
+    branchId: Long
+  }
+}
+
+package "entity + repository" {
+  class User <<Entity>> {
+    id: Long
+    username: String
+    password: String
+    role: UserRole
+    enabled: boolean
+    branch: Branch
+  }
+  class Branch <<Entity>> {
+    id: Long
+    name: String
+  }
+  class UserRepository <<Repository>> {
+    +findByUsernameAndBranchId(username, branchId)
+    +existsByUsername(username): boolean
+    +existsByEmail(email): boolean
+  }
+  class BranchRepository <<Repository>> {
+    +findByName(name): Optional<Branch>
+  }
+}
+
+class CurrentUserUtil <<Service>> {
+  +getCurrentUserId(): Long
+  +getCurrentBranchId(): Long
+  +getCurrentUsername(): String
+}
+
+AuthController --> LoginRequest
+AuthController --> LoginResponse
+AuthController --> RegisterRequest
+AuthController --> BranchRepository
+AuthController --> UserRepository
+AuthController --> JwtTokenProvider
+AuthController --> BranchAwareAuthenticationProvider : via AuthenticationManager
+AuthController ..> CurrentUserUtil
+BranchAwareAuthenticationProvider --> CustomUserDetailsService
+BranchAwareAuthenticationProvider --> UserRepository
+CustomUserDetailsService --> UserRepository
+JwtAuthenticationFilter --> JwtTokenProvider
+JwtAuthenticationFilter --> CustomUserDetailsService
+JwtAuthenticationFilter ..> CurrentUserUtil : sets request attributes
+SecurityConfig --> JwtAuthenticationFilter
+SecurityConfig --> ApiKeyAuthenticationFilter
+SecurityConfig --> JwtAuthenticationEntryPoint
+SecurityConfig --> RoleAccessDeniedHandler
+SecurityConfig --> BranchAwareAuthenticationProvider
+User --> Branch
+JwtTokenProvider ..> User : claims sourced from the user row
+@enduml

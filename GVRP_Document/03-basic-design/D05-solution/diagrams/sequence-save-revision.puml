@@ -1,0 +1,50 @@
+@startuml
+!theme plain
+actor Planner
+participant "Route view\n(drag and drop)" as UI
+participant "SolutionController\n/api/v1/solutions" as API
+participant "RouteCustomizationService" as SVC
+participant "EngineApiClient" as ENG
+participant "Engine API\n/optimization/evaluate" as ENGINE
+participant "RouteComplianceService" as LEZ
+database "MySQL" as DB
+
+title D05 S-2 Evaluate and save a manual revision
+
+Planner -> UI: move stops between routes
+UI -> API: POST /solutions/{id}/evaluate {routes[]}
+API -> SVC: evaluate(id, branchId, request)
+SVC -> DB: load base solution (branch-scoped)
+alt duplicate order or a planned order dropped
+  SVC --> API: 400 (BR-094)
+else valid plan
+  SVC -> ENG: evaluateRoutes(engineRequest)
+  ENG -> ENGINE: POST /evaluate
+  alt engine unreachable
+    ENGINE --> ENG: timeout / 5xx
+    SVC --> API: 502
+  else answered
+    ENGINE --> ENG: totals, violations, feasible
+    SVC -> LEZ: current restrictions -> LEZ violations
+    SVC --> API: 200 RouteEvaluateResponseDTO\n(nothing persisted)
+  end
+end
+API --> UI: preview: totals, violations, warnings
+
+Planner -> UI: Save
+UI -> API: POST /solutions/{id}/revisions {routes[]}
+API -> SVC: saveRevision(id, branchId, request)
+SVC -> DB: latest revision of the chain
+alt base is not the latest
+  SVC --> API: 409 + latest revision id
+  API --> UI: reload offer (GET /latest-revision)
+else base is latest
+  SVC -> ENG: evaluateRoutes (re-evaluated server-side)
+  alt infeasible or hard violation
+    SVC --> API: 422 Route plan violates hard constraints
+  else feasible
+    SVC -> DB: insert MANUAL_EDITED child of base,\nroutes, stops, LEZ verdicts
+    SVC --> API: 200 SolutionDetailResponseDTO
+  end
+end
+@enduml

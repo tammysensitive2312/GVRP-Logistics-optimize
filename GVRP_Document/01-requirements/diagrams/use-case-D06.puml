@@ -1,0 +1,41 @@
+@startuml
+!theme plain
+left to right direction
+skinparam packageStyle rectangle
+
+title D06 — Dispatch and driver delivery
+
+actor "Planner" as PL
+actor "Driver" as DR
+actor "Optimisation\nengine" as ENG
+
+rectangle "GVRP Entry API" {
+  usecase "UC-D06-01\nSend a route\nto a driver" as U1
+  usecase "UC-D06-02\nReview the sends\nof a route" as U2
+  usecase "UC-D06-03\nList drivers" as U3
+  usecase "UC-D06-04\nDriver: list my routes" as U4
+  usecase "UC-D06-05\nDriver: open a\nsent route" as U5
+  usecase "LEZ gate\n(BR-079)" as LEZ
+  usecase "Fill missing leg\ngeometry (BR-056)" as LEG
+}
+
+PL --> U1
+PL --> U2
+PL --> U3
+DR --> U4
+DR --> U5
+
+U1 ..> U3 : <<include>>
+U1 ..> LEZ : <<include>>
+U1 ..> LEG : <<include>>
+LEG --> ENG : leg geometry
+U4 ..> U1 : <<include>>
+U5 ..> U4 : <<include>>
+
+note bottom of U1
+  One send is CURRENT; the
+  siblings become SUPERSEDED
+  in the same transaction.
+  LEZ violation -> 422, no send.
+end note
+@enduml

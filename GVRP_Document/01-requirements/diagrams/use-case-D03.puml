@@ -1,0 +1,38 @@
+@startuml
+!theme plain
+left to right direction
+skinparam packageStyle rectangle
+
+title D03 — Orders
+
+actor "Planner" as PL
+actor "Geocoding provider" as GEO
+
+rectangle "GVRP Entry API" {
+  usecase "UC-D03-01\nCreate an order" as U1
+  usecase "UC-D03-02\nImport orders\nfrom a file" as U2
+  usecase "UC-D03-03\nList and filter\norders" as U3
+  usecase "UC-D03-04\nView an order" as U4
+  usecase "UC-D03-05\nUpdate an order" as U5
+  usecase "UC-D03-06\nChange the status\nof many orders" as U6
+  usecase "Resolve coordinates\n(BR-022)" as RC
+}
+
+PL --> U1
+PL --> U2
+PL --> U3
+PL --> U4
+PL --> U5
+PL --> U6
+
+U1 ..> RC : <<include>>
+U2 ..> RC : <<include>>
+U5 ..> RC : <<include>>
+RC --> GEO : address -> lat/long
+
+note right of U6
+  Lenient: every id ends in
+  updated[] or failed[],
+  always HTTP 200 (BR-031..034).
+end note
+@enduml

@@ -1,0 +1,66 @@
+@startuml
+!theme plain
+actor Planner
+participant "Route planning dialog" as UI
+participant "OptimizationJobController\n/api/v1/jobs" as API
+participant "OptimizationJobService" as SVC
+participant "RestrictionCompiler" as LEZ
+participant "EngineApiClient\n@Async" as ENG
+participant "Engine API\n/optimization" as ENGINE
+database "MySQL" as DB
+
+title D04 S-1 Submit a planning job
+
+Planner -> UI: select orders, vehicles, goal, speed,\ntime-window mode, Pareto flag, seed
+UI -> API: POST /api/v1/jobs/plan
+API -> SVC: submitJob(request, branchId, userId)
+
+SVC -> DB: count jobs of the branch in PROCESSING
+alt count >= 3
+  SVC --> API: 400 + 0040903 resource=jobs
+  API --> UI: "branch reached job limit"
+end
+
+SVC -> DB: load orders by id and branch
+alt an order is missing, foreign, or not SCHEDULED
+  SVC --> API: 400 + 0040402 or 0040901\nmessage names up to 10 order codes
+end
+
+SVC -> DB: load vehicles by id and branch
+alt a vehicle is missing or foreign
+  SVC --> API: 400 + 0040402 resource=vehicles
+end
+
+SVC -> SVC: requireSingleServiceDate(orders)
+alt two or more delivery dates
+  SVC --> API: 400 + 0040001 field=deliveryDate
+end
+
+SVC -> LEZ: compile(branchId, serviceDate, vehicles, orders)
+LEZ --> SVC: CompiledRestrictions
+SVC -> SVC: drop vehicles banned all day at their depot
+alt every vehicle unusable
+  SVC --> API: 400 + 0040001 resource=vehicles\n"No usable vehicle: every depot lies in a zone that bans the vehicle all day"
+end
+
+SVC -> DB: insert optimisation_jobs\nstatus=PENDING, input_data, lez_snapshot
+SVC -> SVC: register afterCommit hook
+SVC --> API: OptimizationJobDTO (status PENDING)
+API --> UI: 202 Accepted
+
+note over SVC: The 202 only means "queued".\nThe transaction has not committed when the\ncontroller returns, so the status in the response\nis PENDING, never PROCESSING.
+
+SVC -> ENG: afterCommit -> submitOptimizationAsync(jobId, engineRequest)
+ENG -> ENGINE: POST /optimization
+alt 202
+  ENGINE --> ENG: {external_job_id}
+  ENG -> DB: status=PROCESSING, started_at, external_job_id
+else 4xx/5xx/timeout/any exception
+  ENGINE --> ENG: error
+  ENG -> DB: status=FAILED, completed_at, error_message
+end
+
+note over SVC,DB: The dispatch is best-effort: one attempt, no retry, no outbox.\nA FAILED row is visible to the planner but is never re-sent.
+
+note over API: RoutePlanningRequest has no bean validation:\norderIds and vehicleIds may be null or empty, and an\nempty job is created and dispatched.\nASSUMPTION: this is a defect, not an intended feature.
+@enduml

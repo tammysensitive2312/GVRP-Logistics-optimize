@@ -1,0 +1,54 @@
+@startuml
+!theme plain
+title Dispatch and callback — one planning job
+
+actor Planner
+participant "Entry API" as E
+participant "Engine API" as G
+participant "Spool" as S
+database "MySQL" as DB
+participant "Entry\nNotification\nlistener" as N
+
+Planner -> E: POST /api/v1/jobs/plan
+E -> DB: count PROCESSING jobs of the branch
+alt 3 already PROCESSING
+  E --> Planner: 400 / 0040903, no job row
+else accepted
+  E -> DB: validate orders (SCHEDULED, one date),\nvehicles, compile LEZ snapshot
+  E -> DB: insert job PENDING + input_data + lez_snapshot
+  E --> Planner: 200 job DTO
+  note over E: afterCommit()
+  E ->> G: POST /optimization (async thread)
+  G --> E: 202 {external_job_id: engine-<id>}
+  E -> DB: job.status = PROCESSING
+end
+
+== Solver runs ==
+loop while solving
+  Planner -> E: GET /jobs/{id}/progress
+  E -> G: GET /optimization/{id}/progress
+  G --> E: percent, phase, scenario
+  E --> Planner: same body (or empty when engine is down)
+end
+
+== Completion ==
+G -> S: store pending/job-<id>.json.gz
+G ->> E: POST /solutions/callbacks/complete
+alt job still PENDING
+  E --> G: 503 JobNotReadyException
+  G -> S: keep in pending/, retry after ~60 s
+else job PROCESSING or FAILED
+  E -> DB: solution + routes + stops +\nunassigned + pareto, certify LEZ,\norders -> ON_ROUTE / UNASSIGNED
+  E -> DB: job COMPLETED
+  G -> S: markSent
+  E -> N: JobCompletionEvent (after commit)
+  N -> N: e-mail channel + Slack channel
+end
+
+== Failure path ==
+G ->> E: POST /solutions/callbacks/failed
+E -> DB: job FAILED + error message
+E -> E: failure e-mail (direct call, no event)
+
+
+@enduml

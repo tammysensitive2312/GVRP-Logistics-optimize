@@ -1,0 +1,41 @@
+@startuml
+!theme plain
+actor Planner
+participant "Admin / setup screen" as UI
+participant "VehicleController" as API
+participant "VehicleService" as SVC
+participant "DepotRepository /\nVehicleTypeRepository" as REPO
+participant "FleetRepository" as FLEET
+database "MySQL" as DB
+
+title D02 S-2 Create a vehicle (and fleet create, which reuses the same checks)
+
+Planner -> UI: plate, type, start depot, end depot, fleet
+UI -> API: POST /api/v1/vehicles?fleetId=7
+API -> SVC: createVehicle(input, fleetId, branchId)
+
+SVC -> FLEET: existsByIdAndBranchId(fleetId, branchId)
+alt fleet unknown or foreign
+  SVC --> API: 400 + 0040402 resource=fleet
+  API --> UI: error toast, form stays open
+end
+
+SVC -> REPO: depot / vehicle type by id and branch
+alt any of them unknown or foreign
+  SVC --> API: 400 + 0040402 resource=depot|vehicle_type
+end
+
+SVC -> DB: existsByVehicleLicensePlate(plate)
+alt plate already used
+  SVC --> API: 500 + 0050001
+  note right: the check throws\njakarta.validation.ValidationException,\nwhich no handler matches
+  API --> UI: "Internal server error."
+else plate free
+  SVC -> DB: insert vehicle
+  DB --> SVC: id
+  SVC --> API: VehicleDTO
+  API --> UI: 201 Created
+end
+
+note over SVC,DB: Fleet create runs the same sequence once per vehicle\ninside one transaction, so a failing row rolls back the fleet.
+@enduml

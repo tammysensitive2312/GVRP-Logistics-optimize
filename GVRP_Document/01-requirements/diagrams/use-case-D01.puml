@@ -1,0 +1,36 @@
+@startuml
+!theme plain
+left to right direction
+skinparam packageStyle rectangle
+
+title D01 — Authentication and roles
+
+actor "Anonymous visitor" as ANON
+actor "Planner" as PL
+actor "Driver" as DR
+actor "Administrator\n(out of band)" as ADM
+actor "System" as SYS
+
+rectangle "GVRP Entry API" {
+  usecase "UC-D01-01\nLog in to a branch" as U1
+  usecase "UC-D01-02\nRegister a user\n(stub, writes nothing)" as U2
+  usecase "UC-D01-03\nEnforce role-based access" as U3
+  usecase "UC-D01-04\nRevoke access of a\ndisabled user" as U4
+}
+
+ANON --> U1
+ANON --> U2
+PL --> U1
+DR --> U1
+
+U3 ..> U1 : <<include>>
+SYS --> U3
+
+ADM --> U4
+U4 ..> U3 : <<include>>
+
+note bottom of U2
+  No user row is written:
+  provisioning is out of band.
+end note
+@enduml

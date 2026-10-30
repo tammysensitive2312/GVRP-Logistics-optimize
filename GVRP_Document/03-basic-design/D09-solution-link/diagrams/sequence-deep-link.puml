@@ -1,0 +1,31 @@
+@startuml
+!theme plain
+actor Planner
+participant "E-mail client" as MAIL
+participant "SolutionLinkComponent\nroute ''" as LINK
+participant "Login screen" as LOGIN
+participant "SolutionStore" as STORE
+participant "Entry API\nGET /solutions/{id}" as API
+
+title D09 S-1 Open a solution from the completion e-mail
+
+Planner -> MAIL: click <frontend url>?solution=<id>
+MAIL -> LINK: open '/' with ?solution=<id>
+alt parameter missing or not a positive integer
+  LINK -> LINK: navigate /main (authenticated) or /login
+else anonymous
+  LINK -> LINK: app state lastUrl = "/?solution=<id>"
+  LINK -> LOGIN: navigate /login
+  Planner -> LOGIN: log in
+  LOGIN -> LINK: navigateByUrl(lastUrl)
+end
+LINK -> STORE: loadById(id)
+STORE -> API: GET /api/v1/solutions/{id}
+alt own branch
+  API --> STORE: 200 solution
+  LINK -> LINK: success toast, navigate /main
+else foreign, unknown or server error
+  API --> STORE: error
+  LINK -> LINK: error toast, navigate /main
+end
+@enduml

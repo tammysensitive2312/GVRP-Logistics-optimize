@@ -1,0 +1,36 @@
+{
+  "revision": 6,
+  "completed": [
+    "Part D (continued by Claude Code after the OpenCode run stopped at checkpoint C; OpenCode had already written D01, D02, D03 and common READMEs)",
+    "Part D: wrote 03-basic-design D04-planning, D05-solution, D06-dispatch, D07-lez, D08-engine READMEs and rewrote D09-solution-link README in the common format",
+    "Part D: new diagrams state-solution-revision, sequence-save-revision (D05), state-route-send (D06), class-lez, state-lez-status, sequence-compliance-recheck (D07), sequence-deep-link (D09); rewrote sequence-route-send (LEZ guard, solutionId) and sequence-driver-view (wrong controller name and 404) in D06",
+    "Part D: translated the five moved D08 engine diagrams to English and fixed the class-overview include path; all 25 basic-design diagrams render with exit 0",
+    "Part D: D02 README gained the four vehicle-permit endpoints; DS-V1 endpoint set equal (67 in controllers = 67 API rows, no missing, no extra); DS-V2 every client route listed",
+    "Corrected BR-096: SolutionStatus.INITIAL is never written"
+  ],
+  "remaining": [
+    "Part E: 04-test-design (strategy, test-cases.csv, build_test_cases.py; XLSX generation blocked if openpyxl is missing)",
+    "Part F: render every .puml, complete README document list",
+    "Verification DS-V3 to DS-V9, implementation.md, step 04"
+  ],
+  "read_next": [
+    "work-items/DOC-SYSTEM-001/design.md",
+    "GVRP_Document/01-requirements/02-use-case-catalogue.md"
+  ],
+  "evidence": [
+    "GVRP_Document/03-basic-design/D04-planning/README.md",
+    "GVRP_Document/03-basic-design/D05-solution/README.md",
+    "GVRP_Document/03-basic-design/D06-dispatch/README.md",
+    "GVRP_Document/03-basic-design/D07-lez/README.md",
+    "GVRP_Document/03-basic-design/D08-engine/README.md",
+    "GVRP_Document/03-basic-design/D09-solution-link/README.md"
+  ],
+  "blockers": [],
+  "decisions": [
+    "GET /api/v1/drivers stays in the D02 API table (it reads users); D06 references it",
+    "Unknown-id status documented as implemented: 400 + 0040402 in D03-D06 (DataInvalidException), 404 in D07 (LezNotFoundException); the BR texts stating 404 are flagged in each README",
+    "RouteSendService answers a foreign-branch solution with a message that confirms the id exists; recorded as an observation in D06, not changed"
+  ],
+  "processes": [],
+  "next_action": "Start Part E: check python openpyxl, write 04-test-design/01-test-strategy.md, test-cases.csv covering every UC (main and error paths, tenant isolation), build_test_cases.py, then checkpoint E"
+}

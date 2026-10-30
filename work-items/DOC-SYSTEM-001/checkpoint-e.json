@@ -1,0 +1,31 @@
+{
+  "revision": 7,
+  "completed": [
+    "Part E: wrote 04-test-design/01-test-strategy.md (levels, environments, fictional data, coverage rules, automated-test linking, entry/exit criteria, workbook status)",
+    "Part E: wrote 04-test-design/test-cases.csv with 151 cases (D01 12, D02 20, D03 23, D04 20, D05 16, D06 15, D07 29, D08 13, D09 3); all 48 use cases covered; tenant-isolation cases for every branch-owned resource",
+    "Part E: 118 automated_by values all resolve to an existing Java Class#method or client spec file; 33 manual cases",
+    "Part E: wrote 04-test-design/tools/build_test_cases.py (stdlib csv + openpyxl; domain sheets, Traceability, Summary; deterministic); it exits 2 with a message because openpyxl is not installed"
+  ],
+  "remaining": [
+    "Part F: render every .puml under GVRP_Document, complete the README document list",
+    "Verification DS-V3 to DS-V9, implementation.md, step 04"
+  ],
+  "read_next": [
+    "work-items/DOC-SYSTEM-001/design.md",
+    "GVRP_Document/README.md"
+  ],
+  "evidence": [
+    "GVRP_Document/04-test-design/01-test-strategy.md",
+    "GVRP_Document/04-test-design/test-cases.csv",
+    "GVRP_Document/04-test-design/tools/build_test_cases.py"
+  ],
+  "blockers": [
+    "GVRP_Test_Cases.xlsx not generated: python openpyxl is not installed (design Part E: do not install, report)"
+  ],
+  "decisions": [
+    "Expected results state the implemented behaviour and mark gaps with 'Implemented:'",
+    "automated_by left empty when no existing test matches the case exactly, rather than linking a loosely related test"
+  ],
+  "processes": [],
+  "next_action": "Part F: render all .puml files under GVRP_Document with plantuml.jar, fix any error, update README.md document list (D05/D07 diagrams, 04-test-design), then run DS-V3..DS-V9"
+}

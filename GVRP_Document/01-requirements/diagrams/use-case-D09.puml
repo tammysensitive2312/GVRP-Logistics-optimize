@@ -1,0 +1,26 @@
+@startuml
+!theme plain
+left to right direction
+skinparam packageStyle rectangle
+
+title D09 — Solution deep link
+
+actor "Planner" as PL
+actor "Anonymous visitor" as ANON
+
+rectangle "GVRP client v2" {
+  usecase "UC-D09-01\nResolve a solution\ndeep link\n(/?solution=<id>)" as U1
+  usecase "Store lastUrl and\nreturn after login" as LAST
+}
+
+PL --> U1
+ANON --> U1
+U1 ..> LAST : <<extend>>\n[not authenticated]
+
+note bottom of U1
+  Missing or non-numeric id ->
+  /main (authenticated) or
+  /login (anonymous).
+  Load failure -> toast, then /main.
+end note
+@enduml

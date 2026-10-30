@@ -1,0 +1,25 @@
+@startuml
+!theme plain
+title D07 route LEZ status (LezStatus + derived STALE)
+
+[*] --> UNCHECKED : route persisted without a ruleset\n(job without a snapshot)
+[*] --> COMPLIANT : completion callback certifies\nwith the job's snapshot, no violation
+[*] --> VIOLATION : completion callback certifies\nwith the job's snapshot, violations
+
+UNCHECKED --> COMPLIANT : recheck / send guard / saved revision
+UNCHECKED --> VIOLATION : recheck / send guard / saved revision
+COMPLIANT --> VIOLATION : recheck or send guard\nwith the current rules
+VIOLATION --> COMPLIANT : recheck after rules, permits\nor the plan changed
+
+state STALE #EEEEEE : derived on read, never stored:\nstored lez_ruleset_hash differs from the\nhash of the current compilation
+COMPLIANT -[dashed]-> STALE : rules changed since certification
+VIOLATION -[dashed]-> STALE : rules changed since certification
+STALE -[dashed]-> COMPLIANT : POST /compliance/recheck
+STALE -[dashed]-> VIOLATION : POST /compliance/recheck
+
+note bottom
+  A route carries lez_status, lez_checked_at, lez_ruleset_hash and
+  lez_violations (JSON). A 422 from the send guard still commits the
+  VIOLATION verdict (noRollbackFor).
+end note
+@enduml

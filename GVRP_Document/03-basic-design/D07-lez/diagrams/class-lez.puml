@@ -1,0 +1,80 @@
+@startuml
+!theme plain
+title D07 low-emission zones — main classes
+
+package "Controllers" {
+  class ZoneTemplateController
+  class BranchZoneController
+  class LezMembershipController
+  class LezComplianceController
+}
+
+package "Services (service/lez)" {
+  class ZoneTemplateService
+  class ZoneService
+  class ZoneMembershipService
+  class ComplianceReadService
+  class RouteComplianceService
+  class RestrictionCompiler
+  class RuleValidator
+  class RuleEvaluator
+  class ComplianceChecker <<static>>
+  class GeoJsonGeometryParser <<static>>
+}
+
+package "Entities" {
+  class ZoneTemplate {
+    code, name, jurisdiction
+    geometry : MultiPolygon
+    version
+  }
+  class ZoneRuleTemplate {
+    templateVersion
+    selector, schedule
+    effectiveFrom, effectiveTo
+  }
+  class BranchZone {
+    mode : LINKED | COPIED
+    name, geometry (COPIED only)
+    sourceTemplateVersion
+    acknowledgedTemplateVersion
+    enabled
+  }
+  class BranchZoneRule {
+    selector, schedule
+    effectiveFrom, effectiveTo
+  }
+  class VehiclePermit {
+    permitNo, schedule
+    validFrom, validTo
+  }
+  class Route {
+    lezStatus, lezCheckedAt
+    lezRulesetHash, lezViolations
+  }
+}
+
+class CompiledRestrictions <<value>> {
+  zones, vehicleRestrictions
+  orderZones, unusableVehicles
+  hash
+}
+
+ZoneTemplateController --> ZoneTemplateService
+BranchZoneController --> ZoneService
+LezMembershipController --> ZoneMembershipService
+LezComplianceController --> ComplianceReadService
+ComplianceReadService --> RouteComplianceService
+RouteComplianceService --> RestrictionCompiler
+RouteComplianceService --> ComplianceChecker
+RestrictionCompiler --> RuleEvaluator
+ZoneService --> RuleValidator
+ZoneService --> GeoJsonGeometryParser
+RestrictionCompiler ..> CompiledRestrictions : builds
+
+ZoneTemplate "1" *-- "*" ZoneRuleTemplate
+BranchZone "*" --> "1" ZoneTemplate : source
+BranchZone "1" *-- "*" BranchZoneRule : COPIED only
+VehiclePermit "*" --> "1" BranchZone
+RouteComplianceService ..> Route : certify()
+@enduml

@@ -1,0 +1,49 @@
+{
+  "revision": 5,
+  "completed": [
+    "Part C: wrote 02-system-design/01-context-and-containers.md with the C4 system-context and container views, the interaction table, four boundary decisions and a capability-to-container map",
+    "Part C: wrote 02-system-design/02-deployment.md from the empty Dockerfile, the absent compose/k8s files, the six CI jobs, the gitignored OSM/graph/spool artefacts, the configuration surface, seven inherited operational behaviours and the startup order",
+    "Part C: wrote 02-system-design/03-integration.md: eleven boundaries, the Entry->Engine dispatch contract with its exact error mapping, progress/cancel/evaluate/legs, the four callbacks with their guards, the spool outbox and retry rules, geocoding, OSRM and tiles, notifications",
+    "Part C: wrote 02-system-design/04-security-and-tenancy.md: filter chain order, token validation details, the authorisation rule table, tenant isolation pattern and its token-carried branch caveat, identity-model contradictions, secrets by property name, CORS/TLS, ten open gaps",
+    "Part C: wrote 02-system-design/05-data-architecture.md: 22 tables by area, identifier allocation, five relationship rules with the real FK delete/cascade matrix, the ten SQL files, counted row figures and eight schema contradictions",
+    "Part C: wrote and rendered six diagrams (c4-context, c4-container, deployment, sequence-auth, sequence-dispatch-callback, er-model) to SVG; no render errors and no error markers in the SVGs",
+    "Corrected the catalogue entry UC-D04-04 and use-case-D04.puml: the cancellation callback sends no e-mail because EmailService.sendOptimizationCancelledEmail is never called",
+    "Corrected GVRP_Document/README.md: the level-1 and level-2 diagram file names were stale, and the status-word convention contradicted the statuses now used in 04-non-functional.md",
+    "Verified facts that changed earlier assumptions: the engine has no security layer at all (no starter-security dependency, no filter) so Entry->Engine calls are unauthenticated; the three sequence tables are live id allocators for routes/route_stops/unassigned_orders (allocationSize 50, id columns without AUTO_INCREMENT), not legacy tables; 11 of 35 FKs are ON DELETE CASCADE including branches -> orders/solutions; information_schema.tables.table_rows is unusable on this database and was replaced by SELECT COUNT(*)",
+    "Re-ran the U+FFFD scan over all 54 markdown, puml and csv files: none"
+  ],
+  "remaining": [
+    "Part D: basic design (03-basic-design D01-D09 plus common), including the five state diagrams referenced by 03-business-rules.md and the eight Part-D diagrams still missing",
+    "Part E: test design (01-test-strategy.md, test-cases.csv, build_test_cases.py; XLSX blocked by missing openpyxl)",
+    "Part F: render every .puml to .svg and complete the README document list",
+    "Verification DS-V1 to DS-V9 and implementation.md"
+  ],
+  "read_next": [
+    "work-items/DOC-SYSTEM-001/design.md",
+    "GVRP_Document/03-basic-design/D09-solution-link/README.md",
+    "GVRP_Document/03-basic-design/D06-dispatch/diagrams/sequence-route-send.puml"
+  ],
+  "evidence": [
+    "GVRP_Document/02-system-design/01-context-and-containers.md",
+    "GVRP_Document/02-system-design/02-deployment.md",
+    "GVRP_Document/02-system-design/03-integration.md",
+    "GVRP_Document/02-system-design/04-security-and-tenancy.md",
+    "GVRP_Document/02-system-design/05-data-architecture.md",
+    "GVRP_Document/02-system-design/diagrams/er-model.svg",
+    "GVRP_Document/02-system-design/diagrams/c4-container.svg",
+    "GVRP_Document/README.md"
+  ],
+  "blockers": [
+    "Part E XLSX generation: python openpyxl is not installed; design.md Part E says stop the generation step and report instead of installing"
+  ],
+  "decisions": [
+    "Callback authentication is documented as one-directional: Entry validates engine.api.key, the engine sends entry.api-key and has no security of its own",
+    "The progress callback is documented as a stub that nothing calls, because the engine has no reference to callbacks/progress and the Entry handler writes nothing",
+    "Database row figures come from SELECT COUNT(*) because information_schema estimates were wrong by up to 20 percent and reported zero for single-row sequence tables",
+    "The sequence tables are documented as id allocators with the consequence that hand-written inserts into routes/route_stops/unassigned_orders must supply ids",
+    "The FK delete-rule matrix is recorded as behaviour, including that branches is a deletion root and that optimization_jobs -> solutions cascades, which contradicts the JobCleanupService javadoc",
+    "Status words are allowed at the requirements and system-design levels where a configuration value could be read as a requirement; the README convention was corrected instead of removing the statuses"
+  ],
+  "processes": [],
+  "next_action": "Start Part D: verify the existing 03-basic-design domain READMEs against the code, write the missing sequence and state diagrams (D02 master data, D03 order import, D04 job submit and engine callback, D07 LEZ class, five state diagrams), then checkpoint D"
+}

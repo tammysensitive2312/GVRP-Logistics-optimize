@@ -1,0 +1,46 @@
+{
+  "revision": 4,
+  "completed": [
+    "Part B: wrote 01-requirements/00-system-overview.md (purpose, scope, glossary)",
+    "Part B: wrote 01-requirements/01-actors-and-roles.md with the permission matrix and the registration gap",
+    "Part B: wrote 01-requirements/02-use-case-catalogue.md: 48 use cases (UC-D01-01 .. UC-D09-01) with actor, goal, trigger, main flow, alternatives, rules and API",
+    "Part B: wrote 01-requirements/03-business-rules.md: BR-001 .. BR-096 in nine groups with source and status per rule",
+    "Part B: wrote 01-requirements/04-non-functional.md from configuration keys, executor settings, solver budgets, retention sweeps, CORS, logging, i18n and client platform; recorded 12 open NFR gaps and three inert configuration keys",
+    "Part B: wrote and rendered nine use-case diagrams (use-case-D01 .. D09) and linked each one from the catalogue",
+    "Re-verified configuration facts against application.properties, AppConstant, OptimizationConfigMapper, AsyncConfig, WebConfig, SecurityConfig, RestTemplateConfig, FileValidationUtils, JobCleanupService, ResultSpool and the client polling dialog",
+    "Recovered 02-use-case-catalogue.md after a PowerShell read/write corrupted its UTF-8 encoding; file rewritten with the write tool and the whole GVRP_Document tree rescanned for U+FFFD (none)"
+  ],
+  "remaining": [
+    "Part C: system design (02-system-design: context and containers, deployment, integration, security and tenancy, data architecture)",
+    "Part D: basic design (03-basic-design, D01-D09 plus common), including the state diagrams referenced by 03-business-rules.md",
+    "Part E: test design (01-test-strategy.md, test-cases.csv, build_test_cases.py; XLSX blocked by missing openpyxl)",
+    "Part F: render every .puml to .svg and complete the README document list",
+    "Verification DS-V1 to DS-V9 and implementation.md"
+  ],
+  "read_next": [
+    "work-items/DOC-SYSTEM-001/design.md",
+    "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/service/OptimizationJobService.java",
+    "GVRP_Entry_API/src/main/resources/database/migrations/2026-10-28-lez-compliance.sql"
+  ],
+  "evidence": [
+    "GVRP_Document/01-requirements/00-system-overview.md",
+    "GVRP_Document/01-requirements/01-actors-and-roles.md",
+    "GVRP_Document/01-requirements/02-use-case-catalogue.md",
+    "GVRP_Document/01-requirements/03-business-rules.md",
+    "GVRP_Document/01-requirements/04-non-functional.md",
+    "GVRP_Document/01-requirements/diagrams/use-case-D07.puml",
+    "GVRP_Document/01-requirements/diagrams/use-case-D07.svg"
+  ],
+  "blockers": [
+    "Part E XLSX generation: python openpyxl is not installed; design.md Part E says stop the generation step and report instead of installing"
+  ],
+  "decisions": [
+    "Use-case diagrams carry one diagram per domain (nine files) and each is linked from the catalogue section heading",
+    "04-non-functional.md states only what configuration and code enforce; unmeasured values are marked NOT_VERIFIED rather than assumed",
+    "Three configuration keys are recorded as inert because a repository-wide search finds no reader: task.cron.expression, schedule.task.min_gap, spring.optimization.engine.timeout",
+    "Job retention is documented as dry-run by default (gvrp.cleanup.dry-run=true), so a default deployment deletes nothing",
+    "File editing uses the write/edit tools only: PowerShell Get-Content/Set-Content re-encodes UTF-8 and corrupted the catalogue once"
+  ],
+  "processes": [],
+  "next_action": "Write 02-system-design: 01-context-and-containers.md, 02-deployment.md, 03-integration.md, 04-security-and-tenancy.md, 05-data-architecture.md with their C4, deployment and ER diagrams"
+}

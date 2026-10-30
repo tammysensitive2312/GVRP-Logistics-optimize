@@ -1,0 +1,48 @@
+@startuml
+!theme plain
+actor Planner
+participant "Send route dialog" as UI
+participant "RouteSendController\n/api/v1/routes" as API
+participant "RouteSendService" as SVC
+participant "RouteComplianceService" as LEZ
+participant "Engine API\n/optimization/legs" as ENGINE
+database "MySQL" as DB
+
+title D06 S-1 Send a route to a driver
+
+Planner -> UI: pick revision, route, driver
+UI -> API: POST /api/v1/routes/{id}/send\n{solutionId, driverUserId}
+API -> SVC: sendRoute(routeId, request)
+SVC -> DB: route (row lock), solution with details
+alt route not in solution / solution not SUCCESS or PARTIAL_SUCCESS /\nforeign branch / no delivery stop / not an enabled driver of the branch
+  SVC --> API: 400 (0040001), or 400 (0040402) for an unknown id
+else checks pass
+  SVC -> LEZ: orders of the solution
+  alt several delivery dates
+    SVC --> API: 422 LEZ_MIXED_DATES
+  else one date
+    SVC -> LEZ: currentFor(solution)
+    opt branch has zones
+      opt a leg has no stored geometry
+        SVC -> ENGINE: POST /legs (one call per route)
+        alt engine unreachable
+          SVC --> API: 502, no send row
+        end
+      end
+      SVC -> LEZ: check + certify route (verdict written)
+      alt violations
+        SVC --> API: 422 naming codes, seq, zones\n(verdict and fetched legs committed)
+      end
+    end
+    SVC -> DB: CURRENT sends of the route -> SUPERSEDED
+    SVC -> DB: insert route_sends (CURRENT)
+    SVC -> DB: count CURRENT sends of the route
+    alt count != 1 (concurrent send)
+      SVC --> API: 409 + latest send id
+    else
+      SVC --> API: 200 RouteSendDTO
+    end
+  end
+end
+API --> UI: toast; on 409 reload
+@enduml

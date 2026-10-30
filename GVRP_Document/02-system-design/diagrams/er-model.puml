@@ -1,0 +1,228 @@
+@startuml
+!theme plain
+title ER model — 19 mapped tables of gvrp_db
+
+hide circle
+skinparam linetype ortho
+skinparam classAttributeIconSize 0
+
+package "Tenancy and identity" {
+  entity "branches" as BR {
+    * id : bigint <<PK>>
+    --
+    name : varchar(100) <<UQ>>
+    branch_webhook_url : varchar(255)
+  }
+  entity "users" as US {
+    * id : bigint <<PK>>
+    --
+    branch_id : bigint <<FK>>
+    username : varchar(50) <<UQ>>
+    email : varchar(100) <<UQ>>
+    role : enum(PLANNER, CUSTOMER, DRIVER)
+    enabled : boolean
+    slack_user_id : varchar(50) <<UQ>>
+  }
+}
+
+package "Master data" {
+  entity "depots" as DP {
+    * id : bigint <<PK>>
+    --
+    branch_id : bigint <<FK>>
+    location : point
+  }
+  entity "fleets" as FL {
+    * id : bigint <<PK>>
+    --
+    branch_id : bigint <<FK>>
+    fleet_name : varchar(100)
+  }
+  entity "vehicle_types" as VT {
+    * id : bigint <<PK>>
+    --
+    branch_id : bigint <<FK>>
+    capacity : int
+    vehicle_features : json
+    legal_class : enum
+    energy_type : enum
+  }
+  entity "vehicles" as VH {
+    * id : bigint <<PK>>
+    --
+    fleet_id : bigint <<FK>>
+    vehicle_type_id : bigint <<FK>>
+    start_depot_id : bigint <<FK>>
+    end_depot_id : bigint <<FK>>
+    vehicle_license_plate : varchar(20) <<UQ>>
+    status : enum
+  }
+}
+
+package "Orders" {
+  entity "orders" as OR {
+    * id : bigint <<PK>>
+    --
+    branch_id : bigint <<FK>>
+    order_code : varchar(50)
+    location : point
+    status : enum(6 values)
+    delivery_date : date
+    required_skills : json
+  }
+}
+
+package "Planning and solutions" {
+  entity "optimization_jobs" as JOB {
+    * id : bigint <<PK>>
+    --
+    branch_id : bigint <<FK>>
+    created_by_user_id : bigint <<FK>>
+    status : enum
+    input_data : json
+    lez_snapshot : json
+    external_job_id : varchar(255)
+  }
+  entity "solutions" as SOL {
+    * id : bigint <<PK>>
+    --
+    job_id : bigint <<UQ,FK>>
+    branch_id : bigint <<FK>>
+    parent_solution_id : bigint <<FK>>
+    pareto_candidate_id : bigint <<FK>>
+    status : enum
+    type : enum(4 values)
+  }
+  entity "routes" as RT {
+    * id : bigint <<PK>>
+    --
+    solution_id : bigint <<FK>>
+    vehicle_id : bigint <<FK>>
+    lez_status : enum
+    lez_ruleset_hash : char(64)
+  }
+  entity "route_stops" as RS {
+    * id : bigint <<PK>>
+    --
+    route_id : bigint <<FK>>
+    order_id : bigint <<FK>>
+    sequence_number : int
+    geometry_to_next : mediumtext
+    instructions_to_next : json
+  }
+  entity "unassigned_orders" as UO {
+    * id : bigint <<PK>>
+    --
+    solution_id : bigint <<FK>>
+    order_id : bigint <<FK>>
+    reason_code : varchar(40)
+  }
+  entity "pareto_candidates" as PC {
+    * id : bigint <<PK>>
+    --
+    job_id : bigint <<FK>>
+    branch_id : bigint <<FK>>
+    frontier_status : enum
+    plan_json : json
+  }
+}
+
+package "Dispatch" {
+  entity "route_sends" as SD {
+    * id : bigint <<PK>>
+    --
+    route_id : bigint <<FK>>
+    solution_id : bigint <<FK>>
+    driver_id : bigint <<FK>>
+    sender_id : bigint <<FK>>
+    status : enum(CURRENT, SUPERSEDED)
+    sent_at : datetime(6)
+  }
+}
+
+package "Low-emission zones" {
+  entity "zone_templates" as ZT {
+    * id : bigint <<PK>>
+    --
+    code : varchar(60) <<UQ>>
+    geometry : multipolygon
+    version : int
+    boundary_confidence : enum
+  }
+  entity "zone_rule_templates" as ZRT {
+    * id : bigint <<PK>>
+    --
+    zone_template_id : bigint <<FK>>
+    selector : json
+    schedule : json
+    template_version : int
+  }
+  entity "branch_zones" as BZ {
+    * id : bigint <<PK>>
+    --
+    branch_id : bigint <<FK>>
+    source_template_id : bigint <<FK>>
+    mode : enum(LINKED, COPIED)
+    geometry : multipolygon
+    acknowledged_template_version : int
+  }
+  entity "branch_zone_rules" as BZR {
+    * id : bigint <<PK>>
+    --
+    branch_zone_id : bigint <<FK>>
+    branch_id : bigint <<FK>>
+    selector : json
+    schedule : json
+  }
+  entity "vehicle_permits" as VP {
+    * id : bigint <<PK>>
+    --
+    vehicle_id : bigint <<FK>>
+    branch_zone_id : bigint <<FK>>
+    branch_id : bigint <<FK>>
+    valid_from : date
+    valid_to : date
+  }
+}
+
+BR ||--o{ US
+BR ||--o{ DP
+BR ||--o{ FL
+BR ||--o{ VT
+BR ||--o{ OR
+BR ||--o{ JOB
+BR ||--o{ SOL
+BR ||--o{ PC
+BR ||--o{ BZ
+BR ||--o{ BZR
+BR ||--o{ VP
+FL ||--o{ VH
+VT ||--o{ VH
+DP ||--o{ VH : start
+DP ||--o{ VH : end
+US ||--o{ JOB : created by
+JOB ||--o{ PC
+JOB ||--o| SOL
+SOL ||--o{ RT
+SOL ||--o{ UO
+SOL ||--o{ SOL : revision of
+PC ||--o| SOL : applied as
+RT ||--o{ RS
+OR ||--o{ RS
+OR ||--o{ UO
+RT ||--o{ SD
+SOL ||--o{ SD
+US ||--o{ SD : driver
+US ||--o{ SD : sender
+ZT ||--o{ ZRT
+ZT ||--o{ BZ : source
+BZ ||--o{ BZR
+BZ ||--o{ VP
+VH ||--o{ VP
+
+note bottom of SOL
+  solutions.job_id is UNIQUE: at most one
+  solution per job, enforced by the schema
+  (matches BR-066).
+end note
+@enduml

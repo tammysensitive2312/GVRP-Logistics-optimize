@@ -1,0 +1,58 @@
+@startuml
+!theme plain
+title Deployment — what must exist on the host
+
+node "Operator workstation (development)" as DEV {
+  node "Angular dev server" as NG {
+    artifact "Client v2 :4200 (CLI default)\nproxy /api -> localhost:8080" as NGA
+  }
+}
+
+node "Application host" as HOST {
+  node "JVM 21\nEntry API :8080" as ENTRY {
+    artifact "GVRP_Entry_API.jar" as EJ
+    artifact "application.properties\n(secrets inline, SEC-001)" as EP
+  }
+  node "JVM 21\nEngine API :8081" as ENGINE {
+    artifact "GVRP_Engine_API.jar" as GJ
+    artifact ".data/*.osm.pbf\n(gitignored, hundreds of MB)" as OSM
+    artifact ".cache/routing-graph" as CACHE
+    artifact ".data/results/\npending/ sent/ poison/" as SPOOL
+  }
+  database "MySQL\ngvrp_db" as DB {
+    artifact "schema from\ndatabase/*.sql (9 files)" as DDL
+  }
+}
+
+cloud "External services" as EXT {
+  [Goong geocoding]
+  [SMTP server]
+  [Slack webhook]
+  [OSRM public routing]
+  [Google raster tiles]
+}
+
+NG --> ENTRY : /api/v1 (proxy)
+ENTRY --> DB : JDBC
+ENTRY --> ENGINE : HTTP JSON
+ENGINE --> ENTRY : callbacks + X-API-Key
+ENGINE --> OSM : read at startup
+OSM --> CACHE : builds graph
+ENGINE --> SPOOL : result outbox
+ENTRY --> EXT
+NG --> EXT
+
+note right of ENTRY
+  No container image is defined:
+  GVRP_Entry_API/Dockerfile is empty
+  and there is no compose file.
+end note
+
+note bottom of ENGINE
+  Engine must reach Entry for callbacks;
+  Entry must reach Engine for dispatch.
+  The API key is sent engine -> Entry only:
+  the engine has no security layer of its own
+  and accepts any caller.
+end note
+@enduml

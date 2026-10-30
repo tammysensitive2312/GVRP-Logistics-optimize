@@ -1,0 +1,29 @@
+{
+  "revision": 8,
+  "completed": [
+    "Part F: rendered all 40 .puml files under GVRP_Document (the include-only _shared/puml-styling.puml is not a diagram) with plantuml.jar, exit 0 each; 40 matching .svg, no orphan .svg, no error text in any .svg",
+    "Part F: removed names from six @startuml lines (they made PlantUML write SVGs under the old names) and deleted the six orphan SVGs they produced",
+    "Part F: README index already lists every document; include-path note corrected for 03-basic-design/<domain>/diagrams",
+    "Consistency fixes: planning-preferences rule renumbered BR-070 -> BR-059 (BR-070 was used twice); UC ranges in D02/D03 READMEs; catalogue coverage table D02 16 / D06 4 endpoints"
+  ],
+  "remaining": [
+    "Verification DS-V6 to DS-V9",
+    "implementation.md and step ready 04-proof.json"
+  ],
+  "read_next": [
+    "work-items/DOC-SYSTEM-001/design.md",
+    "work-items/DOC-SYSTEM-001/task-opencode.md"
+  ],
+  "evidence": [
+    "GVRP_Document/README.md",
+    "GVRP_Document/01-requirements/03-business-rules.md"
+  ],
+  "blockers": [
+    "GVRP_Test_Cases.xlsx not generated (openpyxl missing)"
+  ],
+  "decisions": [
+    "Diagram file names are the source of the SVG name: @startuml carries no name"
+  ],
+  "processes": [],
+  "next_action": "Run DS-V6 (node tests), DS-V7 (session brief), DS-V8 (git status), DS-V9 (secret scan), then write implementation.md and run step ready with a proof at the current revision"
+}

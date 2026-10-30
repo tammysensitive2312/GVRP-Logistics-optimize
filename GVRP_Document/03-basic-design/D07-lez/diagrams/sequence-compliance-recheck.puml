@@ -1,0 +1,39 @@
+@startuml
+!theme plain
+actor Planner
+participant "Compliance panel" as UI
+participant "LezComplianceController" as API
+participant "ComplianceReadService" as SVC
+participant "RouteComplianceService" as RCS
+participant "RestrictionCompiler" as RC
+database "MySQL" as DB
+
+title D07 S-2 Read and recheck solution compliance
+
+Planner -> UI: open the Route tab
+UI -> API: GET /api/v1/solutions/{id}/compliance
+API -> SVC: compliance(id, branchId)
+alt no branch context
+  SVC --> API: 403
+else foreign or unknown solution
+  SVC --> API: 404
+else own solution
+  SVC -> RCS: currentFor(solution)
+  RCS -> RC: compile(branch, service date, vehicles, orders)
+  RC -> DB: zones, rules, permits
+  SVC --> API: per route: stored status, or STALE when the\nstored hash differs from the current hash;\nzones; LEZ-caused unassigned orders
+end
+API --> UI: status chips, violations
+
+Planner -> UI: Recheck now
+UI -> API: POST /api/v1/solutions/{id}/compliance/recheck
+API -> SVC: recheck(id, branchId)
+SVC -> RCS: currentFor(solution)
+loop each route
+  SVC -> RCS: check(route, current)
+  SVC -> RCS: certify(route, violations, current)
+  RCS -> DB: UPDATE routes SET lez_status, lez_checked_at,\nlez_ruleset_hash, lez_violations
+end
+SVC --> API: fresh view (no route is STALE)
+API --> UI: refresh panel
+@enduml

@@ -1,0 +1,29 @@
+@startuml
+!theme plain
+title D05 solution status and revision type
+
+state "Solution status (SolutionStatus), set once at insert" as S {
+  [*] --> SUCCESS : callback / revision / Pareto apply,\nno order unassigned
+  [*] --> PARTIAL_SUCCESS : callback / revision / Pareto apply,\nsome orders unassigned
+  [*] --> INFEASIBLE : completion callback,\nno feasible plan
+  state INITIAL #EEEEEE : declared in the enum,\nnever written by any code path
+}
+
+state "Revision chain (SolutionType)" as R {
+  [*] --> ENGINE_GENERATED : completion callback\n(root of the chain)
+  ENGINE_GENERATED --> MANUAL_EDITED : POST /solutions/{id}/revisions\nbase is latest, no hard violation
+  ENGINE_GENERATED --> PARETO_ALTERNATIVE : POST /solutions/{id}/pareto/{cid}/apply\nFRONTIER candidate, same order set
+  MANUAL_EDITED --> MANUAL_EDITED : save again on the latest revision
+  MANUAL_EDITED --> PARETO_ALTERNATIVE : apply a candidate
+  PARETO_ALTERNATIVE --> MANUAL_EDITED : edit the applied plan
+  PARETO_ALTERNATIVE --> PARETO_ALTERNATIVE : apply another candidate
+}
+
+note bottom of R
+  Every new revision is a new row (parent_solution_id = base);
+  an existing row's status and type never change.
+  A save or apply on a base that is not the latest revision is 409
+  (RevisionConflictException carrying the latest id); nothing is written.
+  FILE_IMPORTED exists in the enum; no code path creates it.
+end note
+@enduml

@@ -1,0 +1,40 @@
+@startuml
+!theme plain
+actor Planner
+participant "Pareto tab\nParetoViewComponent" as UI
+participant "ParetoController\n/api/v1/solutions" as API
+participant "ParetoService" as SVC
+participant "RouteComplianceService" as LEZ
+database "MySQL" as DB
+
+title D05 S-3 Compare and apply a Pareto alternative
+
+Planner -> UI: open the Pareto tab
+UI -> API: GET /solutions/{id}/pareto
+API -> SVC: getFrontier(id, branchId)
+SVC -> DB: solution (branch-scoped) -> job -> pareto_candidates
+alt foreign or unknown solution
+  SVC --> API: 400 + 0040402
+else own solution
+  SVC --> API: ParetoFrontierDTO: candidates with weights, totals,\nfrontier_status, engine_selected, applicable
+end
+API --> UI: chart from the returned metrics (no recomputation)
+
+Planner -> UI: apply candidate K
+UI -> API: POST /solutions/{id}/pareto/{cid}/apply
+API -> SVC: apply(id, cid, branchId)
+alt candidate not of this job / branch
+  SVC --> API: 400 + 0040402
+else base is not the latest revision
+  SVC --> API: 409 + latest revision id
+else candidate already active on the base
+  SVC --> API: 200 base solution, nothing saved
+else not FRONTIER or different order set
+  SVC --> API: 422
+else applicable
+  SVC -> DB: insert PARETO_ALTERNATIVE child of base,\nroutes, stops
+  SVC -> LEZ: certify the new routes with the current rules
+  SVC --> API: 200 SolutionDetailResponseDTO
+end
+API --> UI: new active solution
+@enduml

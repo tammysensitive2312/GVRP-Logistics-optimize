@@ -1,0 +1,100 @@
+@startuml
+!include ../../../_shared/puml-styling.puml
+
+title D02 master data — classes
+
+package "controller" {
+  class DepotController <<Controller>>
+  class VehicleTypeController <<Controller>>
+  class VehicleController <<Controller>>
+  class FleetController <<Controller>>
+}
+
+package "service" {
+  class DepotService <<Service>>
+  class VehicleTypeService <<Service>>
+  class VehicleService <<Service>>
+  class FleetService <<Service>>
+  class VehicleFeaturesService <<Service>>
+}
+
+package "repository" {
+  class DepotRepository <<Repository>>
+  class VehicleTypeRepository <<Repository>>
+  class VehicleRepository <<Repository>>
+  class FleetRepository <<Repository>>
+}
+
+package "entity" {
+  class Depot <<Entity>> {
+    id: Long
+    name: String
+    address: String
+    location: Point
+    branch: Branch
+  }
+  class VehicleType <<Entity>> {
+    id: Long
+    typeName: String
+    capacity: Integer
+    fixedCost / costPerKm / costPerHour: BigDecimal
+    maxDistance / maxDuration: BigDecimal
+    legalClass: LegalClass
+    grossWeightKg: Integer
+    energyType: EnergyType
+    emissionStandard: Integer
+    vehicleFeatures: String (JSON)
+  }
+  class Fleet <<Entity>> {
+    id: Long
+    fleetName: String
+    branch: Branch
+  }
+  class Vehicle <<Entity>> {
+    id: Long
+    vehicleLicensePlate: String
+    status: VehicleStatus
+    fleet: Fleet
+    vehicleType: VehicleType
+    startDepot: Depot
+    endDepot: Depot
+  }
+}
+
+package "dto" {
+  class VehicleFeaturesDTO <<DTO>> {
+    category: VehicleCategory
+    emissionFactor: Double
+    skills: Set<VehicleSkill>
+  }
+  class FleetInputDTO <<DTO>> {
+    fleetName: String
+    vehicles: List<VehicleInputDTO>
+  }
+}
+
+DepotController --> DepotService
+VehicleTypeController --> VehicleTypeService
+VehicleController --> VehicleService
+FleetController --> FleetService
+
+DepotService --> DepotRepository
+VehicleTypeService --> VehicleTypeRepository
+VehicleService --> VehicleRepository
+FleetService --> FleetRepository
+FleetService --> VehicleService : validates and creates\nits vehicles
+VehicleService --> DepotRepository
+VehicleService --> VehicleTypeRepository
+VehicleService --> VehicleFeaturesService
+
+DepotRepository ..> Depot
+VehicleTypeRepository ..> VehicleType
+VehicleRepository ..> Vehicle
+FleetRepository ..> Fleet
+
+Depot "1" <-- "*" Vehicle : start / end
+Fleet "1" <-- "*" Vehicle
+VehicleType "1" <-- "*" Vehicle
+VehicleFeaturesDTO ..> VehicleType : merged into\nvehicle_features JSON
+FleetInputDTO --> VehicleFeaturesDTO : via VehicleInputDTO
+@enduml

@@ -1,0 +1,21 @@
+@startuml
+!theme plain
+title D06 route send status (SendStatus)
+
+[*] --> CURRENT : POST /routes/{id}/send\nall checks and the LEZ guard pass
+CURRENT --> SUPERSEDED : a newer send of the same route\n(same transaction as its insert)
+SUPERSEDED --> [*]
+
+note right of CURRENT
+  At most one CURRENT send per route: the insert runs under
+  a row lock on the route and re-counts CURRENT rows; a loser
+  answers 409 and its transaction rolls back.
+  The driver sees CURRENT sends first, then SUPERSEDED ones.
+end note
+
+note bottom
+  Sends are never updated otherwise and never deleted by the
+  application: they are the delivery history (BR-054).
+  A refused send (400/422/502) creates no row.
+end note
+@enduml

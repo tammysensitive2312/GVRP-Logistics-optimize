@@ -1,0 +1,40 @@
+@startuml
+!theme plain
+left to right direction
+skinparam packageStyle rectangle
+
+title D02 — Master data
+
+actor "Planner" as PL
+
+rectangle "GVRP Entry API" {
+  usecase "UC-D02-01\nCreate a depot" as U1
+  usecase "UC-D02-02\nList depots" as U2
+  usecase "UC-D02-03\nCreate or update\na vehicle type" as U3
+  usecase "UC-D02-04\nCreate a fleet\nwith vehicles" as U4
+  usecase "UC-D02-05\nList fleets and\nopen a fleet" as U5
+  usecase "UC-D02-06\nCreate or update\na vehicle" as U6
+  usecase "UC-D02-07\nManage vehicle\nLEZ permits" as U7
+}
+
+PL --> U1
+PL --> U2
+PL --> U3
+PL --> U4
+PL --> U5
+PL --> U6
+PL --> U7
+
+U4 ..> U3 : <<include>>
+U4 ..> U1 : <<include>>
+U6 ..> U4 : <<include>>
+U6 ..> U3 : <<include>>
+U7 ..> U6 : <<include>>
+
+note right of U3
+  No delete endpoint exists;
+  the admin screen's Delete
+  action fails at runtime
+  (BR-015).
+end note
+@enduml

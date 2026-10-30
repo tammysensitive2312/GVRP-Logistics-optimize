@@ -1,0 +1,41 @@
+@startuml
+!theme plain
+left to right direction
+skinparam packageStyle rectangle
+
+title D05 — Solution review and customisation
+
+actor "Planner" as PL
+actor "Optimisation\nengine" as ENG
+
+rectangle "GVRP Entry API" {
+  usecase "UC-D05-01\nView a solution" as U1
+  usecase "UC-D05-02\nWalk the revision chain" as U2
+  usecase "UC-D05-03\nEvaluate manual\nroute edits" as U3
+  usecase "UC-D05-04\nSave a manual revision" as U4
+  usecase "UC-D05-05\nCompare and apply\nPareto alternatives" as U5
+  usecase "Check hard violations\n(BR-093, BR-094)" as HARD
+}
+
+PL --> U1
+PL --> U2
+PL --> U3
+PL --> U4
+PL --> U5
+
+U2 ..> U1 : <<include>>
+U3 ..> U1 : <<include>>
+U4 ..> U3 : <<include>>
+U4 ..> HARD : <<include>>
+U5 ..> U1 : <<include>>
+
+U3 --> ENG : totals + violations\n(preview only)
+U4 --> ENG : re-evaluate base plan
+
+note right of U5
+  Apply creates a PARETO_ALTERNATIVE
+  revision: FRONTIER candidate,
+  latest base, same order set
+  (BR-044).
+end note
+@enduml

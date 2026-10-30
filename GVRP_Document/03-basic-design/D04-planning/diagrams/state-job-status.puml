@@ -1,0 +1,35 @@
+@startuml
+!theme plain
+title D04 optimisation job status
+
+[*] --> PENDING : POST /jobs/plan\nrow committed, engine not yet called
+
+PENDING --> PROCESSING : dispatch answered 202
+PENDING --> FAILED : engine unreachable,\nnon-202 answer, or any dispatch exception
+
+PROCESSING --> COMPLETED : POST /callbacks/complete\nsolution persisted, orders updated
+PROCESSING --> FAILED : POST /callbacks/failed
+PROCESSING --> CANCELLED : PUT /jobs\n(Entry writes CANCELLED, then asks the engine)
+PROCESSING --> CANCELLED : POST /callbacks/cancelled
+
+FAILED --> COMPLETED : POST /callbacks/complete\n(accepted on purpose: a job marked FAILED by a\nprocessing error must still accept the replay)
+
+COMPLETED --> COMPLETED : duplicate completion\n(idempotent no-op)
+CANCELLED --> CANCELLED : late completion or failure\n(ignored)
+FAILED --> FAILED : duplicate failure\n(no-op)
+
+note right of PENDING
+  A completion callback that arrives while the row is
+  still PENDING is answered 503, not 200: the engine
+  keeps the payload and retries after about 60 s, by
+  which time the dispatch has set PROCESSING.
+end note
+
+note bottom
+  There is no transition out of FAILED other than a
+  completion callback, and no automatic retry of
+  dispatch. A cancelled job never returns to the queue.
+  canBeCancelled() == (status == PROCESSING) is the only
+  guard the cancel endpoint uses.
+end note
+@enduml

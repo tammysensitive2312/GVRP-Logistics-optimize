@@ -1,0 +1,64 @@
+@startuml
+!theme plain
+actor Planner
+participant "Import dialog" as UI
+participant "OrderController\n/orders/import" as API
+participant "OrderImportService" as SVC
+participant "CsvFileParser /\nJsonFileParser /\nTextDataParser" as PARSER
+participant "GeocodingService" as GEO
+participant "Validator" as VAL
+database "MySQL" as DB
+
+title D03 S-4 Import orders from a file or pasted text
+
+Planner -> UI: choose file (CSV/JSON) or paste text, set delivery date,\noptional service time, overwrite, skip-errors
+UI -> API: POST multipart/form-data\n(delivery_date, file|text_data, overwrite_existing, skip_validation_errors)
+API -> SVC: createOrdersByImportRequest(request, branchId)
+
+alt both file and text, or neither
+  SVC --> API: 400 + 0040002 field=file
+  API --> UI: error banner
+end
+
+SVC -> PARSER: parse according to the extension
+PARSER --> SVC: valid rows + per-row parse errors
+
+loop each parsed row
+  SVC -> SVC: fill service_time and delivery_date from the request when absent
+  opt address present, coordinates absent
+    SVC -> GEO: geocode(address)
+    alt no result
+      SVC -> SVC: add error row (field=address)
+    end
+  end
+  SVC -> VAL: validate(row, OnCreate)
+  alt constraint violated
+    SVC -> SVC: add error row (field=Format/Constraint, first violation only)
+  else business rule violated
+    SVC -> SVC: add error row (field=BusinessRule)
+  else valid
+    SVC -> SVC: keep for saving
+  end
+end
+
+alt error rows exist and skip_validation_errors is not true
+  SVC --> API: 200 ImportResultDTO {success:false, imported_count:0,\nerrors:[...], requires_confirmation:false}
+  API --> UI: error table; the planner fixes the file or re-submits with skip
+  note right: Nothing is written: the method is @Transactional and returns\nbefore the save loop.
+else ready to save
+  loop each valid row
+    SVC -> DB: existsByBranchIdAndOrderCode
+    alt exists and overwrite_existing = true
+      SVC -> DB: update the existing row
+    else exists and overwrite_existing false
+      SVC -> SVC: skip
+    else new
+      SVC -> DB: insert
+    end
+  end
+  SVC --> API: 200 ImportResultDTO {success:true, imported, skipped, errors}
+  API --> UI: summary + remaining error rows
+end
+
+note over SVC,GEO: Geocoding is one HTTP call per row and rows are processed\nsequentially inside the request thread. A 500-row import with no\ncoordinates waits on 500 Goong calls.
+@enduml

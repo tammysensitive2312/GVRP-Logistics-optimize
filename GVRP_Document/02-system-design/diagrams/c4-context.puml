@@ -1,0 +1,31 @@
+@startuml
+!include <C4/C4_Context>
+title System context — GVRP Logistics Optimize
+
+Person(planner, "Planner", "Employee of one branch (role PLANNER).\nPrepares master data, imports orders, plans\nroutes, reviews solutions, checks LEZ\ncompliance and sends routes.")
+Person(driver, "Driver", "Employee of one branch (role DRIVER).\nReads the routes sent to them on a phone.")
+Person(anon, "Anonymous visitor", "Opens login, or a solution deep link\nthat redirects to login.")
+
+Person_Ext(admin, "Branch administrator", "Operates out of band: creates users and\nbranch rows, sets the Slack webhook.\nNo screen or endpoint exists for this.")
+
+System(gvrp, "GVRP Logistics Optimize", "Branch-scoped route planning with\ncarbon costing and low-emission zones:\nREST API, optimiser, SPA client and MySQL.")
+
+System_Ext(goong, "Goong Geocoding API", "Resolves a delivery address to\nlatitude/longitude when an order\nis created without coordinates.")
+System_Ext(smtp, "SMTP server", "Delivers job success and failure mail.")
+System_Ext(slack, "Slack incoming webhook", "Per-branch webhook URL stored on the\nbranch row; posted after a job completes.")
+System_Ext(osrm, "OSRM public routing", "Route geometry and manoeuvres used by\nthe client only when stored leg data is\nmissing.")
+System_Ext(tiles, "Google raster tiles", "Base map tiles for every Leaflet map.")
+
+Rel(planner, gvrp, "Uses", "HTTPS / JSON")
+Rel(driver, gvrp, "Reads sent routes", "HTTPS / JSON")
+Rel(anon, gvrp, "Logs in", "HTTPS")
+Rel(admin, gvrp, "Provisions branches and users", "SQL, out of band")
+Rel(gvrp, goong, "Geocodes addresses", "HTTPS")
+Rel(gvrp, smtp, "Sends mail", "SMTP")
+Rel(gvrp, slack, "Posts completion notice", "HTTPS webhook")
+Rel(planner, osrm, "Falls back to route geometry", "HTTPS")
+Rel(driver, osrm, "Falls back to route geometry", "HTTPS")
+Rel(planner, tiles, "Draws the map", "HTTPS")
+Rel(driver, tiles, "Draws the map", "HTTPS")
+
+@enduml

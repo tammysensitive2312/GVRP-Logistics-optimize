@@ -1,0 +1,52 @@
+@startuml
+!theme plain
+title Authentication and authorisation of one request
+
+actor Caller
+participant "Entry API\nSecurityFilterChain" as SC
+participant "ApiKey\nfilter" as AK
+participant "JWT\nfilter" as JWT
+participant "CustomUserDetails\nService" as UDS
+database "MySQL" as DB
+participant Controller
+
+Caller -> SC: request
+SC -> AK: filter chain
+alt path starts with /api/v1/solutions/callbacks/
+  AK -> AK: compare X-API-Key with engine.api.key
+  alt key missing or wrong
+    AK --> Caller: 401 {"error","message"}
+  else key valid
+    AK -> SC: authenticate as ENGINE_SERVICE
+  end
+else other path
+  AK -> SC: pass through
+end
+
+SC -> JWT: filter chain
+alt Authorization: Bearer <token> present
+  JWT -> JWT: parse + verify signature with\nspring.gvrp.jwt.secret-key
+  JWT -> UDS: load user by token user id
+  UDS -> DB: users row
+  alt user missing, disabled, locked or id mismatch
+    JWT -> SC: leave context anonymous
+  else valid
+    JWT -> SC: authenticate (userId, branchId, role)
+  end
+end
+
+SC -> SC: match path rule
+alt public path (auth, swagger, health, callbacks)
+  SC -> Controller: invoke
+else /api/v1/driver/** without ROLE_DRIVER
+  SC --> Caller: 403 common envelope
+else /api/v1/** without ROLE_PLANNER
+  SC --> Caller: 403 common envelope
+else anonymous on a protected path
+  SC --> Caller: 401
+else role matches
+  SC -> Controller: invoke
+  Controller -> Controller: branch from the token,\nnever from the request
+end
+
+@enduml

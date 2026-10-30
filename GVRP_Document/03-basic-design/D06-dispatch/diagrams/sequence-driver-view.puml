@@ -1,0 +1,37 @@
+@startuml
+!theme plain
+actor Driver
+participant "Driver view\n/driver" as UI
+participant "DriverController" as API
+participant "RouteSendService" as SVC
+participant "RouteComplianceService" as LEZ
+database "MySQL" as DB
+
+title D06 S-2 Driver lists and opens sent routes
+
+Driver -> UI: log in (role DRIVER)
+UI -> API: GET /api/v1/driver/routes
+API -> SVC: mySends()
+SVC -> SVC: requireDriver() (403 if not DRIVER)
+SVC -> DB: own sends: CURRENT first, then SUPERSEDED
+SVC --> API: RouteSendDTO[]
+API --> UI: list of sends
+
+Driver -> UI: open one send
+UI -> API: GET /api/v1/driver/routes/{sendId}
+API -> SVC: sendDetail(sendId)
+alt unknown sendId
+  SVC --> API: 400 + 0040402
+else another driver's send
+  SVC --> API: 403 + 0040301
+else own send
+  SVC -> DB: route stops, orders (customer, phone, notes)
+  SVC -> LEZ: currentFor(solution) -> zone names per stop
+  SVC --> API: DriverRouteDTO (stops in plan order,\nlegs and instructions, zone names only)
+end
+API --> UI: render stops and map
+
+note over UI, API
+  Read-only: no driver endpoint changes a send, a stop or an order.
+end note
+@enduml

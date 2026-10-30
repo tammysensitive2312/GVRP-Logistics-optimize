@@ -1,0 +1,42 @@
+{
+  "revision": 3,
+  "completed": [
+    "Recorded inspected revision c52bb17, branch master, docs branch docs/system-design-001 in GVRP_Document/README.md",
+    "Classified all 33 tracked files under GVRP_Document against the code",
+    "Removed 21 outdated design files with git rm and listed them with last commit and reason in _history/removed-designs.md",
+    "Moved 12 still-valid files into the new structure with git mv (engine diagrams, dispatch diagrams, failure callback, styling, deep-link document, engine migration log)",
+    "Confirmed GVRP_Document/.idea and GVRP_Document/source/.idea were not tracked by git",
+    "Verified 14 closed work items (13 done, PARETO-004 without a run) and wrote one decision record per item in _history/decisions/",
+    "Wrote _history/work-item-index.md with state, last commit and migration destination per item",
+    "Deleted the 14 work-item folders with git rm -r; the five open work items are untouched"
+  ],
+  "remaining": [
+    "Part B: requirements analysis (01-requirements)",
+    "Part C: system design (02-system-design)",
+    "Part D: basic design (03-basic-design, D01-D09)",
+    "Part E: test design (04-test-design CSV, strategy, generator; XLSX blocked by missing openpyxl)",
+    "Part F: render all diagrams to SVG and complete the README document list",
+    "Verification DS-V1 to DS-V9 and the implementation record"
+  ],
+  "read_next": [
+    "work-items/DOC-SYSTEM-001/design.md",
+    "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/controller/OrderController.java",
+    "GVRP_Entry_client_v2/src/app/app.routes.ts"
+  ],
+  "evidence": [
+    "GVRP_Document/README.md",
+    "GVRP_Document/_history/removed-designs.md",
+    "GVRP_Document/_history/work-item-index.md",
+    "GVRP_Document/_history/decisions/SEC-TENANT-001.md",
+    "GVRP_Document/_history/decisions/PARETO-001.md"
+  ],
+  "blockers": [],
+  "decisions": [
+    "Shared PlantUML styling kept as GVRP_Document/_shared/puml-styling.puml; diagrams include it with ../../_shared/puml-styling.puml",
+    "ENGINE_V1_TO_V2.md archived as _history/engine-v1-to-v2-log.md (Vietnamese original, diacritics already lost before commit); implemented facts go into 02-system-design/03-integration.md and D08 README",
+    "SOLUTION_DEEP_LINK.md became 03-basic-design/D09-solution-link/README.md",
+    "Callback endpoints stay in D04 (planning) because they are the Entry API side of the planning flow"
+  ],
+  "processes": [],
+  "next_action": "Write 01-requirements (overview, actors and roles, use-case catalogue, business rules, non-functional) and the nine use-case diagrams"
+}

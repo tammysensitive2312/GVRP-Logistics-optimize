@@ -1,0 +1,101 @@
+@startuml
+' ============================================================
+'  GVRP Engine API - processing of one optimisation job (Sequence)
+' ============================================================
+skinparam shadowing false
+skinparam defaultFontName "Segoe UI"
+skinparam sequenceMessageAlign center
+skinparam ParticipantBackgroundColor #ECF0F1
+skinparam ParticipantBorderColor #34495E
+skinparam ArrowColor #2C3E50
+skinparam NoteBackgroundColor #FEF9E7
+skinparam NoteBorderColor #F1C40F
+
+title GVRP Engine — asynchronous processing of one optimisation job
+
+actor Entry
+participant "Optimization\nController" as CTRL
+participant "Optimization\nService" as OPT
+participant "JobRegistry" as JOB
+participant "Clustering\n(KMeans→Merge→Assign)" as CL
+participant "DistanceMatrix\nService" as DMS
+participant "GraphHopper" as GH
+participant "GreenVRP\nCostCalculator" as GREEN
+participant "Jsprit\nAlgorithm" as JS
+participant "Metrics /\nExtractor" as MET
+participant "Callback\nService" as CB
+participant "ResultSpool" as SP
+
+== 1. Receive the request ==
+Entry -> CTRL : POST /api/v1/optimization\n(EngineOptimizationRequest)
+activate CTRL
+CTRL -> CTRL : validateRequest()
+CTRL -> OPT : optimizeAsync(request)
+activate OPT
+CTRL --> Entry : 202 ACCEPTED\n(externalJobId = "engine-{id}")
+deactivate CTRL
+
+note over OPT : Runs in the background on a virtual thread (@Async)
+
+OPT -> JOB : register(jobId) → RUNNING
+
+== 2. Pre-processing ==
+alt orders >= 1000 (cluster-first)
+  OPT -> CL : K-means(seed=42) → merge small clusters → assign vehicles by demand
+  CL --> OPT : clusterAssignment (order/vehicle → clusterId)
+  OPT -> DMS : mask = fromClusters(...)  (sparse matrix)
+else small job / Pareto
+  OPT -> DMS : mask = null  (dense matrix)
+end
+
+== 3. Distance matrix ==
+OPT -> JOB : phase = BUILDING_MATRIX
+activate DMS
+loop each pair (i,j) where mask.needed()
+  DMS -> GH : fetch(coord_i, coord_j)
+  GH --> DMS : {distance_m, time_s}
+end
+note right of DMS : Failed pair → SENTINEL (1e9 m)\nNOT 0 (avoids garbage routes)
+DMS --> OPT : DistanceTimeMatrix
+deactivate DMS
+
+== 4. Build the Green VRP and solve ==
+OPT -> GREEN : buildGreenVehicleType(costWeight, co2Weight)
+note right of GREEN
+  costPerMeter =
+   fuel·w_cost + (EF·carbonPrice)·w_co2
+end note
+GREEN --> OPT : VehicleType (CO2 embedded)
+OPT -> JS : buildAlgorithm() + constraints\n(NoPrunedEdge, MaxDistance, ClusterRoute)
+OPT -> JOB : phase = SOLVING
+activate JS
+loop each iteration (ruin and recreate)
+  JS -> JOB : snapshot(iteration, bestCost, routes)
+  JS -> JS : check the cancel flag (premature termination)
+end
+JS --> OPT : bestSolution
+deactivate JS
+
+== 5. Check and extract the result ==
+OPT -> OPT : assertNoSentinelEdgeTraversed()  (fail-loud)
+OPT -> MET : calculate metrics + extract routes / unassigned
+MET --> OPT : SolutionMetrics + RouteDetails
+
+== 6. Return the result (durable) ==
+OPT -> JOB : markTerminal(COMPLETED)
+OPT -> CB : sendCompletionCallback(jobId, result)
+activate CB
+CB -> SP : store(payload)  →  pending/  (written to DISK first)
+CB -> Entry : POST /solutions/callbacks/complete
+alt 2xx success
+  Entry --> CB : 200 OK
+  CB -> SP : markSent() → sent/
+else 4xx (payload sai)
+  CB -> SP : markPoisoned() → poison/
+else 5xx / timeout
+  CB -> SP : recordFailure() (keeps pending, the sweeper retries)
+end
+deactivate CB
+deactivate OPT
+
+@enduml

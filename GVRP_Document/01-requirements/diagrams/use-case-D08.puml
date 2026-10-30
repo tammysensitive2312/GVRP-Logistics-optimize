@@ -1,0 +1,39 @@
+@startuml
+!theme plain
+left to right direction
+skinparam packageStyle rectangle
+
+title D08 — Optimisation engine
+
+actor "Entry API" as ENTRY
+actor "Operator" as OPS
+actor "GraphHopper\ngraph" as GH
+
+rectangle "GVRP Engine API" {
+  usecase "UC-D08-01\nRun an optimisation" as U1
+  usecase "UC-D08-02\nObserve progress\nand cancel" as U2
+  usecase "UC-D08-03\nEvaluate a plan and\nfetch leg geometry" as U3
+  usecase "UC-D08-04\nCheck engine health" as U4
+  usecase "Build matrix /\ncluster (>= 1000 orders)" as MAT
+  usecase "Solve with jsprit" as SOLVE
+  usecase "Spool result and\npost callback" as SPOOL
+}
+
+ENTRY --> U1
+ENTRY --> U2
+ENTRY --> U3
+OPS --> U4
+
+U1 ..> MAT : <<include>>
+U1 ..> SOLVE : <<include>>
+U1 ..> SPOOL : <<include>>
+U3 --> GH : route metrics
+MAT --> GH : distances
+SOLVE --> GH : costs
+
+note bottom of SPOOL
+  pending/ -> sent/ or poison/.
+  Retry on failure; the payload
+  survives an engine restart.
+end note
+@enduml

@@ -1,0 +1,42 @@
+@startuml
+!theme plain
+left to right direction
+skinparam packageStyle rectangle
+
+title D04 — Route planning
+
+actor "Planner" as PL
+actor "Optimisation\nengine" as ENG
+actor "SMTP server" as SMTP
+
+rectangle "GVRP Entry API" {
+  usecase "UC-D04-01\nSubmit a planning job" as U1
+  usecase "UC-D04-02\nMonitor a job" as U2
+  usecase "UC-D04-03\nCancel jobs" as U3
+  usecase "UC-D04-04\nReceive an engine\ncallback" as U4
+  usecase "UC-D04-05\nBrowse job history" as U5
+  usecase "Snapshot LEZ rules\nand skills (BR-082)" as SNAP
+  usecase "Enforce 3-job limit\n(BR-060)" as LIM
+}
+
+PL --> U1
+PL --> U2
+PL --> U3
+PL --> U5
+
+U1 ..> LIM : <<include>>
+U1 ..> SNAP : <<include>>
+U2 ..> U1 : <<include>>
+U3 ..> U2 : <<include>>
+
+ENG --> U4
+U4 ..> SNAP : <<include>>
+U4 --> SMTP : success / failure e-mail\n(not on cancellation)
+
+note bottom of U4
+  Four callbacks: complete,
+  failure, cancel, progress.
+  Completion is idempotent
+  per job (BR-066..BR-069).
+end note
+@enduml

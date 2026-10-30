@@ -1,0 +1,49 @@
+@startuml
+!theme plain
+left to right direction
+skinparam packageStyle rectangle
+
+title D07 — Low-emission zones
+
+actor "Planner" as PL
+
+rectangle "GVRP Entry API" {
+  usecase "UC-D07-01\nBrowse zone templates" as U1
+  usecase "UC-D07-02\nCreate a branch zone" as U2
+  usecase "UC-D07-03\nEdit a zone" as U3
+  usecase "UC-D07-04\nReplace zone geometry" as U4
+  usecase "UC-D07-05\nReplace zone rules" as U5
+  usecase "UC-D07-06\nAcknowledge a\nzone version" as U6
+  usecase "UC-D07-07\nDelete a zone" as U7
+  usecase "UC-D07-08\nEvaluate a zone verdict" as U8
+  usecase "UC-D07-09\nInspect order\nzone membership" as U9
+  usecase "UC-D07-10\nInspect solution\ncompliance and recheck" as U10
+  usecase "UC-D07-11\nFetch route geometry\nfor compliance" as U11
+  usecase "Compile rules\nto a hash (BR-077)" as COMPILE
+}
+
+PL --> U1
+PL --> U2
+PL --> U3
+PL --> U4
+PL --> U5
+PL --> U6
+PL --> U7
+PL --> U8
+PL --> U9
+PL --> U10
+PL --> U11
+
+U2 ..> U1 : <<include>>
+U4 ..> U3 : <<include>>
+U5 ..> COMPILE : <<include>>
+U8 ..> COMPILE : <<include>>
+U10 ..> COMPILE : <<include>>
+U10 ..> U11 : <<include>>
+
+note right of U10
+  Status per route: UNCHECKED,
+  COMPLIANT, VIOLATION or the
+  derived STALE (never written).
+end note
+@enduml

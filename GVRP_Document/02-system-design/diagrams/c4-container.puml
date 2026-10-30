@@ -1,0 +1,37 @@
+@startuml
+!include <C4/C4_Container>
+title Container view — GVRP Logistics Optimize
+
+Person(planner, "Planner", "PLANNER")
+Person(driver, "Driver", "DRIVER")
+
+System_Boundary(gvrp, "GVRP Logistics Optimize") {
+  Container(client, "Client v2", "Angular 18 SPA,\nLeaflet, Transloco", "Login, orders, planning, solution review,\nLEZ editor, send dialog, driver view.\nTalks to Entry only; OSRM and tiles direct.")
+  Container(legacy, "Legacy client", "Plain JavaScript", "Older admin screens. Hard-coded to\nhttp://localhost:8080/api/v1. Not covered by\nthe screen inventory of 03-basic-design.")
+  Container(entry, "Entry API", "Spring Boot 3,\nJava 21, JPA", "REST API, JWT auth, branch tenancy,\njob dispatch, callbacks, notifications,\nretention sweeps.")
+  Container(engine, "Engine API", "Spring Boot 3,\nJava 21, GraphHopper,\njsprit", "Distance matrix, clustering, VRP solve,\nroute evaluation, leg geometry.")
+  ContainerDb(db, "MySQL gvrp_db", "MySQL 8,\nSRID 4326", "All durable business state:\n19 mapped tables.")
+  Container(spool, "Result spool", "File system\npending/ sent/ poison/", "Engine outbox: every result is written\nbefore the callback is posted.")
+}
+
+System_Ext(goong, "Goong Geocoding API", "HTTPS")
+System_Ext(smtp, "SMTP server", "SMTP")
+System_Ext(slack, "Slack webhook", "HTTPS")
+System_Ext(osrm, "OSRM public routing", "HTTPS")
+System_Ext(tiles, "Google raster tiles", "HTTPS")
+
+Rel(planner, client, "Uses", "HTTPS")
+Rel(driver, client, "Uses", "HTTPS")
+Rel(client, entry, "Calls /api/v1/**", "JSON, Bearer JWT")
+Rel(legacy, entry, "Calls /api/v1/**", "JSON")
+Rel(entry, db, "Reads and writes", "JPA / SQL")
+Rel(entry, engine, "POST /optimization,\n/evaluate, /legs, /cancel", "JSON, 1 min connect / 3 min read")
+Rel(engine, spool, "Writes result, marks\nsent or poisoned", "File IO")
+Rel(engine, entry, "POST /solutions/callbacks/*", "JSON + X-API-Key")
+Rel(entry, goong, "Geocodes", "HTTPS")
+Rel(entry, smtp, "Sends mail", "SMTP")
+Rel(entry, slack, "Posts completion", "HTTPS")
+Rel(client, osrm, "Geometry fallback", "HTTPS")
+Rel(client, tiles, "Map tiles", "HTTPS")
+
+@enduml

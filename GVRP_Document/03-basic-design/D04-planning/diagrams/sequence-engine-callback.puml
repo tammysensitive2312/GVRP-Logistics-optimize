@@ -1,0 +1,54 @@
+@startuml
+!theme plain
+participant "Engine API\nCallbackService" as ENGINE
+participant "ApiKeyAuthenticationFilter" as KEY
+participant "OptimizationCallback\nController" as API
+participant "OptimizationCallback\nService" as SVC
+participant "SolutionRepository" as SR
+participant "EnginePlanMaterializer" as MAT
+participant "OrderStatus\nTransitionService" as ORD
+participant "EmailService" as MAIL
+database "MySQL" as DB
+
+title D04 S-3 Completion callback
+
+ENGINE -> KEY: POST /api/v1/solutions/callbacks/complete\nX-API-Key, {job_id, solution{routes, unassigned_orders, totals, pareto}}
+alt key missing or wrong
+  KEY --> ENGINE: 401 {"error":"Unauthorized","message":"..."}
+  note right: the engine spools the payload and retries
+end
+KEY -> API: onOptimizationComplete(request)
+API -> SVC: handleCompletion(callback)
+
+SVC -> DB: select job by id
+alt job not found
+  SVC --> API: 400 + 0040402 resource=jobs
+else found
+  SVC -> SR: findByJobId(job.id)
+  alt a solution already exists for this job
+    SR --> SVC: present
+    SVC --> API: 200, nothing written
+    note right: idempotency: a replayed callback never\nduplicates the solution, routes or stops
+  else
+    alt job.status == PENDING
+      SVC --> API: JobNotReadyException -> 503
+      note right: the dispatch has not committed yet;\nthe engine retries after ~60 s
+    else job.status == COMPLETED or CANCELLED
+      SVC --> API: 200, ignored
+    else job.status == PROCESSING or FAILED
+      SVC -> MAT: build solution, routes, stops,\nunassigned orders, compliance verdicts,\nPareto candidates
+      MAT -> DB: insert solutions, routes, route_stops,\nunassigned_orders, pareto_candidates
+      SVC -> ORD: assigned orders -> ON_ROUTE;\nunassigned orders -> UNASSIGNED
+      SVC -> DB: job.status=COMPLETED, completed_at
+      opt success notification
+        SVC -> MAIL: sendOptimizationSuccessEmail(userId, jobId, totals)
+        note right: best-effort; a failure is logged and swallowed
+      end
+      SVC --> API: 200
+      API --> ENGINE: 200 OK (empty body)
+    end
+  end
+end
+
+note over SVC,DB: The whole method is @Transactional.\nIf persistence fails after the solution row is\nwritten, the last catch marks the job FAILED in a\nseparate transaction (afterCompletion), so the row\nis not left in PROCESSING for ever.
+@enduml
