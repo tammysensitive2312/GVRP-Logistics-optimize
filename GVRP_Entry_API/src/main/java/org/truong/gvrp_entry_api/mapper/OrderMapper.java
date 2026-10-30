@@ -3,6 +3,7 @@ package org.truong.gvrp_entry_api.mapper;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
+import org.mapstruct.NullValuePropertyMappingStrategy;
 import org.truong.gvrp_entry_api.dto.request.EngineOrderDTO;
 import org.truong.gvrp_entry_api.dto.request.OrderInputDTO;
 import org.truong.gvrp_entry_api.dto.response.OrderDTO;
@@ -64,5 +65,9 @@ public interface OrderMapper {
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "routeSegments", ignore = true)
     @Mapping(target = "location", expression = "java(geometryMapper.createPoint(dto.getLatitude(), dto.getLongitude()))")
+    @Mapping(target = "customerPhone", nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.SET_TO_NULL)
+    @Mapping(target = "deliveryNotes", nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.SET_TO_NULL)
+    @Mapping(target = "timeWindowStart", nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.SET_TO_NULL)
+    @Mapping(target = "timeWindowEnd", nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.SET_TO_NULL)
     Order updateEntityFromDTO(OrderInputDTO dto, @MappingTarget Order entity);
 }

@@ -43,6 +43,7 @@ public class JsonFileParser implements FileParser<OrderInputDTO> {
 
         List<OrderInputDTO> validOrders = new ArrayList<>();
         List<ImportError> errors = new ArrayList<>();
+        List<Integer> sourceLines = new ArrayList<>();
 
         try (InputStream inputStream = file.getInputStream()) {
             JsonParser parser = objectMapper.getFactory().createParser(inputStream);
@@ -62,6 +63,7 @@ public class JsonFileParser implements FileParser<OrderInputDTO> {
                 try {
                     OrderInputDTO order = objectMapper.readValue(parser, OrderInputDTO.class);
                     validOrders.add(order);
+                    sourceLines.add(currentLine);
 
                 } catch (JsonMappingException e) {
                     log.warn("JSON mapping error at line {}: {}", currentLine, e.getMessage());
@@ -92,7 +94,7 @@ public class JsonFileParser implements FileParser<OrderInputDTO> {
             }
 
             log.info("JSON parsing completed. Valid: {}, Errors: {}", validOrders.size(), errors.size());
-            return new ParseResult<>(validOrders, errors);
+            return new ParseResult<>(validOrders, errors, sourceLines);
 
         } catch (IOException e) {
             ErrorDetail errorDetail = ErrorDetail.builder()

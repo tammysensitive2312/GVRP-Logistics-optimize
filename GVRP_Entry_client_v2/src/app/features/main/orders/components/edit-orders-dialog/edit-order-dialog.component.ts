@@ -14,7 +14,7 @@ import {MatProgressSpinner} from '@angular/material/progress-spinner';
 import {MapPickerDialogComponent} from '@features/main/orders/components/map-picker-dialog/map-picker-dialog.component';
 import { serverErrorMessage } from '@shared/utils/api-error.utils';
 import { localDateIso } from '@shared/utils/date.utils';
-import { coordinateValue, isBlankCoordinate, OrderFormModel, toOrderPayload } from './order-payload.utils';
+import { coordinateValue, isBlankCoordinate, OrderFormModel, toOrderPayload, clearStaleCoordinates } from './order-payload.utils';
 
 export interface EditOrderDialogData {
   orderId?: number;
@@ -43,6 +43,11 @@ export class EditOrderDialogComponent implements OnInit {
   isLoading = false;
   isSaving = false;
   private originalFormSnapshot: string = '';
+  private originalOrder: { address: string; latitude: number | null; longitude: number | null } = {
+    address: '',
+    latitude: null,
+    longitude: null
+  };
 
   // Coordinates start empty: the server geocodes the address (UX-ORDERS-001, C1).
   form: OrderFormModel = {
@@ -123,6 +128,11 @@ export class EditOrderDialogComponent implements OnInit {
     };
 
     this.originalFormSnapshot = JSON.stringify(this.form);
+    this.originalOrder = {
+      address: order.address ?? '',
+      latitude: order.latitude ?? null,
+      longitude: order.longitude ?? null
+    };
   }
 
   validate(): string[] {
@@ -146,6 +156,12 @@ export class EditOrderDialogComponent implements OnInit {
       }
     }
     if (!this.form.demand || this.form.demand <= 0) errors.push('Demand must be greater than 0');
+    if (this.form.time_window_start && !this.form.time_window_end) {
+      errors.push('Enter both start and end time, or leave both empty.');
+    }
+    if (!this.form.time_window_start && this.form.time_window_end) {
+      errors.push('Enter both start and end time, or leave both empty.');
+    }
     if (this.form.time_window_start && this.form.time_window_end) {
       if (this.form.time_window_start >= this.form.time_window_end) {
         errors.push('Start time must be before end time');
@@ -171,6 +187,11 @@ export class EditOrderDialogComponent implements OnInit {
       this.hasChanges();
   }
 
+  /** Same rule as the save path: the hint shows exactly when the coordinates will be cleared. */
+  get showStaleCoordinateHint(): boolean {
+    return this.isEditMode && clearStaleCoordinates(this.form, this.originalOrder) !== this.form;
+  }
+
   onSubmit(): void {
     const errors = this.validate();
     if (errors.length > 0) {
@@ -180,7 +201,8 @@ export class EditOrderDialogComponent implements OnInit {
 
     if (this.isEditMode) {
       this.isSaving = true;
-      this.apiService.updateOrder(this.data.orderId!, toOrderPayload(this.form))
+      const payload = toOrderPayload(clearStaleCoordinates(this.form, this.originalOrder));
+      this.apiService.updateOrder(this.data.orderId!, payload)
         .subscribe({
           next: () => {
             this.toast.success('Order updated successfully');

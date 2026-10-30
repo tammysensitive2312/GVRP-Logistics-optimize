@@ -230,13 +230,14 @@ public class OrderService {
                         ));
             }
         } else if (dto.getTimeWindowStart() != null || dto.getTimeWindowEnd() != null) {
-            List.of(
-                    ErrorDetail.builder()
-                            .code(ErrorCode.VALIDATION_ERROR.getCode())
-                            .message("Time Window must have both start and end times, or neither.")
-                            .resource(AppConstant.ORDER)
-                            .build()
-            );
+            throw new DataInvalidException(
+                    List.of(
+                            ErrorDetail.builder()
+                                    .code(ErrorCode.VALIDATION_ERROR.getCode())
+                                    .message("Time Window must have both start and end times, or neither.")
+                                    .resource(AppConstant.ORDER)
+                                    .build()
+                    ));
         }
     }
 }

@@ -51,6 +51,7 @@ public class CsvFileParser implements FileParser<OrderInputDTO> {
 
         List<OrderInputDTO> validOrders = new ArrayList<>();
         List<ImportError> errors = new ArrayList<>();
+        List<Integer> sourceLines = new ArrayList<>();
 
         try (BufferedReader reader = new BufferedReader(
                 new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8))) {
@@ -73,6 +74,7 @@ public class CsvFileParser implements FileParser<OrderInputDTO> {
                 try {
                     OrderInputDTO order = parseRecord(record, lineNumber);
                     validOrders.add(order);
+                    sourceLines.add(lineNumber);
 
                 } catch (ParseException e) {
                     log.warn("Failed to parse line {}: {}", lineNumber, e.getMessage());
@@ -86,7 +88,7 @@ public class CsvFileParser implements FileParser<OrderInputDTO> {
             }
 
             log.info("CSV parsing completed. Valid: {}, Errors: {}", validOrders.size(), errors.size());
-            return new ParseResult<>(validOrders, errors);
+            return new ParseResult<>(validOrders, errors, sourceLines);
 
         } catch (IOException e) {
             ErrorDetail errorDetail = ErrorDetail.builder()

@@ -58,6 +58,27 @@ function toNumberOrNull(value: number | string | null | undefined): number | nul
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+/**
+ * On edit (ORDERS-FIX-001, C1): when the address changed but the coordinates are
+ * still the loaded ones, send them empty so the server geocodes the new address.
+ * Returns `form` itself when nothing is cleared.
+ */
+export function clearStaleCoordinates(
+  form: OrderFormModel,
+  original: { address: string; latitude: number | null; longitude: number | null }
+): OrderFormModel {
+  const addressChanged = (form.address?.trim() ?? '') !== (original.address?.trim() ?? '');
+  if (!addressChanged) {
+    return form;
+  }
+  const latChanged = coordinateValue(form.latitude) !== original.latitude;
+  const lngChanged = coordinateValue(form.longitude) !== original.longitude;
+  if (latChanged || lngChanged) {
+    return form;
+  }
+  return { ...form, latitude: null, longitude: null };
+}
+
 /** True when a form coordinate is empty (null, undefined or blank text). */
 export function isBlankCoordinate(value: number | string | null | undefined): boolean {
   return value == null || String(value).trim() === '';

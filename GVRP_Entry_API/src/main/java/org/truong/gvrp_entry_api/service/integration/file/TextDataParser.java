@@ -22,9 +22,10 @@ public class TextDataParser implements DataParser {
     public ParseResult<OrderInputDTO> parse(String data) {
         List<OrderInputDTO> validOrders = new ArrayList<>();
         List<ImportError> errors = new ArrayList<>();
+        List<Integer> sourceLines = new ArrayList<>();
 
         if (data == null || data.trim().isEmpty()) {
-            return new ParseResult<>(validOrders, errors);
+            return new ParseResult<>(validOrders, errors, sourceLines);
         }
 
         String[] lines = data.split("\\r?\\n"); // Split by line
@@ -71,6 +72,7 @@ public class TextDataParser implements DataParser {
                         .build();
 
                 validOrders.add(dto);
+                sourceLines.add(lineNumber);
 
             } catch (ParseException e) {
                 errors.add(OrderImportService.buildError(
@@ -92,7 +94,7 @@ public class TextDataParser implements DataParser {
         }
 
         log.info("Text parsing completed. Valid: {}, Errors: {}", validOrders.size(), errors.size());
-        return new ParseResult<>(validOrders, errors);
+        return new ParseResult<>(validOrders, errors, sourceLines);
     }
 
     private String parseRequiredString(String value, String fieldName) throws ParseException {

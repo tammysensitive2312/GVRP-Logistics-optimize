@@ -76,6 +76,9 @@
       <p class="coordinates-hint">
         Leave empty to locate the address automatically, or pick the location on the map.
       </p>
+      <p class="coordinates-hint" *ngIf="showStaleCoordinateHint">
+        Address changed — the location will be found again from the new address. Pick it on the map to set it yourself.
+      </p>
 
       <button mat-stroked-button class="btn-pick-location"
               type="button" (click)="onPickLocation()">

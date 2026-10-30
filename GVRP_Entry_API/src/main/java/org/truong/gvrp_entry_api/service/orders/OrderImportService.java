@@ -64,6 +64,7 @@ public class OrderImportService {
 
         List<OrderInputDTO> allRawOrders = new ArrayList<>();
         List<ImportError> allErrors = new ArrayList<>();
+        List<Integer> allSourceLines = new ArrayList<>();
         Integer choice = request.getChoice();
 
         switch (choice) {
@@ -106,6 +107,13 @@ public class OrderImportService {
                     if (fileResult != null) {
                         allRawOrders.addAll(fileResult.getValidItems());
                         allErrors.addAll(fileResult.getErrors());
+                        if (fileResult.getSourceLines() != null) {
+                            allSourceLines.addAll(fileResult.getSourceLines());
+                        } else {
+                            for (int i = 0; i < fileResult.getValidItems().size(); i++) {
+                                allSourceLines.add(null);
+                            }
+                        }
                     }
                 } catch (DataInvalidException e) {
                     throw e;
@@ -126,6 +134,13 @@ public class OrderImportService {
                 ParseResult<OrderInputDTO> textResult = dataParser.parse(request.getTextData());
                 allRawOrders.addAll(textResult.getValidItems());
                 allErrors.addAll(textResult.getErrors());
+                if (textResult.getSourceLines() != null) {
+                    allSourceLines.addAll(textResult.getSourceLines());
+                } else {
+                    for (int i = 0; i < textResult.getValidItems().size(); i++) {
+                        allSourceLines.add(null);
+                    }
+                }
 
                 log.debug("Parsed {} orders from text data with {} errors",
                         textResult.getValidItems().size(), textResult.getErrors().size());
@@ -142,33 +157,26 @@ public class OrderImportService {
                 ));
         }
 
-        return processParsedData(allRawOrders, allErrors, request, branch);
+        return processParsedData(allRawOrders, allErrors, request, branch, allSourceLines);
     }
 
     private ImportResultDTO processParsedData(List<OrderInputDTO> rawOrders,
                                               List<ImportError> parseErrors,
                                               OrderImportRequest request,
-                                              Branch branch) {
+                                              Branch branch,
+                                              List<Integer> sourceLines) {
 
-        try {
-            String rawOrdersJson = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(rawOrders);
-            String parseErrorsJson = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(parseErrors);
-            String requestJson = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(request);
-
-            log.debug("Raw Orders ({} items):\n{}", rawOrders.size(), rawOrdersJson);
-            log.debug("Parse Errors ({} items):\n{}", parseErrors.size(), parseErrorsJson);
-            log.debug("Order Import Request:\n{}", requestJson);
-            log.debug("--------------------------------------");
-
-        } catch (Exception e) {
-            log.error("Lỗi khi serialize đối tượng để debug: {}", e.getMessage());
-        }
+        log.debug("Import rows: {} parsed, {} parse errors", rawOrders.size(), parseErrors.size());
 
         List<OrderInputDTO> validOrdersToSave = new ArrayList<>();
+        List<Integer> validLinesToSave = new ArrayList<>();
         List<ImportError> validationErrors = new ArrayList<>(parseErrors);
 
         for (int i = 0; i < rawOrders.size(); i++) {
             OrderInputDTO dto = rawOrders.get(i);
+
+            int line = (sourceLines != null && i < sourceLines.size() && sourceLines.get(i) != null)
+                    ? sourceLines.get(i) : (i + 1);
 
             if (dto.getServiceTime() == null) {
                 dto.setServiceTime(request.getServiceTime());
@@ -186,12 +194,13 @@ public class OrderImportService {
                     dto.setLongitude(result.lng);
                 } else {
                     validationErrors.add(buildError(
-                            i + 1,
+                            line,
                             dto.getOrderCode(),
                             "address",
-                            "The coordinates cannot be obtained from the address: " + dto.getAddress(),
-                            dto.getAddress()
+                            "Could not find coordinates for this address.",
+                            null
                     ));
+                    continue;
                 }
             }
 
@@ -199,15 +208,16 @@ public class OrderImportService {
 
             if (!violations.isEmpty()) {
                 String formatErrorMsg = violations.iterator().next().getMessage();
-                validationErrors.add(buildError(i + 1, dto.getOrderCode(), "Format/Constraint", formatErrorMsg, "N/A"));
+                validationErrors.add(buildError(line, dto.getOrderCode(), "Format/Constraint", formatErrorMsg, "N/A"));
                 continue;
             }
 
             String businessErrorMsg = validateBusinessLogic(dto);
             if (businessErrorMsg != null) {
-                validationErrors.add(buildError(i + 1, dto.getOrderCode(), "BusinessRule", businessErrorMsg, "N/A"));
+                validationErrors.add(buildError(line, dto.getOrderCode(), "BusinessRule", businessErrorMsg, "N/A"));
             } else {
                 validOrdersToSave.add(dto);
+                validLinesToSave.add(line);
             }
         }
 
@@ -222,19 +232,22 @@ public class OrderImportService {
                     .build();
         }
 
-        return saveOrdersToDatabase(validOrdersToSave, branch, request, validationErrors);
+        return saveOrdersToDatabase(validOrdersToSave, branch, request, validationErrors, validLinesToSave);
     }
 
     private ImportResultDTO saveOrdersToDatabase(List<OrderInputDTO> validOrders,
                                                  Branch branch,
                                                  OrderImportRequest request,
-                                                 List<ImportError> existingErrors) {
+                                                 List<ImportError> existingErrors,
+                                                 List<Integer> validLines) {
 
         int importedCount = 0;
         int skippedCount = 0;
         List<ImportError> dbErrors = new ArrayList<>(existingErrors);
 
-        for (OrderInputDTO dto : validOrders) {
+        for (int idx = 0; idx < validOrders.size(); idx++) {
+            OrderInputDTO dto = validOrders.get(idx);
+            int line = (validLines != null && idx < validLines.size() && validLines.get(idx) != null) ? validLines.get(idx) : (idx + 1);
             try {
 
                 boolean exists = orderRepository.existsByBranchIdAndOrderCode(branch.getId(), dto.getOrderCode());
@@ -259,10 +272,11 @@ public class OrderImportService {
                 }
 
             } catch (Exception e) {
-                log.error("Failed to save order {}: {}", dto.getOrderCode(), e.getMessage());
-                dbErrors.add(buildError(null, dto.getOrderCode(), "Database", "Lỗi lưu DB: " + e.getMessage(), null));
+                log.error("Failed to save imported order {}: {}", dto.getOrderCode(), e.getClass().getSimpleName());
+                dbErrors.add(buildError(line, dto.getOrderCode(), "Database", "Could not save this order.", null));
             }
         }
+
 
         int totalProcessed = importedCount + skippedCount + dbErrors.size();
 
