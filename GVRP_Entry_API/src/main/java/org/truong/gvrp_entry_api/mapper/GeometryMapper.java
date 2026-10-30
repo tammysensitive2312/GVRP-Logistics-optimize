@@ -89,6 +89,8 @@ public class GeometryMapper {
             );
         }
 
-        throw new DataInvalidException(errorsInfo);
+        if (!errorsInfo.isEmpty()) {
+            throw new DataInvalidException(errorsInfo);
+        }
     }
 }
