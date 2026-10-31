@@ -42,6 +42,7 @@ Closed: 2026-10-31, at the user's request: "xác nhận nghiệm thu bản mới
 2. Re-check the app against real LEZ-001 P1b responses once P1b is merged: `zone_names`, the `sign` codes, routes with partial geometry.
 3. Entry API: does a wrong password return 500 (`BadCredentialsException`)? If confirmed, it needs a backend work item.
 4. CI job for `GVRP_Driver_app` in `.github/workflows/ci.yml` (`flutter analyze`, `flutter test`). This is a rule/config change that needs user approval.
+   - **Done 2026-10-31**, approved by the user ("tôi nghĩ bạn có thể làm"): job `driver-app` with `subosito/flutter-action@v2`, Flutter 3.47.8 stable, `flutter pub get --enforce-lockfile`, `flutter analyze`, `flutter test`. The same commands passed locally (analyze clean, 54/54). Not yet verified on GitHub Actions.
 5. The web client cross-branch exposure: see the session card above.
 
 User acceptance covers user testing only. It does not authorize deployment or publication.
