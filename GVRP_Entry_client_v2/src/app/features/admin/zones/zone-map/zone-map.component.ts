@@ -17,6 +17,25 @@ import { DepotDTO } from '@core/models';
 
 import { GeoJsonPolygon, polygonFromPoints, ringSelfIntersects } from '../zone-draw.utils';
 
+const DEPOT_ICON = L.divIcon({
+  html: `<div style="
+      background: #4A90E2;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 2px solid #fff;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.35);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+    ">🏢</div>`,
+  className: 'zone-map-depot-marker',
+  iconSize: [24, 24],
+  iconAnchor: [12, 12],
+  tooltipAnchor: [12, 0]
+});
+
 /**
  * Small Leaflet preview for a zone geometry and the branch depots (LEZ-001
  * P1c, C1/C2). Uses the same Google tile layer as `MapComponent`.
@@ -301,7 +320,8 @@ export class ZoneMapComponent implements AfterViewInit, OnChanges, OnDestroy {
         continue;
       }
       const marker = L.marker([depot.latitude, depot.longitude], {
-        title: depot.name
+        title: depot.name,
+        icon: DEPOT_ICON
       }).bindTooltip(depot.name);
       marker.addTo(this.depotLayer);
       bounds.extend([depot.latitude, depot.longitude]);
