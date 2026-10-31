@@ -175,3 +175,49 @@ it (LEZ-001 has this). Create runs on Windows, or keep using the VM shell for
 that run. In the VM, plain `git status` shows every file modified because of
 CRLF; use `git -c core.autocrlf=true status`. The CLI deletes `.lock` files,
 so the VM shell needs delete permission for the folder first.
+
+## L-2026-015 — Flutter Android toolchain on Windows
+Date: 2026-10-31
+Source: DRIVER-APP-001 setup, 2026-10-27/28 (`work-items/DRIVER-APP-001/implementation.md` § Setup issues)
+Applies to: `GVRP_Driver_app` builds on the Windows dev machine; Android Studio; emulator
+Status: ACTIVE
+Lesson:
+- **cmdline-tools:** `flutter doctor` needs the SDK's cmdline-tools. Install them from Android Studio's SDK Manager.
+- **NDK:** install it from the SDK Manager with "Show Package Details". A CLI wrapper split the package name and the build reported "NDK … not found".
+- **Run configurations:** run the app with the Flutter plugin's run configuration and the Flutter SDK path set. A Dart command-line configuration fails with `dart:ui` "isn't a type" errors.
+- **Cache drives:** when the pub cache (`C:`) and the project (`E:`) are on different drives, Kotlin fails with "Could not close incremental caches". `kotlin.incremental=false` in `android/gradle.properties` fixes it (as the repo has it), and so would a `PUB_CACHE` on the project drive.
+- **Emulator under load:** `adb install` during a Gradle build once coincided with a system_server restart. The package was then left without its activity ("Activity class … does not exist"); re-running `adb install -r` fixed it.
+- **adb on PATH:** `adb` is not on PATH by default; use `%LOCALAPPDATA%\Android\Sdk\platform-tools\adb.exe`. With an emulator and a phone attached, pass `-s <serial>`.
+
+## L-2026-016 — Riverpod 3 retries failing providers by default
+Date: 2026-10-31
+Source: DRIVER-APP-001 (`GVRP_Driver_app/lib/main.dart`, `test/support/test_app.dart`)
+Applies to: Flutter code and tests using `flutter_riverpod` 3.x
+Status: ACTIVE
+Lesson:
+- **Retry:** Riverpod 3 retries a provider that throws. Error screens then appear only after the retries, and widget tests wait or see loading states. Set `ProviderScope(retry: (_, _) => null)` in the app and in every test scope when errors must surface at once.
+- **Wrapped errors:** errors read through dependent providers arrive wrapped in `ProviderException` (`package:flutter_riverpod/misc.dart`). Unwrap them before mapping to typed errors.
+- **Duplicate overrides:** overriding the same provider twice in one `ProviderScope` fails with an assertion. Give the test harness a parameter instead of appending a second override.
+
+## L-2026-017 — Widget tests with bottom sheets and flutter_map
+Date: 2026-10-31
+Source: DRIVER-APP-001 (`GVRP_Driver_app/test/support/test_app.dart`, `test/features/routes/route_detail_test.dart`, `test/features/map/route_map_test.dart`)
+Applies to: Flutter widget tests of screens with a `DraggableScrollableSheet` or `FlutterMap`
+Status: ACTIVE
+Lesson:
+- **Lazy sheet content:** content of a `DraggableScrollableSheet` is built lazily.
+  - A button below the visible part is not built, or a tap misses it. Use `ensureVisible` before tapping.
+  - After scrolling down, cards at the top are disposed. Jump the sheet's `Scrollable` back to 0 before asserting on them.
+  - A smaller initial sheet size can break taps that worked before.
+- **Tiles:** keep network tiles out of tests through a provider switch (`mapTilesEnabledProvider`).
+- **Reading the camera:** use `MapCamera.of(element)` on an always-built layer such as `PolylineLayer`. Markers outside the viewport are not built, so they make a poor anchor.
+
+## L-2026-018 — Local-only edits inside a run's scope change the handoff
+Date: 2026-10-31
+Source: DRIVER-APP-001 rev 7–13 (`work-items/DRIVER-APP-001/run.json`, `verification.md`, `findings-test-values.md`)
+Applies to: business-development runs whose scope holds machine-specific config (`GVRP_Driver_app` debug network config)
+Status: ACTIVE
+Lesson:
+- **Machine-specific edits:** a developer's machine-specific edit to a scoped file becomes part of the fingerprinted handoff and of the commit. Example: putting their LAN IP into `network_security_config.xml` for a phone build. Restore the placeholder, with the user's decision, before `pass`.
+- **Edits after acceptance:** any edit after acceptance, even to tests only, needs `changed` → implement → verify → `pass` and a new acceptance for the new handoff hash.
+- **`recover` during builds:** `workflow.mjs recover` reported `Scope cannot be verified: EBUSY` while Gradle held files under `build/`. Run it when no build is running.

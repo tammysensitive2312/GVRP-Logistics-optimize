@@ -5,8 +5,8 @@
     "GVRP_Driver_app"
   ],
   "graphHash": "dd102f16a0bb44c675032aab0813a841f1b446ea1fa8d99958fa094d0e8de614",
-  "state": "await_user_test",
-  "revision": 12,
+  "state": "done",
+  "revision": 14,
   "history": [
     {
       "revision": 1,
@@ -191,6 +191,34 @@
       },
       "snapshot": "207d7b5b32d48547f6e27fb7f478c473e5b9137f21da3c2f60272111fbf9a4a2",
       "time": "2026-10-31T16:41:52.387Z"
+    },
+    {
+      "revision": 13,
+      "from": "await_user_test",
+      "event": "accepted",
+      "to": "accepted",
+      "evidence": {
+        "user_acceptance": {
+          "path": "work-items/DRIVER-APP-001/user-acceptance-rev12.json",
+          "sha256": "6ca3f9570a4e73901e7239799657c75f44fdb7315f9f9751e24e23c063acedf8"
+        }
+      },
+      "snapshot": "207d7b5b32d48547f6e27fb7f478c473e5b9137f21da3c2f60272111fbf9a4a2",
+      "time": "2026-10-31T16:45:55.113Z"
+    },
+    {
+      "revision": 14,
+      "from": "accepted",
+      "event": "finish",
+      "to": "done",
+      "evidence": {
+        "closure": {
+          "path": "work-items/DRIVER-APP-001/closure.md",
+          "sha256": "76aad9d04ba8668e51176ab2dd3b948e4c2fac559be6b3f1cfaf7201f31a9a03"
+        }
+      },
+      "snapshot": "207d7b5b32d48547f6e27fb7f478c473e5b9137f21da3c2f60272111fbf9a4a2",
+      "time": "2026-10-31T16:46:50.435Z"
     }
   ],
   "handoff": "207d7b5b32d48547f6e27fb7f478c473e5b9137f21da3c2f60272111fbf9a4a2",
