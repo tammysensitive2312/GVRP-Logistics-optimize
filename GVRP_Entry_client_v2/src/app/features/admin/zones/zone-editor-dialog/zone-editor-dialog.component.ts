@@ -85,6 +85,8 @@ export class ZoneEditorDialogComponent {
   readonly scheduleTypes = SCHEDULE_TYPES;
   readonly weightMeasures = WEIGHT_MEASURES;
   readonly rulePresets = RULE_PRESETS;
+  /** Presets that explain a non-obvious effect under the select (LEZ-FIX-001 D4). */
+  readonly presetsWithHint = RULE_PRESETS.filter(preset => preset.hint);
 
   /** Name of the COPIED zone; a changed name is sent before the geometry. */
   readonly name = signal(this.data.zone.name ?? '');
@@ -255,6 +257,21 @@ export class ZoneEditorDialogComponent {
       this.rules().map((rule, i) => (i === index ? preset.apply(rule) : rule))
     );
     this.formErrors.set([]);
+  }
+
+  /** Applies the chosen preset, then shows "Choose a preset…" again so the same one can be chosen twice (D3). */
+  onPresetSelected(index: number, event: Event): void {
+    const select = event.target as HTMLSelectElement;
+    const value = select.value;
+    if (value === '') {
+      return;
+    }
+    this.applyPreset(index, Number(value));
+    select.value = '';
+  }
+
+  lowerFirst(text: string): string {
+    return text.charAt(0).toLowerCase() + text.slice(1);
   }
 
   /** Amber hints under a rule card; they never block the save (D6). */

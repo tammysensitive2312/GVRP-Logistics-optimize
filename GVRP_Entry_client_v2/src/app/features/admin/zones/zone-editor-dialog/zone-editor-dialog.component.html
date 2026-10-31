@@ -86,15 +86,18 @@
 
           <div class="form-group">
             <label [attr.for]="'rule-preset-' + ruleIndex">Start from a preset</label>
+            <!-- No ngModel: the select goes back to "Choose a preset…" after each use (LEZ-FIX-001 D3). -->
             <select
               [id]="'rule-preset-' + ruleIndex"
-              [ngModel]="null"
-              (ngModelChange)="applyPreset(ruleIndex, $event)">
-              <option [ngValue]="null">Choose a preset…</option>
+              (change)="onPresetSelected(ruleIndex, $event)">
+              <option value="">Choose a preset…</option>
               @for (preset of rulePresets; track preset.label; let presetIndex = $index) {
-                <option [ngValue]="presetIndex">{{ preset.label }}</option>
+                <option [value]="presetIndex">{{ preset.label }}</option>
               }
             </select>
+            @for (preset of presetsWithHint; track preset.label) {
+              <p class="form-hint preset-hint">{{ preset.label }}: {{ lowerFirst(preset.hint!) }}</p>
+            }
           </div>
 
           @if (isEveryVehicle(ruleIndex)) {

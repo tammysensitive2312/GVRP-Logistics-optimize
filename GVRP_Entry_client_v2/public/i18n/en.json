@@ -57,7 +57,7 @@
     "costPerKmLabel": "Cost per km (VND)",
     "costPerHourLabel": "Cost per hour (VND)",
     "maxDistanceLabel": "Max distance (km)",
-    "maxDurationLabel": "Max duration (minutes)",
+    "maxDurationLabel": "Max duration (hours)",
     "skillsLabel": "Vehicle skills",
     "skillsHint": "Select every capability this vehicle type provides.",
     "addButton": "+ Add vehicle type",

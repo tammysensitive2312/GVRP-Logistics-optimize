@@ -225,6 +225,8 @@ function blankToNull(value: string): string | null {
 
 interface RulePreset {
   label: string;
+  /** One line shown under the preset select (LEZ-FIX-001 D4). */
+  hint?: string;
   /** Replaces the selector and schedule; keeps dates, legal basis and note. */
   apply(form: ZoneRuleFormModel): ZoneRuleFormModel;
 }
@@ -264,6 +266,7 @@ export const RULE_PRESETS: readonly RulePreset[] = [
   },
   {
     label: 'Only electric vehicles',
+    hint: 'Vehicles with no energy type recorded are banned too.',
     apply: form => presetOver(form, {
       energyTypes: ['HYBRID', 'PETROL', 'DIESEL', 'OTHER'],
       scheduleType: 'ALWAYS_FORBIDDEN'

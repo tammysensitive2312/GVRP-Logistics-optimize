@@ -15,7 +15,7 @@ import * as L from 'leaflet';
 
 import { DepotDTO } from '@core/models';
 
-import { GeoJsonPolygon, polygonFromPoints } from '../zone-draw.utils';
+import { GeoJsonPolygon, polygonFromPoints, ringSelfIntersects } from '../zone-draw.utils';
 
 /**
  * Small Leaflet preview for a zone geometry and the branch depots (LEZ-001
@@ -25,6 +25,8 @@ import { GeoJsonPolygon, polygonFromPoints } from '../zone-draw.utils';
  * UX-LEZ-001 D2) lets the planner click the corners of one polygon:
  * Draw → click points → Finish emits `polygonDrawn`; Undo point and Cancel
  * edit the draft. The existing geometry stays drawn under the draft.
+ * While drawing, double-click does not zoom and an outline whose edges cross
+ * cannot be finished (LEZ-FIX-001 D1/D2).
  */
 @Component({
   selector: 'app-zone-map',
@@ -59,6 +61,7 @@ export class ZoneMapComponent implements AfterViewInit, OnChanges, OnDestroy {
   private drawControl?: L.Control;
   private draftLayer?: L.LayerGroup;
   private finishButton?: HTMLButtonElement;
+  private crossingMessage?: HTMLSpanElement;
   /** True while map clicks add points to the draft. */
   drawing = false;
   /** Draft points as Leaflet `[lat, lng]`. */
@@ -116,12 +119,18 @@ export class ZoneMapComponent implements AfterViewInit, OnChanges, OnDestroy {
     this.drawing = true;
     this.points = [];
     this.map.on('click', this.onMapClick);
+    this.map.doubleClickZoom.disable();
     this.map.getContainer().style.cursor = 'crosshair';
     this.renderDraft();
   }
 
   addPoint(lat: number, lng: number): void {
     if (!this.drawing) {
+      return;
+    }
+    // A double-click sends two clicks on the same spot; keep one point so one Undo removes it.
+    const last = this.points[this.points.length - 1];
+    if (last && last[0] === lat && last[1] === lng) {
       return;
     }
     this.points = [...this.points, [lat, lng]];
@@ -136,9 +145,9 @@ export class ZoneMapComponent implements AfterViewInit, OnChanges, OnDestroy {
     this.renderDraft();
   }
 
-  /** Emits the polygon of at least 3 distinct points and leaves draw mode. */
+  /** Emits the polygon of at least 3 distinct points whose edges do not cross, and leaves draw mode. */
   finishDraw(): void {
-    const polygon = this.drawing ? polygonFromPoints(this.points) : null;
+    const polygon = this.drawing ? this.finishablePolygon() : null;
     if (!polygon) {
       return;
     }
@@ -155,6 +164,7 @@ export class ZoneMapComponent implements AfterViewInit, OnChanges, OnDestroy {
     this.points = [];
     if (this.map) {
       this.map.off('click', this.onMapClick);
+      this.map.doubleClickZoom.enable();
       this.map.getContainer().style.cursor = '';
     }
     this.renderDraft();
@@ -183,11 +193,12 @@ export class ZoneMapComponent implements AfterViewInit, OnChanges, OnDestroy {
     const container = L.DomUtil.create('div', 'leaflet-bar zone-draw-control');
     container.style.background = '#fff';
     container.style.padding = '4px';
-    container.style.display = 'flex';
-    container.style.gap = '4px';
     L.DomEvent.disableClickPropagation(container);
+    const row = L.DomUtil.create('div', 'zone-draw-buttons', container);
+    row.style.display = 'flex';
+    row.style.gap = '4px';
     const button = (label: string, action: () => void): HTMLButtonElement => {
-      const element = L.DomUtil.create('button', 'zone-draw-btn', container) as HTMLButtonElement;
+      const element = L.DomUtil.create('button', 'zone-draw-btn', row) as HTMLButtonElement;
       element.type = 'button';
       element.textContent = label;
       element.style.cursor = 'pointer';
@@ -201,14 +212,38 @@ export class ZoneMapComponent implements AfterViewInit, OnChanges, OnDestroy {
     button('Undo point', () => this.undoPoint());
     this.finishButton = button('Finish', () => this.finishDraw());
     button('Cancel', () => this.cancelDraw());
+    // A span, not a button: the control's buttons stay Draw, Undo point, Finish, Cancel.
+    // Its own line under the buttons; width 0 + min-width 100% wraps it to the button row's
+    // width, so the control does not grow and the buttons do not move when it appears.
+    this.crossingMessage = L.DomUtil.create('span', 'zone-draw-message', container) as HTMLSpanElement;
+    this.crossingMessage.textContent = 'Edges cross — undo points or cancel and redraw.';
+    this.crossingMessage.style.color = '#b91c1c';
+    this.crossingMessage.style.width = '0';
+    this.crossingMessage.style.minWidth = '100%';
+    this.crossingMessage.style.marginTop = '4px';
+    this.crossingMessage.style.display = 'none';
     this.updateFinishButton();
     return container;
   }
 
   private updateFinishButton(): void {
     if (this.finishButton) {
-      this.finishButton.disabled = !this.drawing || polygonFromPoints(this.points) === null;
+      this.finishButton.disabled = !this.drawing || this.finishablePolygon() === null;
     }
+    if (this.crossingMessage) {
+      this.crossingMessage.style.display = this.drawing && this.draftCrosses() ? 'block' : 'none';
+    }
+  }
+
+  /** The draft polygon, or null when it has fewer than 3 points or its edges cross. */
+  private finishablePolygon(): GeoJsonPolygon | null {
+    const polygon = polygonFromPoints(this.points);
+    return polygon && !ringSelfIntersects(polygon.coordinates[0]) ? polygon : null;
+  }
+
+  private draftCrosses(): boolean {
+    const polygon = polygonFromPoints(this.points);
+    return polygon !== null && ringSelfIntersects(polygon.coordinates[0]);
   }
 
   /** Dashed outline and small circles of the draft, above the stored geometry. */

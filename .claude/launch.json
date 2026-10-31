@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "entry-client-v2",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "GVRP_Entry_client_v2", "start"],
+      "port": 4200
+    }
+  ]
+}

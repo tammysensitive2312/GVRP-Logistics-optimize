@@ -47,7 +47,7 @@
 
     <div class="form-row">
       <div class="form-group">
-        <label for="admin-vtype-cost-per-hour">Cost/hours (VND) <span class="required">*</span></label>
+        <label for="admin-vtype-cost-per-hour">Cost/Hour (VND) <span class="required">*</span></label>
         <input id="admin-vtype-cost-per-hour" type="number" formControlName="costPerHour" min="0"/>
         @if (form.controls.costPerHour.touched && form.controls.costPerHour.invalid) {
           <p class="form-error">{{ 'vehicleTypeSetup.errors.costPerHourNonNegative' | transloco }}</p>
@@ -63,7 +63,7 @@
     </div>
 
     <div class="form-group">
-      <label for="admin-vtype-max-duration">Max Duration (minutes)</label>
+      <label for="admin-vtype-max-duration">Max Duration (hours)</label>
       <input id="admin-vtype-max-duration" type="number" formControlName="maxDuration" min="0"/>
       @if (form.controls.maxDuration.touched && form.controls.maxDuration.invalid) {
         <p class="form-error">{{ 'vehicleTypeSetup.errors.maxDurationPositive' | transloco }}</p>
