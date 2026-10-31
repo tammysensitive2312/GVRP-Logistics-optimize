@@ -1,0 +1,6 @@
+{
+  "decision": "accepted",
+  "run_id": "DRIVER-APP-001",
+  "handoff": "207d7b5b32d48547f6e27fb7f478c473e5b9137f21da3c2f60272111fbf9a4a2",
+  "source": "User message in the Claude Code session on 2026-10-31: \"xác nhận nghiệm thu bản mới, thêm lessons rồi đóng run đi\". It answers the handoff of run revision 12, which differs from the version accepted at revision 9 (user-acceptance.json) only in test files: credentials generated at run time. Acceptance covers user testing only; it does not authorize deployment or publication."
+}

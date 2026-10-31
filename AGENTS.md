@@ -38,6 +38,7 @@ Major components include:
 * `GVRP_Engine_API` — GraphHopper/jsprit routing and optimization
 * `GVRP_Entry_client` — legacy web client
 * `GVRP_Entry_client_v2` — Angular client
+* `GVRP_Driver_app` — Flutter driver app, Android first (added 2026-10-27, DRIVER-APP-001, user approval 20:40)
 * `GVRP_Benchmark` — benchmark and profiling artifacts
 * `GVRP_Document` — architecture and design documentation
 * `docs/research` — durable research knowledge

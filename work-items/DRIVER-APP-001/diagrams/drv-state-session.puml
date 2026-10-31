@@ -1,0 +1,13 @@
+@startuml drv-state-session
+title DRIVER-APP-001 - Session states (proposal)
+!theme plain
+skinparam shadowing false
+skinparam defaultFontSize 12
+[*] --> LoggedOut
+LoggedOut --> LoggedIn : login 200 and role == DRIVER\n(token saved)
+LoggedOut --> LoggedOut : wrong credentials / not a driver\n(nothing saved)
+LoggedIn --> LoggedOut : logout (token cleared)
+LoggedIn --> Expired : any API call returns 401
+Expired --> LoggedOut : token cleared, expiry message
+LoggedIn --> LoggedIn : app restart with a stored token
+@enduml

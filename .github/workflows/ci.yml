@@ -116,6 +116,25 @@ jobs:
         run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
       - run: npx ng test --watch=false --browsers=ChromeHeadless
 
+  driver-app:
+    name: Driver app (analyze + unit tests)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: GVRP_Driver_app
+    steps:
+      - uses: actions/checkout@v4
+      # Pinned to the version the app was built and verified with
+      # (work-items/DRIVER-APP-001/verification.md).
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.47.8'
+          cache: true
+      - run: flutter pub get --enforce-lockfile
+      - run: flutter analyze
+      - run: flutter test
+
   tools:
     name: Workflow tool tests
     runs-on: ubuntu-latest
