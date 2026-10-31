@@ -1,6 +1,0 @@
-{
-  "decision": "accepted",
-  "run_id": "DEPOT-FIX-001",
-  "handoff": "4ec6b95bd2c4a75c24aaebedd6355a58a42b99e30c0f37eebcde14a1d02db766",
-  "source": "User message in the Claude session, 2026-10-30 23:49 +07:00: \"oke tôi test oke rồi\", in reply to review.md and its manual cases DF-M1…DF-M3 (23:45). The user did not report the cases one by one or the depot name created."
-}

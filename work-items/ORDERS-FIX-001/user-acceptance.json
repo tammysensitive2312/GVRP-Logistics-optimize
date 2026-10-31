@@ -1,6 +1,0 @@
-{
-  "decision": "accepted",
-  "run_id": "ORDERS-FIX-001",
-  "handoff": "576902259ca2a90da33e4ecdaaac3f079fd003dfa181d803d9d4c1a0256315b1",
-  "source": "User message 2026-10-31 (+07:00) in the Claude Code session, after the rework handoff: \"close items tự commit và thực hiện task trong work-items/LEZ-FIX-001\" (close and commit). Acceptance given without the manual scenarios OF-M1…OF-M6 being run (recorded in closure.md)."
-}
