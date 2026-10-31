@@ -38,6 +38,7 @@ into chat or auto memory — auto memory is a convenience, not project truth.
 | GVRP_Engine_API | `mvnw.cmd test` (single test: `mvnw.cmd -Dtest=ClassName test`) |
 | GVRP_Entry_API | `mvnw.cmd test` |
 | GVRP_Entry_client_v2 | `npm test`, `npm run build` |
+| GVRP_Driver_app | `flutter analyze`, `flutter test`, `flutter build apk --debug --dart-define=API_BASE_URL=http://10.0.2.2:8080` |
 | tools | `node --test tools/feature-workflow/workflow.test.mjs tools/session-brief.test.mjs`, `python tools/experiment_validator.py` |
 
 Ports: Entry API 8080, Engine API 8081, MySQL 3306.
