@@ -1,0 +1,53 @@
+@startuml drv-component
+title DRIVER-APP-001 - Component view (proposal)
+!theme plain
+skinparam shadowing false
+skinparam defaultFontSize 12
+skinparam componentStyle rectangle
+skinparam component {
+  BackgroundColor<<new>> #E8F5E9
+  BorderColor<<new>> #2E7D32
+}
+actor Driver
+package "GVRP_Driver_app (Flutter, Android)" {
+  [LoginScreen] <<new>> as Login
+  [RouteListScreen] <<new>> as List
+  [RouteDetailScreen] <<new>> as Detail
+  [RouteMap (flutter_map)] <<new>> as Map
+  [GuidancePanel] <<new>> as Guide
+  [AuthController] <<new>> as AuthC
+  [RoutesRepository] <<new>> as Repo
+  [ApiClient\n(error mapping, 401 -> logout)] <<new>> as Api
+  [TokenStore\n(flutter_secure_storage)] <<new>> as Tok
+  [Polyline decoder] <<new>> as Poly
+  [LocationService (geolocator)] <<new>> as Loc
+}
+cloud "OSM tiles\n(dev only)" as Tiles
+package "GVRP_Entry_API (existing, unchanged)" {
+  [POST /api/v1/auth/login] as EpLogin
+  [GET /api/v1/driver/routes] as EpList
+  [GET /api/v1/driver/routes/{send_id}\n(+ geometry_to_next, instructions_to_next,\nzone_names after LEZ-001 P1b)] as EpDetail
+}
+Driver --> Login
+Driver --> List
+Driver --> Detail
+Login --> AuthC
+AuthC --> Api
+AuthC --> Tok
+List --> Repo
+Detail --> Repo
+Detail --> Map
+Detail --> Guide
+Map --> Poly
+Map --> Loc
+Map ..> Tiles : tiles
+Repo --> Api
+Api --> Tok : bearer token
+Api --> EpLogin
+Api --> EpList
+Api --> EpDetail
+note bottom of Map
+  Paths ONLY from server geometry.
+  No OSRM / Google / external navigation.
+end note
+@enduml

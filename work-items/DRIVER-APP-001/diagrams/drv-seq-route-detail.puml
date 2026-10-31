@@ -1,0 +1,44 @@
+@startuml drv-seq-route-detail
+title DRIVER-APP-001 - Open a route: map and guidance (proposal)
+!theme plain
+skinparam shadowing false
+skinparam defaultFontSize 12
+autonumber
+actor Driver as D
+participant "RouteListScreen" as L
+participant "RouteDetailScreen" as S
+participant "RoutesRepository" as R
+participant "ApiClient" as C
+participant "Entry API" as E
+participant "RouteMap" as M
+participant "Polyline decoder" as P
+participant "GuidancePanel" as G
+D -> L : open app
+L -> R : mySends()
+R -> C : GET /api/v1/driver/routes
+C -> E : Bearer
+E --> C : [CURRENT..., SUPERSEDED...]
+L --> D : list (+ banner if superseded)
+D -> L : tap a route
+L -> S : open(send_id)
+S -> R : detail(send_id)
+R -> C : GET /api/v1/driver/routes/{send_id}
+E --> C : stops[] (+ geometry_to_next, instructions_to_next, zone_names)
+alt status == SUPERSEDED
+  S --> D : red banner, guidance hidden
+end
+loop each leg i
+  alt geometry_to_next present
+    S -> P : decode(polyline)
+    P --> M : points -> solid polyline
+  else absent (before LEZ-001 P1b)
+    S -> M : straight dashed line + legend
+  end
+end
+S -> G : leg 0 instructions (or "no guidance" message)
+D -> S : "Đã đến điểm này"
+S -> G : leg index + 1 (local only)
+S -> M : highlight next leg
+D -> S : tap phone
+S -> S : url_launcher(tel:...) only
+@enduml

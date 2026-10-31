@@ -1,0 +1,36 @@
+@startuml drv-seq-login
+title DRIVER-APP-001 - Login, role check and session expiry (proposal)
+!theme plain
+skinparam shadowing false
+skinparam defaultFontSize 12
+autonumber
+actor Driver as D
+participant "LoginScreen" as UI
+participant "AuthController" as A
+participant "ApiClient" as C
+participant "TokenStore" as T
+participant "Entry API" as E
+D -> UI : branch, username, password
+UI -> A : login(...)
+A -> C : POST /api/v1/auth/login
+C -> E : {branch_name, username, password}
+alt 200
+  E --> C : {access_token, role, user_id, branch_id, ...}
+  C --> A : LoginResponse
+  alt role == DRIVER
+    A -> T : save(token)
+    A --> UI : go to My routes
+  else other role
+    A --> UI : "Tài khoản này không phải tài xế."\n(nothing stored)
+  end
+else 400
+  E --> C : error
+  C --> A : ClientError
+  A --> UI : "Sai chi nhánh, tên đăng nhập hoặc mật khẩu."
+end
+== later: any call with an expired token ==
+C -> E : GET /api/v1/driver/routes (Bearer)
+E --> C : 401
+C -> T : clear()
+C --> UI : back to Login\n"Phiên đăng nhập đã hết hạn..."
+@enduml

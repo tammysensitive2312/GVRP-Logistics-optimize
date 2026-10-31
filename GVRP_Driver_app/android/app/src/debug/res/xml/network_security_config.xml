@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Debug builds only (referenced from src/debug/AndroidManifest.xml).
+     DRIVER-APP-001 design §7 / DA-R10: cleartext HTTP is allowed for the
+     emulator's host alias only. Every other host keeps the platform default
+     (HTTPS only). -->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <!-- Android emulator alias for the development machine's localhost. -->
+        <domain includeSubdomains="false">10.0.2.2</domain>
+        <!-- Physical phone on the same Wi-Fi: uncomment and set the LAN IP of
+             the machine running the Entry API, then rebuild. Do not commit a
+             real address.
+        <domain includeSubdomains="false">192.168.X.Y</domain>
+        -->
+    </domain-config>
+</network-security-config>

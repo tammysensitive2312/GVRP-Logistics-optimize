@@ -1,0 +1,198 @@
+{
+  "id": "DRIVER-APP-001",
+  "root": "E:\\OR-tools java example\\GVRP-driver-app",
+  "scope": [
+    "GVRP_Driver_app"
+  ],
+  "graphHash": "dd102f16a0bb44c675032aab0813a841f1b446ea1fa8d99958fa094d0e8de614",
+  "state": "await_user_test",
+  "revision": 12,
+  "history": [
+    {
+      "revision": 1,
+      "from": "intake",
+      "event": "ready",
+      "to": "discover",
+      "evidence": {
+        "request": {
+          "path": "work-items/DRIVER-APP-001/request.md",
+          "sha256": "0801dae2e178fda34f57a31d59acca0e03535ca3a3e88270b4f86d0cceed470b"
+        }
+      },
+      "snapshot": "ff2795430e9dfb7190b2eb97f13958250ed954ebe71570061c45fb61aa359e53",
+      "time": "2026-10-27T15:10:29.353Z"
+    },
+    {
+      "revision": 2,
+      "from": "discover",
+      "event": "ready",
+      "to": "design",
+      "evidence": {
+        "context": {
+          "path": "work-items/DRIVER-APP-001/context.md",
+          "sha256": "e0ea765f5699ed7d5e00c8682094ecdbd2a5849b0bca26aedccbc4a26c38492b"
+        }
+      },
+      "snapshot": "ff2795430e9dfb7190b2eb97f13958250ed954ebe71570061c45fb61aa359e53",
+      "time": "2026-10-27T15:10:29.438Z"
+    },
+    {
+      "revision": 3,
+      "from": "design",
+      "event": "ready",
+      "to": "implement",
+      "evidence": {
+        "design": {
+          "path": "work-items/DRIVER-APP-001/design.md",
+          "sha256": "081a2181a5177beac432103130030d3157dd6c4a3018f71e7d53f197db276b49"
+        },
+        "traceability": {
+          "path": "work-items/DRIVER-APP-001/traceability.md",
+          "sha256": "c996a191cd66d96db08fc84ecc373d25547ffaa5b871f6d9fe5462ea32c5ba70"
+        }
+      },
+      "snapshot": "ff2795430e9dfb7190b2eb97f13958250ed954ebe71570061c45fb61aa359e53",
+      "time": "2026-10-27T15:10:29.544Z"
+    },
+    {
+      "revision": 4,
+      "from": "implement",
+      "event": "ready",
+      "to": "verify",
+      "evidence": {
+        "implementation": {
+          "path": "work-items/DRIVER-APP-001/implementation.md",
+          "sha256": "9afd98619f13a42cf64b70cc15b7d011550ab16540c4b176897817d5a8e88238"
+        }
+      },
+      "snapshot": "b7c9acd29797f29ba9c36af99602ec7a9693a84fc7b8cc344818feef9efc9594",
+      "time": "2026-10-31T10:12:57.651Z"
+    },
+    {
+      "revision": 5,
+      "from": "verify",
+      "event": "design_changed",
+      "to": "design",
+      "evidence": {
+        "findings": {
+          "path": "work-items/DRIVER-APP-001/findings-ui-rev2.md",
+          "sha256": "70e9ad2a8bd4dd8230b5ea9831e9ad48d55418d81470e5e7bb3b71fddb473294"
+        }
+      },
+      "snapshot": "56615a764d0d1e15b44e602e9bb6d77168c1dfe3ae47199f502e99386ffad83f",
+      "time": "2026-10-31T10:21:15.059Z"
+    },
+    {
+      "revision": 6,
+      "from": "design",
+      "event": "ready",
+      "to": "implement",
+      "evidence": {
+        "design": {
+          "path": "work-items/DRIVER-APP-001/ui-design.md",
+          "sha256": "9ae0b59eec997c8e2bd119b9967b15a6464954b0038f338802279882c68e1825"
+        },
+        "traceability": {
+          "path": "work-items/DRIVER-APP-001/traceability.md",
+          "sha256": "78ac0ef6526fc00ebe623e609a77e6b6781b2260204ac0b2c1b00ccd53f02cf8"
+        }
+      },
+      "snapshot": "56615a764d0d1e15b44e602e9bb6d77168c1dfe3ae47199f502e99386ffad83f",
+      "time": "2026-10-31T10:22:25.828Z"
+    },
+    {
+      "revision": 7,
+      "from": "implement",
+      "event": "ready",
+      "to": "verify",
+      "evidence": {
+        "implementation": {
+          "path": "work-items/DRIVER-APP-001/implementation.md",
+          "sha256": "760aaefee6cb47c13c33ecf37d1b48bda5b569a84b93bee89894b94b8d6d07e9"
+        }
+      },
+      "snapshot": "d8404413482cd3a00d21dde1da280fef00dc7c0b3a1c224abc0565556f9d7efd",
+      "time": "2026-10-31T15:35:26.610Z"
+    },
+    {
+      "revision": 8,
+      "from": "verify",
+      "event": "pass",
+      "to": "await_user_test",
+      "evidence": {
+        "verification": {
+          "path": "work-items/DRIVER-APP-001/verification.md",
+          "sha256": "3294bea6c124b53634bdf3132abfd2a63af9abf5cc2904392e850c474f41e477"
+        },
+        "handoff": {
+          "path": "work-items/DRIVER-APP-001/handoff.md",
+          "sha256": "0507543b63e745ac0c8e6f4f609e803f1ef0ece7cb82c3fde16cd6d0347c2e3e"
+        }
+      },
+      "snapshot": "0a0c43a232f2fa7cbc6654c05c77593b4f1b2e0145d9e15fa38986f7f1b5a828",
+      "time": "2026-10-31T16:37:39.837Z"
+    },
+    {
+      "revision": 9,
+      "from": "await_user_test",
+      "event": "accepted",
+      "to": "accepted",
+      "evidence": {
+        "user_acceptance": {
+          "path": "work-items/DRIVER-APP-001/user-acceptance.json",
+          "sha256": "e0665a8c79fad1ad65164935a6c8ac8bb55b1a394c3d281a3fb528c1f6f0a403"
+        }
+      },
+      "snapshot": "0a0c43a232f2fa7cbc6654c05c77593b4f1b2e0145d9e15fa38986f7f1b5a828",
+      "time": "2026-10-31T16:37:52.461Z"
+    },
+    {
+      "revision": 10,
+      "from": "accepted",
+      "event": "changed",
+      "to": "implement",
+      "evidence": {
+        "findings": {
+          "path": "work-items/DRIVER-APP-001/findings-test-values.md",
+          "sha256": "a9d7556697dd1fc09f71881042ef893769c83832e64531adc522ba9880008aad"
+        }
+      },
+      "snapshot": "0a0c43a232f2fa7cbc6654c05c77593b4f1b2e0145d9e15fa38986f7f1b5a828",
+      "time": "2026-10-31T16:41:01.165Z"
+    },
+    {
+      "revision": 11,
+      "from": "implement",
+      "event": "ready",
+      "to": "verify",
+      "evidence": {
+        "implementation": {
+          "path": "work-items/DRIVER-APP-001/implementation.md",
+          "sha256": "4d03ab5c6da151bc94b032cba724be2f6066a7675d6089c089a72ddb5eff1a1e"
+        }
+      },
+      "snapshot": "207d7b5b32d48547f6e27fb7f478c473e5b9137f21da3c2f60272111fbf9a4a2",
+      "time": "2026-10-31T16:41:48.967Z"
+    },
+    {
+      "revision": 12,
+      "from": "verify",
+      "event": "pass",
+      "to": "await_user_test",
+      "evidence": {
+        "verification": {
+          "path": "work-items/DRIVER-APP-001/verification.md",
+          "sha256": "db7d04cd4f57b9dbbc7bb87fd5cf5df6df521e9270083048f327202f74c7d645"
+        },
+        "handoff": {
+          "path": "work-items/DRIVER-APP-001/handoff.md",
+          "sha256": "9edc0e53fb2e03a92acd894b27e3b91960e86c37298f8fedf09619f702494051"
+        }
+      },
+      "snapshot": "207d7b5b32d48547f6e27fb7f478c473e5b9137f21da3c2f60272111fbf9a4a2",
+      "time": "2026-10-31T16:41:52.387Z"
+    }
+  ],
+  "handoff": "207d7b5b32d48547f6e27fb7f478c473e5b9137f21da3c2f60272111fbf9a4a2",
+  "returnTo": null
+}

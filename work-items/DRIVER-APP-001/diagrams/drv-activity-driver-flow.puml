@@ -1,0 +1,28 @@
+@startuml drv-activity-driver-flow
+title DRIVER-APP-001 - Driver flow in the app (MVP, proposal)
+!theme plain
+skinparam shadowing false
+skinparam defaultFontSize 12
+start
+:Open app;
+if (Token stored and valid?) then (yes)
+else (no)
+  :Login (branch, username, password);
+endif
+:My routes (CURRENT first);
+:Open the CURRENT route;
+if (Route has zone_names?) then (yes)
+  :Banner: route has restricted zones,\nfollow the map path exactly;
+endif
+:Allow location (optional, explained first);
+while (More legs?) is (yes)
+  :Map highlights current leg\n(server path or labelled straight line);
+  :Read guidance steps of the leg;
+  if (Need to contact customer?) then (yes)
+    :Tap phone (tel:);
+  endif
+  :Arrive -> "Đã đến điểm này";
+endwhile (no)
+:Back at depot;
+stop
+@enduml
