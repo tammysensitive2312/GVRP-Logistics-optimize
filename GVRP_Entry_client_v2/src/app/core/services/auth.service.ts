@@ -1,5 +1,5 @@
 // src/app/core/services/auth.service.ts
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { BehaviorSubject, Observable, throwError } from 'rxjs';
@@ -7,6 +7,7 @@ import { tap, catchError } from 'rxjs/operators';
 
 import { environment } from '@environments/environment';
 import { StorageService, AuthSession } from './storage.service';
+import { SessionResetService } from './session-reset.service';
 import { LoginRequest, AuthResponse, User } from '../models';
 
 /**
@@ -21,6 +22,8 @@ export class AuthService {
   // Observable streams
   private currentUserSubject = new BehaviorSubject<User | null>(null);
   private isAuthenticatedSubject = new BehaviorSubject<boolean>(false);
+  private readonly sessionReset = inject(SessionResetService);
+
   constructor(
     private http: HttpClient,
     private router: Router,
@@ -45,22 +48,26 @@ export class AuthService {
   }
 
   /**
-   * Logout current user
+   * Logout current user.
+   *
+   * An explicit logout ends the session for good: no `lastUrl` is kept, so the
+   * next person to sign in is not sent back to the previous user's screen
+   * (for example `/jobs/92` of another branch).
    */
   logout(): Observable<void> {
     const token = this.storage.getToken();
 
     if (!token) {
-      this.clearSession();
+      this.clearSession(false);
       return throwError(() => new Error('No active session'));
     }
 
     return this.http.post<void>(`${environment.apiUrl}/auth/logout`, {})
       .pipe(
-        tap(() => this.clearSession()),
+        tap(() => this.clearSession(false)),
         catchError(error => {
           // Even if logout fails, clear local session
-          this.clearSession();
+          this.clearSession(false);
           return throwError(() => error);
         })
       );
@@ -149,6 +156,10 @@ export class AuthService {
       loginTime: Date.now()
     };
 
+    // A new session never sees the previous one's branch data, whoever was
+    // signed in before (the SPA may not have been reloaded since).
+    this.sessionReset.resetBranchState();
+
     // Save consolidated session
     this.storage.saveAuthSession(session);
 
@@ -160,17 +171,26 @@ export class AuthService {
   }
 
   /**
-   * Clear session and redirect to login
+   * Clear session and redirect to login.
+   *
+   * `rememberUrl` keeps the current URL for the redirect after login; it is
+   * only wanted when the session ended on its own (expired token), not on an
+   * explicit logout.
    */
-  private clearSession(): void {
+  private clearSession(rememberUrl: boolean = true): void {
     this.storage.clearAuthSession();
+    this.sessionReset.resetBranchState();
     this.currentUserSubject.next(null);
     this.isAuthenticatedSubject.next(false);
 
-    // Save current URL for redirect after login
-    const currentUrl = this.router.url;
-    if (currentUrl && !currentUrl.includes('login')) {
-      this.storage.updateAppState({ lastUrl: currentUrl });
+    if (!rememberUrl) {
+      this.storage.clearAppState();
+    } else {
+      // Save current URL for redirect after login
+      const currentUrl = this.router.url;
+      if (currentUrl && !currentUrl.includes('login')) {
+        this.storage.updateAppState({ lastUrl: currentUrl });
+      }
     }
 
     this.router.navigate(['/login']);

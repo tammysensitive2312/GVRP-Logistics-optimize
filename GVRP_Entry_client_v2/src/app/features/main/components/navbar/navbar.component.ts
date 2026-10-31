@@ -11,6 +11,7 @@ import {MatTooltipModule} from '@angular/material/tooltip';
 import {CommonModule} from '@angular/common';
 import {MatButtonModule} from '@angular/material/button';
 import {StorageService} from '@core/services/storage.service';
+import {SessionResetService} from '@core/services/session-reset.service';
 import {TranslocoPipe} from '@jsverse/transloco';
 import {LanguageService} from '@core/i18n/language.service';
 import {FlagIconComponent} from '@shared/components/flag-icon/flag-icon.component';
@@ -35,6 +36,7 @@ import {FlagIconComponent} from '@shared/components/flag-icon/flag-icon.componen
 export class NavbarComponent {
   private readonly router = inject(Router);
   private readonly storageService = inject(StorageService);
+  private readonly sessionReset = inject(SessionResetService);
 
   readonly language = inject(LanguageService);
 
@@ -127,6 +129,9 @@ export class NavbarComponent {
   private clearUserSession(): void {
     this.storageService.clearAuthSession();
     this.storageService.clearAppState();
+    // Root stores outlive the navigation to /login; drop this branch's
+    // solution, lists and selections before anyone else signs in.
+    this.sessionReset.resetBranchState();
     this.currentUser = null;
   }
 

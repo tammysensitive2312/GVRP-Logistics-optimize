@@ -24,6 +24,13 @@ export class SolutionStore {
   private readonly _solution = signal<SolutionDTO | null>(null);
   private readonly _loading = signal(false);
 
+  /**
+   * Bumped by `clear()`. A `loadById` that was started before a clear (for
+   * example by the previous user, right before logout) must not write its
+   * result back into the store afterwards.
+   */
+  private generation = 0;
+
   readonly solution = this._solution.asReadonly();
   readonly loading = this._loading.asReadonly();
   readonly hasSolution = computed(() => this._solution() !== null);
@@ -36,18 +43,25 @@ export class SolutionStore {
 
   loadById(solutionId: number): Observable<SolutionDTO> {
     this._loading.set(true);
+    const generation = this.generation;
 
     return this.api.getSolutionById(solutionId).pipe(
-      tap(solution => this.setSolution(solution)),
+      tap(solution => {
+        if (generation === this.generation) this.setSolution(solution);
+      }),
       catchError((error: unknown) => {
-        this.clear();
+        if (generation === this.generation) this.clear();
         return throwError(() => error);
       }),
-      finalize(() => this._loading.set(false))
+      finalize(() => {
+        if (generation === this.generation) this._loading.set(false);
+      })
     );
   }
 
   clear(): void {
+    this.generation++;
     this._solution.set(null);
+    this._loading.set(false);
   }
 }

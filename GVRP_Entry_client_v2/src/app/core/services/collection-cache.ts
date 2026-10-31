@@ -25,6 +25,13 @@ export class CollectionCache<T> {
 
   private inFlight$: Observable<readonly T[]> | null = null;
 
+  /**
+   * Bumped by `reset()`. A request started before a reset (for example by the
+   * previous user, right before logout) must not write its result into the
+   * list afterwards.
+   */
+  private generation = 0;
+
   readonly items: Signal<readonly T[]> = this._items.asReadonly();
   readonly loading: Signal<boolean> = this._loading.asReadonly();
   readonly error: Signal<string | null> = this._error.asReadonly();
@@ -41,6 +48,8 @@ export class CollectionCache<T> {
 
     this._loading.set(true);
     this._error.set(null);
+    const generation = this.generation;
+    const current = () => generation === this.generation;
 
     // Settle state in `tap` / `catchError`, i.e. BEFORE the value or error
     // reaches subscribers. `finalize` runs only after their callbacks, so a
@@ -48,17 +57,20 @@ export class CollectionCache<T> {
     // callback would otherwise still see the old request. `finalize` remains
     // the fallback for a request torn down before it settles.
     const settle = () => {
+      if (!current()) return;
       this._loading.set(false);
       this.inFlight$ = null;
     };
 
     this.inFlight$ = this.config.fetch().pipe(
       tap(items => {
-        this._items.set(items ?? []);
+        if (current()) this._items.set(items ?? []);
         settle();
       }),
       catchError((error: unknown) => {
-        this._error.set(resolveErrorMessage(error, this.config.fallbackError));
+        if (current()) {
+          this._error.set(resolveErrorMessage(error, this.config.fallbackError));
+        }
         settle();
         return throwError(() => error);
       }),
@@ -91,7 +103,9 @@ export class CollectionCache<T> {
   }
 
   reset(): void {
+    this.generation++;
     this._items.set([]);
+    this._loading.set(false);
     this._error.set(null);
     this.inFlight$ = null;
   }

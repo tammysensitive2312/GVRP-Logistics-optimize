@@ -4,11 +4,13 @@ import { Router } from '@angular/router';
 import { throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { StorageService } from '@core/services/storage.service';
+import { SessionResetService } from '@core/services/session-reset.service';
 import { environment } from '@environments/environment';
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const storage = inject(StorageService);
   const router = inject(Router);
+  const sessionReset = inject(SessionResetService);
 
   const token = storage.getToken();
 
@@ -34,6 +36,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
         console.warn('Unauthorized - redirecting to login');
 
         storage.clearAuthSession();
+        sessionReset.resetBranchState();
         const currentUrl = router.url;
 
         if (currentUrl && !currentUrl.includes('login')) {

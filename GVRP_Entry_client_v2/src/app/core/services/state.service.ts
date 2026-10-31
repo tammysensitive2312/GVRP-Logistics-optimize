@@ -16,15 +16,7 @@ interface AppState {
 })
 export class StateService {
 
-  private state = new BehaviorSubject<AppState>({
-    selectedOrders: new Set(),
-    selectedVehicles: new Set(),
-    // `priority` is optional and numeric (OrderFilter); '' would not type-check
-    // and an unset filter is better expressed by leaving the key out.
-    filters: { date: '', status: '', search: '' },
-    activeSolutionId: null,
-    activeJobId: null
-  });
+  private state = new BehaviorSubject<AppState>(initialState());
 
   public state$ = this.state.asObservable();
 
@@ -53,10 +45,27 @@ export class StateService {
     });
   }
 
+  /** Back to the empty state; used by SessionResetService on logout/login. */
+  reset(): void {
+    this.state.next(initialState());
+  }
+
   private patchSelectedOrders(
     project: (prev: ReadonlySet<number>) => ReadonlySet<number>
   ): void {
     const current = this.state.value;
     this.state.next({ ...current, selectedOrders: project(current.selectedOrders) });
   }
+}
+
+function initialState(): AppState {
+  return {
+    selectedOrders: new Set(),
+    selectedVehicles: new Set(),
+    // `priority` is optional and numeric (OrderFilter); '' would not type-check
+    // and an unset filter is better expressed by leaving the key out.
+    filters: { date: '', status: '', search: '' },
+    activeSolutionId: null,
+    activeJobId: null
+  };
 }
