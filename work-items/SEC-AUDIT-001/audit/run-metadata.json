@@ -1,0 +1,94 @@
+{
+  "run_id": "SEC-AUDIT-001-run-2",
+  "repo": "GVRP-Logistics_Optimize",
+  "target": "E:\\OR-tools java example\\GVRP-Logistics_Optimize",
+  "source_ref": {
+    "commit": "c0cdfd55dcd111fbcbb79474a33ee7f4518ae815",
+    "dirty": true,
+    "dirty_paths": [
+      "work-items/SEC-AUDIT-001/"
+    ]
+  },
+  "profile": "standard",
+  "scope_paths": [
+    "GVRP_Entry_API",
+    "GVRP_Engine_API",
+    "GVRP_Entry_client_v2",
+    ".github",
+    ".gitignore",
+    ".cbmignore",
+    ".mcp.json"
+  ],
+  "budget": null,
+  "execution_policy": "sandboxed-source-and-local-only",
+  "source_only": true,
+  "selected_companion_files": [
+    ".agents/skills/security-audit/DATA-ISOLATION-AND-LIFECYCLE.md",
+    ".agents/skills/security-audit/WEB-PROTOCOL-AND-AUTH.md",
+    ".agents/skills/security-audit/CLIENT-SIDE.md",
+    ".agents/skills/security-audit/SUPPLY-CHAIN-AND-RELEASE.md",
+    ".agents/skills/security-audit/PROTOCOLS-RPC-AND-MESSAGING.md",
+    ".agents/skills/security-audit/RESOURCE-EXHAUSTION-AND-AVAILABILITY.md"
+  ],
+  "prior_runs": [
+    {
+      "path": "C:\\Users\\ACER\\security-audit-skill\\GVRP-Logistics_Optimize\\run-1",
+      "status": "discarded",
+      "reason": "Stopped mid Phase 5; write isolation broken. Do not use its coverage or findings."
+    }
+  ],
+  "prior_evidence": [
+    "docs/security/SECURITY_CHECKLIST.md"
+  ],
+  "shared_file_owners": {
+    "run-metadata.json": "parent",
+    "architecture.md": "parent",
+    "coverage-ledger.json": "parent",
+    "findings.json": "parent",
+    "REPORT.md": "parent",
+    "FINDINGS-DETAIL.md": "parent",
+    "NEEDS-VALIDATION.md": "parent"
+  },
+  "run_status": "complete",
+  "recon_agents": [
+    "recon_1a_product",
+    "recon_1b_authority",
+    "recon_1c_surfaces",
+    "recon_1d_execution"
+  ],
+  "prior_ledger_status": "No compatible prior coverage-ledger.json or findings.json used; run-1 explicitly discarded; checklist only.",
+  "pre_hunting_estimate": {
+    "seeded_units": 40,
+    "planned_units": 36,
+    "estimated_hunters": 12,
+    "planned_hunter_waves": 4,
+    "mandatory_post_wave_critics": 4,
+    "distinct_final_clean_critic": 1,
+    "validation_reserve": "one fresh Phase 3 verifier and one fresh Phase 5 verifier per surviving candidate; candidate count unknown at pre-recon",
+    "strict_budget_gate_passed": true,
+    "remaining_budget": null,
+    "coverage_plan_fits_budget": true,
+    "rationale": "No strict agent budget was set (budget=null); the final assignment plan groups 35 planned units into 12 focused hunters across four waves, reserves one immediate critic per wave plus one distinct final-clean critic, and leaves candidate validation uncapped."
+  },
+  "phase5": {
+    "verifiers": [
+      "v5-01",
+      "v5-02",
+      "v5-03",
+      "v5-04",
+      "v5-05",
+      "v5-06",
+      "v5-07",
+      "v5-08",
+      "v5-09",
+      "v5-10",
+      "v5-11",
+      "v5-12",
+      "v5-13",
+      "v5-14",
+      "v5-15"
+    ],
+    "decisions": "all verified, no replacement"
+  },
+  "parent_handover": "Phases 1-2 and Phase 3 prompts by Codex (quota exhausted 2026-11-01); Phase 3 verification, Phases 4-6 by Claude Code as parent with independent sub-agents (Phase 5 batched: 3 agents x 5 records)."
+}

@@ -1,0 +1,1603 @@
+[
+  {
+    "verdict": "needs_validation",
+    "fingerprint": "EngineApiController.no-auth-boundary",
+    "title": "GVRP Engine API exposes optimize/progress/cancel/result/resend/evaluate/legs with no caller authentication or job ownership check",
+    "description": "At source ref c0cdfd55dcd111fbcbb79474a33ee7f4518ae815 the Engine OptimizationController maps every operation under /api/v1/optimization without any authentication or authorization layer: the Engine pom has no Spring Security dependency, and the only WebMvcConfigurer in Engine main source registers CORS (a browser-only control) and no interceptor or filter. Job operations take a caller-supplied numeric jobId and act on it directly: progress reads the in-memory JobRegistry handle, cancel sets the cancel flag on any RUNNING job, result returns the stored solution payload from the on-disk spool (pending/poison/sent), and resend re-delivers that payload to Entry. POST /api/v1/optimization accepts a caller-chosen jobId and starts async solving; on completion the Engine calls the Entry completion callback with the configured shared API key header (property entry.api-key), so the Engine acts as a credential-bearing proxy. Entry handleCompletion looks the job up by ID only and persists a solution if the job is PROCESSING or FAILED with no solution yet. Entry itself calls the Engine with no identity header. Whether any lower-trust caller can reach the Engine listener is a deployment fact not established by source; the project security checklist (SEC-010) records the accepted posture that the Engine must be reachable only from the Entry host.",
+    "claimed_root_cause": "The Engine trusts network position as authentication: no inbound service-identity check (shared key, mTLS, or Spring Security) exists on any Engine endpoint, and job operations are keyed solely by a caller-supplied sequential jobId with no binding to the submitting peer or branch.",
+    "trace": [
+      {
+        "kind": "entrypoint",
+        "file": "GVRP_Engine_API/src/main/java/org/truong/gvrp_engine_api/controller/OptimizationController.java",
+        "line": 43,
+        "scope": "OptimizationController.optimize",
+        "description": "POST /api/v1/optimization accepts an EngineOptimizationRequest with a caller-chosen jobId; only shape validation (validateRequest) is applied, no caller identity."
+      },
+      {
+        "kind": "propagation",
+        "file": "GVRP_Engine_API/src/main/java/org/truong/gvrp_engine_api/service/OptimizationService.java",
+        "line": 103,
+        "scope": "OptimizationService.optimizeAsync",
+        "description": "Registers the caller-supplied jobId in JobRegistry (replacing any existing handle via jobs.put) and runs the solver asynchronously."
+      },
+      {
+        "kind": "propagation",
+        "file": "GVRP_Engine_API/src/main/java/org/truong/gvrp_engine_api/controller/OptimizationController.java",
+        "line": 169,
+        "scope": "OptimizationController.cancel",
+        "description": "POST /{jobId}/cancel calls jobRegistry.requestCancel for any supplied jobId; no ownership check."
+      },
+      {
+        "kind": "propagation",
+        "file": "GVRP_Engine_API/src/main/java/org/truong/gvrp_engine_api/job/JobRegistry.java",
+        "line": 128,
+        "scope": "JobRegistry.requestCancel",
+        "description": "Sets cancelRequested on any RUNNING job, which would stop another tenant's optimization."
+      },
+      {
+        "kind": "propagation",
+        "file": "GVRP_Engine_API/src/main/java/org/truong/gvrp_engine_api/controller/OptimizationController.java",
+        "line": 196,
+        "scope": "OptimizationController.result",
+        "description": "GET /{jobId}/result returns the spooled solution payload for any supplied jobId."
+      },
+      {
+        "kind": "propagation",
+        "file": "GVRP_Engine_API/src/main/java/org/truong/gvrp_engine_api/service/ResultSpool.java",
+        "line": 116,
+        "scope": "ResultSpool.load",
+        "description": "Reads the payload file for jobId from pending/, poison/ or sent/ and returns it in full (solution data that survives restarts)."
+      },
+      {
+        "kind": "propagation",
+        "file": "GVRP_Engine_API/src/main/java/org/truong/gvrp_engine_api/controller/OptimizationController.java",
+        "line": 207,
+        "scope": "OptimizationController.resend",
+        "description": "POST /{jobId}/resend forces re-delivery of the spooled payload to Entry."
+      },
+      {
+        "kind": "propagation",
+        "file": "GVRP_Engine_API/src/main/java/org/truong/gvrp_engine_api/service/CallbackService.java",
+        "line": 63,
+        "scope": "CallbackService.deliver",
+        "description": "Builds callback headers (including the configured Entry API key) and posts the payload to Entry /solutions/callbacks/complete."
+      },
+      {
+        "kind": "sink",
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/service/OptimizationCallbackService.java",
+        "line": 87,
+        "scope": "OptimizationCallbackService.handleCompletion",
+        "description": "Entry accepts the API-key-authenticated callback for the job found by ID (line 59) and persists a solution when status is PROCESSING or FAILED and no solution exists (line 78); a solver result for an attacker-submitted request reusing a victim jobId could therefore be persisted (HYPOTHESIS, not validated)."
+      }
+    ],
+    "evidence": [
+      {
+        "file": "GVRP_Engine_API/pom.xml",
+        "line": 39,
+        "description": "Engine dependencies are webmvc, validation, lombok, mapstruct, devtools, jackson, graphhopper, jsprit, vavr; no spring-boot-starter-security."
+      },
+      {
+        "file": "GVRP_Engine_API/src/main/java/org/truong/gvrp_engine_api/config/WebConfig.java",
+        "line": 24,
+        "description": "The only WebMvcConfigurer in Engine main source registers CORS for http://localhost:8080; CORS does not restrict non-browser callers and no interceptor or filter is registered."
+      },
+      {
+        "file": "GVRP_Engine_API/src/main/java/org/truong/gvrp_engine_api/controller/OptimizationController.java",
+        "line": 120,
+        "description": "progress, cancel, result, resend, evaluate and legs handlers carry no authorization annotations or principal parameters; all are keyed by caller input."
+      },
+      {
+        "file": "GVRP_Engine_API/src/main/resources/application.properties",
+        "line": 2,
+        "description": "server.port=8081 is set and no server.address property exists in Engine resources, so source does not restrict the bind interface."
+      },
+      {
+        "file": "GVRP_Engine_API/src/main/java/org/truong/gvrp_engine_api/job/JobRegistry.java",
+        "line": 111,
+        "description": "register() unconditionally puts a new handle for the supplied jobId."
+      },
+      {
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/service/integration/external_api/EngineApiClientImpl.java",
+        "line": 63,
+        "description": "Entry builds Engine request headers with Content-Type only; progress (line 113) and cancel (line 127) are sent with no identity, so no peer credential exists for the Engine to verify."
+      },
+      {
+        "file": "docs/security/SECURITY_CHECKLIST.md",
+        "line": 24,
+        "description": "SEC-010 (OPEN) already records missing Engine authentication and the accepted posture that the Engine must be reachable only from the Entry host; this candidate adds cross-job cancel/result/resend and callback-proxy impact."
+      }
+    ],
+    "blockers": [
+      "Source does not establish who can reach the Engine listener on port 8081: no server.address, firewall, private network, gateway or service-mesh configuration exists in the repository, and deployment topology was not inspected under the source-only policy.",
+      "Cross-tenant integrity impact via a forged optimize reusing a victim jobId and the resulting API-key-bearing callback to Entry was not exercised; it depends on runtime timing and Entry job state."
+    ],
+    "validation_plan": {
+      "local": "With dummy data only: run Entry and Engine locally with two dummy branches A and B; as dummy planner A submit a job and note its jobId. From a separate local client with no credentials call GET /api/v1/optimization/{jobId}/progress, GET /{jobId}/result and POST /{jobId}/cancel on the Engine and record whether each succeeds. Then POST /api/v1/optimization with branch A's PROCESSING jobId and dummy orders and check whether Entry persists that solution for branch A's job. Add a regression test asserting the Engine rejects requests lacking a valid service credential.",
+      "deployment": "Owner-observed: confirm from the deployment host or network configuration that port 8081 is bound to a private interface or firewalled so only the Entry host can connect (a connection attempt from a non-Entry host fails). If reachable, treat as an open cross-tenant read/cancel/integrity path and add an inbound service-key filter (constant-time compare, key from the environment) or mTLS per the SEC-010 remediation."
+    }
+  },
+  {
+    "verdict": "needs_validation",
+    "fingerprint": "EngineOptimization.unbounded-configured-work",
+    "title": "Engine optimization accepts caller-chosen solver iterations and thread count with no upper bound, and ignores timeoutSeconds",
+    "description": "POST /api/v1/optimization on GVRP_Engine_API has no authentication (no Spring Security dependency, no inbound key filter; consistent with open SEC-010) and copies config.maxIterations and config.numThreads from the request body straight into Jsprit ITERATIONS and THREADS without any upper bound. The config.timeoutSeconds field is accepted and logged, but the TimeTermination code is commented out, so the only stop conditions are reaching maxIterations or an explicit cancel. A single small request from any host that can reach port 8081 can therefore ask for an arbitrarily long solve (for example maxIterations near Integer.MAX_VALUE) and an arbitrary per-job worker thread count. That work runs on the shared engine CPU, memory and async executor, which the Entry API uses for every branch's optimization jobs. The normal authenticated path through Entry is bounded: OptimizationConfigMapper always sets presets (800/2000/5000 iterations, 4 threads), so a planner going through Entry cannot pick these values. The lower-trust source is therefore direct network access to the engine. Source review cannot establish whether that access exists in deployment. Two more points are inferences, not verified behavior. First, spring.threads.virtual.enabled=true with Spring Boot 4.0.0 means the auto-configured @Async executor is probably a SimpleAsyncTaskExecutor on virtual threads with no concurrency limit, not the configured pool (core 4, max 10, queue 100). If so, the hunter's claim of a fixed executor pool and queue does not hold, and concurrent jobs are not bounded either. Second, the order, vehicle and depot list sizes also have no bound before the distance-matrix build.",
+    "claimed_root_cause": "The engine trusts its request body as if only Entry could send it. OptimizationService.createAlgorithm passes caller-supplied maxIterations and numThreads to Jsprit without a server-side ceiling, the timeoutSeconds termination is commented out, and the engine has no inbound authentication, so nothing in source stops a non-Entry caller from submitting effectively unbounded solver work.",
+    "trace": [
+      {
+        "kind": "entrypoint",
+        "file": "GVRP_Engine_API/src/main/java/org/truong/gvrp_engine_api/controller/OptimizationController.java",
+        "line": 43,
+        "scope": "OptimizationController.optimize (POST /api/v1/optimization)",
+        "description": "Unauthenticated JSON endpoint accepts EngineOptimizationRequest including OptimizationConfig; validateRequest (lines 85-118) only checks non-empty lists and coordinates, not config magnitudes or list sizes."
+      },
+      {
+        "kind": "propagation",
+        "file": "GVRP_Engine_API/src/main/java/org/truong/gvrp_engine_api/controller/OptimizationController.java",
+        "line": 52,
+        "scope": "OptimizationController.optimize",
+        "description": "Request is handed to optimizationService.optimizeAsync and 202 is returned immediately, so requester cost is one small HTTP request per job."
+      },
+      {
+        "kind": "propagation",
+        "file": "GVRP_Engine_API/src/main/java/org/truong/gvrp_engine_api/service/OptimizationService.java",
+        "line": 101,
+        "scope": "OptimizationService.optimizeAsync",
+        "description": "@Async job runs on the Spring-managed async executor shared by all jobs; optimize() (line 150) validates only cost/CO2 weights (validateConfig, line 857)."
+      },
+      {
+        "kind": "propagation",
+        "file": "GVRP_Engine_API/src/main/java/org/truong/gvrp_engine_api/service/OptimizationService.java",
+        "line": 740,
+        "scope": "OptimizationService.createAlgorithm",
+        "description": "maxIterations and numThreads read at lines 725-726 (defaults 2000/1, no ceiling) are set as Jsprit ITERATIONS and THREADS."
+      },
+      {
+        "kind": "sink",
+        "file": "GVRP_Engine_API/src/main/java/org/truong/gvrp_engine_api/service/OptimizationService.java",
+        "line": 772,
+        "scope": "OptimizationService.createAlgorithm",
+        "description": "timeoutSeconds branch is empty: TimeTermination creation and registration (lines 773-776) are commented out; the only premature termination is the cancel flag set at line 769."
+      }
+    ],
+    "evidence": [
+      {
+        "file": "GVRP_Engine_API/src/main/java/org/truong/gvrp_engine_api/model/OptimizationConfig.java",
+        "line": 15,
+        "description": "maxIterations, numThreads and timeoutSeconds are plain Integer fields with no validation annotations; EngineOptimizationRequest has no @Size or @Valid constraints on its lists or config."
+      },
+      {
+        "file": "GVRP_Engine_API/src/main/java/org/truong/gvrp_engine_api/service/OptimizationService.java",
+        "line": 725,
+        "description": "int maxIterations = config.getMaxIterations() != null ? config.getMaxIterations() : 2000; numThreads likewise at line 726; no Math.min or validation anywhere in the class."
+      },
+      {
+        "file": "GVRP_Engine_API/src/main/java/org/truong/gvrp_engine_api/service/OptimizationService.java",
+        "line": 774,
+        "description": "Commented-out TimeTermination: configured timeoutSeconds is not enforced, despite being logged as the timeout at line 784."
+      },
+      {
+        "file": "GVRP_Engine_API/src/main/resources/application.properties",
+        "line": 4,
+        "description": "spring.threads.virtual.enabled=true alongside spring.task.execution.pool.* settings (lines 6-8). With virtual threads enabled, Spring Boot's auto-configured async executor is expected to be a virtual-thread SimpleAsyncTaskExecutor where the pool/queue settings do not apply; no spring.task.execution.simple.concurrency-limit is set. Framework inference, not observed."
+      },
+      {
+        "file": "GVRP_Engine_API/pom.xml",
+        "line": 39,
+        "description": "Only spring-boot-starter-webmvc/validation and routing libraries; no spring-boot-starter-security. No Filter/HandlerInterceptor for inbound requests exists under GVRP_Engine_API/src/main/java (only outbound key use in CallbackService and a matrix provider)."
+      },
+      {
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/mapper/OptimizationConfigMapper.java",
+        "line": 60,
+        "description": "Entry path sets fixed presets (800/2000/5000 iterations, numThreads 4, lines 60-77 and 138-140), so authenticated planners via Entry cannot choose unbounded values; the lower-trust source is direct engine access."
+      },
+      {
+        "file": "docs/security/SECURITY_CHECKLIST.md",
+        "line": 24,
+        "description": "SEC-010 (OPEN) records that the engine has no request authentication or rate limit and that the accepted posture relies on the engine being reachable only from the Entry host via firewall or private network, which is a deployment control outside the repository."
+      }
+    ],
+    "blockers": [
+      "Reachability: whether any host other than the Entry API can reach the engine port 8081 depends on firewall, private networking or ingress controls that are not in the repository (SEC-010 accepted posture).",
+      "Executor behavior: whether Spring Boot 4.0.0 with spring.threads.virtual.enabled=true actually runs @Async jobs on an unbounded virtual-thread executor (instead of the configured core 4 / max 10 / queue 100 pool) needs a runtime observation; source review cannot settle it.",
+      "Impact magnitude: how Jsprit 1.8 behaves with a very large THREADS value (thread creation, memory) and whether one job with huge maxIterations degrades other branches' jobs on the same host is not observed; no execution was permitted in this audit."
+    ],
+    "validation_plan": {
+      "local": "In an isolated local engine instance with strict CPU/memory limits (for example a container capped at 2 CPU and 2 GB) and a tiny dummy dataset (1 depot, 1 vehicle type, 1 vehicle, 3 orders with synthetic coordinates inside the loaded OSM extract), submit one job with config.max_iterations=100000000 and config.timeout_seconds=5. Confirm the job keeps running well past 5 s through GET /api/v1/optimization/{jobId}/progress, then stop it with POST /{jobId}/cancel. Separately submit a job with num_threads=64 and record the live thread count (jcmd Thread.print), then cancel. Log the async executor class (or check the thread names in a thread dump) to confirm whether it is a virtual-thread SimpleAsyncTaskExecutor. Submit three small long-running jobs at the same time to see whether concurrency is limited. Stop at the first observation; do not saturate.",
+      "deployment": "The owner checks whether port 8081 of the deployed engine is reachable from anywhere other than the Entry API host (firewall rules, security groups, reverse-proxy or ingress config, container network). They also check for any gateway request-size, rate or authentication control in front of the engine. If any other host can reach it, treat this as exploitable and add server-side ceilings for maxIterations and numThreads, enforce timeoutSeconds (re-enable TimeTermination with a server maximum), bound the order/vehicle list sizes and job concurrency, and close SEC-010 with inbound service authentication."
+    }
+  },
+  {
+    "verdict": "needs_validation",
+    "fingerprint": "EntryAPI.JobCleanupService:incomplete-revision-descendant-delete-chain",
+    "title": "Retention sweep deletes only direct revisions, so a nested revision chain from any branch can stall global job cleanup",
+    "description": "JobCleanupService.deleteJobChain loads the root solution of an expired job and only its direct children (findByParentSolutionId(root)), deletes their route_sends, then deletes those children and the root. RouteCustomizationService.saveRevision and ParetoService.apply both create a new revision whose parent is the current latest revision, so normal PLANNER use produces chains of depth two or more (SolutionService.collectRevisions already walks them recursively). The migration declares fk_solution_parent ON DELETE RESTRICT and route_sends.fk_send_solution ON DELETE RESTRICT, so deleting a direct child that still has a grandchild, or a solution whose descendant still has sends, is expected to be refused by MySQL. findExpiredIds is global across branches and ordered by job id, and cleanStatus has no per-job error handling, so one such job would presumably abort the sweep on every run before later jobs of that status (COMPLETED is processed last) are reached. scheduledCleanup calls cleanOldJobs by self-invocation, which bypasses the Spring proxy, so the @Transactional annotation probably does not apply; each repository call would then commit on its own, and route_sends of the root and direct revisions could be deleted permanently while the job, root solution and deeper revisions remain. Source shows the path and the constraints. It does not show what the database or Hibernate actually do at runtime, and it does not show the deployed dry-run setting: application.properties ships gvrp.cleanup.dry-run=true, and in that mode nothing is deleted.",
+    "claimed_root_cause": "deleteJobChain deletes only one level of the revision tree (root plus direct children) while revision creation builds chains of any depth and both parent_solution_id and route_sends.solution_id are ON DELETE RESTRICT. The per-job loop has no error isolation and its transaction boundary is bypassed by self-invocation.",
+    "trace": [
+      {
+        "kind": "entrypoint",
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/controller/SolutionController.java",
+        "line": 59,
+        "scope": "POST /api/v1/solutions/{id}/revisions (PLANNER, branch from principal)",
+        "description": "A lower-trust PLANNER of any branch saves a manual revision on its own solution. This is a normal business action and needs no special privilege."
+      },
+      {
+        "kind": "propagation",
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/service/RouteCustomizationService.java",
+        "line": 116,
+        "scope": "RouteCustomizationService.saveRevision",
+        "description": "The base must be the latest revision of the chain. Once one revision exists, the next save must use that revision as base, so chains grow to depth two or more."
+      },
+      {
+        "kind": "propagation",
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/service/RouteCustomizationService.java",
+        "line": 399,
+        "scope": "RouteCustomizationService.persistRevision",
+        "description": "The new revision sets parentSolution(base) with a NULL job, which makes a grandchild of the job's root solution."
+      },
+      {
+        "kind": "propagation",
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/service/JobCleanupService.java",
+        "line": 69,
+        "scope": "JobCleanupService.scheduledCleanup (cron, system context)",
+        "description": "Nightly sweep. When dry-run is false it calls cleanOldJobs() by self-invocation at line 83, which bypasses the @Transactional proxy on line 98."
+      },
+      {
+        "kind": "propagation",
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/repository/OptimizationJobRepository.java",
+        "line": 53,
+        "scope": "findExpiredIds",
+        "description": "Selects terminal jobs of all branches by status and createdAt, ordered by id. The same stuck job is first again on every run."
+      },
+      {
+        "kind": "sink",
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/service/JobCleanupService.java",
+        "line": 150,
+        "scope": "JobCleanupService.deleteJobChain",
+        "description": "Only direct revisions (line 142) are collected. route_sends are deleted for those (line 147), then solutionRepository.deleteAll(revisions) deletes a child that may still be referenced by a grandchild under an ON DELETE RESTRICT FK, and the exception is not caught in cleanStatus."
+      }
+    ],
+    "evidence": [
+      {
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/service/JobCleanupService.java",
+        "line": 141,
+        "description": "revisions = solutionRepository.findByParentSolutionId(solution.getId()): one level only, no recursion."
+      },
+      {
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/service/JobCleanupService.java",
+        "line": 120,
+        "description": "for (Long jobId : batch) deleteJobChain(jobId): no try/catch or per-job isolation, so one failure ends the sweep."
+      },
+      {
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/service/JobCleanupService.java",
+        "line": 83,
+        "description": "cleanOldJobs() is called on this, not through the proxy, so the @Transactional on line 98 probably does not apply under the default proxy-based AOP. No AspectJ or EnableTransactionManagement mode override was found in source."
+      },
+      {
+        "file": "GVRP_Entry_API/src/main/resources/database/migrations/2026-10-02-manual-solution-revision.sql",
+        "line": 10,
+        "description": "fk_solution_parent FOREIGN KEY (parent_solution_id) REFERENCES solutions (id) ON DELETE RESTRICT."
+      },
+      {
+        "file": "GVRP_Entry_API/src/main/resources/database/migrations/2026-10-06-driver-delivery.sql",
+        "line": 22,
+        "description": "fk_send_solution ON DELETE RESTRICT: sends of grandchild revisions are never deleted by the sweep and also pin their solution."
+      },
+      {
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/service/ParetoService.java",
+        "line": 190,
+        "description": "Pareto apply also creates a revision with parentSolution(base), where base must be the latest revision (line 155), which is a second path to nested chains."
+      },
+      {
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/service/SolutionService.java",
+        "line": 81,
+        "description": "collectRevisions recurses through findByParentSolutionId, so the codebase itself treats revision chains as arbitrarily deep trees."
+      },
+      {
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/entity/Solution.java",
+        "line": 55,
+        "description": "@OneToMany(mappedBy = parentSolution) revisions has no cascade or orphanRemoval, so JPA does not remove descendants."
+      },
+      {
+        "file": "GVRP_Entry_API/src/main/resources/application.properties",
+        "line": 79,
+        "description": "gvrp.cleanup.dry-run ships as true. The destructive path runs only after an operator flips it, and the deployed value is unknown."
+      }
+    ],
+    "blockers": [
+      "Source-only policy forbids a local MySQL plus Hibernate run, so these are not observed: when the FK violation is raised (at deleteAll or at flush), whether it propagates out of scheduledCleanup, and whether earlier route_sends deletes are committed (no transaction because of self-invocation) or rolled back.",
+      "The deployed value of gvrp.cleanup.dry-run and gvrp.cleanup.enabled is unknown. In the shipped default (dry-run=true) no deletion happens and the defect has no effect.",
+      "The retention or deletion guarantee owed to tenants is not documented, so the business impact of the stalled sweep (retained customer data in old jobs, and partial loss of route_sends dispatch history) cannot be rated from source."
+    ],
+    "validation_plan": {
+      "local": "On a disposable local MySQL with the migrations applied and only dummy data: create two dummy branches. In branch A create a COMPLETED job with a root solution, save two successive revisions (root to R1 to R2) through POST /solutions/{id}/revisions and dispatch a route of R1 so a route_send exists. In branch B create an older-cutoff COMPLETED job with a higher id and no revisions. Backdate both jobs' created_at past 90 days, set gvrp.cleanup.dry-run=false and call JobCleanupService.scheduledCleanup() through the Spring bean. Observe: whether an FK exception on solutions.parent_solution_id is thrown, whether branch B's job remains undeleted, whether route_sends rows of root and R1 were deleted while the job, root and R2 remain, and whether repeated runs fail on the same job. Then add an integration test with a nested chain.",
+      "deployment": "Owner-observed only: check the deployed gvrp.cleanup.dry-run and enabled values and the application logs around the 03:30 cron for cleanup exceptions or a missing 'Cleanup: deleted' line. Run a read-only query counting solutions with a parent whose parent is not null for jobs past retention. Do not touch customer data."
+    }
+  },
+  {
+    "verdict": "rejected",
+    "fingerprint": "GVRP-Entry-RouteSend-Driver-BranchTransfer-History",
+    "title": "Driver send history not re-scoped to the driver's current branch after branch transfer",
+    "description": "The candidate alleges that a DRIVER moved from branch A to branch B keeps reading branch A customer details (name, phone, address, notes, coordinates) through GET /api/v1/driver/routes and GET /api/v1/driver/routes/{sendId}, because RouteSendService.mySends and sendDetail authorize by send.driver.id only and never compare the send's solution branch with the driver's current branch.",
+    "claimed_root_cause": "RouteSendService.sendDetail checks only send.getDriver().getId() equals the current user id, and mySends queries by driver id, with no comparison of send.getSolution().getBranch() against the caller's current branch.",
+    "trace": [
+      {
+        "kind": "entrypoint",
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/controller/DriverController.java",
+        "line": 36,
+        "scope": "GET /api/v1/driver/routes/{sendId}",
+        "description": "Driver detail endpoint; SecurityConfig line 82 requires ROLE_DRIVER for /api/v1/driver/**."
+      },
+      {
+        "kind": "propagation",
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/service/RouteSendService.java",
+        "line": 209,
+        "scope": "RouteSendService.sendDetail",
+        "description": "Ownership check compares the send's driver id with the authenticated user id; no branch comparison."
+      },
+      {
+        "kind": "sink",
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/service/RouteSendService.java",
+        "line": 239,
+        "scope": "RouteSendService.sendDetail stop mapping",
+        "description": "Customer name, phone, address and delivery notes of the route's orders are returned to the driver."
+      }
+    ],
+    "evidence": [
+      {
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/service/RouteSendService.java",
+        "line": 136,
+        "description": "A send can only be created for an enabled DRIVER whose branch equals the planner's branch, so every send's recipient was a legitimate member of the owning branch when the data was disclosed to them."
+      },
+      {
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/controller/AuthController.java",
+        "line": 97,
+        "description": "Register endpoint writes no user row; no endpoint in Entry API creates users or changes User.branch. The only User.branch writes in source are absent (grep for setBranch on users finds none)."
+      },
+      {
+        "file": "GVRP_Document/02-system-design/01-context-and-containers.md",
+        "line": 24,
+        "description": "Branch administrator is out of band: creates branch and user rows directly; no endpoint and no screen exists. A branch transfer is therefore an operator database edit, not an action any lower-trust principal can trigger."
+      },
+      {
+        "file": "GVRP_Document/01-requirements/03-business-rules.md",
+        "line": 90,
+        "description": "The stated rule BR-057 is that a driver reads only their own sends; the code enforces exactly that. No document states a revocation guarantee for history after a branch move."
+      },
+      {
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/security/jwt/JwtAuthenticationFilter.java",
+        "line": 95,
+        "description": "Tokens are rejected when the reloaded user is disabled, so the source-visible offboarding control (disable the user) revokes all driver access including send history."
+      }
+    ],
+    "reason": "No lower-trust principal can reach the precondition: the application has no branch-transfer or user-administration path, so moving a driver between branches is an out-of-band operator database edit. The only data exposed is the driver's own sends, which were legitimately sent to that same person by the owning branch, matching the documented rule BR-057; no documented boundary promises that history is revoked on transfer, and disabling the user (the source-visible offboarding control) revokes all access. Under the companion rule that a retention preference is not a vulnerability without an explicit revocation guarantee and an unauthorized reader, this is at most a hardening note (scope driver history to the current branch if transfers are ever supported), not a finding."
+  },
+  {
+    "verdict": "rejected",
+    "fingerprint": "GVRP-Entry-Slack-BranchWebhook-Unvalidated-Destination",
+    "title": "Branch Slack webhook URL posted without destination validation",
+    "description": "SlackNotificationChannel posts a job-completion message to Branch.branchWebhookURL using the shared RestTemplate with only a non-null/non-blank check. The allegation is that branch-controlled configuration could cause unauthorized outbound requests (SSRF) or disclose other-branch data. Source review finds no lower-trust writer of branchWebhookURL and no cross-branch data in the payload.",
+    "claimed_root_cause": "The stored branch webhook URL is passed directly to RestTemplate.postForEntity without scheme, host, address-range or redirect validation.",
+    "trace": [
+      {
+        "kind": "entrypoint",
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/entity/Branch.java",
+        "line": 24,
+        "scope": "Branch entity field branchWebhookURL (column branch_webhook_url)",
+        "description": "Only source of the destination. No application code calls setBranchWebhookURL or builds a Branch with this field; no controller accepts a Branch body or maps a DTO onto Branch. Design docs state it is written only by direct SQL by an out-of-band branch administrator."
+      },
+      {
+        "kind": "propagation",
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/service/OptimizationCallbackService.java",
+        "line": 142,
+        "scope": "buildCompletionEvent",
+        "description": "Copies the job's own branch webhook URL, branch name, creator Slack user ID and aggregate solution metrics into JobCompletionEvent; all values belong to the job's branch."
+      },
+      {
+        "kind": "sink",
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/service/notify/SlackNotificationChannel.java",
+        "line": 38,
+        "scope": "SlackNotificationChannel.handle",
+        "description": "restTemplate.postForEntity(branchWebhookURL, ...) with no destination policy; supports() at line 105 only checks non-null/non-blank."
+      }
+    ],
+    "evidence": [
+      {
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/entity/Branch.java",
+        "line": 11,
+        "description": "Lombok @Setter exists, but repository-wide search of main and test Java sources finds no call to setBranchWebhookURL or builder use of branchWebhookURL; BranchRepository is used only for findById/findByName lookups (AuthController, BranchAwareAuthenticationProvider, Depot/Fleet/Zone/Order/OrderImport/OptimizationJob/VehicleType services)."
+      },
+      {
+        "file": "GVRP_Document/02-system-design/04-security-and-tenancy.md",
+        "line": 153,
+        "description": "Documents that branches.branch_webhook_url has no writer and Slack routing is configured by direct SQL."
+      },
+      {
+        "file": "GVRP_Document/02-system-design/01-context-and-containers.md",
+        "line": 24,
+        "description": "Branch administrator is an out-of-band person who sets the Slack webhook; no endpoint and no screen exists."
+      },
+      {
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/service/notify/SlackNotificationChannel.java",
+        "line": 79,
+        "description": "Payload contains only job ID, status, the job's own branch name, served/unserved counts, vehicles, distance, cost, CO2, completion time and the creator's Slack user ID; no customer names, addresses, phones, coordinates or other-branch data."
+      },
+      {
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/config/RestTemplateConfig.java",
+        "line": 13,
+        "description": "Shared RestTemplate with timeouts only and no destination restriction, confirming the missing hardening but not a reachable lower-trust source."
+      }
+    ],
+    "reason": "No realistic lower-trust principal can set the destination: branchWebhookURL has no application writer (no endpoint, DTO mapping, setter call or seed code in source), and the documented writer is a trusted operator using direct database SQL, who already holds more authority than an SSRF would grant. The message content is scoped to the job's own branch and contains only aggregate metrics, so no cross-branch disclosure exists. The missing URL allowlist is a hardening gap that becomes a vulnerability only if a future PLANNER-reachable writer is added."
+  },
+  {
+    "verdict": "needs_validation",
+    "fingerprint": "GVRP-vehicle-global-license-plate-check",
+    "title": "Vehicle create uses a global (cross-branch) license-plate existence check that acts as a cross-tenant existence oracle and namespace collision",
+    "description": "POST /api/v1/vehicles (PLANNER) calls VehicleService.createVehicle, whose first statement is vehicleRepository.existsByVehicleLicensePlate(plate) with no branch predicate, before any branch-scoped lookup of the fleet, depots or vehicle type. The column is declared globally unique in the entity and in the shipped SQL schemas. A duplicate throws jakarta.validation.ValidationException, which GlobalExceptionHandler has no specific handler for, so it falls to the catch-all Exception handler (HTTP 500 INTERNAL_ERROR). A non-duplicate plate with a non-existent or foreign fleetId instead reaches fleetRepository.findByIdAndBranchId and returns HTTP 400 RESOURCE_NOT_FOUND (FLEET). By source, a planner of branch A can therefore learn whether any other branch has registered a given license plate, without creating any record, and a plate registered by one branch blocks every other branch from registering it. The update path maps vehicleLicensePlate onto the entity without any check, so a collision there would surface as a database unique-constraint error at flush, also via the generic handler. Disclosure is limited to a boolean existence bit per guessed plate; no branch identity or vehicle data is returned. Runtime response behavior was not observed.",
+    "claimed_root_cause": "License-plate uniqueness is enforced and checked in a global namespace (existsByVehicleLicensePlate and a unique constraint on vehicle_license_plate alone) instead of per branch, and the check runs before branch-scoped validation, with a distinguishable error response.",
+    "trace": [
+      {
+        "kind": "entrypoint",
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/controller/VehicleController.java",
+        "line": 31,
+        "scope": "POST /api/v1/vehicles createVehicle",
+        "description": "PLANNER-authenticated request body vehicleLicensePlate and query param fleetId are passed to the service with the principal's branchId."
+      },
+      {
+        "kind": "propagation",
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/service/VehicleService.java",
+        "line": 60,
+        "scope": "VehicleService.createVehicle",
+        "description": "First operation is a global existsByVehicleLicensePlate check; on true throws jakarta.validation.ValidationException before the branch-scoped fleet lookup at line 65."
+      },
+      {
+        "kind": "propagation",
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/repository/VehicleRepository.java",
+        "line": 33,
+        "scope": "VehicleRepository.existsByVehicleLicensePlate",
+        "description": "Derived query over all vehicles with no fleet.branch predicate, so the result reflects other branches' data."
+      },
+      {
+        "kind": "sink",
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/exception/GlobalExceptionHandler.java",
+        "line": 199,
+        "scope": "GlobalExceptionHandler.handleGenericException",
+        "description": "No handler for jakarta.validation.ValidationException; the catch-all maps it to HTTP 500 INTERNAL_ERROR, distinct from the 400 RESOURCE_NOT_FOUND produced by the non-duplicate path."
+      }
+    ],
+    "evidence": [
+      {
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/service/VehicleService.java",
+        "line": 60,
+        "description": "Global plate existence check precedes all branch-scoped validation."
+      },
+      {
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/service/VehicleService.java",
+        "line": 65,
+        "description": "Fleet lookup is branch-scoped (findByIdAndBranchId) and throws DataInvalidException RESOURCE_NOT_FOUND when the fleetId is not the caller's."
+      },
+      {
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/exception/GlobalExceptionHandler.java",
+        "line": 25,
+        "description": "DataInvalidException maps to HTTP 400 with the error list."
+      },
+      {
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/entity/Vehicle.java",
+        "line": 46,
+        "description": "vehicle_license_plate declared unique=true globally (also unique index at line 20)."
+      },
+      {
+        "file": "GVRP_Entry_API/src/main/resources/database/init.sql",
+        "line": 95,
+        "description": "Shipped schema declares vehicle_license_plate NOT NULL UNIQUE across all branches."
+      },
+      {
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/mapper/VehicleMapper.java",
+        "line": 68,
+        "description": "updateEntityFromDTO(VehicleUpdateDTO) copies vehicleLicensePlate with no uniqueness check; a collision would only fail at the global DB constraint."
+      },
+      {
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/config/SecurityConfig.java",
+        "line": 83,
+        "description": "/api/v1/** requires PLANNER, so the lower-trust principal is an authenticated planner of another branch."
+      }
+    ],
+    "blockers": [
+      "Source-only policy: the actual HTTP status/body for the duplicate case (expected 500 via the catch-all handler versus 400 for the non-duplicate case) was not observed, and no request was made against a running Entry API.",
+      "Whether globally unique license plates are an accepted product requirement (physical plates being unique) versus a tenant-isolation defect is not established by an accepted requirement in source; impact is a single existence bit per guessed plate plus cross-branch registration blocking."
+    ],
+    "validation_plan": {
+      "local": "On a local Entry API with a dummy database, create dummy branches A and B with one PLANNER each. As B, create a vehicle with dummy plate TEST-B-0001. As planner A, POST /api/v1/vehicles?fleetId=999999 (non-existent) with body plate TEST-B-0001 and dummy depot/type ids, then repeat with an unused plate TEST-X-0000. Record status and error body for both; a 500 INTERNAL_ERROR versus 400 RESOURCE_NOT_FOUND (FLEET) confirms the oracle. Also as A, with A's own valid fleet/depots/type, attempt to create TEST-B-0001 and to PUT an A vehicle's plate to TEST-B-0001 to observe cross-branch blocking. Confirm no record is created in the oracle requests.",
+      "deployment": "Owner confirms with dummy tenants only whether any deployed proxy or error mapping normalizes 500/400 responses, and decides whether plate uniqueness should be per branch (unique (branch, plate) or fleet-scoped check performed after branch validation with a uniform error)."
+    }
+  },
+  {
+    "verdict": "needs_validation",
+    "fingerprint": "GVRP_Entry_API.AuthController.register.global-user-enumeration",
+    "title": "Anonymous register endpoint is a global username/email existence oracle across branches",
+    "description": "POST /api/v1/auth/register is permitted to anonymous callers and, before doing nothing else, checks UserRepository.existsByUsername and existsByEmail against the whole user table (all branches), returning distinct 400 bodies 'Username is already taken' and 'Email is already in use' versus a 200 'User registered successfully' when neither exists. An unauthenticated caller can therefore learn whether any branch (tenant) has an account with a supplied username or email address. The endpoint creates no user, so no account provisioning or branch-assignment abuse is possible; the impact is limited to account-existence disclosure (email addresses are personal data) and target discovery for credential attacks. Source does not establish whether cross-branch account existence is intended to be confidential, and no runtime observation was made.",
+    "claimed_root_cause": "AuthController.register queries global, unscoped existence methods on User.username and User.email (both globally unique columns) and maps each hit to a distinguishable response on a permitAll route, with no response normalization or rate limiting visible in source.",
+    "trace": [
+      {
+        "kind": "entrypoint",
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/config/SecurityConfig.java",
+        "line": 75,
+        "scope": "Spring Security filter chain",
+        "description": "/api/v1/auth/** is permitAll, so register is reachable without authentication."
+      },
+      {
+        "kind": "propagation",
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/controller/AuthController.java",
+        "line": 98,
+        "scope": "AuthController.register",
+        "description": "Accepts attacker-supplied RegisterRequest username and email; branchId field is never used."
+      },
+      {
+        "kind": "propagation",
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/repository/UserRepository.java",
+        "line": 48,
+        "scope": "UserRepository.existsByUsername / existsByEmail",
+        "description": "Derived queries without any branch predicate check existence across all branches."
+      },
+      {
+        "kind": "sink",
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/controller/AuthController.java",
+        "line": 100,
+        "scope": "AuthController.register response",
+        "description": "Distinct 400 bodies for existing username (line 100) and existing email (line 104) versus 200 at line 110 disclose account existence."
+      }
+    ],
+    "evidence": [
+      {
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/controller/AuthController.java",
+        "line": 99,
+        "description": "Global existsByUsername check with 'Username is already taken' response."
+      },
+      {
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/controller/AuthController.java",
+        "line": 103,
+        "description": "Global existsByEmail check with 'Email is already in use' response."
+      },
+      {
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/controller/AuthController.java",
+        "line": 107,
+        "description": "No user is created; endpoint returns success after a no-op (tracked as SEC-008), so impact is disclosure only."
+      },
+      {
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/repository/UserRepository.java",
+        "line": 55,
+        "description": "existsByEmail has no branch scope."
+      },
+      {
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/entity/User.java",
+        "line": 24,
+        "description": "username (line 24) and email (line 33) are globally unique columns, so existence is a cross-branch namespace."
+      },
+      {
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/config/SecurityConfig.java",
+        "line": 75,
+        "description": "permitAll on /api/v1/auth/**."
+      },
+      {
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/security/BranchAwareAuthenticationProvider.java",
+        "line": 43,
+        "description": "Login correctly binds the authenticated user to the selected branch; the issue is confined to the register oracle."
+      }
+    ],
+    "blockers": [
+      "No documented requirement establishes that username, email or account existence is confidential across branches; global uniqueness may be an accepted design, which decides whether this is a vulnerability or a low-severity hardening issue.",
+      "Source-only policy forbids running the Entry API to observe the actual HTTP status/body differences and the absence of any upstream rate limiting or response normalization (e.g. gateway, exception handler)."
+    ],
+    "validation_plan": {
+      "local": "With a local Entry API and dummy data only: create branch A with user 'dummy_a' / 'dummy_a@example.test' and branch B with no users. Anonymously POST /api/v1/auth/register with username 'dummy_a' and a fresh email, then a fresh username with 'dummy_a@example.test', then both fresh values. Record whether responses differ (400 'Username is already taken', 400 'Email is already in use', 200) and whether repeated requests are throttled. Confirm no user row is created.",
+      "deployment": "Owner confirms whether cross-branch account existence (usernames, emails) is meant to be private, and whether any ingress/gateway exposes /api/v1/auth/register publicly or applies rate limiting/response normalization; if the route is unused, removing it (also resolves SEC-008) closes the oracle."
+    }
+  },
+  {
+    "verdict": "rejected",
+    "fingerprint": "GVRP_Entry_API:lez:geometry:preparse-resource-bound",
+    "title": "Zone geometry JSON is materialized before the 5,000-vertex cap (no shared-impact amplification)",
+    "description": "PUT /api/v1/zones/{id}/geometry binds the request body to a Jackson JsonNode before GeoJsonGeometryParser enforces its 5,000-vertex cap. Source review shows the endpoint is reachable only by an authenticated PLANNER (after the Spring Security filter chain), materialization cost is linear in the bytes the requester sends, Jackson default StreamReadConstraints (nesting depth, number and string length) still apply because the custom ObjectMapper does not override them, and all post-materialization work (ring/coordinate allocation, JTS createLinearRing, isValid) is bounded by the vertex cap that is checked before per-ring Coordinate arrays are allocated. No superlinear, amplified, persistent or cross-tenant effect is source-visible; the missing explicit request-body size cap is a generic, app-wide hardening gap rather than a vulnerability specific to this path.",
+    "claimed_root_cause": "JsonNode materialization of the geometry body occurs before the parser's MAX_VERTICES structural bound, and no explicit HTTP body or Jackson document-length limit is configured.",
+    "trace": [
+      {
+        "kind": "entrypoint",
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/controller/BranchZoneController.java",
+        "line": 60,
+        "scope": "replaceGeometry",
+        "description": "@RequestBody JsonNode geoJson is bound by Jackson before the handler runs; branch comes from the authenticated principal."
+      },
+      {
+        "kind": "propagation",
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/service/lez/ZoneService.java",
+        "line": 192,
+        "scope": "ZoneService.replaceGeometry",
+        "description": "After branch-scoped findZone and requireCopied, the already-materialized JsonNode is passed to GeoJsonGeometryParser.parse."
+      },
+      {
+        "kind": "sink",
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/service/lez/GeoJsonGeometryParser.java",
+        "line": 122,
+        "scope": "GeoJsonGeometryParser.ring",
+        "description": "Cumulative vertex count is checked against MAX_VERTICES (5,000) before allocating the Coordinate array, bounding JTS construction and the isValid() call at line 73."
+      }
+    ],
+    "evidence": [
+      {
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/config/SecurityConfig.java",
+        "line": 83,
+        "description": "/api/v1/** requires role PLANNER, so body binding happens only for an authenticated planner; no anonymous reachability."
+      },
+      {
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/service/lez/GeoJsonGeometryParser.java",
+        "line": 35,
+        "description": "MAX_VERTICES = 5_000; enforced at lines 122-125 before per-ring allocation, and every ring needs at least 4 positions so polygon and hole counts are also bounded."
+      },
+      {
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/config/WebConfig.java",
+        "line": 39,
+        "description": "Custom ObjectMapper is created with new ObjectMapper() and does not relax Jackson's default StreamReadConstraints (nesting depth, number length, string length); no explicit max document length is set."
+      },
+      {
+        "file": "GVRP_Entry_API/pom.xml",
+        "line": 8,
+        "description": "Spring Boot 3.5.7 parent, implying a Jackson 2.x line with default StreamReadConstraints present."
+      },
+      {
+        "file": "GVRP_Entry_API/src/main/resources/application.properties",
+        "line": 61,
+        "description": "Only commented multipart limits; no explicit JSON request-body size limit configured, which applies to every @RequestBody endpoint equally (generic hardening, not specific to this path)."
+      }
+    ],
+    "reason": "The candidate requires an input-to-cost path with amplification or shared impact. Source shows the cost is linear in bytes supplied by an authenticated PLANNER, Jackson default structural constraints remain in force, and all parser and JTS work after materialization is bounded by the 5,000-vertex cap checked before allocation. There is no superlinear parsing, expansion, persistence or cross-tenant effect; the absence of an explicit body-size cap is an app-wide sustained-volume hardening note, not a vulnerability of this geometry path."
+  },
+  {
+    "verdict": "needs_validation",
+    "fingerprint": "GVRP_Entry_client_v2.leaflet.raw-api-text-html",
+    "title": "Stored business text (depot, order, stop, zone names) is interpolated unescaped into Leaflet popup/tooltip HTML strings",
+    "description": "MarkerService builds popup HTML by template-string interpolation of API-returned depot name/address, order code/customer name/address/time fields and route-stop location names, and passes the strings to Leaflet bindPopup. MapService, ZoneMapComponent and DriverViewComponent pass zone names, depot names and stop location names as string tooltips. The vendored Leaflet 1.9.4 source assigns string overlay content via node.innerHTML, so markup stored by one branch user (manual entry or order import) would be parsed as HTML in the browser of every other user of that branch who opens the map (planners, and drivers via stop tooltips). Server-side DTO validation only checks presence/length (customerPhone has a character pattern); no HTML escaping is visible on either side. No CSP is declared in index.html, and the client keeps the JWT in sessionStorage/localStorage, so script execution would reach the victim's bearer token. Not confirmed because no local browser test was permitted.",
+    "claimed_root_cause": "Leaflet string content is HTML, but the client concatenates untrusted API strings into that HTML without escaping and does not pass DOM nodes or text-only content.",
+    "trace": [
+      {
+        "kind": "entrypoint",
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/dto/request/OrderInputDTO.java",
+        "line": 34,
+        "scope": "OrderInputDTO.customerName",
+        "description": "Branch user (PLANNER, manual or import) supplies customerName; only @NotBlank/@Size(max=100), no markup restriction. Same for address (line 41) and DepotInputDTO name/address (lines 19, 23)."
+      },
+      {
+        "kind": "propagation",
+        "file": "GVRP_Entry_client_v2/src/app/features/main/main.component.ts",
+        "line": 119,
+        "scope": "MainComponent depot load",
+        "description": "Depots fetched from the API are bound into the map component."
+      },
+      {
+        "kind": "propagation",
+        "file": "GVRP_Entry_client_v2/src/app/shared/components/map/map.component.ts",
+        "line": 43,
+        "scope": "MapComponent.ngOnChanges",
+        "description": "Passes API depots to MapService.loadDepots; orders go to MapService.loadOrders at line 114; solutions to displaySolution at line 54."
+      },
+      {
+        "kind": "propagation",
+        "file": "GVRP_Entry_client_v2/src/app/shared/services/map.service.ts",
+        "line": 118,
+        "scope": "MapService.loadOrders",
+        "description": "Each order DTO is passed unmodified to MarkerService.createOrderMarker (depots at line 90, route stops at line 217)."
+      },
+      {
+        "kind": "propagation",
+        "file": "GVRP_Entry_client_v2/src/app/shared/services/marker.service.ts",
+        "line": 160,
+        "scope": "MarkerService.createOrderPopup",
+        "description": "order.customer_name, address (162), order_code (157) are interpolated raw into an HTML string returned to marker.bindPopup (line 80). Depot name/address at lines 58-59 via bindPopup line 27; stop.location_name at lines 238/249 via line 186."
+      },
+      {
+        "kind": "sink",
+        "file": "GVRP_Entry_client_v2/node_modules/leaflet/dist/leaflet-src.js",
+        "line": 10034,
+        "scope": "DivOverlay._updateContent (Leaflet 1.9.4)",
+        "description": "String popup/tooltip content is assigned with node.innerHTML."
+      }
+    ],
+    "evidence": [
+      {
+        "file": "GVRP_Entry_client_v2/src/app/shared/services/marker.service.ts",
+        "line": 58,
+        "description": "${depot.name} and ${depot.address} (line 59) interpolated raw into popup HTML."
+      },
+      {
+        "file": "GVRP_Entry_client_v2/src/app/shared/services/map.service.ts",
+        "line": 193,
+        "description": "layer.bindTooltip(zone.name) with a raw string; tooltips share DivOverlay._updateContent."
+      },
+      {
+        "file": "GVRP_Entry_client_v2/src/app/features/admin/zones/zone-map/zone-map.component.ts",
+        "line": 325,
+        "description": "bindTooltip(depot.name) with a raw string."
+      },
+      {
+        "file": "GVRP_Entry_client_v2/src/app/features/driver/driver-view/driver-view.component.ts",
+        "line": 236,
+        "description": "Driver map binds stop.location_name as a string tooltip, reaching DRIVER sessions."
+      },
+      {
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/dto/request/DepotInputDTO.java",
+        "line": 17,
+        "description": "Depot name validation is size/not-blank only; no HTML filtering."
+      },
+      {
+        "file": "GVRP_Entry_client_v2/package.json",
+        "line": 30,
+        "description": "leaflet pinned to 1.9.4, matching the vendored source showing innerHTML assignment."
+      },
+      {
+        "file": "GVRP_Entry_client_v2/src/index.html",
+        "line": 3,
+        "description": "No Content-Security-Policy meta tag; deployed headers not in source."
+      },
+      {
+        "file": "GVRP_Entry_client_v2/src/app/core/services/storage.service.ts",
+        "line": 158,
+        "description": "Auth session including the access token is stored in localStorage or sessionStorage, readable by injected script."
+      }
+    ],
+    "blockers": [
+      "Source-only policy forbids running the client in a browser, so rendering of a harmless synthetic marker string through Leaflet popups/tooltips was not observed.",
+      "Server persistence and JSON response path were not executed; no source-visible escaping was found, but round-trip of markup characters through import parsing and storage is not observed.",
+      "Deployed HTTP response headers (CSP) that could block inline handlers are not established by repository source."
+    ],
+    "validation_plan": {
+      "local": "On a local dev stack with a dummy branch and two dummy users (planner A, planner B or driver), have A create a depot or order whose name/customer name is an inert marker such as <b id=xss-probe>probe</b> or <img src=x onerror=console.log('probe')>; as B open the map, open the popup/tooltip, and check in devtools whether element #xss-probe exists or the console line appears. Repeat via the order import path and the driver stop tooltip. Remediate by escaping all interpolated fields (or building DOM nodes with textContent) and re-run.",
+      "deployment": "Owner checks whether the served SPA responses carry a Content-Security-Policy disallowing inline script/event handlers, and confirms whether imported order files may originate from parties outside the branch's trusted planners."
+    }
+  },
+  {
+    "verdict": "needs_validation",
+    "fingerprint": "GVRP_Entry_client_v2.session-reset.map-service-stale-zone-callback",
+    "title": "Delayed branch-zone response from a prior session can be drawn on the next principal's map",
+    "description": "MapService is a root singleton that outlives logout/login. displaySolution() calls drawZones(), which subscribes to lezApi.listZones() and, in the next callback, adds each zone's GeoJSON and name tooltip to this.zoneLayers, resolved at callback time. The subscription is never cancelled and there is no session-generation or principal check. On logout, 401, or login, SessionResetService.resetBranchState() clears SolutionStore, DepotStore, VehicleTypeStore, StateService, polling and vehicle selection, but it does not touch MapService and does not cancel in-flight HttpClient requests. When planner B's <app-map> is created, initializeMap() replaces this.zoneLayers with a new FeatureGroup on B's map. A listZones() response that was requested under branch A's token and arrives after that point would therefore be added to B's map. It would show branch A's low-emission-zone geometry and names, which are branch-owned data served by BranchZoneController. The same pattern applies to displayRoute(): after its awaits, it writes A's route polylines into this.routeLayers, which also lacks a session check, so it has the same root cause. The source shows the path completely. Whether the timing can actually happen at runtime was not observed.",
+    "claimed_root_cause": "MapService callbacks for asynchronous zone and route requests write into mutable, re-bindable layer fields. They are not bound to the session or map instance that issued the request: there is no generation token, takeUntil, or unsubscribe. SessionResetService also omits MapService and pending map requests from the branch-state reset.",
+    "trace": [
+      {
+        "kind": "entrypoint",
+        "file": "GVRP_Entry_client_v2/src/app/shared/components/map/map.component.ts",
+        "line": 54,
+        "scope": "MapComponent.ngOnChanges / onMapReady (line 106)",
+        "description": "Branch A's planner views a solution, and the component calls mapService.displaySolution()."
+      },
+      {
+        "kind": "propagation",
+        "file": "GVRP_Entry_client_v2/src/app/shared/services/map.service.ts",
+        "line": 178,
+        "scope": "MapService.drawZones",
+        "description": "Subscribes to lezApi.listZones() (GET /zones with A's bearer token). No teardown is kept and there is no session or generation guard."
+      },
+      {
+        "kind": "propagation",
+        "file": "GVRP_Entry_client_v2/src/app/core/services/session-reset.service.ts",
+        "line": 30,
+        "scope": "SessionResetService.resetBranchState",
+        "description": "Runs on logout, 401 and login (auth.service.ts lines 161 and 182, auth.interceptor.ts line 39). It resets the stores but not MapService and does not cancel the pending request."
+      },
+      {
+        "kind": "propagation",
+        "file": "GVRP_Entry_client_v2/src/app/shared/services/map.service.ts",
+        "line": 71,
+        "scope": "MapService.initializeMap",
+        "description": "When planner B opens /main, the new map rebinds this.zoneLayers (and routeLayers at line 70) to new FeatureGroups attached to B's map."
+      },
+      {
+        "kind": "sink",
+        "file": "GVRP_Entry_client_v2/src/app/shared/services/map.service.ts",
+        "line": 194,
+        "scope": "MapService.drawZones next callback",
+        "description": "A's delayed zone list is drawn with layer.addTo(this.zoneLayers), which is now B's layer group. This renders A's zone geometry and the zone.name tooltip (line 193) in B's session."
+      }
+    ],
+    "evidence": [
+      {
+        "file": "GVRP_Entry_client_v2/src/app/shared/services/map.service.ts",
+        "line": 28,
+        "description": "MapService is providedIn root, so it is a singleton that persists across sessions in the same SPA instance."
+      },
+      {
+        "file": "GVRP_Entry_client_v2/src/app/shared/services/map.service.ts",
+        "line": 177,
+        "description": "drawZones clears the layer and then subscribes with no stored subscription. The callback dereferences this.zoneLayers lazily."
+      },
+      {
+        "file": "GVRP_Entry_client_v2/src/app/shared/services/map.service.ts",
+        "line": 64,
+        "description": "initializeMap resets markers and focus state and replaces the layer groups, but it does not invalidate earlier in-flight callbacks."
+      },
+      {
+        "file": "GVRP_Entry_client_v2/src/app/shared/services/map.service.ts",
+        "line": 242,
+        "description": "displayRoute awaits storedPath and OSRM geometry, then adds polylines and tooltips to this.routeLayers (lines 245-256 and 266-279). This is the same unguarded late-write pattern for route data."
+      },
+      {
+        "file": "GVRP_Entry_client_v2/src/app/core/services/session-reset.service.ts",
+        "line": 36,
+        "description": "The reset list ends at VehicleSelectionService. MapService is absent."
+      },
+      {
+        "file": "GVRP_Entry_client_v2/src/app/core/services/lez-api.service.ts",
+        "line": 46,
+        "description": "listZones is a plain HttpClient GET with no caching. The response is whatever the server returns for the token attached when the request was sent."
+      },
+      {
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/controller/BranchZoneController.java",
+        "line": 24,
+        "description": "The server serves the caller's branch zones, derived from the principal. So zone data is branch-owned and belongs to branch A in this scenario."
+      }
+    ],
+    "blockers": [
+      "Source-only policy prohibits browser execution. It is not established that a listZones() or route-geometry response can stay in flight across logout, login of a second principal, and creation of the new <app-map>. This needs a delayed response in a real Angular/Leaflet runtime.",
+      "Whether the stale layers actually render visibly on B's map is not observed from source. This depends on Leaflet behavior with a FeatureGroup attached to the new map.",
+      "The server-side effect of /auth/logout on a request A already sent is not observed. Source review suggests it does not matter, because the request was authorized before logout."
+    ],
+    "validation_plan": {
+      "local": "On a local dev stack with two dummy branches and dummy planners A and B, each with distinct enabled dummy zones, add an artificial delay to GET /zones in the browser devtools network throttling or in a local test proxy. As A, open a solution on /main, log out at once, log in as B and open /main. Then check whether A's zone polygons or names appear on B's map. Repeat with a delayed /routes/{id}/geometry. Alternatively, write a unit test with a mocked LezApiService Subject: call displaySolution, then initializeMap with a new map, then emit zones, and assert they are not added to the new zoneLayers.",
+      "deployment": "No deployment check is needed. The issue is purely client-side. An owner can confirm the fix by checking that MapService binds each callback to a session or map generation (or uses takeUntil on reset or map destroy) and that SessionResetService or MapComponent.ngOnDestroy cancels pending map requests."
+    }
+  },
+  {
+    "verdict": "needs_validation",
+    "fingerprint": "OrderImportService:import-row-amplification",
+    "title": "Order import has no row-count bound and fans out one synchronous paid geocoding call per address-only row",
+    "description": "An authenticated PLANNER can submit one multipart import (CSV/JSON file or textData) whose rows contain an address but no coordinates. No source-visible row cap exists in the parsers or the import service; for every such row OrderImportService synchronously calls GeocodingService.geocode, which issues an uncached outbound request to the Goong geocoding API with the operator's API key (connect timeout 1 min, read timeout 3 min) inside a single @Transactional request. A byte-limited request (Spring Boot default multipart caps apply because the properties are commented out; the app-level 10 MiB check is looser than the framework default) can therefore carry tens of thousands of short address rows, driving per-row downstream calls that consume operator-owned geocoding quota/spend shared by all branches, plus per-row DB lookups/saves, while holding a request thread and a DB connection. Shared impact (provider quota, pricing, upstream limits) and the effective deployed multipart/gateway limits are not established from source.",
+    "claimed_root_cause": "Import processing bounds only bytes (Spring multipart defaults plus FileValidationUtils 10 MiB check on files; nothing on textData beyond framework limits) and has no per-request row-count bound, no geocoding cache, batching, rate limit or per-tenant quota, so row cardinality maps directly to outbound paid API calls and DB work in the request thread.",
+    "trace": [
+      {
+        "kind": "entrypoint",
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/controller/OrderController.java",
+        "line": 33,
+        "scope": "POST /api/v1/orders/import (multipart, PLANNER)",
+        "description": "Binds OrderImportRequest (file or textData) via @ModelAttribute and calls OrderImportService synchronously with the principal's branch."
+      },
+      {
+        "kind": "propagation",
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/service/integration/file/FileValidationUtils.java",
+        "line": 37,
+        "scope": "FileValidationUtils.validate",
+        "description": "Only byte size (10 MiB) and extension are checked; no row-count limit."
+      },
+      {
+        "kind": "propagation",
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/service/integration/file/TextDataParser.java",
+        "line": 31,
+        "scope": "TextDataParser.parse",
+        "description": "textData is split into lines and every line is parsed/accumulated with no length or row cap; no FileValidationUtils call on this path."
+      },
+      {
+        "kind": "propagation",
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/service/orders/OrderImportService.java",
+        "line": 175,
+        "scope": "OrderImportService.processParsedData",
+        "description": "Loops over all parsed rows inside the @Transactional createOrdersByImportRequest (line 52)."
+      },
+      {
+        "kind": "propagation",
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/service/orders/OrderImportService.java",
+        "line": 190,
+        "scope": "OrderImportService.processParsedData",
+        "description": "For each row with an address and missing lat/lng, calls geocodingService.geocode synchronously."
+      },
+      {
+        "kind": "sink",
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/service/GeocodingService.java",
+        "line": 54,
+        "scope": "GeocodingService.geocode",
+        "description": "Uncached outbound RestTemplate GET to the Goong geocoding URI using the operator API key, one per call."
+      }
+    ],
+    "evidence": [
+      {
+        "file": "GVRP_Entry_API/src/main/resources/application.properties",
+        "line": 61,
+        "description": "spring.servlet.multipart.max-file-size and max-request-size are commented out, so Spring Boot defaults (framework-level, not repository-enforced) govern multipart size."
+      },
+      {
+        "file": "GVRP_Entry_API/src/main/resources/application.properties",
+        "line": 73,
+        "description": "geocoding.enabled is set true, so the geocoding fan-out is active in the source-visible configuration."
+      },
+      {
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/config/RestTemplateConfig.java",
+        "line": 18,
+        "description": "Shared RestTemplate uses 1-minute connect and 3-minute read timeouts, so each geocode call can hold the request thread for minutes."
+      },
+      {
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/service/orders/OrderImportService.java",
+        "line": 253,
+        "description": "Per valid row: existsByBranchIdAndOrderCode, optional findByBranchIdAndOrderCode and save, all in one transaction."
+      },
+      {
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/dto/request/OrderImportRequest.java",
+        "line": 19,
+        "description": "textData is an unconstrained String field (no @Size)."
+      },
+      {
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/service/integration/file/JsonFileParser.java",
+        "line": 60,
+        "description": "JSON array is streamed and every element accumulated with no element-count cap."
+      }
+    ],
+    "blockers": [
+      "Effective deployed multipart/request size limits (Spring Boot defaults vs. overrides via environment/profile, Tomcat maxPostSize/maxPartCount, any reverse proxy body cap) are outside the repository; they set the achievable row count per request.",
+      "Goong geocoding pricing, per-key quota, rate limits and the behaviour when quota is exhausted (whether other branches' imports then fail) are third-party facts not in source.",
+      "No execution was permitted, so per-request latency, thread/DB-connection hold time and heap use under many rows were not observed."
+    ],
+    "validation_plan": {
+      "local": "In an isolated dummy-tenant environment with strict CPU/memory/time limits, replace the Goong URI with a local mock that counts requests and returns a fixed OK result; submit textData/CSV imports of small growing sizes (e.g. 10, 100, 1000 address-only rows with skipValidationErrors=false) as a dummy PLANNER, and record that outbound geocode calls equal the row count, request duration grows linearly, and no row cap rejects the request; also confirm the multipart limit that rejects the largest payload.",
+      "deployment": "Owner checks the deployed spring.servlet.multipart.* and server.tomcat.* values plus any ingress body-size limit, and the Goong account quota/billing and rate-limit policy for the configured key, to determine maximum rows per request and whether one branch can exhaust geocoding quota or spend for all branches."
+    }
+  },
+  {
+    "verdict": "needs_validation",
+    "fingerprint": "OrderService:bulk-update-cross-branch-order-code",
+    "title": "Bulk order status update discloses another branch's order codes in the failed-row response",
+    "description": "PATCH /api/v1/orders/status (PLANNER) takes a client-supplied list of order IDs. OrderService.bulkUpdateStatus loads them with the unscoped orderRepository.findAllById, correctly refuses to transition orders whose branch differs from the caller's branch, but still copies the foreign order's orderCode into the FailedRow returned to the caller. A planner of branch A can therefore submit arbitrary (sequential Long) IDs and learn the order_code of branch B's orders, and also distinguish existing foreign IDs (non-null order_code) from nonexistent IDs (null), despite the uniform reason text 'Order not found in this branch'. No mutation of foreign orders occurs; the impact is cross-tenant disclosure of the order-code identifier plus an existence oracle.",
+    "claimed_root_cause": "The lookup is not branch-scoped (findAllById instead of a branch-bound query such as findAllByIdInAndBranchId), and the foreign-branch rejection branch populates FailedRow.orderCode from the loaded foreign entity (order != null ? order.getOrderCode() : null) instead of returning only the caller-supplied id.",
+    "trace": [
+      {
+        "kind": "entrypoint",
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/controller/OrderController.java",
+        "line": 122,
+        "scope": "OrderController.bulkUpdateStatus (PATCH /api/v1/orders/status)",
+        "description": "Authenticated PLANNER submits a body with arbitrary order ids; branchId is taken from the authenticated principal via CurrentUserUtil.getCurrentBranchId (line 126) and passed with request.getIds() to the service (line 140)."
+      },
+      {
+        "kind": "propagation",
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/service/orders/OrderService.java",
+        "line": 117,
+        "scope": "OrderService.bulkUpdateStatus",
+        "description": "orderRepository.findAllById(ids) loads all matching orders across every branch, with no branch predicate."
+      },
+      {
+        "kind": "propagation",
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/service/orders/OrderService.java",
+        "line": 124,
+        "scope": "OrderService.bulkUpdateStatus",
+        "description": "Foreign-branch orders are detected (order.getBranch().getId() != branchId) and excluded from the transition candidates, so no cross-branch write occurs."
+      },
+      {
+        "kind": "propagation",
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/service/orders/OrderService.java",
+        "line": 127,
+        "scope": "OrderService.bulkUpdateStatus",
+        "description": "FailedRow.orderCode is set to the foreign order's orderCode when the order exists, and the row is returned in the response (lines 150-153)."
+      },
+      {
+        "kind": "sink",
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/dto/response/BulkUpdateOrderStatusResponse.java",
+        "line": 29,
+        "scope": "BulkUpdateOrderStatusResponse.FailedRow",
+        "description": "orderCode is a Lombok @Getter field with no @JsonIgnore, so it is expected to serialize as order_code (SNAKE_CASE, WebConfig.objectMapper) in the 200 response body."
+      }
+    ],
+    "evidence": [
+      {
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/service/orders/OrderService.java",
+        "line": 117,
+        "description": "Unscoped findAllById over caller-supplied ids, contrasting with getOrderById at line 156 which uses findByIdAndBranchId."
+      },
+      {
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/service/orders/OrderService.java",
+        "line": 127,
+        "description": "orderCode(order != null ? order.getOrderCode() : null) is executed for both missing and foreign-branch orders, leaking the foreign code and distinguishing existence."
+      },
+      {
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/controller/OrderController.java",
+        "line": 140,
+        "description": "Service result is returned unchanged as the HTTP response body."
+      },
+      {
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/config/SecurityConfig.java",
+        "line": 83,
+        "description": "/api/v1/** requires role PLANNER only; there is no additional branch filter at the security layer, so any planner of any branch reaches this endpoint."
+      },
+      {
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/dto/request/BulkUpdateOrderStatusRequest.java",
+        "line": 17,
+        "description": "ids is an unbounded List<Long> of caller-chosen values (only @NotNull/@NotEmpty), allowing enumeration of many IDs per request."
+      },
+      {
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/config/WebConfig.java",
+        "line": 47,
+        "description": "Custom ObjectMapper uses SNAKE_CASE and no NON_NULL/ignore settings, so orderCode is not filtered by serialization configuration in source."
+      },
+      {
+        "file": "GVRP_Entry_API/src/test/java/org/truong/gvrp_entry_api/service/orders/OrderServiceTest.java",
+        "line": 79,
+        "description": "Existing unit test includes a foreign-branch order (id 13, branch 2) but asserts only ids and reasons, never that its orderCode is withheld; no test covers this disclosure."
+      }
+    ],
+    "blockers": [
+      "Source-only policy: no request against a running Entry API was made, so the serialized HTTP response containing a foreign order_code was not observed (Jackson serialization of the Lombok getter is inferred from source, not observed).",
+      "Whether order IDs are sequential and guessable in a real database (auto-increment) and how sensitive order codes are for tenants was not observed; no database access was permitted."
+    ],
+    "validation_plan": {
+      "local": "With a local dev stack and dummy data only: create branch A and branch B, a PLANNER user in each, and one dummy order in branch B (orderCode e.g. DUMMY-B-1, id N). Log in as planner A and send PATCH /api/v1/orders/status with body {\"ids\":[N, N+100000],\"status\":\"ON_ROUTE\"}. Expected if vulnerable: 200 with failed[] containing {id:N, order_code:\"DUMMY-B-1\"} and {id:N+100000, order_code:null}; then verify as planner B that order N's status is unchanged. Add a regression unit test asserting FailedRow.orderCode is null for foreign-branch ids.",
+      "deployment": "Owner-run only, with two dummy tenants in a non-production environment: repeat the same request as a dummy planner of tenant A against a dummy order of tenant B and inspect the response body for order_code; confirm no proxy or response filter strips the field."
+    }
+  },
+  {
+    "verdict": "needs_validation",
+    "fingerprint": "SEC-AUDIT-001:callback-api-key-filter-encoded-path-bypass",
+    "title": "Engine callback API-key check can be skipped with a percent-encoded unreserved character in the callback path",
+    "description": "ApiKeyAuthenticationFilter enforces the X-API-Key header only when the raw, undecoded request URI starts with the literal prefix /api/v1/solutions/callbacks/. The same path is permitAll in SecurityConfig, so this filter is the only authentication on the Engine callbacks. Source review of the resolved dependency versions (Spring Boot 3.5.7 parent -> Spring Security 6.5.6, Spring Framework 6.2.12, Tomcat 10.1.48 in the local Maven repository) indicates that a raw URI that percent-encodes an ordinary letter, for example /api/v1/solutions/%63allbacks/complete or /api/v1/solutions/callback%73/failed, (a) is not rejected by the default StrictHttpFirewall, whose encoded blocklist only contains %25, %2e/%2E, %2f, %5c, %3b, %00, %0a, %0d (and their decoded forms) and whose normalization check only looks for dot segments; (b) does not start with the literal prefix, so the filter calls filterChain.doFilter without checking the key; (c) is matched by Spring MVC PathPattern matching, which decodes each segment (DefaultPathContainer.decodeAndParsePathSegment -> valueToMatch, compared by LiteralPathElement), so it maps to OptimizationCallbackController; and (d) is matched by the requestMatchers(\"/api/v1/solutions/callbacks/**\") permitAll rule, which in Security 6.5.6 without a PathPatternRequestMatcher.Builder bean resolves to MvcRequestMatcher (HandlerMappingIntrospector, same decoded matching as MVC) or AntPathRequestMatcher on the container-decoded servletPath. Semicolon path parameters, encoded slash or period, double slash, backslash and dot segments are blocked by the default firewall; case variants do not match because PathPattern and the security matcher are case-sensitive. The application does not customize the firewall, UrlPathHelper, path matching or the filter registration (no HttpFirewall, PathMatchConfigurer, FilterRegistrationBean or matching-strategy setting found). Impact if reachable: an anonymous caller can POST forged complete/failed/cancelled/progress callbacks for any job. OptimizationCallbackService looks the job up with jobRepository.findById(callback.getJobId()) only (IDENTITY-generated, guessable Long ids), with no engine or job token, so it can mark another branch's PROCESSING job FAILED or CANCELLED, or ingest an attacker-chosen solution; saveSolution loads orders with orderRepository.findAllById(orderIds) without a branch filter and bulk-transitions their status (ON_ROUTE / UNASSIGNED), which suggests a forged completion could also change other branches' orders (cross-tenant write, not traced to completion in this review). Not observed at runtime: this is a source-only conclusion.",
+    "claimed_root_cause": "The API-key gate is decided by a string prefix check on HttpServletRequest.getRequestURI(), which is the raw, undecoded URI, while Spring Security authorization (permitAll) and Spring MVC handler mapping both operate on the decoded path; the components therefore disagree on which requests are callback requests, and the permitAll rule leaves no second line of defense.",
+    "trace": [
+      {
+        "kind": "entrypoint",
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/config/SecurityConfig.java",
+        "line": 78,
+        "scope": "SecurityConfig.filterChain",
+        "description": "requestMatchers(\"/api/v1/solutions/callbacks/**\").permitAll(): callback endpoints have no authorization requirement in the security chain; matched on the decoded path."
+      },
+      {
+        "kind": "propagation",
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/security/ApiKeyAuthenticationFilter.java",
+        "line": 42,
+        "scope": "ApiKeyAuthenticationFilter.doFilterInternal",
+        "description": "requestPath = request.getRequestURI() (raw, undecoded, e.g. /api/v1/solutions/%63allbacks/complete)."
+      },
+      {
+        "kind": "propagation",
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/security/ApiKeyAuthenticationFilter.java",
+        "line": 47,
+        "scope": "ApiKeyAuthenticationFilter.doFilterInternal",
+        "description": "if (!requestPath.startsWith(CALLBACK_PATH_PREFIX)) the filter passes the request on without checking X-API-Key."
+      },
+      {
+        "kind": "propagation",
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/controller/OptimizationCallbackController.java",
+        "line": 26,
+        "scope": "OptimizationCallbackController.onOptimizationComplete",
+        "description": "@RequestMapping(\"/api/v1/solutions/callbacks\") + @PostMapping(\"/complete\") matched by PathPattern on decoded segment values; /failed (39), /cancelled (58), /progress (77) likewise."
+      },
+      {
+        "kind": "propagation",
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/service/OptimizationCallbackService.java",
+        "line": 59,
+        "scope": "OptimizationCallbackService.handleCompletion",
+        "description": "jobRepository.findById(callback.getJobId()) with no branch or engine identity check; job status and solution are then written from the attacker payload."
+      },
+      {
+        "kind": "sink",
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/service/OptimizationCallbackService.java",
+        "line": 346,
+        "scope": "OptimizationCallbackService.saveSolution",
+        "description": "orderRepository.findAllById(orderIds) with order ids from the callback payload, not scoped to the job's branch; orders are later bulk-transitioned to ON_ROUTE/UNASSIGNED."
+      }
+    ],
+    "evidence": [
+      {
+        "file": "GVRP_Entry_API/pom.xml",
+        "line": 8,
+        "description": "spring-boot-starter-parent 3.5.7; local Maven repository holds spring-security-web/config 6.5.6, spring-web/webmvc 6.2.12, tomcat-embed-core 10.1.48 sources consistent with that BOM. Library source (local Maven sources jar, read-only): 6.5.6 spring-security-web-6.5.6 org/springframework/security/web/firewall/StrictHttpFirewall.java:155 — Default blocklists: semicolon, encoded/decoded forward slash, double slash, backslash, null, LF, CR (155-161), %25 and %2e/%2E (163-164, 94-95), decoded % and line/paragraph separators (165-167). Percent-encoded letters such as %63 or %73 are not blocked; isNormalized (587-597, 641) checks only dot segments. Library source (local Maven sources jar, read-only): 6.2.12 spring-web-6.2.12 org/springframework/http/server/DefaultPathContainer.java:131 — Each path segment is URI-decoded into valueToMatch; LiteralPathElement (line 57) matches against valueToMatch, so %63allbacks matches the literal callbacks in the controller mapping. Library source (local Maven sources jar, read-only): 6.5.6 spring-security-config-6.5.6 org/springframework/security/config/annotation/web/AbstractRequestMatcherRegistry.java:221 — requestMatchers(String) resolves to MvcRequestMatcher/AntPathRequestMatcher (DispatcherServletDelegatingRequestMatcher) unless a PathPattern builder is configured; both match the decoded path, so the permitAll rule applies to the encoded URI."
+      },
+      {
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/security/ApiKeyAuthenticationFilter.java",
+        "line": 31,
+        "description": "CALLBACK_PATH_PREFIX = \"/api/v1/solutions/callbacks/\" compared against the raw request URI at line 47."
+      },
+      {
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/security/ApiKeyAuthenticationFilter.java",
+        "line": 26,
+        "description": "@Component OncePerRequestFilter, also added to the security chain at SecurityConfig line 89; both registrations use the same raw-URI prefix check, so registration order does not change the outcome."
+      },
+      {
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/config/SecurityConfig.java",
+        "line": 89,
+        "description": "http.addFilterBefore(apiKeyAuthenticationFilter, UsernamePasswordAuthenticationFilter.class); no custom HttpFirewall, UrlPathHelper, PathMatchConfigurer or FilterRegistrationBean anywhere under GVRP_Entry_API/src/main."
+      },
+      {
+        "file": "docs/security/SECURITY_CHECKLIST.md",
+        "line": 18,
+        "description": "SEC-004 records that the callback path is permitAll and protected only by this filter; it covers the non-constant-time compare, not this path-matching bypass."
+      }
+    ],
+    "blockers": [
+      "Source-only audit: no server, MockMvc or embedded Tomcat run was allowed, so the decisive behavior (Tomcat decoding %63 into servletPath, firewall acceptance, MVC dispatch to the callback handler and a handler response without X-API-Key) was not observed.",
+      "Cross-branch order effect in saveSolution (findAllById without branch filter) was identified but not traced end to end through EnginePlanMaterializer and OrderStatusTransitionService."
+    ],
+    "validation_plan": {
+      "local": "Add a new Spring Boot test (@SpringBootTest(webEnvironment=RANDOM_PORT) with a real embedded Tomcat, because MockMvc does not decode the URI like the container) against a dummy local database with a seeded test job in PROCESSING state. Send POST without X-API-Key to each raw URI, using a client that does not re-normalize the path (e.g. java.net.http with URI.create): /api/v1/solutions/callbacks/progress (control, expect 401 from the filter), /api/v1/solutions/%63allbacks/progress, /api/v1/solutions/callback%73/failed, /api/v1/%73olutions/callbacks/cancelled, /api/v1/solutions/callbacks/%63omplete, plus blocked controls /api/v1/solutions/callbacks;x/progress, //api/v1/solutions/callbacks/progress, /api/v1/solutions/./callbacks/progress, /API/v1/solutions/callbacks/progress (expect 400 firewall rejection or 401/403/404). Confirm the finding if any encoded-letter variant reaches the handler (200, or a handler-level error such as RESOURCE_NOT_FOUND for a non-existent jobId) and, with a seeded test job, changes its status. Cross-check matcher behavior with MockMvc using an explicit raw requestURI and decoded servletPath.",
+      "deployment": "Not applicable before Gate B; if a reverse proxy is later placed in front of the Entry API, re-test the same URI shapes through it, since proxy normalization or decoding can either block or widen the bypass."
+    }
+  },
+  {
+    "verdict": "needs_validation",
+    "fingerprint": "SEC-AUDIT-001:callback-cross-branch-materialization",
+    "title": "Engine completion callback materializes and re-statuses orders and vehicles of other branches into a job's solution",
+    "description": "OptimizationCallbackService.handleCompletion loads the target job by the callback's job_id only, then resolves every order_id and vehicle_id named in the callback payload with global findAllById calls and builds Route, RouteStop and UnassignedOrder rows that link those entities into a Solution owned by the job's branch. No comparison between the loaded orders/vehicles' branch and job.getBranch() exists anywhere on this path, and OrderStatusTransitionService.bulkTransition updates the named orders with an ID-only UPDATE. The Entry submit path (OptimizationJobService.validateAndLoadOrders/validateAndLoadVehicles) does enforce branch ownership, so the honest Entry->Engine->Entry loop echoes only branch-valid IDs; the gap is exploitable when callback content is not derived from that validated submission. Source shows such a lower-trust source: the Engine's POST /api/v1/optimization accepts an arbitrary job_id and caller-supplied orders/vehicles with no authentication (SEC-010, OPEN), solves them and then delivers the completion callback to the fixed Entry URL signed with the shared X-API-Key. A host that can reach the Engine port (or anyone holding the engine.api.key value, which is in git history per SEC-001) can therefore make Entry attach branch A's orders (customer name, phone, address, coordinates) and vehicles to branch B's PROCESSING or FAILED job, exposing them through branch B's solution views and moving branch A's SCHEDULED orders to ON_ROUTE/UNASSIGNED. Whether the Engine port and the callback path are reachable by such a party is a deployment fact not established by source.",
+    "claimed_root_cause": "The completion callback treats the payload's order and vehicle IDs as trusted and resolves them with unscoped repository lookups (orderRepository.findAllById, vehicleRepository.findAllById) plus an ID-only bulk status update, without binding them to the branch of the job being completed or to the set of IDs Entry originally submitted for that job; the only control is a shared service key, which the unauthenticated Engine submit endpoint effectively lends to any caller.",
+    "trace": [
+      {
+        "kind": "entrypoint",
+        "file": "GVRP_Engine_API/src/main/java/org/truong/gvrp_engine_api/controller/OptimizationController.java",
+        "line": 43,
+        "scope": "POST /api/v1/optimization (Engine, no authentication per SEC-010)",
+        "description": "Accepts EngineOptimizationRequest with caller-chosen job_id, orders and vehicles; validateRequest (line 85) checks only presence and coordinates, then optimizeAsync runs the solve."
+      },
+      {
+        "kind": "propagation",
+        "file": "GVRP_Engine_API/src/main/java/org/truong/gvrp_engine_api/service/CallbackService.java",
+        "line": 59,
+        "scope": "CallbackService.sendCompletionCallback",
+        "description": "Posts the result for that job_id to the configured Entry /solutions/callbacks/complete URL with the shared X-API-Key header (line 169); stop order_id and route vehicle_id are echoed from the request (SolutionConverter lines 127, 164)."
+      },
+      {
+        "kind": "propagation",
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/security/ApiKeyAuthenticationFilter.java",
+        "line": 63,
+        "scope": "Entry callback authentication",
+        "description": "Only check on /api/v1/solutions/callbacks/** (permitAll in SecurityConfig line 78) is equality with engine.api.key; principal is ENGINE_SERVICE with no branch."
+      },
+      {
+        "kind": "propagation",
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/service/OptimizationCallbackService.java",
+        "line": 59,
+        "scope": "handleCompletion",
+        "description": "Loads job by callback job_id only; proceeds when no solution exists and status is PROCESSING or FAILED (lines 78-88), then calls saveSolution."
+      },
+      {
+        "kind": "propagation",
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/service/OptimizationCallbackService.java",
+        "line": 346,
+        "scope": "saveSolution order/vehicle resolution",
+        "description": "orderRepository.findAllById(orderIds) and vehicleRepository.findAllById(vehicleIds) (line 370) resolve payload IDs globally; EnginePlanMaterializer.buildRoute/buildStop/buildUnassignedOrder attach them to a Solution whose branch is job.getBranch() (line 317), saved at line 427."
+      },
+      {
+        "kind": "sink",
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/repository/OrderRepository.java",
+        "line": 65,
+        "scope": "updateStatusByIds",
+        "description": "Invoked via OrderStatusTransitionService.bulkTransition (line 46) from saveSolution lines 358 and 414; UPDATE Order SET status WHERE id IN :ids with no branch predicate."
+      }
+    ],
+    "evidence": [
+      {
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/service/OptimizationCallbackService.java",
+        "line": 346,
+        "description": "Global findAllById on callback-supplied order IDs; no branch filter or comparison with job.getBranch() anywhere in saveSolution."
+      },
+      {
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/service/OptimizationCallbackService.java",
+        "line": 370,
+        "description": "Global findAllById on callback-supplied vehicle IDs feeding Route.vehicle."
+      },
+      {
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/service/EnginePlanMaterializer.java",
+        "line": 63,
+        "description": "buildStop links whatever Order the map holds; only null is rejected, never a foreign branch."
+      },
+      {
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/service/OptimizationJobService.java",
+        "line": 302,
+        "description": "Intended policy: submit-time validation rejects orders (and vehicles, line 376) of another branch; the callback path does not re-apply it."
+      },
+      {
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/service/orders/OrderStatusTransitionService.java",
+        "line": 46,
+        "description": "bulkTransition updates by ID list only after a status-transition check, so foreign SCHEDULED orders are moved to ON_ROUTE/UNASSIGNED."
+      },
+      {
+        "file": "GVRP_Engine_API/src/main/java/org/truong/gvrp_engine_api/controller/OptimizationController.java",
+        "line": 85,
+        "description": "Engine submit validation checks presence/coordinates only; no authentication filter exists in the Engine (docs/security/SECURITY_CHECKLIST.md SEC-010 OPEN), so the callback signer accepts arbitrary job_id and IDs."
+      },
+      {
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/security/ApiKeyAuthenticationFilter.java",
+        "line": 63,
+        "description": "Shared-key equality is the only callback control; the key property engine.api.key is a committed literal per SEC-001 (value not copied)."
+      }
+    ],
+    "blockers": [
+      "Source-only policy: no two-branch dummy run was performed, so persistence of foreign orders/vehicles into another branch's solution and the status change were not observed.",
+      "Reachability of the lower-trust source is a deployment fact: whether any party other than the Entry host can reach Engine port 8081 (SEC-010 relies on an unverified firewall/private-network posture) or obtains engine.api.key (SEC-001 rotation status) is not established by source.",
+      "Not verified from source whether downstream solution read APIs (e.g. SolutionService detail mapping) return the foreign orders' customer fields unchanged to the job branch's planner, although they are linked by the stored RouteStop/UnassignedOrder rows."
+    ],
+    "validation_plan": {
+      "local": "On an isolated local stack with dummy data only: create branches A and B with one planner each; in A create a SCHEDULED dummy order and an AVAILABLE vehicle; in B submit a job and let it reach PROCESSING or FAILED with no solution. From a local host, POST to the Engine /api/v1/optimization with job_id = B's job and orders/vehicles carrying A's order and vehicle IDs with dummy coordinates (or POST a crafted completion callback to Entry with a local test key). Observe: B's planner GET of the resulting solution shows A's order; A's order status changed. Expected secure result: callback rejected or foreign IDs dropped. Add a regression test asserting cross-branch IDs in a callback are refused.",
+      "deployment": "Owner-observed: confirm Engine port 8081 is reachable only from the Entry host (firewall/security-group rules), confirm Entry callback path is not exposed beyond the Engine, and confirm engine.api.key / entry.api-key were rotated and are injected from the environment. Fix regardless: in saveSolution use branch-scoped lookups (findAllByIdInAndBranchId with job.getBranch().getId(); vehicles via fleet.branch) and/or restrict callback IDs to the job's submitted order/vehicle set, failing the callback on any mismatch; add authentication to Engine inbound endpoints."
+    }
+  },
+  {
+    "verdict": "needs_validation",
+    "fingerprint": "SEC-AUDIT-001:config-literal-credential-material",
+    "title": "Tracked Entry/Engine application.properties contain literal JWT signing key, service API key, DB, mail and geocoding credentials",
+    "description": "At source ref c0cdfd55dcd111fbcbb79474a33ee7f4518ae815 the Git-tracked files GVRP_Entry_API/src/main/resources/application.properties and GVRP_Engine_API/src/main/resources/application.properties (both in the git index, working tree identical to HEAD, remote origin on GitHub) hold non-placeholder literal values (no ${...} indirection) for spring.datasource.password, spring.gvrp.jwt.secret-key, spring.mail.password, engine.api.key, geocoding.goong.api-key (Entry) and entry.api-key (Engine). The gitignored application-local.properties files carry the same values for every one of these properties, so the local profile does not replace them, and entry.api-key equals engine.api.key (one shared service credential). Source shows spring.gvrp.jwt.secret-key is used directly as the HMAC key for signing and verifying JWTs, and the JWT filter trusts the token subject to load any user; anyone holding the tracked key could therefore mint a valid token for any username in any branch, bypassing all tenant checks. engine.api.key authenticates callers to /api/v1/solutions/callbacks/** as ROLE_ENGINE_SERVICE using a non-constant-time String.equals. Values intentionally not reproduced. Whether the values are live, deployed or reused elsewhere is not established by source.",
+    "claimed_root_cause": "Secret-bearing Spring properties are defined as literal values in Git-tracked default configuration files instead of being injected from environment variables or an untracked secret store, and the same literals are reused in the local profile, so the committed values are the effective credentials whenever no external override is supplied.",
+    "trace": [
+      {
+        "kind": "entrypoint",
+        "file": "GVRP_Entry_API/src/main/resources/application.properties",
+        "line": 44,
+        "scope": "Tracked Entry default config",
+        "description": "spring.gvrp.jwt.secret-key is a literal (88 chars, no placeholder) in a file present in the git index; also literal spring.datasource.password (line 10), spring.mail.password (line 51), engine.api.key (line 70), geocoding.goong.api-key (line 72)."
+      },
+      {
+        "kind": "propagation",
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/security/jwt/JwtTokenProvider.java",
+        "line": 34,
+        "scope": "JwtTokenProvider.init",
+        "description": "The injected literal (line 23) becomes the HMAC SecretKey via Keys.hmacShaKeyFor, used to sign (lines 56, 77) and verify (line 86 onward) all tokens."
+      },
+      {
+        "kind": "propagation",
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/security/jwt/JwtAuthenticationFilter.java",
+        "line": 48,
+        "scope": "JwtAuthenticationFilter",
+        "description": "After signature validation (line 44) the subject (line 45) is used to load the user and establish authentication, so a token minted with the tracked key authenticates as any existing user and branch."
+      },
+      {
+        "kind": "sink",
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/security/ApiKeyAuthenticationFilter.java",
+        "line": 63,
+        "scope": "ApiKeyAuthenticationFilter.doFilterInternal",
+        "description": "Tracked engine.api.key (injected line 33) is compared with the X-API-Key header via String.equals and, on match, grants ROLE_ENGINE_SERVICE for callback paths that persist solutions."
+      }
+    ],
+    "evidence": [
+      {
+        "file": "GVRP_Entry_API/src/main/resources/application.properties",
+        "line": 10,
+        "description": "spring.datasource.password literal (value omitted); file tracked; same value as gitignored application-local.properties."
+      },
+      {
+        "file": "GVRP_Entry_API/src/main/resources/application.properties",
+        "line": 44,
+        "description": "spring.gvrp.jwt.secret-key literal (value omitted); identical in application-local.properties."
+      },
+      {
+        "file": "GVRP_Entry_API/src/main/resources/application.properties",
+        "line": 51,
+        "description": "spring.mail.password literal for smtp.gmail.com account (value omitted)."
+      },
+      {
+        "file": "GVRP_Entry_API/src/main/resources/application.properties",
+        "line": 70,
+        "description": "engine.api.key literal (value omitted); equal to Engine entry.api-key."
+      },
+      {
+        "file": "GVRP_Entry_API/src/main/resources/application.properties",
+        "line": 72,
+        "description": "geocoding.goong.api-key literal (value omitted), consumed by GeocodingService line 17."
+      },
+      {
+        "file": "GVRP_Engine_API/src/main/resources/application.properties",
+        "line": 21,
+        "description": "entry.api-key literal (value omitted), tracked, consumed by CallbackService line 28 when calling Entry callbacks."
+      },
+      {
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/security/jwt/JwtTokenProvider.java",
+        "line": 34,
+        "description": "Tracked secret used directly as JWT HMAC key."
+      },
+      {
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/security/ApiKeyAuthenticationFilter.java",
+        "line": 63,
+        "description": "Service API key checked with non-constant-time String.equals."
+      },
+      {
+        "file": "docs/security/SECURITY_CHECKLIST.md",
+        "line": 15,
+        "description": "SEC-001 records the same properties as committed literals, status OPEN with rotation deferred; this source review re-confirms they are still literals at HEAD."
+      }
+    ],
+    "blockers": [
+      "Source-only policy: whether the committed values are currently valid (DB, Gmail app password, Goong API key), whether any deployed environment uses them or overrides them via environment variables, and whether they are reused elsewhere cannot be established without credential testing or deployment inspection, which is prohibited in this run.",
+      "Exposure scope of the GitHub remote (public vs private, collaborators, forks) and of git history was not inspected; no network access permitted."
+    ],
+    "validation_plan": {
+      "local": "Owner-run only, no credential testing against third parties: start Entry with a dummy local DB and no environment overrides and confirm via a configuration dump (keys only, values hashed) that the effective spring.gvrp.jwt.secret-key and engine.api.key equal the tracked literals; then with a dummy user in dummy branch A, have the owner mint a JWT for a dummy branch B user using the tracked key and observe that branch B data is returned, demonstrating impersonation. Separately confirm a callback with the tracked X-API-Key is accepted.",
+      "deployment": "Owner checks each deployed or shared environment's secret injection (env vars or secret store) and compares SHA-256 hashes of effective values against hashes of the tracked literals; owner checks GitHub repository visibility and access list; owner checks with Google, Goong and the DB admin whether the tracked credentials are active. Any match or active credential: rotate all six values, move them to environment injection with no literal defaults, and treat git history as compromised (SEC-001)."
+    }
+  },
+  {
+    "verdict": "needs_validation",
+    "fingerprint": "SEC-AUDIT-001:jwt-branch-claim-current-user-binding",
+    "title": "JWT branchId claim is trusted for tenant scope without reconciling it with the reloaded user's current branch",
+    "description": "JwtAuthenticationFilter verifies the signed token, reloads the user by username, checks enabled/locked state and that the userId claim matches the loaded user, and then stores the token's branchId claim (not the loaded user's persisted branch) as the request attribute that CurrentUserUtil.getCurrentBranchId() returns to every branch-scoped controller (orders, jobs, solutions, Pareto, LEZ zones/permits/compliance/membership, route send, fleet, depots, vehicles). Authorities are taken from the reloaded user, but branch scope is frozen at token issuance. If a user's branch_id is ever changed while an issued token is unexpired, that token keeps reading and writing the former branch's data (another company) until expiry. Source review found no in-application path that changes User.branch (no setBranch caller on User, no user-update endpoint, register is a stub), so the reassignment is reachable only out-of-band (direct DB/admin tooling), and the token lifetime is configured in application properties that this source-only audit did not read. The claim itself cannot be forged without the signing key; key exposure is tracked separately (SEC-001).",
+    "claimed_root_cause": "JwtAuthenticationFilter sets request attribute branchId from tokenProvider.getBranchIdFromToken(jwt) and isUsable() compares only userId and account state, never principal.getUser().getBranch().getId() against the claim; there is no token revocation/version mechanism, so tenant scope is bound to issuance-time membership rather than current server-side membership.",
+    "trace": [
+      {
+        "kind": "entrypoint",
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/security/jwt/JwtAuthenticationFilter.java",
+        "line": 44,
+        "scope": "doFilterInternal",
+        "description": "Bearer token from Authorization header is signature/expiry validated, then username is extracted."
+      },
+      {
+        "kind": "propagation",
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/security/jwt/JwtAuthenticationFilter.java",
+        "line": 52,
+        "scope": "doFilterInternal",
+        "description": "branchId is read from the token claim, not from the reloaded UserPrincipal."
+      },
+      {
+        "kind": "propagation",
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/security/jwt/JwtAuthenticationFilter.java",
+        "line": 94,
+        "scope": "isUsable",
+        "description": "Usability check covers enabled, non-locked and userId equality only; no branch comparison."
+      },
+      {
+        "kind": "propagation",
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/security/jwt/JwtAuthenticationFilter.java",
+        "line": 71,
+        "scope": "doFilterInternal",
+        "description": "Token branchId stored as request attribute 'branchId'."
+      },
+      {
+        "kind": "propagation",
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/security/CurrentUserUtil.java",
+        "line": 45,
+        "scope": "getCurrentBranchId",
+        "description": "Returns the request attribute as the caller's tenant identity."
+      },
+      {
+        "kind": "sink",
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/controller/OptimizationJobController.java",
+        "line": 29,
+        "scope": "OptimizationJobController",
+        "description": "Representative consumer: branchId from CurrentUserUtil scopes service lookups; the same pattern appears in 14 controllers/services (53 call sites)."
+      }
+    ],
+    "evidence": [
+      {
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/security/jwt/JwtTokenProvider.java",
+        "line": 63,
+        "description": "generateTokenWithClaims embeds userId, branchId and role in the signed token with a fixed expiration (spring.gvrp.jwt.expiration-ms; value not read)."
+      },
+      {
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/controller/AuthController.java",
+        "line": 74,
+        "description": "Login issues the token with the user's branch at login time; no refresh, revocation or token-version claim exists."
+      },
+      {
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/security/CustomUserDetailsService.java",
+        "line": 27,
+        "description": "Filter reloads the user by globally unique username, so the current persisted branch is available but unused for scope."
+      },
+      {
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/entity/User.java",
+        "line": 20,
+        "description": "User.branch is a mutable ManyToOne (Lombok @Setter); no application code calls setBranch on User, so reassignment is only out-of-band."
+      },
+      {
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/security/jwt/JwtAuthenticationFilter.java",
+        "line": 101,
+        "description": "Only userId equality is enforced against the reloaded principal."
+      }
+    ],
+    "blockers": [
+      "Source contains no in-application branch reassignment path; whether operators reassign existing users between branches out-of-band (DB/admin tooling) while tokens are live is a deployment/process fact not visible in source.",
+      "Token lifetime (spring.gvrp.jwt.expiration-ms) lives in application properties that were not read under the secret-handling policy, so the stale-authority window is unknown.",
+      "Source-only policy forbids running the local dummy-tenant check that would demonstrate a reassigned user's old token still accessing the former branch."
+    ],
+    "validation_plan": {
+      "local": "On a local test database with two dummy branches A and B and a dummy PLANNER user in A: log in to obtain token T; out-of-band update that user's branch_id to B; call GET of a branch-A-owned dummy order or job with T and observe whether it is returned (stale scope) or refused; then apply a fix that compares principal.getUser().getBranch().getId() with the claim (or derives branchId from the principal) and confirm a 401 and that branch-A data is no longer reachable. Add a regression test for this.",
+      "deployment": "Owner confirms whether user branch reassignment is ever performed (and by which tool), and states the configured spring.gvrp.jwt.expiration-ms value; if reassignment never happens and users are recreated instead, downgrade to hardening; otherwise treat as a cross-tenant revocation defect bounded by token lifetime."
+    }
+  },
+  {
+    "verdict": "needs_validation",
+    "fingerprint": "callback-api-key-timing-comparison",
+    "title": "Engine callback shared API key compared with non-constant-time String.equals",
+    "description": "Entry authenticates Engine callbacks (/api/v1/solutions/callbacks/**, permitAll in SecurityConfig) only by comparing the X-API-Key header with the configured engine.api.key using String.equals, which short-circuits on length mismatch and on the first differing chunk. A successful match grants ROLE_ENGINE_SERVICE and lets the caller post completion/failed/cancelled/progress callbacks that persist solution state. Source confirms the non-constant-time comparison and the absence of any rate limit, lockout, or per-job credential binding on this filter, but whether the timing difference is measurable by a lower-trust network peer (JIT-intrinsified, chunked comparison versus network jitter) and whether such a peer can reach Entry's callback path in deployment are not established by source. Matches open checklist item SEC-004 (Low). Separate note, not part of this root cause (HYPOTHESIS, not verified): the filter selects callback requests by raw getRequestURI().startsWith, while authorization and MVC dispatch use the decoded path; a percent-encoded callback path variant might skip the key check while still matching permitAll, which deserves its own candidate.",
+    "claimed_root_cause": "ApiKeyAuthenticationFilter validates the shared Engine callback secret with String.equals instead of a constant-time comparison (for example MessageDigest.isEqual over byte arrays), with no attempt limiting, so response timing may leak how much of a guessed key matches.",
+    "trace": [
+      {
+        "kind": "entrypoint",
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/config/SecurityConfig.java",
+        "line": 78,
+        "scope": "Spring Security authorization rules",
+        "description": "/api/v1/solutions/callbacks/** is permitAll, so the API-key filter is the only authentication for callbacks."
+      },
+      {
+        "kind": "propagation",
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/security/ApiKeyAuthenticationFilter.java",
+        "line": 54,
+        "scope": "ApiKeyAuthenticationFilter.doFilterInternal",
+        "description": "Attacker-supplied X-API-Key header is read for requests whose raw URI starts with the callback prefix."
+      },
+      {
+        "kind": "propagation",
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/security/ApiKeyAuthenticationFilter.java",
+        "line": 63,
+        "scope": "ApiKeyAuthenticationFilter.doFilterInternal",
+        "description": "engineApiKey.equals(apiKey) is a short-circuiting comparison; mismatch returns 401 immediately, giving a potential timing oracle."
+      },
+      {
+        "kind": "propagation",
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/security/ApiKeyAuthenticationFilter.java",
+        "line": 80,
+        "scope": "ApiKeyAuthenticationFilter.doFilterInternal",
+        "description": "On match the request is authenticated as ENGINE_SERVICE with ROLE_ENGINE_SERVICE."
+      },
+      {
+        "kind": "sink",
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/controller/OptimizationCallbackController.java",
+        "line": 30,
+        "scope": "OptimizationCallbackController.onOptimizationComplete",
+        "description": "Authenticated callback body is passed to OptimizationCallbackService.handleCompletion, which persists solution results."
+      }
+    ],
+    "evidence": [
+      {
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/security/ApiKeyAuthenticationFilter.java",
+        "line": 63,
+        "description": "Non-constant-time String.equals comparison of the shared secret; no attempt counter, delay, or lockout anywhere in the filter."
+      },
+      {
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/security/ApiKeyAuthenticationFilter.java",
+        "line": 33,
+        "description": "Single static shared secret from property engine.api.key; no per-job or per-branch binding of the callback credential (value not copied)."
+      },
+      {
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/config/SecurityConfig.java",
+        "line": 89,
+        "description": "Filter installed before UsernamePasswordAuthenticationFilter; callback routes otherwise permitAll (line 78)."
+      },
+      {
+        "file": "docs/security/SECURITY_CHECKLIST.md",
+        "line": 18,
+        "description": "SEC-004 already records this String.equals comparison as Low/OPEN from static inspection."
+      }
+    ],
+    "blockers": [
+      "Whether the String.equals timing difference (length check plus JIT-intrinsified chunked byte comparison) is statistically observable over the network path to Entry cannot be determined from source; requires a timing measurement that this source-only run forbids.",
+      "Deployment reachability of Entry's callback path by peers other than the Engine service (ingress, firewall, network isolation) is not visible in the repository.",
+      "Absence of upstream rate limiting (reverse proxy/WAF) that would make large-sample timing attacks impractical is not established by source."
+    ],
+    "validation_plan": {
+      "local": "On an isolated local Entry instance with a dummy engine.api.key and a dummy database, send a bounded set (for example 10k each) of callback POSTs with wrong keys of correct length differing at the first versus last position from loopback, and compare latency distributions statistically; also confirm no 429/lockout appears. Optionally replace the comparison with MessageDigest.isEqual in a scratch branch and confirm distributions converge.",
+      "deployment": "Owner confirms whether Entry's /api/v1/solutions/callbacks/** is reachable only from the Engine host (firewall/private network/mTLS) and whether a proxy rate-limits it; if reachable by lower-trust peers, owner-observed timing measurement with a non-production dummy key on a staging instance decides practical exploitability."
+    }
+  },
+  {
+    "verdict": "rejected",
+    "fingerprint": "callback-retry-metadata-write-failure-bypasses-attempt-cap",
+    "title": "Callback retry attempt cap can be bypassed when spool metadata cannot be read or written",
+    "description": "The Engine result spool keeps retry attempt counts in job-N.meta.json beside each pending payload. ResultSpool.meta() returns Meta.initial() when the metadata file cannot be read, and writeMeta() logs and swallows write failures. If metadata persistently cannot be read or written while the payload stays readable, attempts stays at 0 and lastAttemptAt stays null, so CallbackRetryScheduler never reaches maxAttempts and treats the job as due on every sweep. Source review confirms this fail-open reliability behaviour. However, no lower-trust principal can cause the failure, the retry rate is bounded by the scheduler's fixed delay, and Entry handles replayed completion callbacks idempotently.",
+    "claimed_root_cause": "ResultSpool.meta() falls back to initial metadata on any read exception, and ResultSpool.writeMeta() swallows write exceptions. CallbackRetryScheduler therefore depends on metadata persistence it cannot verify to enforce maxAttempts and exponential backoff.",
+    "trace": [
+      {
+        "kind": "entrypoint",
+        "file": "GVRP_Engine_API/src/main/java/org/truong/gvrp_engine_api/service/CallbackRetryScheduler.java",
+        "line": 33,
+        "scope": "CallbackRetryScheduler.resendPending",
+        "description": "Scheduled sweep with a fixed delay (default interval 120000 ms) lists pending job IDs from the local spool directory. It is not triggered by external input."
+      },
+      {
+        "kind": "propagation",
+        "file": "GVRP_Engine_API/src/main/java/org/truong/gvrp_engine_api/service/ResultSpool.java",
+        "line": 155,
+        "scope": "ResultSpool.meta",
+        "description": "On a metadata read exception, the method logs a warning and returns Meta.initial() (attempts 0, lastAttemptAt null)."
+      },
+      {
+        "kind": "propagation",
+        "file": "GVRP_Engine_API/src/main/java/org/truong/gvrp_engine_api/service/CallbackRetryScheduler.java",
+        "line": 43,
+        "scope": "CallbackRetryScheduler.resendPending",
+        "description": "The attempt-cap check uses meta.attempts(), and dueForRetry returns true when lastAttemptAt is null (line 74). Reset metadata therefore passes both checks."
+      },
+      {
+        "kind": "sink",
+        "file": "GVRP_Engine_API/src/main/java/org/truong/gvrp_engine_api/service/CallbackService.java",
+        "line": 67,
+        "scope": "CallbackService.deliver",
+        "description": "One POST to Entry /solutions/callbacks/complete per pending job per sweep. On failure, recordFailure calls writeMeta, which swallows a write error (ResultSpool.java line 247), so the counter does not advance."
+      }
+    ],
+    "evidence": [
+      {
+        "file": "GVRP_Engine_API/src/main/java/org/truong/gvrp_engine_api/service/ResultSpool.java",
+        "line": 247,
+        "description": "writeMeta catches Exception and only logs it, so a persistent write failure leaves attempts unchanged."
+      },
+      {
+        "file": "GVRP_Engine_API/src/main/java/org/truong/gvrp_engine_api/service/ResultSpool.java",
+        "line": 60,
+        "description": "The spool directory comes from operator configuration (gvrp.result-spool.dir) on the Engine's local filesystem. No request input controls its path, its permissions or the metadata content."
+      },
+      {
+        "file": "GVRP_Engine_API/src/main/java/org/truong/gvrp_engine_api/service/CallbackRetryScheduler.java",
+        "line": 32,
+        "description": "The fixedDelay scheduling bounds the worst case to one sweep every interval (application.properties line 26 sets it to 120000 ms). Each sweep sends at most one callback per pending job, so retries are not a tight loop."
+      },
+      {
+        "file": "GVRP_Entry_API/src/main/java/org/truong/gvrp_entry_api/service/OptimizationCallbackService.java",
+        "line": 79,
+        "description": "Entry skips a repeated completion callback when the job already has a solution, so redelivery does not repeat the persistence side effect."
+      },
+      {
+        "file": "GVRP_Engine_API/src/main/java/org/truong/gvrp_engine_api/service/CallbackService.java",
+        "line": 75,
+        "description": "A 2xx response moves the payload to sent/, and a 4xx response poisons it (line 85). The unbounded case needs both a persistent Entry 5xx or transport failure and a persistent local metadata I/O failure."
+      }
+    ],
+    "reason": "The code path exists, but it is not a security vulnerability. The trigger is a persistent local filesystem fault on Engine-owned spool metadata (disk, permissions or corruption), and no lower-trust principal (anonymous user, planner, driver or callback peer) can cause it through any source-visible input. The resulting work is bounded to one authenticated callback POST per pending job per fixed-delay interval (120 s by default). Entry treats repeated completions idempotently, there is no cross-tenant effect, and the work stops once Entry returns 2xx or 4xx. This is a reliability hardening note (fail closed or poison on metadata I/O failure), not an attacker-reachable availability or integrity defect."
+  },
+  {
+    "verdict": "needs_validation",
+    "fingerprint": "mcp.json/dbhub/latest-execution",
+    "title": "Tracked MCP configs launch an unpinned @bytebase/dbhub@latest via npx with the developer's authority and DB credential environment",
+    "description": "The tracked root .mcp.json (Claude Code) and the tracked .opencode/opencode.json (OpenCode, enabled: true) both start the dbhub MCP server with npx and the floating tag @bytebase/dbhub@latest; .mcp.json additionally passes -y so npx installs without prompting. No version, integrity hash or lockfile binds the executed package. Whenever an agent host starts this server, whatever content is currently published under the latest dist-tag on the configured npm registry runs as the local developer user, in a process whose environment is expected to hold GVRP_DB_PASSWORD (interpolated by .opencode/dbhub.toml) and which has full access to the working tree. A compromised or malicious publish of that package (or a registry/mirror substitution) would therefore execute on developer machines without any source-reviewed change in this repository. Source review shows no hard-coded credential in these files (the DB password is an environment interpolation and the DB user is described as read-only), and .gitignore covers .env, local property files and Claude local settings. Whether this is exploitable depends on host approval behavior, effective npm registry resolution and publisher-account integrity, none of which are observable from source.",
+    "claimed_root_cause": "Agent tooling configuration executes a mutable, unbound third-party package reference (@bytebase/dbhub@latest via npx, with -y in .mcp.json) instead of a pinned version with integrity verification, so the executed code can change outside repository review.",
+    "trace": [
+      {
+        "kind": "entrypoint",
+        "file": ".mcp.json",
+        "line": 9,
+        "scope": "Claude Code project MCP server 'dbhub'",
+        "description": "Server command is cmd /c npx -y @bytebase/dbhub@latest; the package is resolved from the npm registry at launch time using the floating latest dist-tag, and -y suppresses the install confirmation."
+      },
+      {
+        "kind": "propagation",
+        "file": ".opencode/opencode.json",
+        "line": 11,
+        "scope": "OpenCode local MCP server 'dbhub' (enabled: true)",
+        "description": "Parallel config launches npx @bytebase/dbhub@latest with the same floating tag; the server is marked enabled, so OpenCode may start it on session start."
+      },
+      {
+        "kind": "propagation",
+        "file": ".mcp.json",
+        "line": 13,
+        "scope": "dbhub --config argument",
+        "description": "The launched package is handed the tracked config .opencode/dbhub.toml, which causes it to read DB connection settings including the password from the process environment."
+      },
+      {
+        "kind": "sink",
+        "file": ".opencode/dbhub.toml",
+        "line": 14,
+        "scope": "dbhub source password",
+        "description": "Password is interpolated from the GVRP_DB_PASSWORD environment variable, so the unpinned package process runs with that credential available, in addition to the developer user's general file and network authority."
+      }
+    ],
+    "evidence": [
+      {
+        "file": ".mcp.json",
+        "line": 8,
+        "description": "npx is invoked with -y (auto-confirm install) immediately before the package reference."
+      },
+      {
+        "file": ".mcp.json",
+        "line": 9,
+        "description": "Package reference is @bytebase/dbhub@latest: no exact version and no integrity hash."
+      },
+      {
+        "file": ".opencode/opencode.json",
+        "line": 11,
+        "description": "Second tracked launcher using the same floating @latest reference; line 12 sets enabled: true."
+      },
+      {
+        "file": ".opencode/dbhub.toml",
+        "line": 14,
+        "description": "No credential value stored; password comes from the GVRP_DB_PASSWORD environment variable (value not inspected or copied)."
+      },
+      {
+        "file": ".gitignore",
+        "line": 67,
+        "description": "Ignore rules cover .env, .env.local, *.local.properties, application-local/secret files and (lines 93-94) CLAUDE.local.md and .claude/settings.local.json, so no ignore-rule gap was found for these configs."
+      }
+    ],
+    "blockers": [
+      "Source cannot establish whether Claude Code and OpenCode on the developer machines start this project-scoped server automatically or only after an explicit per-server trust approval (host version and user/managed settings such as enableAllProjectMcpServers are outside the repository).",
+      "Effective npm registry, mirror and npx cache resolution for @bytebase/dbhub on developer machines is not observable from source.",
+      "No lower-trust writer is demonstrated in-repo: exploitation requires a malicious or compromised publish under the package's latest dist-tag or a registry substitution, which is a third-party publisher/registry fact that cannot be observed under the source-only policy.",
+      "Whether GVRP_DB_PASSWORD and other secrets are actually present in the launched process environment, and what else the developer account can reach, is a machine-specific fact."
+    ],
+    "validation_plan": {
+      "local": "On a disposable VM or throwaway user profile with no real credentials: set GVRP_DB_PASSWORD to a dummy marker, configure npm to a local test registry (e.g. a Verdaccio instance) that serves a harmless package named @bytebase/dbhub whose latest tag writes the marker presence and process user to a local file, clone this repo into the sandbox, start Claude Code and OpenCode with default settings, and record whether the server is launched automatically or only after an approval prompt, and whether the marker was readable by the launched process. Then repeat with a pinned exact version plus a lockfile-based install to confirm the floating reference is the deciding factor.",
+      "deployment": "Owner checks on each developer machine: the installed Claude Code and OpenCode versions and their project-MCP approval behavior, any user or managed setting that auto-enables project MCP servers, the npm registry/mirror configuration (npm config get registry, .npmrc files), and which secrets are present in the environment when agent hosts run. Remediation to evaluate: pin @bytebase/dbhub to an exact reviewed version (or install it locally from a lockfile with integrity hashes) in both .mcp.json and .opencode/opencode.json and drop -y."
+    }
+  }
+]

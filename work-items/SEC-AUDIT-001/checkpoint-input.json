@@ -1,0 +1,29 @@
+{
+  "revision": 7,
+  "completed": [
+    "User confirmed OpenCode is fully stopped.",
+    "Re-read updated task-codex.md; it accepts checkpoints after revision 3 and specifies a current-revision proof.",
+    "Ran session-brief successfully; no STALE work items were reported.",
+    "Ran workflow recover; it found only that checkpoint evidence referenced the prior task-codex.md version."
+  ],
+  "remaining": [
+    "Resolve the recover evidence issue and confirm a clean recover.",
+    "Complete Step 0.4 onward in order, stopping on any specified failed gate."
+  ],
+  "read_next": [
+    ".agents/skills/security-audit/RECONNAISSANCE.md",
+    ".agents/skills/security-audit/HUNTING.md",
+    ".agents/skills/security-audit/ATTACK-CLASSES.md",
+    ".agents/skills/security-audit/VALIDATION-AND-REPORTING.md"
+  ],
+  "evidence": [
+    "work-items/SEC-AUDIT-001/task-codex.md",
+    "work-items/SEC-AUDIT-001/design.md"
+  ],
+  "blockers": [],
+  "decisions": [
+    "The updated task accepts checkpoint revisions after revision 3; use current workflow revision and do not rewrite history."
+  ],
+  "processes": [],
+  "next_action": "Refresh checkpoint evidence with the updated task-codex.md, confirm recover is clean, then run the Step 0.4 status gate."
+}
