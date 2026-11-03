@@ -176,3 +176,51 @@ user's explicit permission). Create runs on Windows, or keep using the VM shell
 for that run. In the VM, plain `git status` shows every file modified because of
 CRLF; use `git -c core.autocrlf=true status`. The CLI deletes `.lock` files,
 so the VM shell needs delete permission for the folder first.
+
+## L-2026-015 — Keep multi-agent work within the token budget
+Date: 2026-11-04
+Source: work-items/SEC-AUDIT-001 (Phase 3–6 run by Claude Code; 15 single-record Phase 5 verifiers hit the session limit before any result)
+Applies to: audits, reviews and any task that fans out to many sub-agents or sessions
+Status: ACTIVE
+Lesson: Cost grows with agents × prompt size, not with findings. (1) Put long
+prompts in files and pass the path; never paste them into each agent call.
+(2) Batch small independent checks (about 5 records per agent) and use a
+cheaper model for mechanical verification; keep independence by never giving an
+agent a record it produced. (3) Have every agent write its result to its own
+file and reply with one line; read results with a script, not by pasting them
+into the parent. (4) Produce ledgers, reports and ledger updates with scripts
+from the structured data, not as prose. (5) Start a new session with a short
+brief (`context: fresh`) instead of forking a long conversation. (6) Do not
+re-read large files or narrate every agent notification; wait for all results.
+
+## L-2026-016 — Proof revisions follow the current run revision
+Date: 2026-11-04
+Source: work-items/SEC-AUDIT-001 (Codex stopped at a "revision must be 3" gate after its own checkpoints raised it to 7)
+Applies to: `tools/feature-workflow/workflow.mjs` step and checkpoint commands; task specs
+Status: ACTIVE
+Lesson: Every `checkpoint` adds a revision, and `step` refuses a proof whose
+`revision` is not the current one. Do not gate a task on an exact revision;
+gate on the state and the last non-checkpoint transition. When a prepared proof
+is stale, write a new file `0N-proof-rev<R>.json` with the current revision
+instead of editing the recorded one. `init` needs a scope that exists and
+contains files.
+
+## L-2026-017 — Agents that check credentials print names only
+Date: 2026-11-04
+Source: work-items/SEC-AUDIT-001 (Phase 3 verifier v3-14 printed live `application.properties` values into its transcript)
+Applies to: any agent reading configuration or secret-bearing files
+Status: ACTIVE
+Lesson: A tool result is sent to the model provider even if the value is never
+written to a file. Tell agents to output property names or counts only (for
+example `grep -oE '^[a-zA-Z0-9_.-]+=' file`), never whole lines or the Read tool
+on `application*.properties`. If a value leaks, record the incident and treat the
+credential as exposed (see SEC-001).
+
+## L-2026-018 — The security-audit skill validators need Linux
+Date: 2026-11-04
+Source: work-items/SEC-AUDIT-001
+Applies to: `.agents/skills/security-audit/validate-*.cjs` on Windows
+Status: ACTIVE
+Lesson: Node on Windows has no `fs.constants.O_NOFOLLOW`, so both validators
+reject every input. Run them in a container with Docker Desktop started:
+`docker run --rm --network none --read-only -v <skill>:/skill:ro -v <out>:/run:ro node:22-alpine node /skill/validate-findings.cjs /run/findings.json`.
