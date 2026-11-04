@@ -5,8 +5,8 @@
     "GVRP_Entry_API/src"
   ],
   "graphHash": "dd102f16a0bb44c675032aab0813a841f1b446ea1fa8d99958fa094d0e8de614",
-  "state": "verify",
-  "revision": 6,
+  "state": "done",
+  "revision": 9,
   "history": [
     {
       "revision": 1,
@@ -779,9 +779,55 @@
           "GVRP_Entry_API/src/test/java/org/truong/gvrp_entry_api/service/orders/OrderServiceTimeWindowTest.java": "550b0bfce45aa0076ab81a9406fb1b94d3f69fa61242bdb102c9ac88fd3a63c0"
         }
       }
+    },
+    {
+      "revision": 7,
+      "from": "verify",
+      "event": "pass",
+      "to": "await_user_test",
+      "evidence": {
+        "verification": {
+          "path": "work-items/SEC-CALLBACK-001/verification.md",
+          "sha256": "41f6d8dff3ce732f45caacb253dbd632728e4236129999ad0ef1991d7a901363"
+        },
+        "handoff": {
+          "path": "work-items/SEC-CALLBACK-001/handoff.md",
+          "sha256": "0425e2859d2d4fc8f8cf7e2405137a1ad4a896e9f9fe50dca0d2086787087576"
+        }
+      },
+      "snapshot": "e0512a879b74b83cd78032653767810a30a493b91319d847b7d7107279c3d577",
+      "time": "2026-11-04T16:08:46.437Z"
+    },
+    {
+      "revision": 8,
+      "from": "await_user_test",
+      "event": "accepted",
+      "to": "accepted",
+      "evidence": {
+        "user_acceptance": {
+          "path": "work-items/SEC-CALLBACK-001/user-acceptance.json",
+          "sha256": "7c5fe0ae51d52a9c8f74d0fa25325ce6c580aaf6423e0a7588c67eb10d2ffa55"
+        }
+      },
+      "snapshot": "e0512a879b74b83cd78032653767810a30a493b91319d847b7d7107279c3d577",
+      "time": "2026-11-04T16:08:46.572Z"
+    },
+    {
+      "revision": 9,
+      "from": "accepted",
+      "event": "finish",
+      "to": "done",
+      "evidence": {
+        "closure": {
+          "path": "work-items/SEC-CALLBACK-001/closure.md",
+          "sha256": "7ec25117cde5d20d93035c28adf5498b2df1a76083d6cb363b1ec217b4957b64"
+        }
+      },
+      "snapshot": "e0512a879b74b83cd78032653767810a30a493b91319d847b7d7107279c3d577",
+      "time": "2026-11-04T16:08:46.698Z"
     }
   ],
-  "handoff": null,
+  "handoff": "e0512a879b74b83cd78032653767810a30a493b91319d847b7d7107279c3d577",
   "returnTo": null,
   "checkpoint": {
     "state": "verify",
