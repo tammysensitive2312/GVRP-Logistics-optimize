@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import * as L from 'leaflet';
 import { DepotDTO, OrderDTO } from '@core/models';
+import { escapeHtml } from '@shared/utils/html.utils';
 
 @Injectable({
   providedIn: 'root'
@@ -55,8 +56,8 @@ export class MarkerService {
   private createDepotPopup(depot: DepotDTO): string {
     return `
       <div style="text-align: center; min-width: 200px;">
-        <strong style="font-size: 16px;">${depot.name}</strong><br>
-        <span style="font-size: 12px; color: #666;">${depot.address}</span><br>
+        <strong style="font-size: 16px;">${escapeHtml(depot.name)}</strong><br>
+        <span style="font-size: 12px; color: #666;">${escapeHtml(depot.address)}</span><br>
         <span style="font-size: 11px; color: #999;">
           Lat: ${depot.latitude.toFixed(6)}, Lng: ${depot.longitude.toFixed(6)}
         </span>
@@ -154,15 +155,15 @@ export class MarkerService {
 
     return `
       <div style="min-width: 200px;">
-        <strong style="font-size: 16px; color: #333;">${order.order_code}</strong>
+        <strong style="font-size: 16px; color: #333;">${escapeHtml(order.order_code)}</strong>
         <hr style="margin: 8px 0; border: none; border-top: 1px solid #E5E5E5;">
         <div style="font-size: 13px; line-height: 1.6;">
-          <strong>Customer:</strong> ${order.customer_name}<br>
-          ${order.customer_phone ? `<strong>Phone:</strong> ${order.customer_phone}<br>` : ''}
-          <strong>Address:</strong> ${order.address}<br>
-          <strong>Demand:</strong> ${order.demand} kg<br>
-          ${order.time_window_start ? `<strong>Time:</strong> ${order.time_window_start} - ${order.time_window_end}<br>` : ''}
-          <strong>Status:</strong> <span style="color: ${markerColor};">${order.status}</span>
+          <strong>Customer:</strong> ${escapeHtml(order.customer_name)}<br>
+          ${order.customer_phone ? `<strong>Phone:</strong> ${escapeHtml(order.customer_phone)}<br>` : ''}
+          <strong>Address:</strong> ${escapeHtml(order.address)}<br>
+          <strong>Demand:</strong> ${escapeHtml(order.demand)} kg<br>
+          ${order.time_window_start ? `<strong>Time:</strong> ${escapeHtml(order.time_window_start)} - ${escapeHtml(order.time_window_end)}<br>` : ''}
+          <strong>Status:</strong> <span style="color: ${markerColor};">${escapeHtml(order.status)}</span>
         </div>
         ${editAction}
       </div>
@@ -215,7 +216,7 @@ export class MarkerService {
           font-size: 12px;
           font-weight: bold;
           box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-        ">${stop.sequence_number || ''}</div>`;
+        ">${escapeHtml(stop.sequence_number || '')}</div>`;
 
     return L.divIcon({
       html,
@@ -235,25 +236,25 @@ export class MarkerService {
 
     if (isDepot) {
       content += `
-        <strong style="font-size: 14px;">🏢 ${stop.location_name}</strong><br>
+        <strong style="font-size: 14px;">🏢 ${escapeHtml(stop.location_name)}</strong><br>
         <hr style="margin: 6px 0;">
         <div style="font-size: 12px; line-height: 1.6;">
-          <strong>Vehicle:</strong> ${vehiclePlate}<br>
+          <strong>Vehicle:</strong> ${escapeHtml(vehiclePlate)}<br>
           <strong>Type:</strong> ${type === 'start' ? 'Start Depot' : 'End Depot'}<br>
-          <strong>Time:</strong> ${stop.arrival_time || stop.departure_time}
+          <strong>Time:</strong> ${escapeHtml(stop.arrival_time || stop.departure_time)}
         </div>
       `;
     } else {
       content += `
-        <strong style="font-size: 14px;">📦 Stop #${stop.sequence_number}</strong><br>
-        <strong style="font-size: 13px;">${stop.location_name}</strong>
+        <strong style="font-size: 14px;">📦 Stop #${escapeHtml(stop.sequence_number)}</strong><br>
+        <strong style="font-size: 13px;">${escapeHtml(stop.location_name)}</strong>
         <hr style="margin: 6px 0;">
         <div style="font-size: 12px; line-height: 1.6;">
-          <strong>Vehicle:</strong> ${vehiclePlate}<br>
-          <strong>Arrival:</strong> ${stop.arrival_time}<br>
-          <strong>Departure:</strong> ${stop.departure_time}<br>
-          ${stop.demand ? `<strong>Demand:</strong> ${stop.demand} kg<br>` : ''}
-          ${stop.wait_time > 0 ? `<strong>Wait time:</strong> ${stop.wait_time} min<br>` : ''}
+          <strong>Vehicle:</strong> ${escapeHtml(vehiclePlate)}<br>
+          <strong>Arrival:</strong> ${escapeHtml(stop.arrival_time)}<br>
+          <strong>Departure:</strong> ${escapeHtml(stop.departure_time)}<br>
+          ${stop.demand ? `<strong>Demand:</strong> ${escapeHtml(stop.demand)} kg<br>` : ''}
+          ${stop.wait_time > 0 ? `<strong>Wait time:</strong> ${escapeHtml(stop.wait_time)} min<br>` : ''}
           <strong>Load after:</strong> ${stop.load_after.toFixed(1)} kg
         </div>
       `;

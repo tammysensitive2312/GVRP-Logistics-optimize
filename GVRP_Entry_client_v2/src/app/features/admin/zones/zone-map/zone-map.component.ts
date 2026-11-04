@@ -14,6 +14,7 @@ import {
 import * as L from 'leaflet';
 
 import { DepotDTO } from '@core/models';
+import { escapeHtml } from '@shared/utils/html.utils';
 
 import { GeoJsonPolygon, polygonFromPoints, ringSelfIntersects } from '../zone-draw.utils';
 
@@ -322,7 +323,7 @@ export class ZoneMapComponent implements AfterViewInit, OnChanges, OnDestroy {
       const marker = L.marker([depot.latitude, depot.longitude], {
         title: depot.name,
         icon: DEPOT_ICON
-      }).bindTooltip(depot.name);
+      }).bindTooltip(escapeHtml(depot.name));
       marker.addTo(this.depotLayer);
       bounds.extend([depot.latitude, depot.longitude]);
     }

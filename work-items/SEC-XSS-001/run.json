@@ -1,0 +1,74 @@
+{
+  "id": "SEC-XSS-001",
+  "root": "E:\\gvrp-wt\\sec-xss-001",
+  "scope": [
+    "GVRP_Entry_client_v2/src"
+  ],
+  "graphHash": "dd102f16a0bb44c675032aab0813a841f1b446ea1fa8d99958fa094d0e8de614",
+  "state": "verify",
+  "revision": 4,
+  "history": [
+    {
+      "revision": 1,
+      "from": "intake",
+      "event": "ready",
+      "to": "discover",
+      "evidence": {
+        "request": {
+          "path": "work-items/SEC-XSS-001/request.md",
+          "sha256": "9cf8814788c23b132f8925d648a025a97e5d655f12d56e99953a84b3204cbe7b"
+        }
+      },
+      "snapshot": "088a0bbd55f710f6451284ff54e986a78096fc297944544c13fc47426457afc0",
+      "time": "2026-11-03T21:42:30.798Z"
+    },
+    {
+      "revision": 2,
+      "from": "discover",
+      "event": "ready",
+      "to": "design",
+      "evidence": {
+        "context": {
+          "path": "work-items/SEC-XSS-001/context.md",
+          "sha256": "8dfaeb39ee58890fb55e50715dcfd92efcb11d6fe84e21b4d6d94d137e1f7f73"
+        }
+      },
+      "snapshot": "088a0bbd55f710f6451284ff54e986a78096fc297944544c13fc47426457afc0",
+      "time": "2026-11-03T21:42:33.565Z"
+    },
+    {
+      "revision": 3,
+      "from": "design",
+      "event": "ready",
+      "to": "implement",
+      "evidence": {
+        "design": {
+          "path": "work-items/SEC-XSS-001/design.md",
+          "sha256": "39af9719beff80bf006fb3cc744c28092b46043b8ae96d59684e08bcf57f0ab7"
+        },
+        "traceability": {
+          "path": "work-items/SEC-XSS-001/traceability.md",
+          "sha256": "f93f391d8dbee1ae6cd8d8f0d600bdd0208143c40f1ae756cb3778af7c41f078"
+        }
+      },
+      "snapshot": "088a0bbd55f710f6451284ff54e986a78096fc297944544c13fc47426457afc0",
+      "time": "2026-11-03T21:42:34.925Z"
+    },
+    {
+      "revision": 4,
+      "from": "implement",
+      "event": "ready",
+      "to": "verify",
+      "evidence": {
+        "implementation": {
+          "path": "work-items/SEC-XSS-001/implementation.md",
+          "sha256": "63d726c20452cb9e387406c90f2b8761934cc711d8b4a64b9c5cb07f7e45a0c5"
+        }
+      },
+      "snapshot": "2737b9dbe8c30bafa7e0581bfe002022a4f8e89ab8c8fcafd69c34eb4db38c50",
+      "time": "2026-11-03T21:48:59.820Z"
+    }
+  ],
+  "handoff": null,
+  "returnTo": null
+}

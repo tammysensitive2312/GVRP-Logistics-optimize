@@ -11,6 +11,7 @@ import { orderStops, routeColor } from '@shared/utils/solution-view.utils';
 import { violationFocus, LegFocus } from '@shared/utils/map-focus.utils';
 import { completeRoutePolyline, storedLegPaths } from '@shared/utils/route-geometry.utils';
 import { hasMapCoordinates } from '@shared/utils/coordinate.utils';
+import { escapeHtml } from '@shared/utils/html.utils';
 import { MarkerService } from './marker.service';
 import { RoutingService } from './routing.service';
 
@@ -190,7 +191,7 @@ export class MapService {
                 fillOpacity: 0.25
               }
             });
-            layer.bindTooltip(zone.name, { sticky: true });
+            layer.bindTooltip(escapeHtml(zone.name), { sticky: true });
             layer.addTo(this.zoneLayers);
           } catch (error) {
             console.warn('Zone overlay skipped:', error);
@@ -250,8 +251,8 @@ export class MapService {
       }).addTo(this.routeLayers);
       this.addDirectionArrows(polyline, color);
       polyline.bindTooltip(
-        `<div style="font-weight: bold;">🚚 ${route.vehicle_license_plate}</div>` +
-        `📦 ${route.order_count} orders - 📏 ${route.distance.toFixed(1)} km`,
+        `<div style="font-weight: bold;">🚚 ${escapeHtml(route.vehicle_license_plate)}</div>` +
+        `📦 ${escapeHtml(route.order_count)} orders - 📏 ${route.distance.toFixed(1)} km`,
         { sticky: true }
       );
       return;
@@ -273,8 +274,8 @@ export class MapService {
         this.addDirectionArrows(polyline, color);
 
         polyline.bindTooltip(
-          `<div style="font-weight: bold;">🚚 ${route.vehicle_license_plate}</div>` +
-          `📦 ${route.order_count} orders - 📏 ${route.distance.toFixed(1)} km`,
+          `<div style="font-weight: bold;">🚚 ${escapeHtml(route.vehicle_license_plate)}</div>` +
+          `📦 ${escapeHtml(route.order_count)} orders - 📏 ${route.distance.toFixed(1)} km`,
           { sticky: true }
         );
       } else {
@@ -393,7 +394,7 @@ export class MapService {
     }).addTo(this.routeLayers);
 
     polyline.bindTooltip(
-      `🚚 ${route.vehicle_license_plate} (Approximate route)`,
+      `🚚 ${escapeHtml(route.vehicle_license_plate)} (Approximate route)`,
       { sticky: true }
     );
   }

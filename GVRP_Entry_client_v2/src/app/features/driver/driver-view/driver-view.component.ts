@@ -8,6 +8,7 @@ import { DriverRouteDTO, DriverStopDTO, RouteSendDTO } from '@core/models';
 import { ApiService } from '@core/services/api.service';
 import { AuthService } from '@core/services/auth.service';
 import { ManeuverStep, RoutingService, formatLegDistance } from '@shared/services/routing.service';
+import { escapeHtml } from '@shared/utils/html.utils';
 import {
   completeDriverLegs,
   driverInstructionSteps
@@ -229,11 +230,11 @@ export class DriverViewComponent implements OnInit, OnDestroy, AfterViewChecked 
             html: `<span style="display:flex;align-items:center;justify-content:center;`
               + `width:34px;height:34px;min-width:34px;border-radius:50%;`
               + `background:${color};color:#fff;font-size:15px;font-weight:bold;`
-              + `border:3px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,0.5);">${label}</span>`,
+              + `border:3px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,0.5);">${escapeHtml(label)}</span>`,
             iconSize: [34, 34],
             iconAnchor: [17, 17]
           })
-        }).addTo(map).bindTooltip(stop.location_name);
+        }).addTo(map).bindTooltip(escapeHtml(stop.location_name));
       });
 
       const coords = points.map(stop => [stop.longitude as number, stop.latitude as number]);
