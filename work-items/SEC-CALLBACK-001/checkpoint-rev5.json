@@ -1,0 +1,9 @@
+{"revision": 5,
+ "completed": ["Option A fixture change (user-approved)", "D1-D4 implemented", "clean test: 344 run, 0 failures, 3 pre-existing env errors; CI selection 341 run, exit 0", "implementation.md, ready -> verify"],
+ "remaining": ["User runtime re-probes from implementation.md Handoff", "verification + handoff artifacts, review, commit by user decision"],
+ "read_next": ["work-items/SEC-CALLBACK-001/implementation.md"],
+ "blockers": [],
+ "decisions": ["User approved option A (fixture-only vehicle fleet) 2026-11-04, relayed: 'Làm theo phương án a'"],
+ "processes": [],
+ "next_action": "User restarts Entry API from this worktree and runs the two re-probes in implementation.md Handoff; then record verification evidence. Nothing committed.",
+ "evidence": ["work-items/SEC-CALLBACK-001/implementation.md"]}

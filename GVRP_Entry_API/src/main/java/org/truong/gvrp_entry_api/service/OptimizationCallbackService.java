@@ -14,6 +14,7 @@ import org.truong.gvrp_entry_api.entity.*;
 import org.truong.gvrp_entry_api.entity.enums.*;
 import org.truong.gvrp_entry_api.exception.DataInvalidException;
 import org.truong.gvrp_entry_api.exception.ErrorDetail;
+import org.truong.gvrp_entry_api.exception.CallbackRejectedException;
 import org.truong.gvrp_entry_api.exception.JobNotReadyException;
 import org.truong.gvrp_entry_api.repository.*;
 import org.truong.gvrp_entry_api.service.orders.OrderStatusTransitionService;
@@ -117,6 +118,12 @@ public class OptimizationCallbackService {
             // FAILED ở đây sẽ ghi đè trạng thái đúng và làm nhiễu báo cáo. Chỉ để nó
             // nổi lên GlobalExceptionHandler thành 503 cho engine retry.
             // Phải bắt TRƯỚC catch(Exception) bên dưới, nếu không sẽ bị nuốt mất.
+            throw e;
+
+        } catch (CallbackRejectedException e) {
+            // SEC-013: the payload names orders/vehicles outside the job's branch.
+            // Nothing was written; the job itself is not broken, so do not mark it
+            // FAILED. GlobalExceptionHandler answers 422.
             throw e;
 
         } catch (Exception e) {
@@ -346,6 +353,24 @@ public class OptimizationCallbackService {
         List<Order> orders = orderRepository.findAllById(orderIds);
         Map<Long, Order> orderMap = orders.stream().collect(Collectors.toMap(Order::getId, o -> o));
 
+        // Vehicles are resolved before anything is written so the branch check
+        // below covers them too (SEC-013).
+        Set<Long> vehicleIds = solutionData.getRoutes() == null
+                ? Collections.emptySet()
+                : solutionData.getRoutes().stream()
+                        .filter(Objects::nonNull)
+                        .map(EngineCallbackRequest.RouteData::getVehicleId)
+                        .collect(Collectors.toSet());
+
+        Map<Long, Vehicle> vehicleMap = solutionData.getRoutes() == null
+                ? Collections.emptyMap()
+                : vehicleRepository.findAllById(vehicleIds)
+                        .stream()
+                        .collect(Collectors.toMap(Vehicle::getId, v -> v));
+
+        // SEC-013: refuse before any order transition or save.
+        requireSameBranch(job, orderIds, orderMap, vehicleIds, vehicleMap);
+
         if (solutionData.getUnassignedOrders() != null && !solutionData.getUnassignedOrders().isEmpty()) {
             List<UnassignedOrder> unassignedList = enginePlanMaterializer.buildUnassignedOrder(solution, solutionData.getUnassignedOrders(), orderMap);
             applyLezUnassignedReasons(job, unassignedList);
@@ -362,15 +387,6 @@ public class OptimizationCallbackService {
 
         Set<Long> assignedOrderIds = new HashSet<>();
         if (solutionData.getRoutes() != null) {
-            Set<Long> vehicleIds = solutionData.getRoutes().stream()
-                    .filter(Objects::nonNull)
-                    .map(EngineCallbackRequest.RouteData::getVehicleId)
-                    .collect(Collectors.toSet());
-
-            Map<Long, Vehicle> vehicleMap = vehicleRepository.findAllById(vehicleIds)
-                    .stream()
-                    .collect(Collectors.toMap(Vehicle::getId, v -> v));
-
             for (EngineCallbackRequest.RouteData routeData : solutionData.getRoutes()) {
                 if (routeData.getStops() != null) {
                     assignedOrderIds.addAll(routeData.getStops().stream()
@@ -425,6 +441,43 @@ public class OptimizationCallbackService {
         }
 
         return solutionRepository.save(solution);
+    }
+
+    /**
+     * Refuses a completion payload that names an order or vehicle that does not
+     * exist or belongs to another branch than the job (SEC-013). The callback is
+     * authenticated only as "the engine", so the payload ids are not trusted.
+     * Logs counts only, never order contents.
+     */
+    private void requireSameBranch(OptimizationJob job,
+                                   Set<Long> orderIds, Map<Long, Order> orderMap,
+                                   Set<Long> vehicleIds, Map<Long, Vehicle> vehicleMap) {
+        Long branchId = job.getBranch().getId();
+
+        long badOrders = orderIds.stream()
+                .filter(id -> {
+                    Order order = orderMap.get(id);
+                    return order == null || order.getBranch() == null
+                            || !branchId.equals(order.getBranch().getId());
+                })
+                .count();
+
+        long badVehicles = vehicleIds.stream()
+                .filter(Objects::nonNull)
+                .filter(id -> {
+                    Vehicle vehicle = vehicleMap.get(id);
+                    return vehicle == null || vehicle.getFleet() == null
+                            || vehicle.getFleet().getBranch() == null
+                            || !branchId.equals(vehicle.getFleet().getBranch().getId());
+                })
+                .count();
+
+        if (badOrders > 0 || badVehicles > 0) {
+            log.warn("⛔ Completion callback for job #{} rejected: {} order(s) and {} vehicle(s) unknown or outside the job's branch",
+                    job.getId(), badOrders, badVehicles);
+            throw new CallbackRejectedException("Callback for job #" + job.getId()
+                    + " refers to orders or vehicles outside the job's branch");
+        }
     }
 
     /**

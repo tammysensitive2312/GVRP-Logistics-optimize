@@ -15,12 +15,18 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.Collections;
-import java.util.List;
 
 /**
- * Filter to authenticate callback requests from Engine API using API Key
- * Only applies to /api/solutions/callbacks/** endpoints
+ * Authenticates Engine API callbacks by the {@code X-API-Key} header.
+ *
+ * <p>The filter does not decide which paths need the key (SEC-012): a raw-URI
+ * prefix check missed encoded variants such as {@code /api/v1/solutions/%63allbacks/}.
+ * {@code SecurityConfig} requires {@code ROLE_ENGINE_SERVICE} on the decoded
+ * callback path; this filter only grants that role for a valid key, refuses an
+ * invalid key with 401 and leaves requests without the header untouched.
  */
 @Slf4j
 @Component
@@ -28,7 +34,6 @@ import java.util.List;
 public class ApiKeyAuthenticationFilter extends OncePerRequestFilter {
 
     private static final String API_KEY_HEADER = "X-API-Key";
-    private static final String CALLBACK_PATH_PREFIX = "/api/v1/solutions/callbacks/";
 
     @Value("${engine.api.key}")
     private String engineApiKey;
@@ -39,34 +44,20 @@ public class ApiKeyAuthenticationFilter extends OncePerRequestFilter {
             HttpServletResponse response,
             FilterChain filterChain) throws ServletException, IOException {
 
-        String requestPath = request.getRequestURI();
+        String apiKey = request.getHeader(API_KEY_HEADER);
 
-        log.debug("🔐 API Key Filter processing: {}", requestPath);
-
-        // Only process callback endpoints
-        if (!requestPath.startsWith(CALLBACK_PATH_PREFIX)) {
-            log.debug("   ↪ Not a callback endpoint, skipping API key auth");
+        // No key: nothing to authenticate; the authorization rules decide.
+        if (apiKey == null) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        // Extract API key from header
-        String apiKey = request.getHeader(API_KEY_HEADER);
-
-        if (apiKey == null || apiKey.isEmpty()) {
-            log.warn("❌ Missing API key for callback endpoint: {}", requestPath);
-            sendUnauthorizedResponse(response, "Missing API key");
-            return;
-        }
-
-        // Validate API key
-        if (!engineApiKey.equals(apiKey)) {
-            log.warn("❌ Invalid API key for callback endpoint: {}", requestPath);
+        if (!isValidKey(apiKey)) {
+            log.warn("❌ Invalid API key on {}", request.getServletPath());
             sendUnauthorizedResponse(response, "Invalid API key");
             return;
         }
 
-        // API key is valid - set authentication
         log.debug("✅ Valid API key - authenticating as ENGINE_SERVICE");
 
         // Create authentication token with ENGINE_SERVICE role
@@ -79,10 +70,17 @@ public class ApiKeyAuthenticationFilter extends OncePerRequestFilter {
         authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
-        log.debug("✅ Authentication set for ENGINE_SERVICE");
-
-        // Continue filter chain
         filterChain.doFilter(request, response);
+    }
+
+    /** Constant-time comparison (SEC-004); an empty key never matches. */
+    private boolean isValidKey(String apiKey) {
+        if (apiKey.isEmpty() || engineApiKey == null || engineApiKey.isEmpty()) {
+            return false;
+        }
+        return MessageDigest.isEqual(
+                engineApiKey.getBytes(StandardCharsets.UTF_8),
+                apiKey.getBytes(StandardCharsets.UTF_8));
     }
 
     private void sendUnauthorizedResponse(HttpServletResponse response, String message) throws IOException {

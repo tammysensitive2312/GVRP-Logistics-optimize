@@ -12,6 +12,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.truong.gvrp_entry_api.dto.request.EngineCallbackRequest;
 import org.truong.gvrp_entry_api.entity.Branch;
+import org.truong.gvrp_entry_api.entity.Fleet;
 import org.truong.gvrp_entry_api.entity.OptimizationJob;
 import org.truong.gvrp_entry_api.entity.Order;
 import org.truong.gvrp_entry_api.entity.Route;
@@ -106,7 +107,7 @@ class OptimizationCallbackServiceLezTest {
         ReflectionTestUtils.setField(service, "routeComplianceService", complianceService);
 
         branch = Branch.builder().id(BRANCH).name("Branch 1").build();
-        vehicle = Vehicle.builder().id(VEHICLE).build();
+        vehicle = Vehicle.builder().id(VEHICLE).fleet(Fleet.builder().branch(branch).build()).build();
         orderInsideZone = Order.builder().id(11L).branch(branch).deliveryDate(WEDNESDAY).build();
         orderOutsideZone = Order.builder().id(12L).branch(branch).deliveryDate(WEDNESDAY).build();
     }

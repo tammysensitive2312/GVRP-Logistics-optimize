@@ -1,0 +1,9 @@
+{"revision": 3,
+ "completed": ["Step 0 preflight clean on fix/sec-callback-001", "Step 1 ledger init + ready x3", "Step 2 baseline: 331 tests, 0 failures, 3 pre-existing env errors"],
+ "remaining": ["User decision on blocker", "Step 3 implement D1-D4", "Step 4 implementation.md + ready to verify"],
+ "read_next": ["work-items/SEC-CALLBACK-001/blocker-vehicle-fixtures.md", "work-items/SEC-CALLBACK-001/design.md"],
+ "blockers": ["Design D3 vehicle-branch check fails 3 existing test fixtures (vehicles without fleet); AGENTS.md section 14 forbids editing them without approval"],
+ "decisions": [],
+ "processes": [],
+ "next_action": "Wait for the user's choice (A approve fixture fleet change / B defer vehicle check / C fail-open), then implement Step 3. No source file changed yet.",
+ "evidence": ["work-items/SEC-CALLBACK-001/blocker-vehicle-fixtures.md", "GVRP_Entry_API/baseline-test.log"]}

@@ -82,6 +82,21 @@ public class GlobalExceptionHandler {
                 .body(new ErrorResponse(List.of(detail)));
     }
 
+    /** 422 — completion callback outside the job's branch (SEC-013). */
+    @ExceptionHandler(CallbackRejectedException.class)
+    public ResponseEntity<ErrorResponse> handleCallbackRejected(CallbackRejectedException ex) {
+        logger.warn("Callback rejected: {}", ex.getMessage());
+
+        ErrorDetail detail = ErrorDetail.builder()
+                .code(ErrorCode.VALIDATION_ERROR.getCode())
+                .message(ex.getMessage())
+                .build();
+
+        return ResponseEntity
+                .status(HttpStatus.UNPROCESSABLE_ENTITY)
+                .body(new ErrorResponse(List.of(detail)));
+    }
+
     @ExceptionHandler(RevisionConflictException.class)
     public ResponseEntity<ErrorResponse> handleRevisionConflict(RevisionConflictException ex) {
         logger.warn("Stale revision base: {}", ex.getMessage());

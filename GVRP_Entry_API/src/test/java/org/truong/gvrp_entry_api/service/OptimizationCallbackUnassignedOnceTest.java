@@ -11,6 +11,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 import org.truong.gvrp_entry_api.dto.request.EngineCallbackRequest;
 import org.truong.gvrp_entry_api.entity.Branch;
+import org.truong.gvrp_entry_api.entity.Fleet;
 import org.truong.gvrp_entry_api.entity.OptimizationJob;
 import org.truong.gvrp_entry_api.entity.Order;
 import org.truong.gvrp_entry_api.entity.Route;
@@ -72,7 +73,7 @@ class OptimizationCallbackUnassignedOnceTest {
     @Test
     void bfT5_oneUnassignedOrder_isStoredOnce() {
         Branch branch = Branch.builder().id(1L).name("Branch 1").build();
-        Vehicle vehicle = Vehicle.builder().id(7L).build();
+        Vehicle vehicle = Vehicle.builder().id(7L).fleet(Fleet.builder().branch(branch).build()).build();
         Order served = Order.builder().id(11L).branch(branch).deliveryDate(WEDNESDAY).build();
         Order unserved = Order.builder().id(12L).branch(branch).deliveryDate(WEDNESDAY).build();
         OptimizationJob job = OptimizationJob.builder()

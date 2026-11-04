@@ -12,6 +12,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.truong.gvrp_entry_api.dto.request.EngineCallbackRequest;
 import org.truong.gvrp_entry_api.entity.Branch;
+import org.truong.gvrp_entry_api.entity.Fleet;
 import org.truong.gvrp_entry_api.entity.OptimizationJob;
 import org.truong.gvrp_entry_api.entity.Order;
 import org.truong.gvrp_entry_api.entity.ParetoCandidate;
@@ -148,7 +149,7 @@ class OptimizationCallbackServiceParetoTest {
 
         Order order11 = Order.builder().id(11L).branch(branch).build();
         when(orderRepository.findAllById(any())).thenReturn(List.of(order11));
-        when(vehicleRepository.findAllById(any())).thenReturn(List.of(Vehicle.builder().id(7L).build()));
+        when(vehicleRepository.findAllById(any())).thenReturn(List.of(Vehicle.builder().id(7L).fleet(Fleet.builder().branch(branch).build()).build()));
 
         when(enginePlanMaterializer.buildRoute(any(), any(), any(), any())).thenAnswer(inv -> {
             Solution solution = inv.getArgument(0);

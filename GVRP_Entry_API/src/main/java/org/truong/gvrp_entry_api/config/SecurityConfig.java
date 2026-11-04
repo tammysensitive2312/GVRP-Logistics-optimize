@@ -1,6 +1,7 @@
 package org.truong.gvrp_entry_api.config;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -75,7 +76,10 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/auth/**").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers("/actuator/health").permitAll()
-                        .requestMatchers("/api/v1/solutions/callbacks/**").permitAll()
+                        // Engine callbacks (SEC-012): authorized here on the decoded,
+                        // normalized path, so encoded variants need the role too.
+                        // ApiKeyAuthenticationFilter grants ENGINE_SERVICE for a valid X-API-Key.
+                        .requestMatchers("/api/v1/solutions/callbacks/**").hasRole("ENGINE_SERVICE")
 
                         // Role rules (SEC-ROLE-001): driver self-service for DRIVER,
                         // every other business endpoint for PLANNER.
@@ -90,5 +94,17 @@ public class SecurityConfig {
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
+    }
+
+    /**
+     * Keeps {@link ApiKeyAuthenticationFilter} out of the plain servlet filter chain:
+     * as a {@code @Component} it would otherwise be registered there as well, and it
+     * must run only inside the security filter chain (SEC-012).
+     */
+    @Bean
+    public FilterRegistrationBean<ApiKeyAuthenticationFilter> apiKeyFilterRegistration(ApiKeyAuthenticationFilter filter) {
+        FilterRegistrationBean<ApiKeyAuthenticationFilter> registration = new FilterRegistrationBean<>(filter);
+        registration.setEnabled(false);
+        return registration;
     }
 }
