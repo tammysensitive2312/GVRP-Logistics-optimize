@@ -122,9 +122,11 @@ public class OrderService {
         for (Long id : ids) {
             Order order = found.get(id);
             if (order == null || !order.getBranch().getId().equals(branchId)) {
+                // SEC-014: a foreign order must be indistinguishable from an unknown id,
+                // so its code is never echoed.
                 failed.add(BulkUpdateOrderStatusResponse.FailedRow
                         .builder().id(id)
-                        .orderCode(order != null ? order.getOrderCode() : null)
+                        .orderCode(null)
                         .reason("Order not found in this branch")
                         .build());
             } else {

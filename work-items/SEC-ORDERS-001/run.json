@@ -1,0 +1,74 @@
+{
+  "id": "SEC-ORDERS-001",
+  "root": "E:\\gvrp-wt\\sec-orders-001",
+  "scope": [
+    "GVRP_Entry_API/src"
+  ],
+  "graphHash": "dd102f16a0bb44c675032aab0813a841f1b446ea1fa8d99958fa094d0e8de614",
+  "state": "verify",
+  "revision": 4,
+  "history": [
+    {
+      "revision": 1,
+      "from": "intake",
+      "event": "ready",
+      "to": "discover",
+      "evidence": {
+        "request": {
+          "path": "work-items/SEC-ORDERS-001/request.md",
+          "sha256": "3bb11cfcca2cc442daf8369af9259b21ef4da592e2d20b4c7b17eb9efb28330b"
+        }
+      },
+      "snapshot": "fb14eeadbb041a42f2762e9ba8dfe4e0c1634c3ee0ac65fb3bf6ac48bd748b63",
+      "time": "2026-11-03T21:42:11.361Z"
+    },
+    {
+      "revision": 2,
+      "from": "discover",
+      "event": "ready",
+      "to": "design",
+      "evidence": {
+        "context": {
+          "path": "work-items/SEC-ORDERS-001/context.md",
+          "sha256": "95e8201e946df58fe5b89e8af436f6026833ff29b88aa3f5a0fcf4cbff95f167"
+        }
+      },
+      "snapshot": "fb14eeadbb041a42f2762e9ba8dfe4e0c1634c3ee0ac65fb3bf6ac48bd748b63",
+      "time": "2026-11-03T21:42:16.212Z"
+    },
+    {
+      "revision": 3,
+      "from": "design",
+      "event": "ready",
+      "to": "implement",
+      "evidence": {
+        "design": {
+          "path": "work-items/SEC-ORDERS-001/design.md",
+          "sha256": "e6dcfe11f076c6c80110a88beb5cd47a5552d05915284437de4a18126e61d866"
+        },
+        "traceability": {
+          "path": "work-items/SEC-ORDERS-001/traceability.md",
+          "sha256": "2fe9b0f6f88aa415ba7cfd8f7806b41946b09656f6db50069391111d95967f68"
+        }
+      },
+      "snapshot": "fb14eeadbb041a42f2762e9ba8dfe4e0c1634c3ee0ac65fb3bf6ac48bd748b63",
+      "time": "2026-11-03T21:42:16.585Z"
+    },
+    {
+      "revision": 4,
+      "from": "implement",
+      "event": "ready",
+      "to": "verify",
+      "evidence": {
+        "implementation": {
+          "path": "work-items/SEC-ORDERS-001/implementation.md",
+          "sha256": "00ce61cf1140a03ebbf18830e022cc09347a2cc9b7668d7c0db0a733931bc59b"
+        }
+      },
+      "snapshot": "5be6ed0b22ac18cbd3b9da5356146e9450c25739df5d3029713f5a7aa161c104",
+      "time": "2026-11-03T21:45:34.533Z"
+    }
+  ],
+  "handoff": null,
+  "returnTo": null
+}
