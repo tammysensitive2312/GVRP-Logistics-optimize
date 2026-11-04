@@ -224,3 +224,17 @@ Status: ACTIVE
 Lesson: Node on Windows has no `fs.constants.O_NOFOLLOW`, so both validators
 reject every input. Run them in a container with Docker Desktop started:
 `docker run --rm --network none --read-only -v <skill>:/skill:ro -v <out>:/run:ro node:22-alpine node /skill/validate-findings.cjs /run/findings.json`.
+
+## L-2026-019 — Secrets live outside tracked files; never hide them with skip-worktree
+Date: 2026-11-04
+Source: SEC-001 rotation (Claude session 2026-11-04)
+Applies to: `application*.properties`, any tracked configuration
+Status: ACTIVE
+Lesson: Both `application.properties` files had `git update-index --skip-worktree`,
+so real local values sat in tracked files while `git status` and `git diff`
+showed nothing. Keep tracked files on `${ENV_VAR:}` placeholders, put real
+values in the git-ignored `application-local.properties` (template:
+`application-local.properties.example`; `spring.profiles.active` defaults to
+`local`), and run `node tools/check-secrets.mjs` before committing. Check flags
+with `git ls-files -v | grep "^S"`. To compare secret values, compare hashes,
+never print them (L-2026-017).

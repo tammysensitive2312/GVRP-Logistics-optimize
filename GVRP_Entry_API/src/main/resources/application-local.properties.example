@@ -1,0 +1,76 @@
+# Copy to application-local.properties (git-ignored) and fill in the <...> values.
+# Never commit real values; tools/check-secrets.mjs runs in CI (SEC-001).
+spring.application.name=GVRP_Entry_API
+
+spring.app.frontend.url=http://localhost:4200
+
+spring.jackson.property-naming-strategy=SNAKE_CASE
+
+# Database Configuration
+spring.datasource.url=jdbc:mysql://localhost:3306/gvrp_db
+spring.datasource.username=<set locally>
+spring.datasource.password=<set locally>
+spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.open-in-view=false
+
+spring.jpa.show-sql=false
+spring.jpa.properties.hibernate.format_sql=none
+spring.jpa.properties.hibernate.use_sql_comments=none
+
+# Hibernate Performance Tuning
+spring.jpa.properties.hibernate.jdbc.batch_size=50
+spring.jpa.properties.hibernate.order_inserts=true
+spring.jpa.properties.hibernate.order_updates=true
+
+logging.level.root=INFO
+logging.level.org.truong.gvrp_entry_api=INFO
+
+#logging.level.org.hibernate.SQL=DEBUG
+#logging.level.org.hibernate.type.descriptor.sql.BasicBinder=TRACE
+#logging.level.org.hibernate.orm.jdbc.bind=TRACE
+#
+#logging.level.org.hibernate.boot=DEBUG
+#logging.level.org.hibernate.mapping=DEBUG
+
+# Spring Security logging
+logging.level.org.springframework.security=DEBUG
+
+# Spring Web logging
+logging.level.org.springframework.web=DEBUG
+
+logging.pattern.console=%d{yyyy-MM-dd HH:mm:ss} %highlight(%-5level) %cyan(%logger{36}) - %msg%n
+
+# Jwt Configuration
+spring.gvrp.jwt.secret-key=<set locally>
+spring.gvrp.jwt.expiration-ms=86400000
+
+# Mail Configuration
+spring.mail.host=smtp.gmail.com
+spring.mail.port=587
+spring.mail.username=<set locally>
+spring.mail.password=<set locally>
+
+spring.mail.properties.mail.smtp.auth=true
+spring.mail.properties.mail.smtp.starttls.enable=true
+
+# cron expression configuration
+task.cron.expression=0 0 0 * * ?
+schedule.task.min_gap=15
+
+# File Upload Configuration
+#spring.servlet.multipart.max-file-size=
+#spring.servlet.multipart.max-request-size=
+#upload.default.directory=
+#extracted.data.directory=
+#spring.servlet.multipart.resolve-lazily=true
+
+spring.optimization.engine.url=http://localhost:8081/api/v1
+spring.optimization.engine.timeout=900
+
+engine.api.key=<set locally>
+
+geocoding.goong.api-key=<set locally>
+geocoding.enabled=true
+geocoding.goong.uri=https://rsapi.goong.io/Geocode

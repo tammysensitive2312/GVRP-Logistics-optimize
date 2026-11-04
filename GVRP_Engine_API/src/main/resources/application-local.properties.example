@@ -1,0 +1,28 @@
+# Copy to application-local.properties (git-ignored) and fill in the <...> values.
+# Never commit real values; tools/check-secrets.mjs runs in CI (SEC-001).
+spring.application.name=GVRP_Engine_API
+server.port=8081
+
+spring.threads.virtual.enabled=true
+
+spring.task.execution.pool.core-size=4
+spring.task.execution.pool.max-size=10
+spring.task.execution.pool.queue-capacity=100
+spring.task.execution.pool.keep-alive=60s
+
+spring.task.scheduling.pool.size=2
+
+graphhopper.osm.file=./.data/vietnam-251213.osm.pbf
+graphhopper.graph.location=./.cache/routing-graph
+
+graph.encoded_values=road_access
+
+spring.jackson.property-naming-strategy=SNAKE_CASE
+
+spring.optimization.entry.url=http://localhost:8080/api/v1
+entry.api-key=<set locally>
+
+gvrp.result-spool.dir=./.data/results
+gvrp.result-spool.max-attempts=20
+gvrp.result-spool.retry.initial-delay-ms=60000
+gvrp.result-spool.retry.interval-ms=120000

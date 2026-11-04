@@ -124,4 +124,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - run: node --test tools/feature-workflow/workflow.test.mjs tools/session-brief.test.mjs
+      - run: node --test tools/feature-workflow/workflow.test.mjs tools/session-brief.test.mjs tools/check-secrets.test.mjs
+      # SEC-001: no literal secret values in tracked configuration files.
+      - run: node tools/check-secrets.mjs
