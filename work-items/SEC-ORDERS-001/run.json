@@ -5,8 +5,8 @@
     "GVRP_Entry_API/src"
   ],
   "graphHash": "dd102f16a0bb44c675032aab0813a841f1b446ea1fa8d99958fa094d0e8de614",
-  "state": "verify",
-  "revision": 4,
+  "state": "done",
+  "revision": 7,
   "history": [
     {
       "revision": 1,
@@ -67,8 +67,54 @@
       },
       "snapshot": "5be6ed0b22ac18cbd3b9da5356146e9450c25739df5d3029713f5a7aa161c104",
       "time": "2026-11-03T21:45:34.533Z"
+    },
+    {
+      "revision": 5,
+      "from": "verify",
+      "event": "pass",
+      "to": "await_user_test",
+      "evidence": {
+        "verification": {
+          "path": "work-items/SEC-ORDERS-001/verification.md",
+          "sha256": "aa9a9294860d861cd808e83988a9fe2d500f868855a52bce5b05775edfb539af"
+        },
+        "handoff": {
+          "path": "work-items/SEC-ORDERS-001/handoff.md",
+          "sha256": "711ee19d2e8591d45a48248c367ff7465206c029b71c4ea22f2fbdc0538ea941"
+        }
+      },
+      "snapshot": "09f48760ad768bab51d03ffa913a4b38de66f604177dec72e3f8b2f5f2ec5b17",
+      "time": "2026-11-04T16:08:48.256Z"
+    },
+    {
+      "revision": 6,
+      "from": "await_user_test",
+      "event": "accepted",
+      "to": "accepted",
+      "evidence": {
+        "user_acceptance": {
+          "path": "work-items/SEC-ORDERS-001/user-acceptance.json",
+          "sha256": "fdeec79d4197c0e2d24f11a5c55997850432f31834afafbcd6dd85a6f9cfbd1a"
+        }
+      },
+      "snapshot": "09f48760ad768bab51d03ffa913a4b38de66f604177dec72e3f8b2f5f2ec5b17",
+      "time": "2026-11-04T16:08:48.451Z"
+    },
+    {
+      "revision": 7,
+      "from": "accepted",
+      "event": "finish",
+      "to": "done",
+      "evidence": {
+        "closure": {
+          "path": "work-items/SEC-ORDERS-001/closure.md",
+          "sha256": "bf8fca5e651d32450d0737c2c27ff1c769e14351e2b38409d82dee847094b7ca"
+        }
+      },
+      "snapshot": "09f48760ad768bab51d03ffa913a4b38de66f604177dec72e3f8b2f5f2ec5b17",
+      "time": "2026-11-04T16:08:48.669Z"
     }
   ],
-  "handoff": null,
+  "handoff": "09f48760ad768bab51d03ffa913a4b38de66f604177dec72e3f8b2f5f2ec5b17",
   "returnTo": null
 }
