@@ -5,8 +5,8 @@
     "GVRP_Entry_client_v2/src"
   ],
   "graphHash": "dd102f16a0bb44c675032aab0813a841f1b446ea1fa8d99958fa094d0e8de614",
-  "state": "verify",
-  "revision": 4,
+  "state": "done",
+  "revision": 7,
   "history": [
     {
       "revision": 1,
@@ -67,8 +67,54 @@
       },
       "snapshot": "2737b9dbe8c30bafa7e0581bfe002022a4f8e89ab8c8fcafd69c34eb4db38c50",
       "time": "2026-11-03T21:48:59.820Z"
+    },
+    {
+      "revision": 5,
+      "from": "verify",
+      "event": "pass",
+      "to": "await_user_test",
+      "evidence": {
+        "verification": {
+          "path": "work-items/SEC-XSS-001/verification.md",
+          "sha256": "deb36e27fc83c3d4cba50c2653f9c712c75d107127b9ca6fbe0b7ae3227a4a67"
+        },
+        "handoff": {
+          "path": "work-items/SEC-XSS-001/handoff.md",
+          "sha256": "25516c828bbbf4554ee153ebdeec2641a1a28f646aad6be21ff98a3df588de93"
+        }
+      },
+      "snapshot": "7ae2d52a31d5689c35de109f5c1971dcf49c36addfbeb255cdc88be8343c4be2",
+      "time": "2026-11-04T16:08:52.480Z"
+    },
+    {
+      "revision": 6,
+      "from": "await_user_test",
+      "event": "accepted",
+      "to": "accepted",
+      "evidence": {
+        "user_acceptance": {
+          "path": "work-items/SEC-XSS-001/user-acceptance.json",
+          "sha256": "301e2241491f7efabc6405236b66885d2ec9a1265deb82846043978bd3552ed0"
+        }
+      },
+      "snapshot": "7ae2d52a31d5689c35de109f5c1971dcf49c36addfbeb255cdc88be8343c4be2",
+      "time": "2026-11-04T16:08:52.626Z"
+    },
+    {
+      "revision": 7,
+      "from": "accepted",
+      "event": "finish",
+      "to": "done",
+      "evidence": {
+        "closure": {
+          "path": "work-items/SEC-XSS-001/closure.md",
+          "sha256": "12a928be8f7be6d2445fd8154dcbafcd332ec7baa7beae7424e50680b15694cb"
+        }
+      },
+      "snapshot": "7ae2d52a31d5689c35de109f5c1971dcf49c36addfbeb255cdc88be8343c4be2",
+      "time": "2026-11-04T16:08:52.775Z"
     }
   ],
-  "handoff": null,
+  "handoff": "7ae2d52a31d5689c35de109f5c1971dcf49c36addfbeb255cdc88be8343c4be2",
   "returnTo": null
 }
