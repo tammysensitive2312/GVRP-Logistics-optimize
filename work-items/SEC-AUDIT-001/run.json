@@ -5,8 +5,8 @@
     ".agents/skills/security-audit"
   ],
   "graphHash": "dd102f16a0bb44c675032aab0813a841f1b446ea1fa8d99958fa094d0e8de614",
-  "state": "verify",
-  "revision": 9,
+  "state": "done",
+  "revision": 12,
   "history": [
     {
       "revision": 1,
@@ -441,9 +441,55 @@
       },
       "snapshot": "5620ad52e971f209aafe7cbbad0aa4cfbe9ecdf96dc7f06b7ae3be5cadf4b5bb",
       "time": "2026-11-01T07:04:46.995Z"
+    },
+    {
+      "revision": 10,
+      "from": "verify",
+      "event": "pass",
+      "to": "await_user_test",
+      "evidence": {
+        "verification": {
+          "path": "work-items/SEC-AUDIT-001/verification.md",
+          "sha256": "72ebe768d6039543cebff53678fc4652d59490b8a80370884586c5e68cf5b3c8"
+        },
+        "handoff": {
+          "path": "work-items/SEC-AUDIT-001/handoff.md",
+          "sha256": "7f1607b778a3c6ff4c35093f4d43c32f169757b5ae26941471c12442203cd485"
+        }
+      },
+      "snapshot": "5620ad52e971f209aafe7cbbad0aa4cfbe9ecdf96dc7f06b7ae3be5cadf4b5bb",
+      "time": "2026-11-04T16:08:53.179Z"
+    },
+    {
+      "revision": 11,
+      "from": "await_user_test",
+      "event": "accepted",
+      "to": "accepted",
+      "evidence": {
+        "user_acceptance": {
+          "path": "work-items/SEC-AUDIT-001/user-acceptance.json",
+          "sha256": "4c44b9f2680abe66c477608904b3a30e15fb4cb7c568698ab509d88a10366493"
+        }
+      },
+      "snapshot": "5620ad52e971f209aafe7cbbad0aa4cfbe9ecdf96dc7f06b7ae3be5cadf4b5bb",
+      "time": "2026-11-04T16:08:53.267Z"
+    },
+    {
+      "revision": 12,
+      "from": "accepted",
+      "event": "finish",
+      "to": "done",
+      "evidence": {
+        "closure": {
+          "path": "work-items/SEC-AUDIT-001/closure.md",
+          "sha256": "bb900f3910dcae87a2fcb8a39ab8b7c4af944376004e6d0b23bd7be01fa7354e"
+        }
+      },
+      "snapshot": "5620ad52e971f209aafe7cbbad0aa4cfbe9ecdf96dc7f06b7ae3be5cadf4b5bb",
+      "time": "2026-11-04T16:08:53.345Z"
     }
   ],
-  "handoff": null,
+  "handoff": "5620ad52e971f209aafe7cbbad0aa4cfbe9ecdf96dc7f06b7ae3be5cadf4b5bb",
   "returnTo": null,
   "checkpoint": {
     "state": "implement",
