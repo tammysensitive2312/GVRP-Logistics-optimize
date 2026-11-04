@@ -39,3 +39,16 @@ The register probes and the vehicle/bulk-update probes changed no data.
 | SEC-014 | Bulk order status discloses other branches' order codes and existence | Medium |
 | SEC-015 | Stored XSS in Leaflet tooltips/popups (depot, order, stop, zone names), no CSP | High |
 | SEC-007 / SEC-008 / SEC-010 | Now runtime-confirmed | keep, add evidence |
+
+## Re-probe after fixes (2026-11-04, master `e814d52`)
+
+Entry API restarted from `master` after merging SEC-CALLBACK-001 (`d4420b4`), SEC-ORDERS-001 (`f735b5b`) and SEC-XSS-001 (`e814d52`); client served by the running `ng serve` (reloaded the merged sources).
+
+| Finding | Re-probe | Observed | Status |
+|---|---|---|---|
+| SEC-012 | `POST` `/api/v1/solutions/%63allbacks/progress`, `/api/v1/%73olutions/callbacks/progress`, `/api/v1/solutions/%63allbacks/complete` without key | all **401** "Full authentication is required" | FIXED (runtime) |
+| SEC-013 | `POST /api/v1/solutions/callbacks/complete` **with the valid key** (read from config into a shell variable, never printed) for job 70 (branch 1000) referencing order #1 (branch 1) | **422** "Callback for job #70 refers to orders or vehicles outside the job's branch"; order #1 stays `SCHEDULED`, job 70 stays `FAILED`, 0 solutions | FIXED (runtime) |
+| SEC-014 | planner of branch 1, `PATCH /api/v1/orders/status` ids 331, 423, 999999999 | 200, every failed row `order_code: null`, same reason | FIXED (runtime) |
+| SEC-015 | new probe depot **9006** with the `<img onerror>` name, `/admin/zones`, mouseover | tooltip shows the name as text, no `img` in tooltips, `window.__gvrpXss` undefined | FIXED (runtime) |
+
+Data created by the re-probe: depot **9006** (`DELETE FROM depots WHERE id = 9006;`). The refused callback changed nothing.
