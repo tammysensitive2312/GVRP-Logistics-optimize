@@ -480,3 +480,22 @@ Result: equation confirmed line-by-line (co2/m = e*150000/1e9; fuel/m=costPerKm/
 Review: ACCEPTED_WITH_LIMITATIONS (static + reported-reads). Historical correction applied: defaultFeatures()/180 genuinely existed pre-452d0c5 and correctly explains old 0.180 logs; stale references in ENGINE_V1_TO_V2.md + MeasuredLawsTest comments re-scoped in place (not deleted). Refinement: Entry parseFeatures throws on null, so end-to-end NPE needs direct engine callers.
 Promoted: equation half into STATE-CARBON-001 scope (already held the formula); live values stay in log + artifact, not PROJECT_STATE (reviewer: not independently re-queried).
 Next: VQ-004 independence experiment � Huge 1 heterogeneous fleet is the valid testbed; uniform-12.3 branches are the control case.
+
+## 2026-11-04 - Independent route-set evaluator designed (not implemented)
+
+Question: how can baseline and treatment route sets be scored by one evaluator that does not share the solver's calculation code (STATE-CARBON-003, STATE-SERVICE-001)?
+Method: read SolutionMetricsCalculator, RouteEvaluationService, GreenVRPCostCalculator, OBJECTIVE_FUNCTION.md, EXPERIMENT_PROTOCOL §11, results/schema.csv.
+Result: design at GVRP_Benchmark/evaluator/DESIGN.md - Python stdlib evaluator, shared input data only, explicit units, no silent defaults, feasibility checks, versioned emission models (EM0 parity, EM1 load-linear as HYPOTHESIS), service-parity-gated comparison, self-verification plan.
+Observed (static): current reporting path silently returns 0 m for a leg whose matrix index is -1 and falls back to 200 g/km for a null emission factor; both are things the evaluator must flag, not reproduce.
+Open decisions for the user: D1 time-cost definition, D2 time-window mode, D3 EV boundary, D4 parity tolerance.
+Promoted: nothing.
+Next: user decisions D1-D4, then phase E1.
+
+## 2026-11-05 - Evaluator phase E1 implemented
+
+Decision (user): accepted evaluator defaults E-D1..E-D4 ("Dùng mặc định").
+Change: GVRP_Benchmark/evaluator/gvrp_eval 0.1.0 - loader with unit validation, integer-second schedule simulation, checks 4.1-4.6, EM0-distance-v1, evaluate CLI with JSON/CSV output, discrepancy against producer-reported metrics. Python stdlib; tests run in CI tools job.
+Verify: 22 unittest cases pass locally (hand-computed fixture, violation cases, input rejection, metamorphic). Not yet run on any real Engine solution.
+Engine facts used (static): FleetSize.FINITE (one route per vehicle); shift start 08:00, end = start + maxDuration.
+Promoted: nothing. STATE-CARBON-003 / STATE-SERVICE-001 stay NOT_VERIFIED until E3 plus review.
+Next: E2 - Engine-callback / Entry-DB adapters (confirm distanceToNext/timeToNext units first), leg sanity checks.

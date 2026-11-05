@@ -1,0 +1,12 @@
+{
+  "meta": {"producer": "manual", "producer_version": "fixture", "run_id": "tiny-hand-v1-r1", "seed": null},
+  "leg_units": {"distance": "m", "time": "s"},
+  "routes": [
+    {"vehicle_id": "V1", "stops": ["O1", "O3"],
+     "legs": [{"distance": 10000, "time": 1200}, {"distance": 5000, "time": 600}, {"distance": 8000, "time": 900}]},
+    {"vehicle_id": "V2", "stops": ["O2"],
+     "legs": [{"distance": 6000, "time": 600}, {"distance": 6000, "time": 600}]}
+  ],
+  "unassigned": [],
+  "reported": {"distance_km": 35.0, "co2_kg": 7.0}
+}

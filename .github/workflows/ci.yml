@@ -127,3 +127,10 @@ jobs:
       - run: node --test tools/feature-workflow/workflow.test.mjs tools/session-brief.test.mjs tools/check-secrets.test.mjs
       # SEC-001: no literal secret values in tracked configuration files.
       - run: node tools/check-secrets.mjs
+      # Independent route-set evaluator (GVRP_Benchmark/evaluator/DESIGN.md), stdlib only.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Evaluator tests
+        working-directory: GVRP_Benchmark/evaluator
+        run: python -m unittest discover -s tests -v
