@@ -1,4 +1,9 @@
-"""CLI: python -m gvrp_eval evaluate --instance bundle.json --routes routes.json [--out f] [--csv f]"""
+"""CLI.
+
+python -m gvrp_eval evaluate --instance bundle.json --routes routes.json [--out f] [--csv f]
+python -m gvrp_eval convert --from entry-export export.json --carbon-price 150000 --instance-out b.json --routes-out r.json
+python -m gvrp_eval convert --from engine-callback payload.json --routes-out r.json
+"""
 
 from __future__ import annotations
 
@@ -8,6 +13,7 @@ import json
 import sys
 from pathlib import Path
 
+from .adapters import from_engine_callback, from_entry_export
 from .evaluate import evaluate
 from .model import InputError, load_json, parse_instance, parse_route_set
 
@@ -37,6 +43,32 @@ def csv_row(result: dict) -> dict:
     }
 
 
+def _write(path: str, data: dict) -> None:
+    Path(path).write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+
+
+def _convert(args) -> int:
+    try:
+        payload = load_json(args.input)
+        if args.source == "entry-export":
+            if args.carbon_price is None or not args.instance_out:
+                raise InputError("entry-export needs --carbon-price and --instance-out")
+            bundle, routes = from_entry_export(payload, args.carbon_price)
+            _write(args.instance_out, bundle)
+        else:
+            routes = from_engine_callback(payload, args.run_id)
+        _write(args.routes_out, routes)
+        drift = routes["meta"].get("input_drift") or {}
+        if drift.get("suspect"):
+            print(f"gvrp_eval: WARNING inputs edited after the job ran: {drift}; "
+                  "producer-reported costs may not be reproducible from this bundle", file=sys.stderr)
+    except (InputError, KeyError, TypeError, ValueError) as exc:
+        print(f"gvrp_eval: input error: {exc!r}", file=sys.stderr)
+        return 2
+    print(f"gvrp_eval: converted {len(routes['routes'])} route(s)", file=sys.stderr)
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="gvrp_eval")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -45,7 +77,17 @@ def main(argv: list[str] | None = None) -> int:
     ev.add_argument("--routes", required=True)
     ev.add_argument("--out", help="write the full evaluation JSON here (default: stdout)")
     ev.add_argument("--csv", help="append one summary row to this CSV file")
+    cv = sub.add_parser("convert", help="convert a producer format into instance bundle / route set")
+    cv.add_argument("--from", dest="source", required=True, choices=["entry-export", "engine-callback"])
+    cv.add_argument("input")
+    cv.add_argument("--carbon-price", type=float, help="VND per tonne CO2 (required for entry-export)")
+    cv.add_argument("--instance-out")
+    cv.add_argument("--routes-out", required=True)
+    cv.add_argument("--run-id")
     args = parser.parse_args(argv)
+
+    if args.command == "convert":
+        return _convert(args)
 
     try:
         result = evaluate(parse_instance(load_json(args.instance)), parse_route_set(load_json(args.routes)))

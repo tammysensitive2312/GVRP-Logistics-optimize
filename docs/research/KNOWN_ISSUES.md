@@ -2227,7 +2227,167 @@ reverify_when:
 
 ---
 
-# 36. Promotion Rule
+# 36. KI-032 — Entry Stores Engine Wait Time as Stop Service Time
+
+```yaml
+id: KI-032
+title: Entry Stores Engine Wait Time as Stop Service Time
+
+category:
+  - ENGINEERING
+  - DATA
+
+historical_claim: >
+  EnginePlanMaterializer.buildStop maps route_stops.service_time from
+  StopData.getWaitTime() and never sets route_stops.wait_time, so stored
+  stops lose the real service duration and the wait time lands in the
+  wrong column.
+
+status: OPEN
+
+evidence_strength: MODERATE
+
+first_observed:
+  revision: "4edb34f"
+  date: 2026-11-05
+
+last_verified:
+  revision: "4edb34f"
+  date: 2026-11-05
+
+evidence:
+  source:
+    - "GVRP_Entry_API/.../service/EnginePlanMaterializer.java (buildStop: .serviceTime(stop.getWaitTime()))"
+  tests: []
+  experiments: []
+  runtime:
+    - "dbhub read 2026-11-05: solution 72, route_order 1: customer stops service_time 0.00, wait_time NULL, although arrival-to-departure gaps are 1.7-3.7 h (time-window waits) and sampled orders of the same job have 21-40 min service_time"
+  issues: []
+  documentation: []
+
+scope:
+  modules:
+    - GVRP_Entry_API
+  configurations: []
+  datasets: []
+  problem_size:
+    min: null
+    max: null
+
+impact: >
+  Stored per-stop service and wait times are wrong. Anything that reads
+  them (driver view, reports, research exports) misstates the schedule.
+  The independent evaluator does not read these columns.
+
+root_cause: >
+  Field mapping in buildStop.
+
+mitigation_or_fix: >
+  Map serviceTime from StopData.serviceTime and waitTime from
+  StopData.waitTime (both minutes per the Engine Stop model). Not
+  repaired here.
+
+regression_protection:
+  tests: []
+  guards: []
+
+limitations:
+  - The value Engine sends as wait_time was not inspected on the wire;
+    it is unclear why the stored value is 0.00 rather than the wait.
+
+reverify_when:
+  - EnginePlanMaterializer changes
+  - route_stops schema changes
+```
+
+---
+
+# 37. KI-033 — Job Inputs Are Not Snapshotted
+
+```yaml
+id: KI-033
+title: Job Inputs Are Not Snapshotted
+
+category:
+  - REPRODUCIBILITY
+  - DATA
+
+historical_claim: >
+  optimization_jobs.input_data stores only order_ids, vehicle_ids and
+  preferences. Vehicle-type costs, emission factors, capacities and order
+  attributes are read from master data at solve time and can be edited
+  later, so a stored solution cannot be re-scored against the exact input
+  it was solved for.
+
+status: OPEN
+
+evidence_strength: STRONG
+
+first_observed:
+  revision: "4edb34f"
+  date: 2026-11-05
+
+last_verified:
+  revision: "4edb34f"
+  date: 2026-11-05
+
+evidence:
+  source:
+    - "optimization_jobs.input_data JSON keys: order_ids, preferences, vehicle_ids (dbhub, jobs 87-95)"
+  tests: []
+  experiments:
+    - "gvrp_eval E2 cross-check 2026-11-05 (docs/research/observations/EVAL-E2-engine-cross-check-2026-11-05.md)"
+  runtime:
+    - "solution 72 (job 91): evaluator cost 4,142,720.81 VND vs stored 4,562,720.75 (10.14 %); distance, CO2, duration, service match within 0.002 %"
+    - "solution 71 (job 90, types 9003/9006): all metrics including cost match"
+    - "only solution 72 uses type 9004 (6 routes); difference 420,000 = 6 x 70,000; vehicle_types 9003-9006 updated 2026-10-31, after job 91 completed 2026-10-29"
+  issues: []
+  documentation: []
+
+scope:
+  modules:
+    - GVRP_Entry_API
+    - GVRP_Benchmark
+  configurations: []
+  datasets:
+    - branch 1000 jobs 90, 91
+  problem_size:
+    min: null
+    max: null
+
+impact: >
+  Historical solutions and benchmark results cannot be re-evaluated
+  exactly. A cost comparison between an old run and a new run can be
+  caused by edited master data rather than by the solver.
+
+root_cause: >
+  Input is stored by reference (ids), not by value.
+
+mitigation_or_fix: >
+  Experiments must freeze an instance bundle (gvrp_eval convert) right
+  after the solve and check input_drift. A product fix would snapshot the
+  solver input with the job. Not repaired here.
+
+regression_protection:
+  tests:
+    - "GVRP_Benchmark/evaluator/tests/test_adapters.py::EntryExport::test_input_drift_flags_edited_vehicle_types"
+  guards:
+    - "sql/export_solution.sql inputs_updated_after_job + gvrp_eval convert warning"
+
+limitations:
+  - The attribution of the 420,000 VND to a changed fixed cost of type
+    9004 is a HYPOTHESIS: the old value is not recoverable (no history).
+  - updated_at also changes when an order's dispatch status moves, so an
+    order count in input_drift is a reason to look, not proof.
+
+reverify_when:
+  - job input storage changes
+  - a solution is re-evaluated after master-data edits
+```
+
+---
+
+# 38. Promotion Rule
 
 An issue must not move to `OPEN` merely because:
 
@@ -2252,7 +2412,7 @@ OPEN
 
 ---
 
-# 37. Fix Rule
+# 39. Fix Rule
 
 Do not classify an issue as `FIXED` merely because a patch exists.
 
@@ -2274,7 +2434,7 @@ The verification scope must be recorded.
 
 ---
 
-# 38. Evidence Scope Rule
+# 40. Evidence Scope Rule
 
 A fix verified on:
 
@@ -2304,7 +2464,7 @@ Always retain the scope of evidence.
 
 ---
 
-# 39. Issue vs Project State
+# 41. Issue vs Project State
 
 Use `KNOWN_ISSUES.md` to answer:
 
@@ -2328,7 +2488,7 @@ The historical issue can remain even after the current state becomes verified as
 
 ---
 
-# 40. Maintenance Rule
+# 42. Maintenance Rule
 
 When investigating an issue:
 

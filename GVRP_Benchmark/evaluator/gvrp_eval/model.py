@@ -42,6 +42,16 @@ def _opt_num(obj: dict, key: str, where: str) -> float | None:
     return None if obj.get(key) is None else _num(obj, key, where)
 
 
+def _coord(obj: dict, key: str, where: str) -> float:
+    value = _req(obj, key, where)
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise InputError(f"{where}: '{key}' must be a number")
+    limit = 90 if key == "lat" else 180
+    if not -limit <= value <= limit:
+        raise InputError(f"{where}: '{key}' out of range")
+    return float(value)
+
+
 def _quantity(obj: dict, key: str, where: str) -> tuple[float, str]:
     q = _req(obj, key, where)
     if not isinstance(q, dict):
@@ -84,9 +94,18 @@ class VehicleType:
 
 
 @dataclass(frozen=True)
+class Depot:
+    id: str
+    lat: float
+    lng: float
+
+
+@dataclass(frozen=True)
 class Vehicle:
     id: str
     type: VehicleType
+    start_depot: Depot
+    end_depot: Depot
     lez_skills: frozenset[str]
     shift_start_s: int | None
     shift_end_s: int | None
@@ -95,6 +114,8 @@ class Vehicle:
 @dataclass(frozen=True)
 class Order:
     id: str
+    lat: float
+    lng: float
     demand: float
     demand_unit: str
     tw_start_s: int | None
@@ -117,6 +138,7 @@ class Instance:
     instance_id: str
     sha256: str
     params: Params
+    depots: dict[str, Depot]
     vehicle_types: dict[str, VehicleType]
     vehicles: dict[str, Vehicle]
     orders: dict[str, Order]
@@ -193,14 +215,29 @@ def parse_instance(data: dict) -> Instance:
             raise InputError(f"duplicate vehicle_type id {vt.id}")
         types[vt.id] = vt
 
+    depots: dict[str, Depot] = {}
+    for raw in _req(data, "depots", "instance"):
+        where = f"depot {raw.get('id')}"
+        d = Depot(id=str(_req(raw, "id", where)), lat=_coord(raw, "lat", where), lng=_coord(raw, "lng", where))
+        if d.id in depots:
+            raise InputError(f"duplicate depot id {d.id}")
+        depots[d.id] = d
+
     vehicles: dict[str, Vehicle] = {}
     for raw in _req(data, "vehicles", "instance"):
         where = f"vehicle {raw.get('id')}"
         type_id = str(_req(raw, "vehicle_type_id", where))
         if type_id not in types:
             raise InputError(f"{where}: unknown vehicle_type_id {type_id}")
+        ends = []
+        for key in ("start_depot_id", "end_depot_id"):
+            depot_id = str(_req(raw, key, where))
+            if depot_id not in depots:
+                raise InputError(f"{where}: unknown {key} {depot_id}")
+            ends.append(depots[depot_id])
         v = Vehicle(
             id=str(_req(raw, "id", where)), type=types[type_id],
+            start_depot=ends[0], end_depot=ends[1],
             lez_skills=_skills(raw, "lez_skills"),
             shift_start_s=_opt_clock(raw, "shift_start", where),
             shift_end_s=_opt_clock(raw, "shift_end", where),
@@ -214,7 +251,8 @@ def parse_instance(data: dict) -> Instance:
         where = f"order {raw.get('id')}"
         demand, unit = _quantity(raw, "demand", where)
         o = Order(
-            id=str(_req(raw, "id", where)), demand=demand, demand_unit=unit,
+            id=str(_req(raw, "id", where)), lat=_coord(raw, "lat", where), lng=_coord(raw, "lng", where),
+            demand=demand, demand_unit=unit,
             tw_start_s=_opt_clock(raw, "tw_start", where),
             tw_end_s=_opt_clock(raw, "tw_end", where),
             service_s=_num(raw, "service_time_s", where),
@@ -227,7 +265,7 @@ def parse_instance(data: dict) -> Instance:
 
     return Instance(
         instance_id=str(_req(meta, "instance_id", "meta")),
-        sha256=canonical_sha256(data), params=params,
+        sha256=canonical_sha256(data), params=params, depots=depots,
         vehicle_types=types, vehicles=vehicles, orders=orders,
     )
 

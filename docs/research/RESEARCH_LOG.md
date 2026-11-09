@@ -499,3 +499,13 @@ Verify: 22 unittest cases pass locally (hand-computed fixture, violation cases, 
 Engine facts used (static): FleetSize.FINITE (one route per vehicle); shift start 08:00, end = start + maxDuration.
 Promoted: nothing. STATE-CARBON-003 / STATE-SERVICE-001 stay NOT_VERIFIED until E3 plus review.
 Next: E2 - Engine-callback / Entry-DB adapters (confirm distanceToNext/timeToNext units first), leg sanity checks.
+
+## 2026-11-05 - Evaluator phase E2: adapters and cross-check against stored Engine solutions
+
+Change: gvrp_eval adapters (Entry DB export via sql/export_solution.sql, Engine callback), leg sanity checks (great-circle bound, zero legs, speed), input-drift detection.
+Verify: 34 unittest cases pass. Solutions 71, 72, 75 re-scored: distance, CO2, duration and service reproduced within stored rounding; all feasible; cost reproduced for 71 and 75.
+Finding: solution 72 cost differs 10.14 % - attributed (HYPOTHESIS, strong support) to vehicle type 9004 edited after the job; recorded as KI-033 (jobs store input ids only). Side finding KI-032 (route_stops.service_time holds wait time).
+Units verified: callback leg values are metres/seconds from the solve matrix (mean speed 50.1 km/h = GraphHopper cap).
+Artifact: docs/research/observations/EVAL-E2-engine-cross-check-2026-11-05.md.
+Promoted: nothing (PARTIALLY_VERIFIED, LIMITED evidence at most; review pending).
+Next: E3 - compare command with service-parity gate; experiments must freeze bundles right after each solve.

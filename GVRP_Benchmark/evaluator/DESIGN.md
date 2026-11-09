@@ -1,6 +1,6 @@
 # Independent Route-Set Evaluator — Design
 
-Status: phase E1 implemented 2026-11-05 (`gvrp_eval` 0.1.0); E2–E4 not started. Design date: 2026-11-04. Author: Claude Code, at the user's request
+Status: phases E1 and E2 implemented 2026-11-05 (`gvrp_eval` 0.1.0); E3–E4 not started. Design date: 2026-11-04. Author: Claude Code, at the user's request
 ("Làm bước 2" — build the independent evaluator before any core-algorithm change).
 
 Targets these open project claims (`docs/research/PROJECT_STATE.md`):
@@ -73,11 +73,17 @@ unassigned: [order_id, ...]
 reported: optional producer-side metrics, kept only to compute the discrepancy
 ```
 
+### 2.3 Adapters
+
 Adapters convert producer formats into this schema:
 
-- **Engine callback payload** (`RouteDetail` / `Stop`): `distanceToNext`, `timeToNext`. Their
-  units must be confirmed from code and a fixture before the adapter is trusted.
-- **Entry database** (`route`, `route_stop`): read-only `SELECT` via `agent_reader`.
+- **Engine callback payload** (`SolutionConverter` output): `distance_to_next` / `time_to_next`
+  are metres / seconds from the solve matrix (verified 2026-11-05, see
+  `docs/research/observations/EVAL-E2-engine-cross-check-2026-11-05.md`).
+- **Entry database** (`routes`, `route_stops`, job `input_data`): `sql/export_solution.sql`, run by
+  `sql/export_solution.sh` as `agent_reader`, scoped to the solution's branch, no customer name,
+  phone or address. The export also reports rows edited after the job ran (`input_drift`, KI-033).
+  The carbon price is not stored with a job, so `convert` requires `--carbon-price`.
 - **Other solvers** (OR-Tools baseline, literature solutions on Solomon/Homberger): written
   directly in this schema; benchmark instances supply Euclidean legs computed by the adapter.
 
@@ -191,7 +197,7 @@ An evaluator that is wrong in the same way as the solver proves nothing, so:
 | Phase | Content | Done when |
 |---|---|---|
 | E1 | Schemas, loader with unit validation, simulation, checks 4.1–4.6, EM0, `evaluate` | Fixture + metamorphic tests pass; runs in CI `tools` job via `python -m unittest`. **Done 2026-11-05: 22 tests pass locally (Python 3.11.9).** |
-| E2 | Engine-callback and Entry-DB adapters, leg sanity 4.7, discrepancy columns | One stored Engine solution evaluated; discrepancies listed. |
+| E2 | Engine-callback and Entry-DB adapters, leg sanity 4.7, discrepancy columns | One stored Engine solution evaluated; discrepancies listed. **Done 2026-11-05: 34 tests; solutions 71, 72, 75 evaluated (EVAL-E2 observation).** |
 | E3 | `compare` with service-parity gate and multi-seed summary | A COST vs ECO comparison on branch 1000 data produces a parity-gated report. |
 | E4 | Solomon/Homberger adapter and anchor test; EM1 after provenance | Published distances reproduced. |
 | L2 | Independent re-routing of legs | Distance difference vs GraphHopper legs reported per instance. |

@@ -1,5 +1,8 @@
 {
-  "meta": {"instance_id": "tiny-hand-v1", "source": "hand-written fixture, DESIGN.md §9.1"},
+  "meta": {
+    "instance_id": "tiny-hand-v1",
+    "source": "hand-written fixture, DESIGN.md §9.1"
+  },
   "params": {
     "carbon_price_vnd_per_t": 150000,
     "emission_model_id": "EM0-distance-v1",
@@ -7,21 +10,110 @@
     "default_shift_start": "08:00"
   },
   "vehicle_types": [
-    {"id": "T1", "capacity": {"value": 100, "unit": "kg"}, "fixed_cost_vnd": 100000,
-     "cost_per_km_vnd": 5000, "cost_per_hour_vnd": 60000, "max_distance_km": null, "max_duration_h": 8,
-     "emission_factor": {"value": 300, "unit": "g_co2_per_km", "provenance": "fixture"}, "skills": ["cold"]},
-    {"id": "T2", "capacity": {"value": 50, "unit": "kg"}, "fixed_cost_vnd": 150000,
-     "cost_per_km_vnd": 1000, "cost_per_hour_vnd": 60000, "max_distance_km": 30, "max_duration_h": 8,
-     "emission_factor": {"value": 0, "unit": "g_co2_per_km", "provenance": "fixture, EV tank-to-wheel"}, "skills": []}
+    {
+      "id": "T1",
+      "capacity": {
+        "value": 100,
+        "unit": "kg"
+      },
+      "fixed_cost_vnd": 100000,
+      "cost_per_km_vnd": 5000,
+      "cost_per_hour_vnd": 60000,
+      "max_distance_km": null,
+      "max_duration_h": 8,
+      "emission_factor": {
+        "value": 300,
+        "unit": "g_co2_per_km",
+        "provenance": "fixture"
+      },
+      "skills": [
+        "cold"
+      ]
+    },
+    {
+      "id": "T2",
+      "capacity": {
+        "value": 50,
+        "unit": "kg"
+      },
+      "fixed_cost_vnd": 150000,
+      "cost_per_km_vnd": 1000,
+      "cost_per_hour_vnd": 60000,
+      "max_distance_km": 30,
+      "max_duration_h": 8,
+      "emission_factor": {
+        "value": 0,
+        "unit": "g_co2_per_km",
+        "provenance": "fixture, EV tank-to-wheel"
+      },
+      "skills": []
+    }
   ],
   "vehicles": [
-    {"id": "V1", "vehicle_type_id": "T1", "lez_skills": []},
-    {"id": "V2", "vehicle_type_id": "T2", "lez_skills": ["lez-a"]}
+    {
+      "id": "V1",
+      "vehicle_type_id": "T1",
+      "lez_skills": [],
+      "start_depot_id": "D1",
+      "end_depot_id": "D1"
+    },
+    {
+      "id": "V2",
+      "vehicle_type_id": "T2",
+      "lez_skills": [
+        "lez-a"
+      ],
+      "start_depot_id": "D1",
+      "end_depot_id": "D1"
+    }
   ],
   "orders": [
-    {"id": "O1", "demand": {"value": 40, "unit": "kg"}, "tw_start": "08:00", "tw_end": "09:00", "service_time_s": 600},
-    {"id": "O2", "demand": {"value": 30, "unit": "kg"}, "tw_start": "09:00", "tw_end": "10:00", "service_time_s": 300,
-     "lez_skills": ["lez-a"]},
-    {"id": "O3", "demand": {"value": 20, "unit": "kg"}, "service_time_s": 300, "required_skills": ["cold"]}
+    {
+      "id": "O1",
+      "demand": {
+        "value": 40,
+        "unit": "kg"
+      },
+      "tw_start": "08:00",
+      "tw_end": "09:00",
+      "service_time_s": 600,
+      "lat": 21.05,
+      "lng": 105.8
+    },
+    {
+      "id": "O2",
+      "demand": {
+        "value": 30,
+        "unit": "kg"
+      },
+      "tw_start": "09:00",
+      "tw_end": "10:00",
+      "service_time_s": 300,
+      "lez_skills": [
+        "lez-a"
+      ],
+      "lat": 21.0,
+      "lng": 105.84
+    },
+    {
+      "id": "O3",
+      "demand": {
+        "value": 20,
+        "unit": "kg"
+      },
+      "service_time_s": 300,
+      "required_skills": [
+        "cold"
+      ],
+      "lat": 21.03,
+      "lng": 105.8
+    }
+  ],
+  "depots": [
+    {
+      "id": "D1",
+      "lat": 21.0,
+      "lng": 105.8
+    }
   ]
 }

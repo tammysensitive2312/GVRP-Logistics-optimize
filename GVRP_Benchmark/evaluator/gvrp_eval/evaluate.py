@@ -11,6 +11,7 @@ from collections import Counter
 from . import __version__
 from .emission import route_co2_kg
 from .model import Instance, InputError, Route, RouteSet
+from .sanity import check_legs
 
 # Violations that make a solution infeasible regardless of time-window mode.
 HARD = {
@@ -48,10 +49,17 @@ def _check_coverage(inst: Instance, rs: RouteSet, violations: list) -> None:
             violations.append(_violation("VEHICLE_REUSED", None, None, n, "routes"))
 
 
-def _route(inst: Instance, route: Route, index: int, violations: list) -> dict:
+def _route(inst: Instance, route: Route, index: int, violations: list, warnings: list) -> dict:
     vehicle = inst.vehicles[route.vehicle_id]
     vt = vehicle.type
     known = [o for o in route.stops if o in inst.orders]
+
+    if len(known) == len(route.stops):
+        sd, ed = vehicle.start_depot, vehicle.end_depot
+        points = [(f"depot-{sd.id}", sd.lat, sd.lng)]
+        points += [(o, inst.orders[o].lat, inst.orders[o].lng) for o in route.stops]
+        points.append((f"depot-{ed.id}", ed.lat, ed.lng))
+        warnings.extend(check_legs(points, route.legs, index))
 
     start = route.start_s
     if start is None:
@@ -135,6 +143,7 @@ def _discrepancy(metrics: dict, reported: dict) -> dict:
 
 def evaluate(inst: Instance, rs: RouteSet) -> dict:
     violations: list = []
+    warnings: list = []
     _check_coverage(inst, rs, violations)
 
     seen_vehicles = set()
@@ -143,7 +152,7 @@ def evaluate(inst: Instance, rs: RouteSet) -> dict:
         if r.vehicle_id not in inst.vehicles or r.vehicle_id in seen_vehicles:
             continue  # reported above; a second route for one vehicle is not costed twice
         seen_vehicles.add(r.vehicle_id)
-        routes.append(_route(inst, r, i, violations))
+        routes.append(_route(inst, r, i, violations, warnings))
 
     served_ids = {o for r in rs.routes for o in r.stops if o in inst.orders}
     total_demand = sum(o.demand for o in inst.orders.values())
@@ -166,6 +175,8 @@ def evaluate(inst: Instance, rs: RouteSet) -> dict:
         "violations_total": len(violations),
         "violations_by_code": dict(Counter(v["code"] for v in violations)),
         "total_lateness_s": sum(v["amount"] for v in late),
+        "leg_warnings_total": len(warnings),
+        "leg_warnings_by_code": dict(Counter(w["code"] for w in warnings)),
         "vehicles_used": len(routes),
         "distance_km": s("distance_km"),
         "driving_h": s("driving_s") / 3600.0,
@@ -196,6 +207,7 @@ def evaluate(inst: Instance, rs: RouteSet) -> dict:
         },
         "metrics": metrics,
         "violations": violations,
+        "leg_warnings": warnings,
         "routes": routes,
         "discrepancy": _discrepancy(metrics, rs.reported),
     }
