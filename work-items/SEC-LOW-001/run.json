@@ -5,8 +5,8 @@
     "GVRP_Entry_API/src"
   ],
   "graphHash": "dd102f16a0bb44c675032aab0813a841f1b446ea1fa8d99958fa094d0e8de614",
-  "state": "await_user_test",
-  "revision": 5,
+  "state": "done",
+  "revision": 7,
   "history": [
     {
       "revision": 1,
@@ -85,6 +85,34 @@
       },
       "snapshot": "8e9da64a23e4027e06ee944f806a4e990cbe3ec129312516f21c0ec116b0c020",
       "time": "2026-11-10T23:41:35.005Z"
+    },
+    {
+      "revision": 6,
+      "from": "await_user_test",
+      "event": "accepted",
+      "to": "accepted",
+      "evidence": {
+        "user_acceptance": {
+          "path": "work-items/SEC-LOW-001/user-acceptance.json",
+          "sha256": "810bbaece6c7f2e13cd186f3bcf23a829052b49230239bee8bda952806f3894e"
+        }
+      },
+      "snapshot": "8e9da64a23e4027e06ee944f806a4e990cbe3ec129312516f21c0ec116b0c020",
+      "time": "2026-11-10T23:57:10.407Z"
+    },
+    {
+      "revision": 7,
+      "from": "accepted",
+      "event": "finish",
+      "to": "done",
+      "evidence": {
+        "closure": {
+          "path": "work-items/SEC-LOW-001/closure.md",
+          "sha256": "071a772b4a4b49879fa2ad7cad0720e28bfe1562fdd6bff85ecfa4a6275aae7f"
+        }
+      },
+      "snapshot": "8e9da64a23e4027e06ee944f806a4e990cbe3ec129312516f21c0ec116b0c020",
+      "time": "2026-11-10T23:57:10.640Z"
     }
   ],
   "handoff": "8e9da64a23e4027e06ee944f806a4e990cbe3ec129312516f21c0ec116b0c020",
