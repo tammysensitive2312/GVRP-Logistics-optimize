@@ -128,10 +128,14 @@ broken.
 
 ### Where isolation depends on the token rather than the row
 
-Because `branchId` is a token claim, a user whose `branch_id` is changed in the database keeps the old
-branch until the token expires (up to 24 h), and continues to read and write the old branch's data.
-The user id check does not catch it, because the id does not change. Status: `PARTIALLY_VERIFIED`
-(static trace of `JwtAuthenticationFilter` and `CurrentUserUtil`); no test covers it.
+Since 2026-11-10 (`work-items/SEC-AUTH-002`, SEC-016) `JwtAuthenticationFilter` refuses a token whose
+`branchId` or `role` claim differs from the user reloaded at request time (the request stays
+unauthenticated, `401`), and takes the `branchId` request attribute from the reloaded user. A user
+moved to another branch must log in again. Covered by `JwtClaimBindingTest` and
+`TenantBindingAccessTest`. There is still no revocation: a token stays valid while its claims match.
+
+Superseded (until 2026-11-10): because `branchId` was a token claim, a user whose `branch_id` was
+changed in the database kept the old branch until the token expired (up to 24 h).
 
 ### Cross-tenant tests
 
@@ -203,7 +207,7 @@ network, which is not written down anywhere.
 
 ## 9. Gaps that a security review must treat as open
 
-1. `POST /api/v1/auth/register` returns success and writes nothing; the method body is a comment. It is
+1. (Closed 2026-11-10, SEC-AUTH-002: register now always answers `403`.) `POST /api/v1/auth/register` returned success and wrote nothing; the method body was a comment. It is
    public. It is not an account-creation hole (nothing is created) but it is a misleading, unauthenticated
    endpoint that will look like provisioning to the next developer.
 2. No server-side logout or revocation. A leaked token is valid until it expires.

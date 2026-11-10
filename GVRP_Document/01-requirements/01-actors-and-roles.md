@@ -50,7 +50,7 @@ any other request                authenticated
 | Function (API group) | Anonymous | `CUSTOMER` | `DRIVER` | `PLANNER` |
 |---|---|---|---|---|
 | `POST /api/v1/auth/login` | allow | allow | allow | allow |
-| `POST /api/v1/auth/register` | allow (stub, see below) | allow | allow | allow |
+| `POST /api/v1/auth/register` | reachable, always refused `403` (see below) | same | same | same |
 | `/api/v1/driver/routes`, `/api/v1/driver/routes/{sendId}` | deny 401 | deny 403 | **allow** | deny 403 |
 | `/api/v1/drivers` (planner driver list) | deny 401 | deny 403 | deny 403 | **allow** |
 | `/api/v1/orders/**`, `/api/v1/jobs/**`, `/api/v1/solutions/**` (except callbacks), `/api/v1/routes/**`, `/api/v1/pareto` paths | deny 401 | deny 403 | deny 403 | **allow** |
@@ -83,9 +83,14 @@ The client enforces routing, not authority: a user who bypasses the guard still 
 
 ## Registration is not implemented
 
-`POST /api/v1/auth/register` validates that the username and e-mail are unused, then returns
-`"User registered successfully"` without writing a user row. The body of the method is a comment
-(`// Create new user  // ... implementation`). No other endpoint creates users.
+Since 2026-11-10 (`work-items/SEC-AUTH-002`, branch `fix/sec-auth-002`) `POST /api/v1/auth/register`
+refuses every call with the same `403` (`0040301`, "Self-registration is disabled. Accounts are
+provisioned by an administrator."), without reading the body or querying users. No other endpoint
+creates users.
+
+Superseded behaviour (until 2026-11-10, SEC-008): the endpoint validated that the username and e-mail
+were unused (400 "Username is already taken" / "Email is already in use", a cross-branch existence
+oracle), then returned `"User registered successfully"` without writing a user row.
 
 Consequence for this documentation: `UC-D01-02` describes the intended behaviour and is marked
 `NOT_VERIFIED` in the test design; user provisioning is therefore an out-of-band database operation

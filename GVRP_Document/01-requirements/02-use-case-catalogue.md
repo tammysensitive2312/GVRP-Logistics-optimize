@@ -30,7 +30,9 @@ Diagram: [use-case-D01.svg](diagrams/use-case-D01.svg) — source [use-case-D01.
 - **Main flow (intended):** submit username, password, e-mail, full name → user created in a branch.
 - **Alternatives:** username taken → `400 "Username is already taken"`; e-mail in use →
   `400 "Email is already in use"`.
-- **Actual behaviour:** the endpoint returns `200 "User registered successfully"` **without writing a
+- **Actual behaviour (since 2026-11-10, SEC-AUTH-002):** every call is refused with the same `403`
+  "Self-registration is disabled"; no existence check is made. Superseded: until 2026-11-10 the
+  endpoint returned `200 "User registered successfully"` **without writing a
   user row** (method body is a comment). See `01-actors-and-roles.md`.
 - **Rules:** —
 - **API:** `POST /api/v1/auth/register`.

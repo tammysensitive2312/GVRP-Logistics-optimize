@@ -58,7 +58,7 @@ or a fixed mapping table. Every other error producer uses the JSON name or no fi
 | `201 Created` with a DTO | master-data creates: depots, fleets, vehicles, vehicle types, zones, vehicle permits |
 | `200 OK` with a DTO | every other read and write, including order and job creates and solution revisions |
 | `200 OK` with `PageResponse<T>` | paginated lists (orders, vehicles) |
-| `200 OK` with an empty body | `POST /api/v1/auth/register` |
+| `200 OK` with an empty body | no endpoint since 2026-11-10 (was `POST /api/v1/auth/register`, now always `403`, SEC-AUTH-002) |
 | `204 No Content` | `PATCH /api/v1/orders/status`, `PUT /api/v1/jobs`, `DELETE /api/v1/zones/{id}`, `DELETE /vehicles/{id}/permits/{permitId}`, and `GET /api/v1/jobs/{id}/progress` when the engine has no progress to report |
 | `202 Accepted` | never returned by Entry; it is the engine's answer to dispatch |
 
@@ -248,7 +248,9 @@ Measured on 2026-10-30 against the local development database, Entry started on 
 | bean validation with four violations | `400`, four details, camelCase `field` names |
 | `POST /auth/register` with valid input | `200`, `User registered successfully`, nothing written to the database |
 
-The last row is a stub, not a feature: `AuthController.register` has no persistence.
+The last row is a stub, not a feature: `AuthController.register` has no persistence. Superseded
+2026-11-10 (SEC-AUTH-002): every register call now answers `403`, `0040301`, "Self-registration is
+disabled. Accounts are provisioned by an administrator."
 
 ## Sources
 

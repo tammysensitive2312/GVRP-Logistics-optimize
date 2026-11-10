@@ -1,0 +1,11 @@
+{
+  "revision": 4,
+  "completed": ["Both leads confirmed by failing tests (6/8 failed on unfixed code)", "JwtAuthenticationFilter claim binding (branch, role) and uniform 403 register implemented", "Entry suite CI style: 355 tests, 0 failures", "Docs and SECURITY_CHECKLIST updated (SEC-008 status, new SEC-016)"],
+  "remaining": ["Runtime verification on the live stack (verification.md, recommended checks 1-8)", "Handoff and user acceptance of design decisions D1/D2", "Decide TC-D01-005 expected value in GVRP_Document/04-test-design/test-cases.csv", "Check SEC-016 id for collisions at merge"],
+  "read_next": ["work-items/SEC-AUTH-002/verification.md", "work-items/SEC-AUTH-002/design.md"],
+  "evidence": ["work-items/SEC-AUTH-002/verification.md", "work-items/SEC-AUTH-002/implementation.md"],
+  "blockers": [],
+  "decisions": ["D1 reject (401) on branch/role claim mismatch; user without branch keeps claim (Claude default, pending user)", "D2 register refused uniformly with 403 (Claude default, pending user)"],
+  "processes": [],
+  "next_action": "Parent agent runs the runtime checks in verification.md, then pass/handoff"
+}

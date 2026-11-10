@@ -49,7 +49,7 @@ Two endpoints. `/api/v1/auth/**` is `permitAll`.
 | Method | Path | Request | Response | Notes |
 |---|---|---|---|---|
 | POST | `/api/v1/auth/login` | `LoginRequest` | `200 LoginResponse` | the only way to obtain a token |
-| POST | `/api/v1/auth/register` | `RegisterRequest` | `200` `"User registered successfully"` | **stub** — nothing is created |
+| POST | `/api/v1/auth/register` | ignored | `403` `0040301` "Self-registration is disabled. Accounts are provisioned by an administrator." | refused uniformly since 2026-11-10 (SEC-AUTH-002) |
 
 ### `POST /auth/login`
 
@@ -74,7 +74,9 @@ Response:
 
 The token is signed with `spring.gvrp.jwt.secret-key` and carries `userId`, `branchId` and `role` as claims;
 lifetime is `spring.gvrp.jwt.expiration-ms` = 24 h. Claims are taken from the **user row**, not from the
-request, so they cannot be chosen by the client.
+request, so they cannot be chosen by the client. On every request `JwtAuthenticationFilter` reloads the
+user and refuses the token (401) unless `userId`, `branchId` and `role` still match that user; the tenant
+scope is taken from the reloaded user (since 2026-11-10, SEC-AUTH-002).
 
 Steps, in order:
 
@@ -86,7 +88,12 @@ Steps, in order:
 
 ### `POST /auth/register`
 
-| Condition | Answer |
+Since 2026-11-10 (`work-items/SEC-AUTH-002`): every call, whatever the body (including an empty or
+malformed one), answers the same `403` with the error envelope, code `0040301`, message
+"Self-registration is disabled. Accounts are provisioned by an administrator."; the user table is not
+queried. The table and paragraphs below describe the superseded behaviour (SEC-008, audit lead #12).
+
+| Condition | Answer (superseded 2026-11-10) |
 |---|---|
 | username already exists | `400` with the **plain-text** body `Username is already taken` |
 | e-mail already exists | `400` with `Email is already in use` |
@@ -109,7 +116,7 @@ calls it — `/login` has no registration form.
 | blank field | 400 | `0040001`, one detail per field |
 | wrong password / disabled / locked account | **500** | `0050001` — *static derivation, `PARTIALLY_VERIFIED`* |
 | user row missing after a successful authentication | 400 | `0040402`, `resource: users` |
-| `register` duplicate username or e-mail | 400 | plain text, not the envelope |
+| `register` (any input, since 2026-11-10) | 403 | `0040301` envelope; formerly 400 plain text on a duplicate username or e-mail |
 | any request without a token | 401 | entry-point body `{path, error, message, status}` |
 
 The wrong-password case is the important one. `AuthController` never converts `AuthenticationException` into
@@ -158,10 +165,12 @@ There is no session object. Each request re-establishes identity from the token:
 | user reload | `CustomUserDetailsService.loadUserByUsername(token.username)` |
 | id check | token `userId` must equal the loaded user's id, otherwise the token is discarded |
 | account state | `enabled`, `accountNonLocked` re-checked on every request |
-| branch | taken from the **token claim**, not from the user row — see `02-system-design/04-security-and-tenancy.md` §5 |
+| branch | token `branchId` must equal the loaded user's branch, otherwise the token is discarded; the request scope is the user row's branch (since 2026-11-10, SEC-AUTH-002) — see `02-system-design/04-security-and-tenancy.md` §5 |
+| role | token `role` must equal the loaded user's role, otherwise the token is discarded (since 2026-11-10) |
 
-A disabled user is therefore cut off at the next request. A user whose branch was changed in the database
-keeps the old branch until the token expires.
+A disabled user is therefore cut off at the next request. A user whose branch or role was changed in the
+database is cut off at the next request too and must log in again (superseded: until 2026-11-10 such a
+user kept the old branch until the token expired).
 
 ---
 

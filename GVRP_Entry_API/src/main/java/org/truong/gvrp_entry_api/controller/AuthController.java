@@ -9,11 +9,11 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.truong.gvrp_entry_api.dto.request.LoginRequest;
 import org.truong.gvrp_entry_api.dto.response.LoginResponse;
-import org.truong.gvrp_entry_api.dto.request.RegisterRequest;
 import org.truong.gvrp_entry_api.entity.Branch;
 import org.truong.gvrp_entry_api.entity.User;
 import org.truong.gvrp_entry_api.exception.DataInvalidException;
 import org.truong.gvrp_entry_api.exception.ErrorDetail;
+import org.truong.gvrp_entry_api.exception.ForbiddenException;
 import org.truong.gvrp_entry_api.repository.BranchRepository;
 import org.truong.gvrp_entry_api.repository.UserRepository;
 import org.truong.gvrp_entry_api.security.BranchUsernamePasswordAuthenticationToken;
@@ -92,22 +92,17 @@ public class AuthController {
     }
 
     /**
-     * Register endpoint (optional)
+     * Public self-registration is disabled (SEC-AUTH-002: SEC-008, audit lead #12).
+     *
+     * <p>Every call is refused with the same 403, without reading the body and without
+     * querying the user table, so the response neither reports success for an account that
+     * is not created nor reveals whether a username or e-mail exists in any branch.
+     * Accounts are provisioned by an administrator.
      */
     @PostMapping("/register")
-    public ResponseEntity<String> register(@Valid @RequestBody RegisterRequest registerRequest) {
-        if (userRepository.existsByUsername(registerRequest.getUsername())) {
-            return ResponseEntity.badRequest().body("Username is already taken");
-        }
-
-        if (userRepository.existsByEmail(registerRequest.getEmail())) {
-            return ResponseEntity.badRequest().body("Email is already in use");
-        }
-
-        // Create new user
-        // ... implementation
-
-        return ResponseEntity.ok("User registered successfully");
+    public ResponseEntity<Void> register() {
+        throw new ForbiddenException(
+                "Self-registration is disabled. Accounts are provisioned by an administrator.");
     }
 }
 

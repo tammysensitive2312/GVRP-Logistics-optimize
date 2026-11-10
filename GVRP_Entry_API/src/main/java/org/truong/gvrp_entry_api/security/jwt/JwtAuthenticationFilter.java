@@ -16,6 +16,8 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.truong.gvrp_entry_api.entity.Branch;
+import org.truong.gvrp_entry_api.entity.User;
 import org.truong.gvrp_entry_api.security.UserPrincipal;
 
 import java.io.IOException;
@@ -52,7 +54,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 Long branchId = tokenProvider.getBranchIdFromToken(jwt);
                 String role = tokenProvider.getRoleFromToken(jwt);
 
-                if (isUsable(userDetails, userId)) {
+                if (isUsable(userDetails, userId, branchId, role)) {
+                    // Tenant scope comes from the reloaded user (equal to the claim once
+                    // isUsable passed); the claim is used only for a user without a branch,
+                    // which the NOT NULL users.branch_id column rules out in the database.
+                    Long currentBranchId = currentBranchId((UserPrincipal) userDetails);
+                    if (currentBranchId != null) {
+                        branchId = currentBranchId;
+                    }
+
                     // Create authentication
                     UsernamePasswordAuthenticationToken authentication =
                             new UsernamePasswordAuthenticationToken(
@@ -74,10 +84,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     logger.debug("Set Authentication for user: {}, branchId: {}, role: {}",
                             username, branchId, role);
                 } else {
-                    // Disabled/locked account or userId mismatch: leave the request
-                    // unauthenticated so protected endpoints answer 401 (SS-001..SS-003).
+                    // Disabled/locked account, or a userId/branchId/role claim that no longer
+                    // matches the user: leave the request unauthenticated so protected
+                    // endpoints answer 401 (SS-001..SS-003, SEC-AUTH-002).
                     logger.warn("Rejected authentication for user '{}': account disabled/locked "
-                            + "or token/user id mismatch", username);
+                            + "or token claims (user id, branch, role) do not match the current user",
+                            username);
                 }
             }
         } catch (Exception ex) {
@@ -88,17 +100,37 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     /**
-     * A token is usable only when its user is enabled and unlocked, and the
-     * {@code userId} claim matches the user loaded from the database.
+     * A token is usable only when its user is enabled and unlocked, and its claims still
+     * match the user loaded from the database: {@code userId}, {@code branchId} (the
+     * tenant scope, SEC-AUTH-002) and {@code role}. A user moved to another branch or
+     * role must log in again instead of keeping the former scope until the token expires.
      */
-    private boolean isUsable(UserDetails userDetails, Long userIdFromToken) {
+    private boolean isUsable(UserDetails userDetails, Long userIdFromToken,
+                             Long branchIdFromToken, String roleFromToken) {
         if (!userDetails.isEnabled() || !userDetails.isAccountNonLocked()) {
             return false;
         }
         if (!(userDetails instanceof UserPrincipal principal)) {
             return false;
         }
-        return Objects.equals(principal.getUser().getId(), userIdFromToken);
+        User user = principal.getUser();
+        if (!Objects.equals(user.getId(), userIdFromToken)) {
+            return false;
+        }
+        Long currentBranchId = currentBranchId(principal);
+        if (currentBranchId != null && !currentBranchId.equals(branchIdFromToken)) {
+            return false;
+        }
+        return user.getRole() != null && user.getRole().name().equals(roleFromToken);
+    }
+
+    /**
+     * Id of the user's current branch, or {@code null} when the user has none. Reads only
+     * the identifier of the lazy branch association, which does not initialize the proxy.
+     */
+    private static Long currentBranchId(UserPrincipal principal) {
+        Branch branch = principal.getUser().getBranch();
+        return branch != null ? branch.getId() : null;
     }
 
     /**
