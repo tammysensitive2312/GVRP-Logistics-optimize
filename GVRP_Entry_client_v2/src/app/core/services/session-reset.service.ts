@@ -27,6 +27,19 @@ import { VehicleSelectionService } from '@shared/services/vehicle-selection.serv
 export class SessionResetService {
   private readonly injector = inject(Injector);
 
+  /**
+   * Resets of root services that live in lazily loaded code (SEC-CLIENT-002:
+   * MapService). They register themselves when created, so importing them here
+   * does not pull Leaflet into the initial bundle; one that was never created
+   * holds no branch state.
+   */
+  private readonly resetHooks: (() => void)[] = [];
+
+  /** Adds a reset run by every `resetBranchState()`; meant for root singletons. */
+  registerResetHook(hook: () => void): void {
+    this.resetHooks.push(hook);
+  }
+
   resetBranchState(): void {
     this.injector.get(JobPollingService).stopPolling();
     this.injector.get(SolutionStore).clear();
@@ -34,5 +47,6 @@ export class SessionResetService {
     this.injector.get(VehicleTypeStore).reset();
     this.injector.get(StateService).reset();
     this.injector.get(VehicleSelectionService).setSelection([]);
+    this.resetHooks.forEach(hook => hook());
   }
 }
