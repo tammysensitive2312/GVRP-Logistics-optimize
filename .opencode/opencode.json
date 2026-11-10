@@ -8,7 +8,7 @@
     },
     "dbhub": {
       "type": "local",
-      "command": ["npx", "@bytebase/dbhub@latest", "--transport", "stdio", "--config", ".opencode/dbhub.toml"],
+      "command": ["npx", "@bytebase/dbhub@1.5.1", "--transport", "stdio", "--config", ".opencode/dbhub.toml"],
       "enabled": true
     }
   },

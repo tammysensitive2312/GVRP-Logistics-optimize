@@ -6,7 +6,7 @@
         "/c",
         "npx",
         "-y",
-        "@bytebase/dbhub@latest",
+        "@bytebase/dbhub@1.5.1",
         "--transport",
         "stdio",
         "--config",
