@@ -5,6 +5,7 @@ import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -48,6 +49,21 @@ public class OrderImportService {
     private final TextDataParser dataParser;
 
     private final Validator validator;
+
+    static final int DEFAULT_MAX_IMPORT_ROWS = 10_000;
+    static final int DEFAULT_MAX_GEOCODE_ROWS = 5_000;
+
+    /**
+     * Ceiling on rows per import, parse errors included (SEC-LOW-001, audit
+     * lead #10). Default = the Engine order ceiling ({@code gvrp.limits.max-orders}).
+     * Field-injected so the constructor stays as it is.
+     */
+    @Value("${gvrp.import.max-rows:" + DEFAULT_MAX_IMPORT_ROWS + "}")
+    private int maxImportRows = DEFAULT_MAX_IMPORT_ROWS;
+
+    /** Ceiling on rows per import that would call the paid geocoder (SEC-LOW-001). */
+    @Value("${gvrp.import.max-geocode-rows:" + DEFAULT_MAX_GEOCODE_ROWS + "}")
+    private int maxGeocodeRows = DEFAULT_MAX_GEOCODE_ROWS;
 
     @Transactional
     public ImportResultDTO createOrdersByImportRequest(OrderImportRequest request, Long branchId) {
@@ -168,6 +184,9 @@ public class OrderImportService {
 
         log.debug("Import rows: {} parsed, {} parse errors", rawOrders.size(), parseErrors.size());
 
+        // Bounds are enforced before any geocoding call or database access.
+        enforceImportLimits(rawOrders, parseErrors);
+
         List<OrderInputDTO> validOrdersToSave = new ArrayList<>();
         List<Integer> validLinesToSave = new ArrayList<>();
         List<ImportError> validationErrors = new ArrayList<>(parseErrors);
@@ -184,8 +203,7 @@ public class OrderImportService {
             // Before validation: @NotNull deliveryDate failed every row (UX-ORDERS-001, S2).
             if (dto.getDeliveryDate() == null) dto.setDeliveryDate(request.getDeliveryDate());
 
-            if ((dto.getLatitude() == null || dto.getLongitude() == null)
-                    && dto.getAddress() != null && !dto.getAddress().trim().isEmpty()) {
+            if (needsGeocoding(dto)) {
 
                 GeocodingService.GeocodeResult result = geocodingService.geocode(dto.getAddress());
 
@@ -290,6 +308,38 @@ public class OrderImportService {
                 .build();
     }
 
+
+    private void enforceImportLimits(List<OrderInputDTO> rawOrders, List<ImportError> parseErrors) {
+        int rowLimit = Math.max(1, maxImportRows);
+        int rows = rawOrders.size() + parseErrors.size();
+        if (rows > rowLimit) {
+            log.warn("Import refused: {} rows above the limit of {}", rows, rowLimit);
+            throw limitExceeded("Import has " + rows + " rows; the limit is " + rowLimit + ".");
+        }
+
+        int geocodeLimit = Math.max(1, maxGeocodeRows);
+        long toGeocode = rawOrders.stream().filter(OrderImportService::needsGeocoding).count();
+        if (toGeocode > geocodeLimit) {
+            log.warn("Import refused: {} rows need geocoding, above the limit of {}", toGeocode, geocodeLimit);
+            throw limitExceeded("Import needs geocoding for " + toGeocode + " rows; the limit is "
+                    + geocodeLimit + ". Add latitude/longitude or split the file.");
+        }
+    }
+
+    /** Same rule as the geocoding branch of {@link #processParsedData}. */
+    private static boolean needsGeocoding(OrderInputDTO dto) {
+        return (dto.getLatitude() == null || dto.getLongitude() == null)
+                && dto.getAddress() != null && !dto.getAddress().trim().isEmpty();
+    }
+
+    private static DataInvalidException limitExceeded(String message) {
+        return new DataInvalidException(List.of(
+                ErrorDetail.builder()
+                        .code(ErrorCode.VALIDATION_ERROR.getCode())
+                        .message(message)
+                        .field(AppConstant.FILE)
+                        .build()));
+    }
 
     public static ImportError buildError(Integer lineNumber, String orderCode, String field, String message, String rawData) {
         return ImportError.builder()

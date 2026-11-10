@@ -1,0 +1,74 @@
+{
+  "id": "SEC-LOW-001",
+  "root": "E:\\gvrp-wt\\sec-low-001",
+  "scope": [
+    "GVRP_Entry_API/src"
+  ],
+  "graphHash": "dd102f16a0bb44c675032aab0813a841f1b446ea1fa8d99958fa094d0e8de614",
+  "state": "verify",
+  "revision": 4,
+  "history": [
+    {
+      "revision": 1,
+      "from": "intake",
+      "event": "ready",
+      "to": "discover",
+      "evidence": {
+        "request": {
+          "path": "work-items/SEC-LOW-001/request.md",
+          "sha256": "54f3d3c2cb4f359b901f1e40be942883a103f0ba99c5823b7ad0e819c80bf50c"
+        }
+      },
+      "snapshot": "7bed6bc8c4cdfffdf6639a5ecd087de8259c0b970c37328390d41abea46a8461",
+      "time": "2026-11-10T16:14:52.387Z"
+    },
+    {
+      "revision": 2,
+      "from": "discover",
+      "event": "ready",
+      "to": "design",
+      "evidence": {
+        "context": {
+          "path": "work-items/SEC-LOW-001/context.md",
+          "sha256": "fafff1718785a80a5513eb25d113ce0eaa799c30082d1089455d9061ad000b45"
+        }
+      },
+      "snapshot": "7bed6bc8c4cdfffdf6639a5ecd087de8259c0b970c37328390d41abea46a8461",
+      "time": "2026-11-10T16:15:22.167Z"
+    },
+    {
+      "revision": 3,
+      "from": "design",
+      "event": "ready",
+      "to": "implement",
+      "evidence": {
+        "design": {
+          "path": "work-items/SEC-LOW-001/design.md",
+          "sha256": "a5da1c91b63269e12189a66936d527d277da6368195c23ea5afb95a56d6e9022"
+        },
+        "traceability": {
+          "path": "work-items/SEC-LOW-001/traceability.md",
+          "sha256": "fc529bee654ee382c76162455e201186dec918b27ba76d425fbc5ff12c4a9764"
+        }
+      },
+      "snapshot": "7bed6bc8c4cdfffdf6639a5ecd087de8259c0b970c37328390d41abea46a8461",
+      "time": "2026-11-10T16:16:47.608Z"
+    },
+    {
+      "revision": 4,
+      "from": "implement",
+      "event": "ready",
+      "to": "verify",
+      "evidence": {
+        "implementation": {
+          "path": "work-items/SEC-LOW-001/implementation.md",
+          "sha256": "387c1f6459eadd58a01cc3aa02c54bf1b114b444384edb5ad0ce3e7d7babf5c0"
+        }
+      },
+      "snapshot": "8e9da64a23e4027e06ee944f806a4e990cbe3ec129312516f21c0ec116b0c020",
+      "time": "2026-11-10T16:23:00.605Z"
+    }
+  ],
+  "handoff": null,
+  "returnTo": null
+}
