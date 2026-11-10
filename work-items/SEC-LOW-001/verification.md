@@ -31,3 +31,17 @@ Existing tests modified: none. Existing tests that exercise the changed code and
   order) on a disposable database.
 - Derived query `existsByVehicleLicensePlateAndIdNot` against MySQL (Spring Data parses it at startup; the
   CI suite excludes the context-loading test).
+
+## Runtime (parent, 2026-11-11)
+
+Runtime environment (Claude, 2026-11-11 +07:00): integration worktree `E:\gvrp-wt\sec-batch2` (branch `test/sec-batch2` = master `0b6b759` + `fix/sec-auth-002` + `fix/sec-low-001` + `fix/sec-client-002`), Engine + Entry + client dev server run from it with the git-ignored local property files; MySQL in Docker. User signed in as planner of branch 1000 ("Branch Huge 1"); authenticated calls were made from that page with its session (token never printed). Merged suites: Entry 369/369 (`SPRING_PROFILES_ACTIVE=ci`, CI exclusions), client 490/490 specs, client build exit 0 with the same 12 warnings (initial 670.87 kB).
+
+| Check | Result |
+|---|---|
+| `POST /vehicles?fleetId=999999` with plate `29A-12345` (exists only in branch 1) | 400 `0040402` fleets |
+| same with a new plate | 400 `0040402` fleets (same answer, no plate check before own references) |
+| `POST /vehicles?fleetId=1000` (own fleet, depot 1000, type 9003) with plate `29A-12345` | 409 `0040901` "License plate is not available." (was 500) |
+| `PUT /vehicles/1018` (own) with plate `29A-12345`, other fields unchanged | 409 `0040901` |
+| `POST /orders/import` with a CSV of 10,001 rows (all rows deliberately invalid: no demand) | 400 "Import has 10001 rows; the limit is 10000." in 321 ms |
+| After all probes (read-only `agent_reader`) | vehicles 100,004 (unchanged), vehicle 1018 plate unchanged, branch-1000 orders 25,055 (unchanged), 0 `PROBE-%` orders; Entry log: 0 geocoding/Goong lines |
+| Cleanup sweep with `dry-run=false` | NOT RUN: destructive on the shared local DB. Covered by `JobCleanupRevisionTreeTest` |
