@@ -5,8 +5,8 @@
     "GVRP_Entry_API/src"
   ],
   "graphHash": "dd102f16a0bb44c675032aab0813a841f1b446ea1fa8d99958fa094d0e8de614",
-  "state": "await_user_test",
-  "revision": 6,
+  "state": "done",
+  "revision": 8,
   "history": [
     {
       "revision": 1,
@@ -454,6 +454,34 @@
       },
       "snapshot": "7a5c58461039d7637d30b2995fc34ddb5acdcf757fd7e9cecf4f5f79056a2da1",
       "time": "2026-11-10T23:41:33.839Z"
+    },
+    {
+      "revision": 7,
+      "from": "await_user_test",
+      "event": "accepted",
+      "to": "accepted",
+      "evidence": {
+        "user_acceptance": {
+          "path": "work-items/SEC-AUTH-002/user-acceptance.json",
+          "sha256": "9411872d075d5b110f18d796b954b21e2f1510cfffae07ebe668b4ad11d4a43c"
+        }
+      },
+      "snapshot": "7a5c58461039d7637d30b2995fc34ddb5acdcf757fd7e9cecf4f5f79056a2da1",
+      "time": "2026-11-10T23:57:09.790Z"
+    },
+    {
+      "revision": 8,
+      "from": "accepted",
+      "event": "finish",
+      "to": "done",
+      "evidence": {
+        "closure": {
+          "path": "work-items/SEC-AUTH-002/closure.md",
+          "sha256": "761cf2e2e0ed360872a9f0f3f6aa64d1ecbe33065a3e9822acebd18ea24085e5"
+        }
+      },
+      "snapshot": "7a5c58461039d7637d30b2995fc34ddb5acdcf757fd7e9cecf4f5f79056a2da1",
+      "time": "2026-11-10T23:57:10.029Z"
     }
   ],
   "handoff": "7a5c58461039d7637d30b2995fc34ddb5acdcf757fd7e9cecf4f5f79056a2da1",
