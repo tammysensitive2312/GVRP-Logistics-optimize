@@ -6,6 +6,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
+import org.truong.gvrp_engine_api.config.EngineLimits;
 import org.truong.gvrp_engine_api.job.JobRegistry;
 import org.truong.gvrp_engine_api.model.EngineOptimizationRequest;
 import org.truong.gvrp_engine_api.model.EngineOptimizationResponse;
@@ -39,6 +41,12 @@ public class OptimizationController {
      */
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private LegsService legsService;
+    /**
+     * Server-side work ceilings (SEC-ENGINE-001, design D4). Field-injected like
+     * {@link #legsService}; the defaults apply when absent.
+     */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private EngineLimits engineLimits = new EngineLimits();
 
     @PostMapping
     public ResponseEntity<EngineOptimizationResponse> optimize(
@@ -68,6 +76,16 @@ public class OptimizationController {
             errorResponse.setMessage(e.getMessage());
 
             return ResponseEntity.badRequest().body(errorResponse);
+
+        } catch (ResponseStatusException e) {
+            log.warn("Optimization request for job #{} rejected: {}", request.getJobId(), e.getReason());
+
+            EngineOptimizationResponse errorResponse = new EngineOptimizationResponse();
+            errorResponse.setExternalJobId("engine-" + request.getJobId());
+            errorResponse.setStatus("REJECTED");
+            errorResponse.setMessage(e.getReason());
+
+            return ResponseEntity.status(e.getStatusCode()).body(errorResponse);
 
         } catch (Exception e) {
             log.error("❌ Unexpected error processing job #{}", request.getJobId(), e);
@@ -103,6 +121,8 @@ public class OptimizationController {
             throw new IllegalArgumentException("Vehicle types list cannot be empty");
         }
 
+        validateLimits(request);
+
         // Validate coordinates
         for (var order : request.getOrders()) {
             if (order.getLatitude() == null || order.getLongitude() == null) {
@@ -114,6 +134,36 @@ public class OptimizationController {
             if (depot.getLatitude() == null || depot.getLongitude() == null) {
                 throw new IllegalArgumentException("Depot " + depot.getName() + " missing coordinates");
             }
+        }
+    }
+
+    /**
+     * Refuses work above the server-side ceilings before anything is queued (SEC-ENGINE-001).
+     * Configured work out of range → 400; lists above their ceiling → 413. Values are never clamped.
+     */
+    private void validateLimits(EngineOptimizationRequest request) {
+        EngineLimits limits = engineLimits != null ? engineLimits : new EngineLimits();
+        var config = request.getConfig();
+        if (config != null) {
+            requireInRange("max_iterations", config.getMaxIterations(), limits.getMaxIterations());
+            requireInRange("num_threads", config.getNumThreads(), limits.getMaxThreads());
+        }
+        requireAtMost("orders", request.getOrders().size(), limits.getMaxOrders());
+        requireAtMost("vehicles", request.getVehicles().size(), limits.getMaxVehicles());
+        requireAtMost("depots", request.getDepots().size(), limits.getMaxDepots());
+        requireAtMost("vehicle_types", request.getVehicleTypes().size(), limits.getMaxVehicleTypes());
+    }
+
+    private static void requireInRange(String field, Integer value, int max) {
+        if (value != null && (value < 1 || value > max)) {
+            throw new IllegalArgumentException(field + " must be between 1 and " + max + ", got " + value);
+        }
+    }
+
+    private static void requireAtMost(String field, int size, int max) {
+        if (size > max) {
+            throw new ResponseStatusException(HttpStatus.PAYLOAD_TOO_LARGE,
+                    "Too many " + field + ": " + size + " (max " + max + ")");
         }
     }
 

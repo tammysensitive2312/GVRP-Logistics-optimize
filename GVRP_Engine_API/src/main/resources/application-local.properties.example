@@ -21,6 +21,7 @@ spring.jackson.property-naming-strategy=SNAKE_CASE
 
 spring.optimization.entry.url=http://localhost:8080/api/v1
 entry.api-key=<set locally>
+gvrp.security.inbound-key=<set locally, same value as engine.inbound-key in Entry>
 
 gvrp.result-spool.dir=./.data/results
 gvrp.result-spool.max-attempts=20

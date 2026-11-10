@@ -70,6 +70,7 @@ spring.optimization.engine.url=http://localhost:8081/api/v1
 spring.optimization.engine.timeout=900
 
 engine.api.key=<set locally>
+engine.inbound-key=<set locally, same value as gvrp.security.inbound-key in Engine>
 
 geocoding.goong.api-key=<set locally>
 geocoding.enabled=true

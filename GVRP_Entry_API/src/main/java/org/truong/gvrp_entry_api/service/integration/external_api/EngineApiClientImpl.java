@@ -40,6 +40,29 @@ public class EngineApiClientImpl implements EngineApiClient{
     @Value("${spring.optimization.engine.url}")
     private String engineBaseUrl;
 
+    /**
+     * Entry -> Engine service key (SEC-ENGINE-001), sent only on Engine calls. The shared
+     * RestTemplate also serves Goong and Slack, so the key is never added by an interceptor.
+     */
+    @Value("${engine.inbound-key:}")
+    private String engineInboundKey;
+
+    /** Header the Engine's ServiceKeyFilter checks. */
+    static final String ENGINE_KEY_HEADER = "X-Engine-Key";
+
+    private HttpHeaders engineHeaders(boolean json) {
+        HttpHeaders headers = new HttpHeaders();
+        if (json) {
+            headers.setContentType(MediaType.APPLICATION_JSON);
+        }
+        if (engineInboundKey != null && !engineInboundKey.isBlank()) {
+            headers.set(ENGINE_KEY_HEADER, engineInboundKey.trim());
+        } else {
+            log.error("engine.inbound-key (GVRP_ENGINE_INBOUND_KEY) is not set; the Engine will refuse this call");
+        }
+        return headers;
+    }
+
     @Override
     @Async
     public void submitOptimizationAsync(Long jobId, EngineOptimizationRequest engineRequest) {
@@ -60,11 +83,8 @@ public class EngineApiClientImpl implements EngineApiClient{
 
         try {
             // Prepare HTTP request
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-
             HttpEntity<EngineOptimizationRequest> httpRequest =
-                    new HttpEntity<>(engineRequest, headers);
+                    new HttpEntity<>(engineRequest, engineHeaders(true));
 
             String url = engineBaseUrl + "/optimization";
 
@@ -110,7 +130,8 @@ public class EngineApiClientImpl implements EngineApiClient{
     public Map<String, Object> getProgress(Long jobId) {
         String url = engineBaseUrl + "/optimization/" + jobId + "/progress";
         try {
-            ResponseEntity<Map> resp = restTemplate.getForEntity(url, Map.class);
+            ResponseEntity<Map> resp = restTemplate.exchange(
+                    url, HttpMethod.GET, new HttpEntity<>(engineHeaders(false)), Map.class);
             return (Map<String, Object>) resp.getBody();
         } catch (HttpClientErrorException.NotFound nf) {
             return null;
@@ -124,7 +145,7 @@ public class EngineApiClientImpl implements EngineApiClient{
     public void requestCancel(Long jobId) {
         String url = engineBaseUrl + "/optimization/" + jobId + "/cancel";
         try {
-            restTemplate.postForEntity(url, HttpEntity.EMPTY, Void.class);
+            restTemplate.postForEntity(url, new HttpEntity<>(engineHeaders(false)), Void.class);
             log.info("Đã gửi yêu cầu cancel job #{} xuống engine", jobId);
         } catch (Exception e) {
             // best-effort: DB đã set CANCELLED; engine không tới được thì chỉ cảnh báo
@@ -136,15 +157,15 @@ public class EngineApiClientImpl implements EngineApiClient{
     public EngineEvaluateResponseDTO evaluateRoutes(EngineEvaluateRequestDTO request) {
         String url = engineBaseUrl + "/optimization/evaluate";
         try {
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
             ResponseEntity<EngineEvaluateResponseDTO> response = restTemplate.postForEntity(
-                    url, new HttpEntity<>(request, headers), EngineEvaluateResponseDTO.class);
+                    url, new HttpEntity<>(request, engineHeaders(true)), EngineEvaluateResponseDTO.class);
             if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
                 throw new EngineUnavailableException(
                         "Engine returned " + response.getStatusCode() + " for route evaluation.", null);
             }
             return response.getBody();
+        } catch (HttpClientErrorException.Unauthorized e) {
+            throw engineKeyRejected("route evaluation", e);
         } catch (HttpClientErrorException e) {
             // Engine rejected OUR payload — surface as a 400 with the engine message.
             throw new DataInvalidException(List.of(
@@ -163,15 +184,15 @@ public class EngineApiClientImpl implements EngineApiClient{
         request.setPoints(points);
         request.setLocale(locale);
         try {
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
             ResponseEntity<EngineLegsResponseDTO> response = restTemplate.postForEntity(
-                    url, new HttpEntity<>(request, headers), EngineLegsResponseDTO.class);
+                    url, new HttpEntity<>(request, engineHeaders(true)), EngineLegsResponseDTO.class);
             if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
                 throw new EngineUnavailableException(
                         "Engine returned " + response.getStatusCode() + " for leg geometry.", null);
             }
             return response.getBody();
+        } catch (HttpClientErrorException.Unauthorized e) {
+            throw engineKeyRejected("leg geometry", e);
         } catch (HttpClientErrorException e) {
             throw new DataInvalidException(List.of(
                     ErrorDetails.validation("Engine rejected leg points: " + e.getResponseBodyAsString())));
@@ -180,6 +201,17 @@ public class EngineApiClientImpl implements EngineApiClient{
                     "Cannot reach optimization engine for leg geometry. Retry later; the route was not sent.",
                     e);
         }
+    }
+
+    /**
+     * A 401 from the Engine is a key misconfiguration between the two services, not a fault in the
+     * caller's data: report it as the Engine being unavailable rather than as a 400.
+     */
+    private EngineUnavailableException engineKeyRejected(String operation, Exception cause) {
+        log.error("Engine refused the service key for {} (check engine.inbound-key / GVRP_ENGINE_INBOUND_KEY)",
+                operation);
+        return new EngineUnavailableException(
+                "Optimization engine refused this server's credentials for " + operation + ".", cause);
     }
 
     private void updateJobStatus(Long jobId, OptimizationJobStatus status, String errorMessage, String externalJobId) {        try {

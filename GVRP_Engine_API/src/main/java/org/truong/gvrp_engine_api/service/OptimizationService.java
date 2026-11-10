@@ -2,6 +2,7 @@ package org.truong.gvrp_engine_api.service;
 
 import com.graphhopper.jsprit.core.algorithm.VehicleRoutingAlgorithm;
 import com.graphhopper.jsprit.core.algorithm.box.Jsprit;
+import com.graphhopper.jsprit.core.algorithm.listener.AlgorithmEndsListener;
 import com.graphhopper.jsprit.core.algorithm.listener.IterationStartsListener;
 import com.graphhopper.jsprit.core.algorithm.state.StateManager;
 import com.graphhopper.jsprit.core.problem.Location;
@@ -29,6 +30,7 @@ import org.truong.gvrp_engine_api.model.*;
 import org.truong.gvrp_engine_api.clustering.ClusterMergeService;
 import org.truong.gvrp_engine_api.clustering.KMeansClusterer;
 import org.truong.gvrp_engine_api.clustering.VehicleClusterAssigner;
+import org.truong.gvrp_engine_api.config.EngineLimits;
 import org.truong.gvrp_engine_api.job.JobCancelledException;
 import org.truong.gvrp_engine_api.job.JobRegistry;
 
@@ -38,6 +40,8 @@ import static org.truong.gvrp_engine_api.utils.AppConstant.PARETO_SAMPLER_N;
 import static org.truong.gvrp_engine_api.utils.AppConstant.PARETO_SAMPLER_P;
 
 import java.math.BigDecimal;
+import java.time.Clock;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
@@ -92,6 +96,13 @@ public class OptimizationService {
      */
     @Autowired(required = false)
     private LegGeometryService legGeometryService;
+
+    /**
+     * Server-side work limits (SEC-ENGINE-001). Field-injected and optional for the same reason as
+     * {@link #legGeometryService}; the defaults apply when absent.
+     */
+    @Autowired(required = false)
+    private EngineLimits engineLimits;
 
     // ==================== ASYNC ENTRY POINT ====================
 
@@ -766,22 +777,26 @@ public class OptimizationService {
 
         builder.setStateAndConstraintManager(stateManager, constraintManager);
         VehicleRoutingAlgorithm algorithm = builder.buildAlgorithm();
-        algorithm.setPrematureAlgorithmTermination(solution -> handle.isCancelRequested());
-
-        // Set timeout
-        if (config.getTimeoutSeconds() != null && config.getTimeoutSeconds() > 0) {
-//            long timeoutMs = config.getTimeoutSeconds() * 1000L;
-//            TimeTermination timeoutTermination = new TimeTermination(timeoutMs);
-//            algorithm.setPrematureAlgorithmTermination(timeoutTermination);
-//            algorithm.addListener(timeoutTermination);
-        } else {
-            log.info("No timeout configured, algorithm will run until max iterations: {}", maxIterations);
-        }
+        // Stop on cancel or on the job-wide runtime cap (SEC-ENGINE-001, design D3 option B). The
+        // request's timeoutSeconds stays advisory: it was never enforced, and enforcing it would
+        // change every recorded result.
+        long maxRuntimeSeconds = (engineLimits != null ? engineLimits : new EngineLimits())
+                .getMaxRuntimeSeconds();
+        SolverDeadline deadline = new SolverDeadline(handle::isCancelRequested, handle.startedAt(),
+                Duration.ofSeconds(maxRuntimeSeconds), Clock.systemUTC());
+        algorithm.setPrematureAlgorithmTermination(solution -> deadline.shouldStop());
+        algorithm.addListener((AlgorithmEndsListener) (problem, found) -> {
+            if (deadline.deadlineHit()) {
+                log.warn("Job #{} reached the runtime cap of {} s before {} iterations; returning the best "
+                        + "solution found so far", handle.jobId(), maxRuntimeSeconds, maxIterations);
+            }
+        });
 
         log.info("=== Jsprit Algorithm Configured ===");
         log.info("Max Iterations: {}", maxIterations);
         log.info("Threads: {}", numThreads);
-        log.info("Timeout: {}s", config.getTimeoutSeconds());
+        log.info("Runtime cap: {}s (job deadline {}); request timeout {}s is advisory, not enforced",
+                maxRuntimeSeconds, deadline.deadline(), config.getTimeoutSeconds());
         log.info("Constraints applied: MaxDistance");
         log.info("====================================");
 
