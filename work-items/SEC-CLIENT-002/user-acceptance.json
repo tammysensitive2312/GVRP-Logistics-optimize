@@ -1,0 +1,6 @@
+{
+  "decision": "accepted",
+  "run_id": "SEC-CLIENT-002",
+  "handoff": "de2c3c5bf504cbd16b38b64de126f16817db556a3f5cd52612763e69979f263f",
+  "source": "User message 2026-11-11 (+07:00) in the Claude Code session, after the batch-2 handoff (runtime checks on test/sec-batch2): \"Chấp nhận, merge\". The message accepts the three work items and the default decisions listed in the handoff."
+}

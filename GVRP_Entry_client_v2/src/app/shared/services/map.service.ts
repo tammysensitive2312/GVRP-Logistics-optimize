@@ -1,5 +1,5 @@
 // src/app/shared/services/map.service.ts
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import * as L from 'leaflet';
 // Side-effect import: registers L.polylineDecorator / L.Symbol.arrowHead.
 import 'leaflet-polylinedecorator';
@@ -7,6 +7,7 @@ import { BehaviorSubject, Observable, firstValueFrom } from 'rxjs';
 
 import { DepotDTO, OrderDTO, RouteGeometryDTO, SolutionDTO, RouteDTO, StopDTO } from '@core/models';
 import { LezApiService } from '@core/services/lez-api.service';
+import { SessionResetService } from '@core/services/session-reset.service';
 import { orderStops, routeColor } from '@shared/utils/solution-view.utils';
 import { violationFocus, LegFocus } from '@shared/utils/map-focus.utils';
 import { completeRoutePolyline, storedLegPaths } from '@shared/utils/route-geometry.utils';
@@ -42,6 +43,13 @@ export class MapService {
   private focusable = new Map<number, FocusableRoute>();
   /** True while a solution is drawn, so late-arriving orders don't steal the view. */
   private solutionDisplayed = false;
+  /**
+   * Drawing generation (SEC-CLIENT-002). Incremented by a new map, by clearing
+   * the solution and by the session reset; an asynchronous zone or route
+   * response started under an older generation is dropped, so branch A's late
+   * data is never drawn on the map of the next session.
+   */
+  private generation = 0;
 
   /** Route colours come from the shared V1 palette in solution-view.utils. */
 
@@ -52,7 +60,11 @@ export class MapService {
     private markerService: MarkerService,
     private routingService: RoutingService,
     private lezApi: LezApiService
-  ) {}
+  ) {
+    // Joins logout / 401 / login without SessionResetService importing this
+    // service (and Leaflet) into the initial bundle (SEC-CLIENT-002).
+    inject(SessionResetService).registerResetHook(() => this.reset());
+  }
 
   /**
    * Binds the service to a Leaflet map.
@@ -63,6 +75,7 @@ export class MapService {
    * stacked on top of the map each time.
    */
   initializeMap(map: L.Map): void {
+    this.generation++;
     this.map = map;
     this.depotMarkers = [];
     this.orderMarkers = [];
@@ -149,13 +162,17 @@ export class MapService {
     this.clearRoutes();
     this.clearOrderMarkers();
     this.solutionDisplayed = true;
+    const generation = this.generation;
     this.drawZones();
 
     for (let index = 0; index < solution.routes.length; index++) {
       const route = solution.routes[index];
       const color = routeColor(index);
 
-      await this.displayRoute(route, color);
+      await this.displayRoute(route, color, generation);
+      if (generation !== this.generation) {
+        return;
+      }
     }
 
     // Fit bounds
@@ -176,8 +193,12 @@ export class MapService {
    */
   private drawZones(): void {
     this.zoneLayers.clearLayers();
+    const generation = this.generation;
     this.lezApi.listZones().subscribe({
       next: zones => {
+        if (generation !== this.generation) {
+          return;
+        }
         for (const zone of zones ?? []) {
           if (!zone.enabled || !zone.geometry) {
             continue;
@@ -202,7 +223,12 @@ export class MapService {
     });
   }
 
-  private async displayRoute(route: RouteDTO, color: string): Promise<void> {
+  /**
+   * Draws one route. `generation` is the drawing generation of the calling
+   * `displaySolution`; after each await the route is dropped when it changed
+   * (new map, cleared solution or session reset - SEC-CLIENT-002).
+   */
+  private async displayRoute(route: RouteDTO, color: string, generation: number): Promise<void> {
     // Sort stops
     const stops = [...route.stops].sort((a, b) => {
       const timeA = a.arrival_time || a.departure_time || '00:00:00';
@@ -241,6 +267,9 @@ export class MapService {
     // Geometry source rule (design §3.4): stored server geometry wins when it
     // is complete, so no OSRM request is made for this route.
     const stored = await this.storedPath(route);
+    if (generation !== this.generation) {
+      return;
+    }
     if (stored) {
       entry.legPaths = stored.legs;
       const polyline = L.polyline(stored.polyline, {
@@ -262,6 +291,9 @@ export class MapService {
       const routeGeometry = await firstValueFrom(
         this.routingService.getRouteGeometry(coordinates)
       );
+      if (generation !== this.generation) {
+        return;
+      }
 
       if (routeGeometry?.coordinates) {
         const polyline = L.polyline(routeGeometry.coordinates, {
@@ -283,6 +315,9 @@ export class MapService {
         this.drawStraightLine(coordinates, color, route);
       }
     } catch (error) {
+      if (generation !== this.generation) {
+        return;
+      }
       console.error('Route drawing error:', error);
       this.drawStraightLine(coordinates, color, route);
     }
@@ -432,6 +467,8 @@ export class MapService {
   }
 
   private clearRoutes(): void {
+    // A cleared or replaced solution must not be redrawn by its own late callbacks.
+    this.generation++;
     this.solutionDisplayed = false;
     this.focusable.clear();
     this.clearHighlight();
@@ -498,5 +535,18 @@ export class MapService {
     this.clearDepotMarkers();
     this.clearOrderMarkers();
     this.clearRoutes();
+  }
+
+  /**
+   * Session reset (SEC-CLIENT-002, called by SessionResetService on logout,
+   * 401 and login). This service outlives the session, so everything drawn for
+   * the previous principal is removed, and zone or route responses still in
+   * flight for it are ignored when they arrive.
+   */
+  reset(): void {
+    this.generation++;
+    if (this.map) {
+      this.clearAll();
+    }
   }
 }

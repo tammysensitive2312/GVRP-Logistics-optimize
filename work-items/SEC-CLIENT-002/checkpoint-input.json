@@ -1,0 +1,29 @@
+{
+  "revision": 4,
+  "completed": [
+    "Lead #8 confirmed with 5 failing specs at 0b6b759 (context.md)",
+    "Fix implemented in map.service.ts and session-reset.service.ts (implementation.md)",
+    "Automated verification: 490/490 specs, build exit 0 with 12 baseline warnings (verification.md)"
+  ],
+  "remaining": [
+    "Parent: manual two-planner browser check",
+    "Parent: handoff.md and pass transition"
+  ],
+  "read_next": [
+    "work-items/SEC-CLIENT-002/verification.md",
+    "work-items/SEC-CLIENT-002/implementation.md"
+  ],
+  "evidence": [
+    "work-items/SEC-CLIENT-002/design.md",
+    "work-items/SEC-CLIENT-002/traceability.md",
+    "work-items/SEC-CLIENT-002/implementation.md",
+    "work-items/SEC-CLIENT-002/verification.md"
+  ],
+  "blockers": [],
+  "decisions": [
+    "design.md D2 revised during implement: reset hook registered by MapService instead of SessionResetService importing MapService (static import moved Leaflet into the initial bundle, 670.96 kB -> 847.35 kB)",
+    "traceability.md statuses updated after the specs passed"
+  ],
+  "processes": [],
+  "next_action": "Parent runs the manual browser check from the side-session report, writes handoff.md, then runs the pass step"
+}
