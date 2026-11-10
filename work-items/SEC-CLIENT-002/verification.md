@@ -34,3 +34,13 @@ a checkpoint at state `verify`.
 ## Remaining for the parent
 
 Manual browser check (see the side-session report), then `pass` with `verification` + `handoff`.
+
+## Runtime (parent, 2026-11-11)
+
+Runtime environment (Claude, 2026-11-11 +07:00): integration worktree `E:\gvrp-wt\sec-batch2` (branch `test/sec-batch2` = master `0b6b759` + `fix/sec-auth-002` + `fix/sec-low-001` + `fix/sec-client-002`), Engine + Entry + client dev server run from it with the git-ignored local property files; MySQL in Docker. User signed in as planner of branch 1000 ("Branch Huge 1"); authenticated calls were made from that page with its session (token never printed). Merged suites: Entry 369/369 (`SPRING_PROFILES_ACTIVE=ci`, CI exclusions), client 490/490 specs, client build exit 0 with the same 12 warnings (initial 670.87 kB).
+
+| Check | Result |
+|---|---|
+| Branch 1000 planner opens job 91's solution on the dashboard | routes drawn (12 coloured routes, 127 markers), `GET /api/v1/zones` 200 |
+| Console during the session | only the errors caused by the deliberate 400/409/405 API probes of the other items; none from the map |
+| Two planners of different branches with throttled `/zones` and `/routes/*/geometry` (verification.md §manual check) | NOT RUN: needs a second account and network throttling. Covered by `map.service.session.spec.ts` MC-T1…T6 (5 failed before the fix) |

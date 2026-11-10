@@ -5,8 +5,8 @@
     "GVRP_Entry_client_v2/src"
   ],
   "graphHash": "dd102f16a0bb44c675032aab0813a841f1b446ea1fa8d99958fa094d0e8de614",
-  "state": "verify",
-  "revision": 8,
+  "state": "await_user_test",
+  "revision": 9,
   "history": [
     {
       "revision": 1,
@@ -442,9 +442,27 @@
       },
       "snapshot": "de2c3c5bf504cbd16b38b64de126f16817db556a3f5cd52612763e69979f263f",
       "time": "2026-11-10T16:24:00.179Z"
+    },
+    {
+      "revision": 9,
+      "from": "verify",
+      "event": "pass",
+      "to": "await_user_test",
+      "evidence": {
+        "verification": {
+          "path": "work-items/SEC-CLIENT-002/verification.md",
+          "sha256": "1b24a6834d3d942bd404d2c7d9dcd43c396f7cec7bf340d1c16f5b56ef84efb1"
+        },
+        "handoff": {
+          "path": "work-items/SEC-CLIENT-002/handoff.md",
+          "sha256": "5a0e929ebc865849a31204f983021cb684edce40ca965dfccc068f658761ab0d"
+        }
+      },
+      "snapshot": "de2c3c5bf504cbd16b38b64de126f16817db556a3f5cd52612763e69979f263f",
+      "time": "2026-11-10T23:41:37.854Z"
     }
   ],
-  "handoff": null,
+  "handoff": "de2c3c5bf504cbd16b38b64de126f16817db556a3f5cd52612763e69979f263f",
   "returnTo": null,
   "checkpoint": {
     "state": "verify",
