@@ -1,8 +1,8 @@
 package org.truong.gvrp_entry_api.service;
 
-import jakarta.validation.ValidationException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -20,6 +20,7 @@ import org.truong.gvrp_entry_api.entity.VehicleType;
 import org.truong.gvrp_entry_api.entity.enums.VehicleStatus;
 import org.truong.gvrp_entry_api.exception.DataInvalidException;
 import org.truong.gvrp_entry_api.exception.ErrorDetail;
+import org.truong.gvrp_entry_api.exception.ResourceConflictException;
 import org.truong.gvrp_entry_api.mapper.VehicleMapper;
 import org.truong.gvrp_entry_api.repository.DepotRepository;
 import org.truong.gvrp_entry_api.repository.FleetRepository;
@@ -57,11 +58,10 @@ public class VehicleService {
     }
 
     public VehicleDTO createVehicle(VehicleInputDTO input, long fleetId, Long branchId) {
-        if (vehicleRepository.existsByVehicleLicensePlate(input.getVehicleLicensePlate())) {
-            throw new ValidationException("License plate already exists");
-        }
-
         // Every referenced entity must belong to the caller's branch (tenant isolation).
+        // These checks run before the plate check, so a caller without valid own
+        // references gets the same answer whether or not the plate exists in
+        // another branch (SEC-007).
         Fleet fleet = fleetRepository.findByIdAndBranchId(fleetId, branchId)
                 .orElseThrow(() -> new DataInvalidException(
                         List.of(
@@ -101,6 +101,12 @@ public class VehicleService {
                                         .build()
                         )));
 
+        // Plates are unique across all branches (global unique key). The answer
+        // is the same for a plate of the caller's branch and of another branch.
+        if (vehicleRepository.existsByVehicleLicensePlate(input.getVehicleLicensePlate())) {
+            throw plateNotAvailable();
+        }
+
         Vehicle vehicle = Vehicle.builder()
                 .vehicleLicensePlate(input.getVehicleLicensePlate())
                 .fleet(fleet)
@@ -110,7 +116,12 @@ public class VehicleService {
                 .status(VehicleStatus.AVAILABLE)
                 .build();
 
-        vehicleRepository.save(vehicle);
+        try {
+            vehicleRepository.save(vehicle);
+        } catch (DataIntegrityViolationException e) {
+            // Concurrent insert of the same plate between the check and the save.
+            throw plateNotAvailable();
+        }
         return vehicleMapper.toDTO(vehicle);
     }
 
@@ -129,6 +140,11 @@ public class VehicleService {
                                         .build()
                         ))
                 );
+
+        if (input.getVehicleLicensePlate() != null
+                && vehicleRepository.existsByVehicleLicensePlateAndIdNot(input.getVehicleLicensePlate(), id)) {
+            throw plateNotAvailable();
+        }
 
         vehicleMapper.updateEntityFromDTO(input, vehicle);
 
@@ -175,8 +191,19 @@ public class VehicleService {
             vehicle.setStatus(input.getStatus());
         }
 
-        vehicle = vehicleRepository.save(vehicle);
+        try {
+            // Flush here so a unique-key race surfaces inside this method as a
+            // 409, not at commit as an unhandled 500.
+            vehicle = vehicleRepository.saveAndFlush(vehicle);
+        } catch (DataIntegrityViolationException e) {
+            throw plateNotAvailable();
+        }
 
         return vehicleMapper.toDTO(vehicle);
+    }
+
+    /** 409 with a branch-neutral message (SEC-007). */
+    private static ResourceConflictException plateNotAvailable() {
+        return new ResourceConflictException("License plate is not available.");
     }
 }

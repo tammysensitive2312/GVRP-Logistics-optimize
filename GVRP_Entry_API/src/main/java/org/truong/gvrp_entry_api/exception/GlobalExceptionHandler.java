@@ -68,6 +68,19 @@ public class GlobalExceptionHandler {
                 .body(new ErrorResponse(List.of(detail)));
     }
 
+    /** 409 — the request collides with an existing resource (SEC-007: duplicate plate). */
+    @ExceptionHandler(ResourceConflictException.class)
+    public ResponseEntity<ErrorResponse> handleResourceConflict(ResourceConflictException ex) {
+        ErrorDetail detail = ErrorDetail.builder()
+                .code(ErrorCode.RESOURCE_CONFLICT.getCode())
+                .message(ex.getMessage())
+                .build();
+
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(new ErrorResponse(List.of(detail)));
+    }
+
     @ExceptionHandler(UnprocessablePlanException.class)
     public ResponseEntity<ErrorResponse> handleUnprocessablePlan(UnprocessablePlanException ex) {
         logger.warn("Route plan violates hard constraints: {}", ex.getMessage());

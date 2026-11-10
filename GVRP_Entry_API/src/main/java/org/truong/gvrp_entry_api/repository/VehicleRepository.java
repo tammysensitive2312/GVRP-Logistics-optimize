@@ -32,6 +32,14 @@ public interface VehicleRepository extends JpaRepository<Vehicle, Long> {
      */
     boolean existsByVehicleLicensePlate(String vehicleLicensePlate);
 
+    /**
+     * True when another vehicle (not {@code id}) already holds the plate.
+     * Used on update so that re-saving a vehicle's own plate, including a
+     * letter-case change under the case-insensitive collation, is not a
+     * conflict (SEC-LOW-001).
+     */
+    boolean existsByVehicleLicensePlateAndIdNot(String vehicleLicensePlate, Long id);
+
     @EntityGraph(attributePaths = {"startDepot", "endDepot", "fleet", "vehicleType"})
     @Query("""
         SELECT v FROM Vehicle v 

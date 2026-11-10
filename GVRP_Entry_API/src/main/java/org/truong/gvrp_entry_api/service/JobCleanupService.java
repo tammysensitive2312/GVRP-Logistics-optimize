@@ -2,11 +2,15 @@ package org.truong.gvrp_entry_api.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionOperations;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.truong.gvrp_entry_api.entity.OptimizationJob;
 import org.truong.gvrp_entry_api.entity.Solution;
 import org.truong.gvrp_entry_api.entity.enums.OptimizationJobStatus;
@@ -15,8 +19,13 @@ import org.truong.gvrp_entry_api.repository.RouteSendRepository;
 import org.truong.gvrp_entry_api.repository.SolutionRepository;
 
 import java.time.LocalDateTime;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Deque;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Retention sweep for old terminal jobs (hard delete, no archive).
@@ -25,9 +34,14 @@ import java.util.List;
  * {@code trg_prevent_job_deletion_with_solution} trigger blocks deleting a
  * job that still has a solution, and sends/revisions RESTRICT their solution:
  * <pre>
- *   route_sends (of solution + revisions) → revisions → solution
- *   (routes/segments cascade via JPA) → job
+ *   route_sends (of solution + every revision) → revisions (deepest first)
+ *   → solution (routes/segments cascade via JPA) → job
  * </pre>
+ * Revisions form a tree of any depth (each new revision hangs off the latest
+ * one), so the whole tree is collected, not only direct children
+ * (SEC-LOW-001, audit lead #14). Each job is deleted in its own transaction;
+ * a job that fails is rolled back, logged by id and skipped, so it cannot
+ * stall the sweep for other jobs or branches.
  * PENDING/PROCESSING jobs are never swept, no matter their age.
  *
  * <p>Ship with {@code gvrp.cleanup.dry-run=true} (default): the sweep only
@@ -59,6 +73,19 @@ public class JobCleanupService {
 
     @Value("${gvrp.cleanup.batch-size:200}")
     private int batchSize;
+
+    /**
+     * One transaction per job. Without a transaction manager (plain unit
+     * tests built from the constructor) the work runs without a transaction.
+     */
+    private TransactionOperations perJobTransaction = TransactionOperations.withoutTransaction();
+
+    @Autowired
+    void setTransactionManager(PlatformTransactionManager transactionManager) {
+        TransactionTemplate template = new TransactionTemplate(transactionManager);
+        template.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        this.perJobTransaction = template;
+    }
 
     public record CleanupCounts(long cancelled, long failed, long completed) {
         public long total() {
@@ -95,7 +122,10 @@ public class JobCleanupService {
                 countExpired(OptimizationJobStatus.COMPLETED, completedRetentionDays));
     }
 
-    @Transactional
+    /**
+     * Not {@code @Transactional}: every job gets its own transaction in
+     * {@link #cleanStatus}, so one failing job rolls back alone.
+     */
     public CleanupCounts cleanOldJobs() {
         return new CleanupCounts(
                 cleanStatus(OptimizationJobStatus.CANCELLED, cancelledRetentionDays),
@@ -113,22 +143,43 @@ public class JobCleanupService {
         // Guard against a zero/negative batch-size misconfiguration.
         int pageSize = Math.max(1, batchSize);
         long deleted = 0;
-        List<Long> batch;
+        // Jobs whose deletion failed in this run. They stay in the table, so
+        // page 0 is read with room for them and they are filtered out: they
+        // never hide later jobs, and each full page holds at least one job not
+        // yet seen, so the loop ends.
+        Set<Long> skipped = new HashSet<>();
+        List<Long> page;
+        int requested;
         do {
-            batch = jobRepository.findExpiredIds(
-                    status, cutoff, PageRequest.of(0, pageSize));
-            for (Long jobId : batch) {
-                deleteJobChain(jobId);
-                deleted++;
+            requested = pageSize + skipped.size();
+            page = jobRepository.findExpiredIds(
+                    status, cutoff, PageRequest.of(0, requested));
+            for (Long jobId : page) {
+                if (skipped.contains(jobId)) {
+                    continue;
+                }
+                try {
+                    perJobTransaction.executeWithoutResult(tx -> deleteJobChain(jobId));
+                    deleted++;
+                } catch (RuntimeException e) {
+                    skipped.add(jobId);
+                    // Job id and exception class only: the message can carry row data.
+                    log.warn("Cleanup: job {} ({}) could not be deleted, skipped: {}",
+                            jobId, status, e.getClass().getSimpleName());
+                }
             }
-        } while (batch.size() == pageSize);
+        } while (page.size() == requested);
+        if (!skipped.isEmpty()) {
+            log.warn("Cleanup: {} {} job(s) not deleted in this run: {}",
+                    skipped.size(), status, skipped);
+        }
         return deleted;
     }
 
     /**
      * Deletes one job with everything pinning it, constraint order:
-     * sends → revisions → solution → job. The trigger then sees a
-     * solution-free job and lets the delete through.
+     * sends → revisions (deepest first) → solution → job. The trigger
+     * then sees a solution-free job and lets the delete through.
      */
     private void deleteJobChain(Long jobId) {
         OptimizationJob job = jobRepository.findById(jobId).orElse(null);
@@ -136,10 +187,9 @@ public class JobCleanupService {
             return;
         }
         solutionRepository.findByJobId(jobId).ifPresent(solution -> {
+            List<Solution> revisions = revisionTree(solution);
             List<Long> solutionIds = new ArrayList<>();
             solutionIds.add(solution.getId());
-            List<Solution> revisions =
-                    solutionRepository.findByParentSolutionId(solution.getId());
             for (Solution revision : revisions) {
                 solutionIds.add(revision.getId());
             }
@@ -147,9 +197,34 @@ public class JobCleanupService {
                 routeSendRepository.deleteAll(
                         routeSendRepository.findBySolutionId(solutionId));
             }
-            solutionRepository.deleteAll(revisions);
+            // parent_solution_id is ON DELETE RESTRICT: children before parents.
+            List<Solution> deepestFirst = new ArrayList<>(revisions);
+            Collections.reverse(deepestFirst);
+            solutionRepository.deleteAll(deepestFirst);
             solutionRepository.delete(solution);
         });
         jobRepository.delete(job);
+    }
+
+    /**
+     * Every revision below {@code root}, breadth-first (a parent always comes
+     * before its children). The visited set guards against a malformed cycle.
+     */
+    private List<Solution> revisionTree(Solution root) {
+        List<Solution> tree = new ArrayList<>();
+        Set<Long> visited = new HashSet<>();
+        visited.add(root.getId());
+        Deque<Solution> queue = new ArrayDeque<>();
+        queue.add(root);
+        while (!queue.isEmpty()) {
+            Solution parent = queue.poll();
+            for (Solution child : solutionRepository.findByParentSolutionId(parent.getId())) {
+                if (visited.add(child.getId())) {
+                    tree.add(child);
+                    queue.add(child);
+                }
+            }
+        }
+        return tree;
     }
 }
