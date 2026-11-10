@@ -5,8 +5,8 @@
     "GVRP_Entry_API/src"
   ],
   "graphHash": "dd102f16a0bb44c675032aab0813a841f1b446ea1fa8d99958fa094d0e8de614",
-  "state": "verify",
-  "revision": 5,
+  "state": "await_user_test",
+  "revision": 6,
   "history": [
     {
       "revision": 1,
@@ -436,9 +436,27 @@
           "GVRP_Entry_API/src/test/java/org/truong/gvrp_entry_api/service/orders/OrderServiceTimeWindowTest.java": "550b0bfce45aa0076ab81a9406fb1b94d3f69fa61242bdb102c9ac88fd3a63c0"
         }
       }
+    },
+    {
+      "revision": 6,
+      "from": "verify",
+      "event": "pass",
+      "to": "await_user_test",
+      "evidence": {
+        "verification": {
+          "path": "work-items/SEC-AUTH-002/verification.md",
+          "sha256": "ed4daa7c1d9fca303310934bbaa5fb229f17eab01a6772d42e51c831bb450cfb"
+        },
+        "handoff": {
+          "path": "work-items/SEC-AUTH-002/handoff.md",
+          "sha256": "60d8d5841126adf1a1f1fc01f42716a5590886a3ceea37f80a0feb5aac664843"
+        }
+      },
+      "snapshot": "7a5c58461039d7637d30b2995fc34ddb5acdcf757fd7e9cecf4f5f79056a2da1",
+      "time": "2026-11-10T23:41:33.839Z"
     }
   ],
-  "handoff": null,
+  "handoff": "7a5c58461039d7637d30b2995fc34ddb5acdcf757fd7e9cecf4f5f79056a2da1",
   "returnTo": null,
   "checkpoint": {
     "state": "verify",

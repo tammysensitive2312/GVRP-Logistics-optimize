@@ -50,3 +50,13 @@ branch B (id `b`); `O` = an order id owned by branch A.
 6. Restore: `UPDATE users SET branch_id = a WHERE username = 'U';` → old token `T` works again (**200**), documented in design D1 (no revocation).
 7. Register oracle, anonymous, three bodies (snake_case): existing username + new e-mail, new username + existing e-mail, both new, plus `{}` → all **403** with the identical body `{"errors":[{"code":"0040301","message":"Self-registration is disabled. Accounts are provisioned by an administrator."}]}`; `SELECT COUNT(*) FROM users` unchanged.
 8. Optional: in the Angular client, after step 3 any planner page with the old session redirects to `/login` (interceptor handles 401).
+
+## Runtime (parent, 2026-11-11)
+
+Runtime environment (Claude, 2026-11-11 +07:00): integration worktree `E:\gvrp-wt\sec-batch2` (branch `test/sec-batch2` = master `0b6b759` + `fix/sec-auth-002` + `fix/sec-low-001` + `fix/sec-client-002`), Engine + Entry + client dev server run from it with the git-ignored local property files; MySQL in Docker. User signed in as planner of branch 1000 ("Branch Huge 1"); authenticated calls were made from that page with its session (token never printed). Merged suites: Entry 369/369 (`SPRING_PROFILES_ACTIVE=ci`, CI exclusions), client 490/490 specs, client build exit 0 with the same 12 warnings (initial 670.87 kB).
+
+| Check | Result |
+|---|---|
+| Anonymous `POST /api/v1/auth/register` with an existing username, fresh values, `{}`, and a non-JSON body | 403 ×4, identical body `0040301` "Self-registration is disabled…" |
+| Signed-in planner: `GET /orders`, `GET /vehicles` and normal UI navigation | 200; Entry log: 0 `LazyInitializationException`, 0 "Rejected authentication" lines |
+| Branch moved while a token is live (verification.md §Recommended steps 3–5) | NOT RUN at runtime: needs a write to `users.branch_id`, which agents may not do. Covered by `TenantBindingAccessTest`, `JwtClaimBindingTest` |
