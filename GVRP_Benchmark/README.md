@@ -38,7 +38,7 @@ code đã thực thi. Ghi lại còn hơn tự lừa mình.
 | Schema CSV kết quả | ✅ chốt tại `results/schema.csv` |
 | Script export dataset thật | ✅ có, **cần bạn chạy** (xem `scripts/`) |
 | Dataset vn6183 đã đóng băng | ⬜ chờ chạy export |
-| Instance chuẩn học thuật | ⬜ chờ tải + viết adapter |
+| Instance chuẩn học thuật | 🟡 Solomon 100 khách đã tải (`datasets/solomon`, nguồn CVRPLIB) và đã dùng để đối chiếu bộ đánh giá (`evaluator/`); chưa có adapter để Engine giải các instance này |
 | Hàm mục tiêu đã chốt | ⬜ **Bước 3 — chặn mọi thí nghiệm phía sau** |
 | Tham số đã externalize | ⬜ Bước 4 |
 | `TimeTermination` đã sửa | ⬜ Bước 5 |

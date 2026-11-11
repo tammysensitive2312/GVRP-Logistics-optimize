@@ -21,6 +21,7 @@ EMISSION_UNIT = "g_co2_per_km"
 DISTANCE_TO_M = {"m": 1.0, "km": 1000.0}
 TIME_TO_S = {"s": 1.0, "min": 60.0}
 TW_MODES = ("STRICT", "SOFT")
+COORDINATE_SYSTEMS = ("wgs84", "planar")
 
 
 def _req(obj: dict, key: str, where: str) -> Any:
@@ -42,12 +43,13 @@ def _opt_num(obj: dict, key: str, where: str) -> float | None:
     return None if obj.get(key) is None else _num(obj, key, where)
 
 
-def _coord(obj: dict, key: str, where: str) -> float:
+def _coord(obj: dict, key: str, where: str, planar: bool = False) -> float:
+    """WGS84 degrees, or for planar instances plain coordinates (lat = y, lng = x)."""
     value = _req(obj, key, where)
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         raise InputError(f"{where}: '{key}' must be a number")
     limit = 90 if key == "lat" else 180
-    if not -limit <= value <= limit:
+    if not planar and not -limit <= value <= limit:
         raise InputError(f"{where}: '{key}' out of range")
     return float(value)
 
@@ -131,6 +133,7 @@ class Params:
     emission_model_id: str
     time_window_mode: str
     default_shift_start_s: int
+    coordinates: str
 
 
 @dataclass(frozen=True)
@@ -164,6 +167,9 @@ class RouteSet:
     routes: tuple[Route, ...]
     unassigned: tuple[str, ...]
     reported: dict = field(default_factory=dict)
+    # Declared by the producer when its legs are truncated (e.g. 0.1 for the Solomon one-decimal
+    # convention); the leg sanity bound is relaxed by exactly this much. 0 = exact legs.
+    leg_truncation_m: float = 0.0
 
 
 def _skills(obj: dict, key: str) -> frozenset[str]:
@@ -171,9 +177,12 @@ def _skills(obj: dict, key: str) -> frozenset[str]:
 
 
 def canonical_sha256(data: dict) -> str:
-    """Hash of the bundle content without its own meta.sha256 field."""
-    clone = dict(data)
-    clone["meta"] = {k: v for k, v in (data.get("meta") or {}).items() if k != "sha256"}
+    """Hash of the bundle content (params, depots, vehicle types, vehicles, orders) without `meta`.
+
+    Two bundles exported from different jobs therefore share a hash exactly when the solver input
+    they describe is identical, which is what `compare` needs.
+    """
+    clone = {k: v for k, v in data.items() if k != "meta"}
     text = json.dumps(clone, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
@@ -184,11 +193,16 @@ def parse_instance(data: dict) -> Instance:
     mode = str(_req(p, "time_window_mode", "params"))
     if mode not in TW_MODES:
         raise InputError(f"params.time_window_mode must be one of {TW_MODES}")
+    coordinates = str(_req(p, "coordinates", "params"))
+    if coordinates not in COORDINATE_SYSTEMS:
+        raise InputError(f"params.coordinates must be one of {COORDINATE_SYSTEMS}")
+    planar = coordinates == "planar"
     params = Params(
         carbon_price_vnd_per_t=_num(p, "carbon_price_vnd_per_t", "params"),
         emission_model_id=str(_req(p, "emission_model_id", "params")),
         time_window_mode=mode,
         default_shift_start_s=parse_clock(_req(p, "default_shift_start", "params"), "params.default_shift_start"),
+        coordinates=coordinates,
     )
 
     types: dict[str, VehicleType] = {}
@@ -218,7 +232,8 @@ def parse_instance(data: dict) -> Instance:
     depots: dict[str, Depot] = {}
     for raw in _req(data, "depots", "instance"):
         where = f"depot {raw.get('id')}"
-        d = Depot(id=str(_req(raw, "id", where)), lat=_coord(raw, "lat", where), lng=_coord(raw, "lng", where))
+        d = Depot(id=str(_req(raw, "id", where)), lat=_coord(raw, "lat", where, planar),
+                  lng=_coord(raw, "lng", where, planar))
         if d.id in depots:
             raise InputError(f"duplicate depot id {d.id}")
         depots[d.id] = d
@@ -251,7 +266,8 @@ def parse_instance(data: dict) -> Instance:
         where = f"order {raw.get('id')}"
         demand, unit = _quantity(raw, "demand", where)
         o = Order(
-            id=str(_req(raw, "id", where)), lat=_coord(raw, "lat", where), lng=_coord(raw, "lng", where),
+            id=str(_req(raw, "id", where)),
+            lat=_coord(raw, "lat", where, planar), lng=_coord(raw, "lng", where, planar),
             demand=demand, demand_unit=unit,
             tw_start_s=_opt_clock(raw, "tw_start", where),
             tw_end_s=_opt_clock(raw, "tw_end", where),
@@ -276,6 +292,7 @@ def parse_route_set(data: dict) -> RouteSet:
     if d_unit not in DISTANCE_TO_M or t_unit not in TIME_TO_S:
         raise InputError(f"leg_units must be distance in {list(DISTANCE_TO_M)} and time in {list(TIME_TO_S)}")
     d_factor, t_factor = DISTANCE_TO_M[d_unit], TIME_TO_S[t_unit]
+    truncation = (_opt_num(units, "distance_truncation", "leg_units") or 0.0) * d_factor
 
     routes = []
     for i, raw in enumerate(_req(data, "routes", "route set")):
@@ -300,6 +317,7 @@ def parse_route_set(data: dict) -> RouteSet:
         meta=dict(data.get("meta") or {}), routes=tuple(routes),
         unassigned=tuple(str(o) for o in (data.get("unassigned") or [])),
         reported=dict(data.get("reported") or {}),
+        leg_truncation_m=truncation,
     )
 
 

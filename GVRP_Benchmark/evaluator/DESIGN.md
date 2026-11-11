@@ -1,6 +1,7 @@
 # Independent Route-Set Evaluator — Design
 
-Status: phases E1 and E2 implemented 2026-11-05 (`gvrp_eval` 0.1.0); E3–E4 not started. Design date: 2026-11-04. Author: Claude Code, at the user's request
+Status: phases E1–E3 implemented (E1, E2 2026-11-05; E3 2026-11-09; `gvrp_eval` 0.1.0); E4 adapter
+and the Solomon anchor implemented 2026-11-10 (EM1 load-dependent model not started). Design date: 2026-11-04. Author: Claude Code, at the user's request
 ("Làm bước 2" — build the independent evaluator before any core-algorithm change).
 
 Targets these open project claims (`docs/research/PROJECT_STATE.md`):
@@ -45,7 +46,7 @@ of the referenced rows. Fields (all units explicit):
 
 ```text
 meta: instance_id, source (corpus sha256 | benchmark name), created_at, sha256 of this bundle
-params: carbon_price_vnd_per_t, emission_model_id, time_window_mode (STRICT|SOFT),
+params: coordinates (wgs84|planar, required), carbon_price_vnd_per_t, emission_model_id, time_window_mode (STRICT|SOFT),
         planning_date, ev_upstream_kg_per_kwh (null = tank-to-wheel boundary)
 depots[]: id, lat, lng
 vehicle_types[]: id, capacity {value, unit}, fixed_cost_vnd, cost_per_km_vnd, cost_per_hour_vnd,
@@ -84,6 +85,11 @@ Adapters convert producer formats into this schema:
   `sql/export_solution.sh` as `agent_reader`, scoped to the solution's branch, no customer name,
   phone or address. The export also reports rows edited after the job ran (`input_drift`, KI-033).
   The carbon price is not stored with a job, so `convert` requires `--carbon-price`.
+- **Solomon / Gehring-Homberger text format** (`solomon.py`): planar coordinates, Euclidean legs
+  under a stated convention (`exact`, or `trunc1` = one-decimal truncation as on CVRPLIB),
+  travel time = distance; mapping 1 distance unit = 1 m and 1 time unit = 1 s;
+  depot due date = shift end; costs and emissions are 0 by declaration. Solutions are read from
+  `Route k : ...` lines.
 - **Other solvers** (OR-Tools baseline, literature solutions on Solomon/Homberger): written
   directly in this schema; benchmark instances supply Euclidean legs computed by the adapter.
 
@@ -152,8 +158,14 @@ multiple of distance — the evaluator reports this as `co2_distance_collinear =
 - `compare A B` (or two groups of seeds): reports deltas for every metric. A claim
   "B emits less than A" is printed only when served demand and feasibility are equal within a
   declared tolerance (default 0 orders, 0.5 % demand); otherwise the output says
-  `SERVICE_PARITY_FAILED` and shows both service levels. With ≥ 5 seeds per side it reports
-  mean ± sd per metric (GVRP_Benchmark/README.md rule); fewer seeds are labelled `n<5`.
+  `SERVICE_PARITY_FAILED` and shows both service levels. Parity is checked across all runs of
+  both groups (range of served orders and delivered demand), not on group means. It reports
+  mean ± sd per metric and a descriptive Welch t (no p-value); fewer than 5 seeds per side are
+  labelled `n<5` (GVRP_Benchmark/README.md rule). When B emits less and costs more, it reports
+  the abatement cost `Δcost / −ΔCO2` in VND/kg and VND/t.
+- Instance identity is the SHA-256 of the bundle content without `meta`, so bundles exported from
+  different jobs with the same input share a hash; `compare` refuses route sets whose declared
+  `instance_sha256` differs from the given bundle.
 
 CLI:
 
@@ -198,8 +210,8 @@ An evaluator that is wrong in the same way as the solver proves nothing, so:
 |---|---|---|
 | E1 | Schemas, loader with unit validation, simulation, checks 4.1–4.6, EM0, `evaluate` | Fixture + metamorphic tests pass; runs in CI `tools` job via `python -m unittest`. **Done 2026-11-05: 22 tests pass locally (Python 3.11.9).** |
 | E2 | Engine-callback and Entry-DB adapters, leg sanity 4.7, discrepancy columns | One stored Engine solution evaluated; discrepancies listed. **Done 2026-11-05: 34 tests; solutions 71, 72, 75 evaluated (EVAL-E2 observation).** |
-| E3 | `compare` with service-parity gate and multi-seed summary | A COST vs ECO comparison on branch 1000 data produces a parity-gated report. |
-| E4 | Solomon/Homberger adapter and anchor test; EM1 after provenance | Published distances reproduced. |
+| E3 | `compare` with service-parity gate and multi-seed summary | A COST vs ECO comparison on branch 1000 data produces a parity-gated report. **Done 2026-11-09: 43 tests; stored goal runs compared (EVAL-E3 observation). Also reports the abatement cost (VND per kg CO2 avoided).** |
+| E4 | Solomon/Homberger adapter and anchor test; EM1 after provenance | Published distances reproduced. **Done 2026-11-10 for the anchor: 56/56 published CVRPLIB solutions reproduced exactly and feasible under their one-decimal truncation convention (EVAL-E4 observation, `tests/test_solomon_anchor.py`, 60 tests). EM1 not started (needs sourced parameters).** |
 | L2 | Independent re-routing of legs | Distance difference vs GraphHopper legs reported per instance. |
 
 Only after E3 can STATE-CARBON-003 and STATE-SERVICE-001 be proposed for promotion, and only

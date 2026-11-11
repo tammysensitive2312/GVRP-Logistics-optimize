@@ -509,3 +509,28 @@ Units verified: callback leg values are metres/seconds from the solve matrix (me
 Artifact: docs/research/observations/EVAL-E2-engine-cross-check-2026-11-05.md.
 Promoted: nothing (PARTIALLY_VERIFIED, LIMITED evidence at most; review pending).
 Next: E3 - compare command with service-parity gate; experiments must freeze bundles right after each solve.
+
+## 2026-11-09 - Evaluator phase E3: parity-gated compare; first goal comparison on stored runs
+
+Change: gvrp_eval compare (service-parity gate across all runs, mean/sd, descriptive Welch t, abatement cost VND/kg); instance hash now covers bundle content without meta.
+Verify: 43 unittest cases pass. Stored branch-1000 runs compared (n=1 per goal, seed 42): same-seed COST runs 53/55 identical; on a mixed fleet the CO2 goal cut CO2 23.5 % with +28.9 % distance and +4 vehicles (assignment effect, not only distance); abatement cost 147k-405k VND/kg, ~1,000-2,700x the configured 150 VND/kg carbon price.
+Artifact: docs/research/observations/EVAL-E3-goal-comparison-2026-11-09.md.
+Limits: n=1, costs re-scored on master data edited after the jobs (KI-033), no distance-only baseline.
+Promoted: nothing.
+Next: E4 (Solomon anchor) or a preregistered multi-seed goal experiment with frozen bundles.
+
+## 2026-11-10 - Evaluator phase E4 (part): Solomon-format adapter, planar coordinates
+
+Change: instance bundles now declare params.coordinates (wgs84|planar, required); gvrp_eval.solomon parses the classic VRPTW text format and 'Route k : ...' solutions (untruncated Euclidean legs, time = distance, depot due date = shift end); convert --from solomon.
+Verify: 54 unittest cases pass, including a hand-computed toy instance (distance, schedule, lateness, capacity, depot due date).
+Not done: anchor against published best-known solutions - no Solomon files in the repository; downloading them needs the user's approval. Until then the claim "the evaluator reproduces published distances" is NOT_VERIFIED.
+Promoted: nothing.
+
+## 2026-11-10 - Evaluator phase E4: Solomon anchor passed
+
+Data: 56 Solomon instances and best-known solutions from CVRPLIB (GVRP_Benchmark/datasets/solomon, SOURCE.md, SHA256SUMS); sintef.no not reachable by an automated client.
+Change: solomon adapter takes a distance convention (exact | trunc1); route sets may declare leg truncation; tests/test_solomon_anchor.py.
+Result: under CVRPLIB's convention (legs truncated to one decimal) all 56 published solutions are feasible, serve 100/100 and total exactly the published cost. Under untruncated distances all are longer (1.64-5.19 units) and 8 break one time window by < 0.5 units - expected, not an evaluator error.
+Verify: 60 unittest cases pass.
+Artifact: docs/research/observations/EVAL-E4-solomon-anchor-2026-11-10.md.
+Status: evaluator time-window/capacity/distance logic VERIFIED against an external reference for the VRPTW scope; cost, emission, skill and road-leg paths are outside that scope. Not promoted to PROJECT_STATE (review pending).

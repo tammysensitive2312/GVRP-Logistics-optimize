@@ -7,7 +7,8 @@
     "carbon_price_vnd_per_t": 150000,
     "emission_model_id": "EM0-distance-v1",
     "time_window_mode": "STRICT",
-    "default_shift_start": "08:00"
+    "default_shift_start": "08:00",
+    "coordinates": "wgs84"
   },
   "vehicle_types": [
     {

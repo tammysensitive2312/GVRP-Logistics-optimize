@@ -49,7 +49,8 @@ def _check_coverage(inst: Instance, rs: RouteSet, violations: list) -> None:
             violations.append(_violation("VEHICLE_REUSED", None, None, n, "routes"))
 
 
-def _route(inst: Instance, route: Route, index: int, violations: list, warnings: list) -> dict:
+def _route(inst: Instance, route: Route, index: int, violations: list, warnings: list,
+           leg_truncation_m: float = 0.0) -> dict:
     vehicle = inst.vehicles[route.vehicle_id]
     vt = vehicle.type
     known = [o for o in route.stops if o in inst.orders]
@@ -59,7 +60,8 @@ def _route(inst: Instance, route: Route, index: int, violations: list, warnings:
         points = [(f"depot-{sd.id}", sd.lat, sd.lng)]
         points += [(o, inst.orders[o].lat, inst.orders[o].lng) for o in route.stops]
         points.append((f"depot-{ed.id}", ed.lat, ed.lng))
-        warnings.extend(check_legs(points, route.legs, index))
+        warnings.extend(check_legs(points, route.legs, index, inst.params.coordinates == "planar",
+                                   leg_truncation_m))
 
     start = route.start_s
     if start is None:
@@ -152,7 +154,7 @@ def evaluate(inst: Instance, rs: RouteSet) -> dict:
         if r.vehicle_id not in inst.vehicles or r.vehicle_id in seen_vehicles:
             continue  # reported above; a second route for one vehicle is not costed twice
         seen_vehicles.add(r.vehicle_id)
-        routes.append(_route(inst, r, i, violations, warnings))
+        routes.append(_route(inst, r, i, violations, warnings, rs.leg_truncation_m))
 
     served_ids = {o for r in rs.routes for o in r.stops if o in inst.orders}
     total_demand = sum(o.demand for o in inst.orders.values())
@@ -203,6 +205,7 @@ def evaluate(inst: Instance, rs: RouteSet) -> dict:
             "emission_model_id": p.emission_model_id,
             "time_window_mode": p.time_window_mode,
             "carbon_price_vnd_per_t": p.carbon_price_vnd_per_t,
+            "coordinates": p.coordinates,
             "emission_provenance": sorted({inst.vehicles[r["vehicle_id"]].type.emission_provenance for r in routes}),
         },
         "metrics": metrics,

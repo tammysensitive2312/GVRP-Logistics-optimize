@@ -25,18 +25,28 @@ def great_circle_m(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
     return 2 * EARTH_RADIUS_M * math.asin(min(1.0, math.sqrt(a)))
 
 
-def check_legs(points: list[tuple[str, float, float]], legs, route_index: int) -> list[dict]:
-    """points: [(label, lat, lng)] depot, stops..., depot; legs: len(points) - 1."""
+def check_legs(points: list[tuple[str, float, float]], legs, route_index: int, planar: bool = False,
+               truncation: float = 0.0) -> list[dict]:
+    """points: [(label, lat, lng)] depot, stops..., depot; legs: len(points) - 1.
+
+    For planar instances the lower bound is the Euclidean distance, in the leg's own unit.
+    `truncation` is the producer's declared leg truncation (same unit); it widens the bound.
+    """
     warnings = []
+    # Planar legs must respect the Euclidean bound exactly (float noise only); road legs get slack
+    # for coordinate rounding and map matching.
+    tolerance, slack, zero_min = (0.0, 1e-9, 1e-9) if planar else (GC_TOLERANCE, GC_SLACK_M, ZERO_LEG_MIN_GC_M)
+    slack += truncation
+    zero_min += truncation
     for i, leg in enumerate(legs):
         (a, lat1, lng1), (b, lat2, lng2) = points[i], points[i + 1]
-        gc = great_circle_m(lat1, lng1, lat2, lng2)
+        gc = math.hypot(lat2 - lat1, lng2 - lng1) if planar else great_circle_m(lat1, lng1, lat2, lng2)
         base = {"route_index": route_index, "leg_index": i, "from": a, "to": b,
-                "distance_m": leg.distance_m, "time_s": leg.time_s, "great_circle_m": round(gc, 1)}
-        if leg.distance_m == 0 and gc > ZERO_LEG_MIN_GC_M:
+                "distance_m": leg.distance_m, "time_s": leg.time_s, "great_circle_m": round(gc, 6 if planar else 1)}
+        if leg.distance_m == 0 and gc > zero_min:
             warnings.append({"code": "LEG_ZERO_DISTINCT", **base})
             continue
-        if leg.distance_m < gc * (1 - GC_TOLERANCE) - GC_SLACK_M:
+        if leg.distance_m < gc * (1 - tolerance) - slack:
             warnings.append({"code": "LEG_SHORTER_THAN_GREAT_CIRCLE", **base})
         if leg.distance_m >= SPEED_CHECK_MIN_M:
             if leg.time_s <= 0:

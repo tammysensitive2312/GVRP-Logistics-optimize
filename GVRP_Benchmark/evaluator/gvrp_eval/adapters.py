@@ -140,6 +140,7 @@ def from_entry_export(export: dict, carbon_price_vnd_per_t: float) -> tuple[dict
             "emission_model_id": "EM0-distance-v1",
             "time_window_mode": mode,
             "default_shift_start": _clock(ENGINE_SHIFT_START_S),
+            "coordinates": "wgs84",
         },
         "depots": [{"id": str(d["id"]), "lat": d["lat"], "lng": d["lng"]} for d in export["depots"]],
         "vehicle_types": types, "vehicles": vehicles, "orders": orders,
