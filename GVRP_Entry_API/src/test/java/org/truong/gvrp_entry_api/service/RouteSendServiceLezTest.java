@@ -56,6 +56,8 @@ import org.truong.gvrp_entry_api.service.lez.RestrictionCompiler;
 import org.truong.gvrp_entry_api.service.lez.RouteComplianceService;
 import org.truong.gvrp_entry_api.service.lez.RuleSchedule;
 import org.truong.gvrp_entry_api.service.lez.RuleSelector;
+import org.truong.gvrp_entry_api.util.AppConstant;
+import org.truong.gvrp_entry_api.util.ErrorCode;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -337,17 +339,20 @@ class RouteSendServiceLezTest {
     // ---------- SG-T4 ----------
 
     @Test
-    void sgT4_routeOfAnotherBranch_keepsTheExistingBranchRefusal() {
+    void sgT4_routeOfAnotherBranch_answersNeutralNotFoundWithoutLocking() {
         asPlanner();
         fixture.solution().setBranch(Branch.builder().id(2L).build());
-        when(routeRepository.findWithLockById(21L)).thenReturn(Optional.of(fixture.route()));
         when(solutionRepository.findWithDetailsById(9L)).thenReturn(Optional.of(fixture.solution()));
         when(userRepository.findById(1L)).thenReturn(Optional.of(fixture.sender()));
 
         DataInvalidException ex = org.junit.jupiter.api.Assertions.assertThrows(
                 DataInvalidException.class, () -> service.sendRoute(21L, sendRequest()));
 
-        assertThat(ex.getErrors().get(0).getMessage()).contains("belongs to another branch");
+        assertThat(ex.getErrors().get(0).getCode()).isEqualTo(ErrorCode.RESOURCE_NOT_FOUND.getCode());
+        assertThat(ex.getErrors().get(0).getMessage()).isEqualTo(ErrorCode.RESOURCE_NOT_FOUND.getMessage());
+        assertThat(ex.getErrors().get(0).getResource()).isEqualTo(AppConstant.SOLUTION);
+        assertThat(ex.getErrors().get(0).getMessage()).doesNotContain("another branch");
+        verify(routeRepository, never()).findWithLockById(any());
         verify(sendRepository, never()).saveAndFlush(any());
         verifyNoInteractions(engineApiClient);
         verifyNoInteractions(zoneRepository);

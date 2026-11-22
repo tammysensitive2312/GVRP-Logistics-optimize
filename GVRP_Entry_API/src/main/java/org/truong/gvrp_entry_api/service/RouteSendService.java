@@ -46,6 +46,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -111,19 +112,24 @@ public class RouteSendService {
         Long branchId = currentBranchId();
         User sender = currentUser();
 
+        // Verify branch ownership and route membership before acquiring any lock (SEC-018).
+        Solution solution = solutionRepository.findWithDetailsById(request.getSolutionId())
+                .filter(found -> SolutionService.belongsTo(found, branchId))
+                .orElseThrow(() -> notFound(AppConstant.SOLUTION));
+        boolean routeInSolution = solution.getRoutes() != null
+                && solution.getRoutes().stream().anyMatch(candidate -> Objects.equals(candidate.getId(), routeId));
+        if (!routeInSolution) {
+            throw notFound(AppConstant.ROUTE);
+        }
+
         Route route = routeRepository.findWithLockById(routeId)
                 .orElseThrow(() -> notFound(AppConstant.ROUTE));
-        Solution solution = solutionRepository.findWithDetailsById(request.getSolutionId())
-                .orElseThrow(() -> notFound(AppConstant.SOLUTION));
-        if (!route.getSolution().getId().equals(solution.getId())) {
-            throw invalid("Route " + routeId + " does not belong to solution " + request.getSolutionId());
+        if (route.getSolution() == null || !Objects.equals(route.getSolution().getId(), solution.getId())) {
+            throw notFound(AppConstant.ROUTE);
         }
         if (solution.getStatus() != SolutionStatus.SUCCESS
                 && solution.getStatus() != SolutionStatus.PARTIAL_SUCCESS) {
             throw invalid("Solution " + solution.getId() + " is not sendable (status " + solution.getStatus() + ")");
-        }
-        if (!solution.getBranch().getId().equals(branchId)) {
-            throw invalid("Solution " + solution.getId() + " belongs to another branch");
         }
         boolean hasOrders = route.getSegments().stream()
                 .anyMatch(stop -> stop.getType() == LocationType.ORDER);
@@ -132,11 +138,11 @@ public class RouteSendService {
         }
 
         User driver = userRepository.findById(request.getDriverUserId())
+                .filter(candidate -> candidate.getRole() == UserRole.DRIVER
+                        && Boolean.TRUE.equals(candidate.getEnabled())
+                        && candidate.getBranch() != null
+                        && Objects.equals(candidate.getBranch().getId(), branchId))
                 .orElseThrow(() -> notFound("Driver"));
-        if (driver.getRole() != UserRole.DRIVER || !driver.getEnabled()
-                || !driver.getBranch().getId().equals(branchId)) {
-            throw invalid("User " + request.getDriverUserId() + " is not an enabled driver of this branch");
-        }
 
         // LEZ gate (LEZ-001 N7): current rules and current geometry, before any send row.
         enforceLezCompliance(route, solution);

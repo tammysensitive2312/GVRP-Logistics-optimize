@@ -308,7 +308,6 @@ public class OptimizationJobService {
                             .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
                             .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
                             .resource(AppConstant.ORDER)
-                            .field(wrongBranch.stream().map(Order::getOrderCode).collect(Collectors.joining(", ")))
                             .build()
             ));
         }
@@ -357,17 +356,11 @@ public class OptimizationJobService {
         List<Vehicle> vehicles = vehicleRepository.findAllByIdWithDepots(vehicleIds);
 
         if (vehicles.size() != vehicleIds.size()) {
-            Set<Long> foundIds = vehicles.stream().map(Vehicle::getId).collect(Collectors.toSet());
-            List<Long> missingIds = vehicleIds.stream()
-                    .filter(id -> !foundIds.contains(id))
-                    .toList();
-
             throw new DataInvalidException(List.of(
                     ErrorDetail.builder()
                             .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
                             .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
                             .resource(AppConstant.VEHICLE)
-                            .field(missingIds.toString())
                             .build()
             ));
         }

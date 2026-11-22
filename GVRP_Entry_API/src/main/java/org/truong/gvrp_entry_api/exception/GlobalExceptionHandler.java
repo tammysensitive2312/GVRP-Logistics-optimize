@@ -160,19 +160,18 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     * 400 — unreadable body (malformed JSON, unknown field). This used to fall
-     * through to the generic handler and answer 500, hiding the real cause.
+     * 400 — unreadable body (malformed JSON, unknown field). Returns a fixed neutral
+     * message and logs only the cause class name so internal class/package names and
+     * rejected customer values are never exposed (SEC-019).
      */
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ErrorResponse> handleUnreadableBody(HttpMessageNotReadableException ex) {
-        String cause = ex.getMostSpecificCause().getMessage();
-        logger.warn("Malformed request body: {}", cause);
+        Throwable cause = ex.getMostSpecificCause();
+        logger.warn("Malformed request body ({})", cause.getClass().getSimpleName());
 
         ErrorDetail detail = ErrorDetail.builder()
                 .code(ErrorCode.VALIDATION_ERROR.getCode())
-                .message(cause == null || cause.isBlank()
-                        ? "Malformed request body."
-                        : "Malformed request body: " + cause)
+                .message("Malformed request body.")
                 .build();
 
         return ResponseEntity
