@@ -1,39 +1,33 @@
 package org.truong.gvrp_entry_api.security;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
-import org.springframework.http.MediaType;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.stereotype.Component;
-import org.truong.gvrp_entry_api.exception.ErrorDetail;
-import org.truong.gvrp_entry_api.exception.ErrorResponse;
-import org.truong.gvrp_entry_api.util.ErrorCode;
+import org.springframework.web.servlet.HandlerExceptionResolver;
 
 import java.io.IOException;
-import java.util.List;
 
 /**
- * Writes role rejections (HTTP 403) in the project error envelope.
+ * Delegates role rejections (HTTP 403) to {@link HandlerExceptionResolver}
+ * so {@code GlobalExceptionHandler} writes the unified {@code ErrorResponse} envelope (E-7).
  */
 @Component
-@RequiredArgsConstructor
 public class RoleAccessDeniedHandler implements AccessDeniedHandler {
 
-    private final ObjectMapper objectMapper;
+    private final HandlerExceptionResolver resolver;
+
+    public RoleAccessDeniedHandler(
+            @Qualifier("handlerExceptionResolver") HandlerExceptionResolver resolver) {
+        this.resolver = resolver;
+    }
 
     @Override
     public void handle(HttpServletRequest request,
                        HttpServletResponse response,
                        AccessDeniedException accessDeniedException) throws IOException {
-        ErrorDetail detail = ErrorDetail.builder()
-                .code(ErrorCode.FORBIDDEN.getCode())
-                .message(ErrorCode.FORBIDDEN.getMessage())
-                .build();
-        response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-        objectMapper.writeValue(response.getOutputStream(), new ErrorResponse(List.of(detail)));
+        resolver.resolveException(request, response, null, accessDeniedException);
     }
 }
