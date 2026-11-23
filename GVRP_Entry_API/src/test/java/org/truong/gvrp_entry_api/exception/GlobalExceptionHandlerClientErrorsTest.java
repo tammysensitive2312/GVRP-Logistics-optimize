@@ -1,10 +1,14 @@
 package org.truong.gvrp_entry_api.exception;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
+import org.springframework.web.context.request.ServletWebRequest;
+import org.springframework.web.context.request.WebRequest;
 import org.truong.gvrp_entry_api.util.ErrorCode;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -16,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class GlobalExceptionHandlerClientErrorsTest {
 
     private final GlobalExceptionHandler handler = new GlobalExceptionHandler();
+    private final WebRequest webRequest = new ServletWebRequest(new MockHttpServletRequest());
 
     @Test
     void unreadableBodyAnswers400WithoutLeakingCauseDetails() {
@@ -24,7 +29,8 @@ class GlobalExceptionHandlerClientErrorsTest {
                 new IllegalArgumentException("Unrecognized field \"vehicle_features\""),
                 null);
 
-        ResponseEntity<ErrorResponse> response = handler.handleUnreadableBody(ex);
+        ResponseEntity<?> response = handler.handleHttpMessageNotReadable(
+                ex, new HttpHeaders(), HttpStatus.BAD_REQUEST, webRequest);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         ErrorDetail detail = firstDetail(response);
@@ -42,7 +48,8 @@ class GlobalExceptionHandlerClientErrorsTest {
                         "Cannot deserialize value of type `org.truong.gvrp_entry_api.dto.request.OrderInputDTO` from String \"0901234567\""),
                 null);
 
-        ResponseEntity<ErrorResponse> response = handler.handleUnreadableBody(ex);
+        ResponseEntity<?> response = handler.handleHttpMessageNotReadable(
+                ex, new HttpHeaders(), HttpStatus.BAD_REQUEST, webRequest);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         ErrorDetail detail = firstDetail(response);
@@ -58,7 +65,8 @@ class GlobalExceptionHandlerClientErrorsTest {
         HttpMessageNotReadableException ex = new HttpMessageNotReadableException(
                 "JSON parse error", new IllegalStateException(), null);
 
-        ResponseEntity<ErrorResponse> response = handler.handleUnreadableBody(ex);
+        ResponseEntity<?> response = handler.handleHttpMessageNotReadable(
+                ex, new HttpHeaders(), HttpStatus.BAD_REQUEST, webRequest);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         assertThat(firstDetail(response).getMessage()).isEqualTo("Malformed request body.");
@@ -69,7 +77,8 @@ class GlobalExceptionHandlerClientErrorsTest {
         HttpRequestMethodNotSupportedException ex =
                 new HttpRequestMethodNotSupportedException("GET", java.util.List.of("PUT"));
 
-        ResponseEntity<ErrorResponse> response = handler.handleMethodNotSupported(ex);
+        ResponseEntity<?> response = handler.handleHttpRequestMethodNotSupported(
+                ex, new HttpHeaders(), HttpStatus.METHOD_NOT_ALLOWED, webRequest);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.METHOD_NOT_ALLOWED);
         ErrorDetail detail = firstDetail(response);
@@ -86,9 +95,10 @@ class GlobalExceptionHandlerClientErrorsTest {
         assertThat(firstDetail(response).getCode()).isEqualTo(ErrorCode.INTERNAL_ERROR.getCode());
     }
 
-    private static ErrorDetail firstDetail(ResponseEntity<ErrorResponse> response) {
-        assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().getErrors()).isNotEmpty();
-        return response.getBody().getErrors().get(0);
+    private static ErrorDetail firstDetail(ResponseEntity<?> response) {
+        assertThat(response.getBody()).isInstanceOf(ErrorResponse.class);
+        ErrorResponse body = (ErrorResponse) response.getBody();
+        assertThat(body.getErrors()).isNotEmpty();
+        return body.getErrors().get(0);
     }
 }

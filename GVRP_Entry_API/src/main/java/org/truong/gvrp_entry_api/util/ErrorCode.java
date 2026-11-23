@@ -12,9 +12,11 @@ public enum ErrorCode {
     UNSUPPORTED_VALUE("0040002", "Unsupported value."),
     FILE_SIZE_EXCEEDED("0040003", "File size exceed limit."),
     EMPTY_FIELD_ERROR("0040004", "Empty required field."),
+    INVALID_VALUE_TYPE("0040005", "Invalid value type."),
 
     // 401
     INCORRECT_LOGIN_INFORMATION("0040101", "Incorrect login information."),
+    UNAUTHORIZED("0040102", "Unauthorized."),
 
     // 403
     FORBIDDEN("0040301", "Access forbidden."),
@@ -25,10 +27,16 @@ public enum ErrorCode {
     // 405
     METHOD_NOT_ALLOWED("0040501", "Method not allowed."),
 
+    // 406
+    NOT_ACCEPTABLE("0040601", "Not acceptable."),
+
     // 409
     RESOURCE_CONFLICT("0040901", "Resource conflict."),
     INVALID_ORDER_TRANSITION("0040902", "Invalid order status transition."),
     JOB_LIMIT_EXCEEDED("0040903", "Branch reached job limit."),
+
+    // 415
+    UNSUPPORTED_MEDIA_TYPE("0041501", "Unsupported media type."),
 
     // 422
     UNPROCESSABLE_PLAN("0042201", "Route plan violates hard constraints."),
