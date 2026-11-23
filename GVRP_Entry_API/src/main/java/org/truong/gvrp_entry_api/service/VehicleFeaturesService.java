@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 import org.truong.gvrp_entry_api.dto.request.VehicleFeaturesDTO;
 import org.truong.gvrp_entry_api.entity.VehicleType;
 import org.truong.gvrp_entry_api.exception.DataInvalidException;
-import org.truong.gvrp_entry_api.exception.ErrorDetail;
+import org.truong.gvrp_entry_api.exception.ErrorDetails;
 import org.truong.gvrp_entry_api.util.AppConstant;
 import org.truong.gvrp_entry_api.util.ErrorCode;
 
@@ -33,29 +33,17 @@ public class VehicleFeaturesService {
      */
     public VehicleFeaturesDTO parseFeatures(String featuresJson) {
         if (featuresJson == null || featuresJson.isEmpty()) {
-            throw new DataInvalidException(
-                    List.of(
-                            ErrorDetail.builder()
-                                    .code(ErrorCode.EMPTY_FIELD_ERROR.getCode())
-                                    .message(ErrorCode.EMPTY_FIELD_ERROR.getMessage())
-                                    .resource(AppConstant.VEHICLE_FEATURES)
-                                    .build()
-                    )
-            );
+            throw new DataInvalidException(List.of(
+                    ErrorDetails.of(ErrorCode.EMPTY_FIELD_ERROR, AppConstant.VEHICLE_FEATURES)
+            ));
         }
         try {
             return objectMapper.readValue(featuresJson, VehicleFeaturesDTO.class);
         } catch (JsonProcessingException e) {
             log.error("Corrupted vehicle features JSON: {}", e.getMessage());
-            throw new DataInvalidException(
-                    List.of(
-                            ErrorDetail.builder()
-                                    .code(ErrorCode.BACKEND_SERVER_ERROR.getCode())
-                                    .message(ErrorCode.BACKEND_SERVER_ERROR.getMessage())
-                                    .resource(AppConstant.VEHICLE_FEATURES)
-                                    .build()
-                    )
-            );
+            throw new DataInvalidException(List.of(
+                    ErrorDetails.of(ErrorCode.BACKEND_SERVER_ERROR, AppConstant.VEHICLE_FEATURES)
+            ));
         }
     }
 

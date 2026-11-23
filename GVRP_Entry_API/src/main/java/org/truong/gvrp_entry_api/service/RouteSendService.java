@@ -23,7 +23,7 @@ import org.truong.gvrp_entry_api.entity.enums.SendStatus;
 import org.truong.gvrp_entry_api.entity.enums.SolutionStatus;
 import org.truong.gvrp_entry_api.entity.enums.UserRole;
 import org.truong.gvrp_entry_api.exception.DataInvalidException;
-import org.truong.gvrp_entry_api.exception.ErrorDetail;
+import org.truong.gvrp_entry_api.exception.ErrorDetails;
 import org.truong.gvrp_entry_api.exception.ForbiddenException;
 import org.truong.gvrp_entry_api.exception.ResourceNotFoundException;
 import org.truong.gvrp_entry_api.exception.UnprocessablePlanException;
@@ -398,6 +398,7 @@ public class RouteSendService {
         return Integer.MAX_VALUE;
     }
 
+    /** Defense-in-depth role gate alongside {@code SecurityConfig} URL rules (SEC-ROLE-001). */
     private User requireDriver() {
         if (!UserRole.DRIVER.name().equals(CurrentUserUtil.getCurrentRole())) {
             throw new ForbiddenException("Driver role required");
@@ -405,6 +406,7 @@ public class RouteSendService {
         return currentUser();
     }
 
+    /** Defense-in-depth role gate alongside {@code SecurityConfig} URL rules (SEC-ROLE-001). */
     private void requireRole(UserRole role) {
         if (!role.name().equals(CurrentUserUtil.getCurrentRole())) {
             throw new ForbiddenException(role.name() + " role required");
@@ -454,10 +456,6 @@ public class RouteSendService {
     }
 
     private DataInvalidException invalid(String message) {
-        return new DataInvalidException(List.of(
-                ErrorDetail.builder()
-                        .code(ErrorCode.VALIDATION_ERROR.getCode())
-                        .message(message)
-                        .build()));
+        return new DataInvalidException(List.of(ErrorDetails.validation(message)));
     }
 }

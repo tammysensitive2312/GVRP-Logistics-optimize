@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,7 +16,7 @@ import org.truong.gvrp_entry_api.entity.enums.OptimizationJobStatus;
 import org.truong.gvrp_entry_api.entity.enums.OrderStatus;
 import org.truong.gvrp_entry_api.entity.enums.VehicleStatus;
 import org.truong.gvrp_entry_api.exception.DataInvalidException;
-import org.truong.gvrp_entry_api.exception.ErrorDetail;
+import org.truong.gvrp_entry_api.exception.ErrorDetails;
 import org.truong.gvrp_entry_api.exception.ResourceConflictException;
 import org.truong.gvrp_entry_api.exception.ResourceNotFoundException;
 import org.truong.gvrp_entry_api.service.integration.external_api.EngineApiClient;
@@ -27,6 +26,7 @@ import org.truong.gvrp_entry_api.mapper.*;
 import org.truong.gvrp_entry_api.repository.*;
 import org.truong.gvrp_entry_api.util.AppConstant;
 import org.truong.gvrp_entry_api.util.ErrorCode;
+import org.truong.gvrp_entry_api.util.PaginationUtils;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -80,11 +81,7 @@ public class OptimizationJobService {
         if (runningJobsCount >= maxConcurrentJobs) {
             log.warn("Branch {} has reached the limit of running jobs {}", branchId, maxConcurrentJobs);
             throw new DataInvalidException(List.of(
-                    ErrorDetail.builder()
-                            .code(ErrorCode.JOB_LIMIT_EXCEEDED.getCode())
-                            .message(ErrorCode.JOB_LIMIT_EXCEEDED.getMessage())
-                            .resource(AppConstant.JOB)
-                            .build()
+                    ErrorDetails.of(ErrorCode.JOB_LIMIT_EXCEEDED, AppConstant.JOB)
             ));
         }
 
@@ -167,19 +164,12 @@ public class OptimizationJobService {
         log.info("Cancelling jobs {} for branch {}", jobIds, branchId);
 
         List<OptimizationJob> jobs = jobRepository.findAllById(jobIds);
-
-
-        if (jobs.size() != jobIds.size()) {
-            throw new ResourceNotFoundException(AppConstant.JOB);
-        }
+        requireAllInBranch(jobs, jobIds.size(),
+                job -> job.getBranch() != null ? job.getBranch().getId() : null, branchId, AppConstant.JOB);
 
         LocalDateTime cancelledAt = LocalDateTime.now();
 
         for (OptimizationJob job : jobs) {
-            if (!job.getBranch().getId().equals(branchId)) {
-                throw new ResourceNotFoundException(AppConstant.JOB);
-            }
-
             if (!job.canBeCancelled()) {
                 throw new ResourceConflictException("Job can't be cancelled", AppConstant.JOB, null);
             }
@@ -219,16 +209,7 @@ public class OptimizationJobService {
      */
     @Transactional(readOnly = true)
     public List<OptimizationJobDTO> getJobHistory(Long branchId, int limit) {
-        if (limit < 1 || limit > AppConstant.MAX_JOB_HISTORY_LIMIT) {
-            throw new DataInvalidException(List.of(
-                    ErrorDetail.builder()
-                            .code(ErrorCode.VALIDATION_ERROR.getCode())
-                            .message("Limit must be between 1 and " + AppConstant.MAX_JOB_HISTORY_LIMIT)
-                            .field("limit")
-                            .build()
-            ));
-        }
-        Pageable pageable = PageRequest.of(0, limit);
+        Pageable pageable = PaginationUtils.limitRequest(limit, AppConstant.MAX_JOB_HISTORY_LIMIT);
         return jobRepository.findJobHistory(branchId, pageable).stream()
                 .map(jobMapper::fromHistory)
                 .collect(Collectors.toList());
@@ -244,27 +225,15 @@ public class OptimizationJobService {
     public OptimizationJobDTO getJobById(Long jobId, Long branchId) {
         OptimizationJob job = jobRepository.findById(jobId)
                 .orElseThrow(() -> new ResourceNotFoundException(AppConstant.JOB));
-
-        if (!job.getBranch().getId().equals(branchId)) {
-            throw new ResourceNotFoundException(AppConstant.JOB);
-        }
+        requireBranchOwnership(job.getBranch() != null ? job.getBranch().getId() : null, branchId, AppConstant.JOB);
 
         return jobMapper.toDTO(job);
     }
 
     private List<Order> validateAndLoadOrders(List<Long> orderIds, Long branchId) {
         List<Order> orders = orderRepository.findAllById(orderIds);
-
-        if (orders.size() != orderIds.size()) {
-            throw new ResourceNotFoundException(AppConstant.ORDER);
-        }
-
-        List<Order> wrongBranch = orders.stream()
-                .filter(o -> !o.getBranch().getId().equals(branchId))
-                .toList();
-        if (!wrongBranch.isEmpty()) {
-            throw new ResourceNotFoundException(AppConstant.ORDER);
-        }
+        requireAllInBranch(orders, orderIds.size(),
+                o -> o.getBranch() != null ? o.getBranch().getId() : null, branchId, AppConstant.ORDER);
 
         List<Order> invalidStatus = orders.stream()
                 .filter(o -> o.getStatus() != OrderStatus.SCHEDULED)
@@ -287,12 +256,8 @@ public class OptimizationJobService {
         if (!invalidCoords.isEmpty()) {
             String codes = invalidCoords.stream().map(Order::getOrderCode).collect(Collectors.joining(", "));
             throw new DataInvalidException(List.of(
-                    ErrorDetail.builder()
-                            .code(ErrorCode.VALIDATION_ERROR.getCode())
-                            .message("Orders missing location coordinates: " + codes)
-                            .resource(AppConstant.ORDER)
-                            .field(AppConstant.LOCATION)
-                            .build()
+                    ErrorDetails.of(ErrorCode.VALIDATION_ERROR, AppConstant.ORDER, AppConstant.LOCATION,
+                            "Orders missing location coordinates: " + codes)
             ));
         }
 
@@ -302,17 +267,10 @@ public class OptimizationJobService {
 
     private List<Vehicle> validateAndLoadVehicles(List<Long> vehicleIds, Long branchId) {
         List<Vehicle> vehicles = vehicleRepository.findAllByIdWithDepots(vehicleIds);
-
-        if (vehicles.size() != vehicleIds.size()) {
-            throw new ResourceNotFoundException(AppConstant.VEHICLE);
-        }
-
-        List<Vehicle> wrongFleet = vehicles.stream()
-                .filter(v -> !v.getFleet().getBranch().getId().equals(branchId))
-                .toList();
-        if (!wrongFleet.isEmpty()) {
-            throw new ResourceNotFoundException(AppConstant.VEHICLE);
-        }
+        requireAllInBranch(vehicles, vehicleIds.size(),
+                v -> v.getFleet() != null && v.getFleet().getBranch() != null
+                        ? v.getFleet().getBranch().getId() : null,
+                branchId, AppConstant.VEHICLE);
 
         List<Vehicle> notAvailable = vehicles.stream()
                 .filter(v -> v.getStatus() != VehicleStatus.AVAILABLE)
@@ -377,37 +335,50 @@ public class OptimizationJobService {
                 .collect(Collectors.toCollection(TreeSet::new));
         if (dates.size() > 1) {
             throw new DataInvalidException(List.of(
-                    ErrorDetail.builder()
-                            .code(ErrorCode.VALIDATION_ERROR.getCode())
-                            .message("All orders of one optimisation job must have the same delivery date: "
+                    ErrorDetails.of(ErrorCode.VALIDATION_ERROR, AppConstant.ORDER, "deliveryDate",
+                            "All orders of one optimisation job must have the same delivery date: "
                                     + dates.stream().map(LocalDate::toString).collect(Collectors.joining(", ")))
-                            .resource(AppConstant.ORDER)
-                            .field("deliveryDate")
-                            .build()
             ));
         }
         return dates.isEmpty() ? null : dates.iterator().next();
     }
 
-    /** 400 naming the zones and depots that leave every vehicle unusable (design §4, R09). */
+    /** 400 naming the zones and vehicles left unusable by all-day bans (design §4, R09). */
     private DataInvalidException unusableVehiclesError(CompiledRestrictions restrictions) {
         String zones = restrictions.getUnusableVehicles().stream()
                 .map(CompiledRestrictions.UnusableVehicle::getZoneKey)
                 .distinct()
                 .collect(Collectors.joining(", "));
-        String depots = restrictions.getUnusableVehicles().stream()
+        String vehicleIds = restrictions.getUnusableVehicles().stream()
                 .map(CompiledRestrictions.UnusableVehicle::getVehicleId)
                 .distinct()
                 .map(String::valueOf)
                 .collect(Collectors.joining(", "));
         return new DataInvalidException(List.of(
-                ErrorDetail.builder()
-                        .code(ErrorCode.VALIDATION_ERROR.getCode())
-                        .message("No usable vehicle: every depot lies in a zone that bans the vehicle all day"
-                                + " (zones: " + zones + "; vehicles: " + depots + ")")
-                        .resource(AppConstant.VEHICLE)
-                        .build()
+                ErrorDetails.validationWithResource(AppConstant.VEHICLE,
+                        "No usable vehicle: every depot lies in a zone that bans the vehicle all day"
+                                + " (zones: " + zones + "; vehicles: " + vehicleIds + ")")
         ));
+    }
+
+    private static void requireBranchOwnership(Long entityBranchId, Long callerBranchId, String resource) {
+        if (callerBranchId == null || !callerBranchId.equals(entityBranchId)) {
+            throw new ResourceNotFoundException(resource);
+        }
+    }
+
+    private static <T> void requireAllInBranch(
+            List<T> entities,
+            int expectedCount,
+            Function<T, Long> branchIdExtractor,
+            Long callerBranchId,
+            String resource) {
+        if (entities.size() != expectedCount) {
+            throw new ResourceNotFoundException(resource);
+        }
+        for (T entity : entities) {
+            requireBranchOwnership(branchIdExtractor.apply(entity), callerBranchId, resource);
+        }
     }
 
     /** {@code LEZ_<key>} on every order inside zone {@code key} (design §5.1). */
@@ -452,14 +423,6 @@ public class OptimizationJobService {
             return objectMapper.writeValueAsString(restrictions);
         } catch (JsonProcessingException e) {
             throw new IllegalStateException("Failed to serialize compiled LEZ restrictions", e);
-        }
-    }
-
-    private RoutePlanningRequest deserializeInputData(String json) {
-        try {
-            return objectMapper.readValue(json, RoutePlanningRequest.class);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException("Failed to deserialize input data", e);
         }
     }
 

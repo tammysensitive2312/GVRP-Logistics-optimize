@@ -13,7 +13,7 @@ import org.truong.gvrp_entry_api.entity.enums.VehicleSkill;
 import org.truong.gvrp_entry_api.exception.DataInvalidException;
 import org.truong.gvrp_entry_api.service.orders.OrderImportService;
 import org.truong.gvrp_entry_api.util.ErrorCode;
-import org.truong.gvrp_entry_api.exception.ErrorDetail;
+import org.truong.gvrp_entry_api.exception.ErrorDetails;
 import org.truong.gvrp_entry_api.util.AppConstant;
 
 import java.io.BufferedReader;
@@ -91,12 +91,7 @@ public class CsvFileParser implements FileParser<OrderInputDTO> {
             return new ParseResult<>(validOrders, errors, sourceLines);
 
         } catch (IOException e) {
-            ErrorDetail errorDetail = ErrorDetail.builder()
-                    .code(ErrorCode.INTERNAL_ERROR.getCode())
-                    .message(ErrorCode.INTERNAL_ERROR.getMessage())
-                    .resource(AppConstant.FILE)
-                    .build();
-            throw new DataInvalidException(List.of(errorDetail));
+            throw new DataInvalidException(List.of(ErrorDetails.of(ErrorCode.INTERNAL_ERROR, AppConstant.FILE)));
 
         } catch (Exception e) {
             throw new RuntimeException("Unexpected error during CSV parsing", e);

@@ -3,7 +3,6 @@ package org.truong.gvrp_entry_api.service.orders;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
@@ -16,14 +15,14 @@ import org.truong.gvrp_entry_api.entity.Branch;
 import org.truong.gvrp_entry_api.entity.Order;
 import org.truong.gvrp_entry_api.entity.enums.OrderStatus;
 import org.truong.gvrp_entry_api.exception.DataInvalidException;
-import org.truong.gvrp_entry_api.exception.ErrorDetail;
+import org.truong.gvrp_entry_api.exception.ErrorDetails;
 import org.truong.gvrp_entry_api.exception.ResourceNotFoundException;
 import org.truong.gvrp_entry_api.mapper.OrderMapper;
 import org.truong.gvrp_entry_api.repository.BranchRepository;
 import org.truong.gvrp_entry_api.repository.OrderRepository;
 import org.truong.gvrp_entry_api.service.GeocodingService;
 import org.truong.gvrp_entry_api.util.AppConstant;
-import org.truong.gvrp_entry_api.util.ErrorCode;
+import org.truong.gvrp_entry_api.util.PaginationUtils;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -45,21 +44,8 @@ public class OrderService {
     public PageResponse<OrderDTO> getAllOrdersPaginated(
             Long branchId, int pageNo, int pageSize,
             LocalDate deliveryDate, OrderStatus status, String search) {
-        if (pageNo < 0) {
-            throw new DataInvalidException(List.of(ErrorDetail.builder()
-                    .code(ErrorCode.VALIDATION_ERROR.getCode())
-                    .message("Page index must not be negative")
-                    .field("page")
-                    .build()));
-        }
-        if (pageSize < 1 || pageSize > AppConstant.MAX_ORDER_PAGE_SIZE) {
-            throw new DataInvalidException(List.of(ErrorDetail.builder()
-                    .code(ErrorCode.VALIDATION_ERROR.getCode())
-                    .message("Page size must be between 1 and " + AppConstant.MAX_ORDER_PAGE_SIZE)
-                    .field("size")
-                    .build()));
-        }
-        Pageable pageable = PageRequest.of(pageNo, pageSize, Sort.by("id").descending());
+        Pageable pageable = PaginationUtils.pageRequest(
+                pageNo, pageSize, AppConstant.MAX_ORDER_PAGE_SIZE, Sort.by("id").descending());
         String keyword = search != null && !search.isBlank() ? search.trim() : null;
         Page<Order> orderPage = orderRepository.searchOrders(
                 branchId, deliveryDate, status, keyword, pageable);
@@ -191,12 +177,7 @@ public class OrderService {
     }
 
     private static DataInvalidException invalidField(String field, String message) {
-        return new DataInvalidException(List.of(
-                ErrorDetail.builder()
-                        .code(ErrorCode.VALIDATION_ERROR.getCode())
-                        .message(message)
-                        .field(field)
-                        .build()));
+        return new DataInvalidException(List.of(ErrorDetails.validation(field, message)));
     }
 
     public void validateBusinessLogic(OrderInputDTO dto) {
@@ -205,36 +186,21 @@ public class OrderService {
         boolean hasAddress = dto.getAddress() != null && !dto.getAddress().trim().isEmpty();
 
         if (!hasCoordinates && !hasAddress) {
-            throw new DataInvalidException(
-                    List.of(
-                            ErrorDetail.builder()
-                                    .code(ErrorCode.VALIDATION_ERROR.getCode())
-                                    .message("You must provide coordinates (latitude/longitude) OR a detailed address.")
-                                    .resource(AppConstant.ORDER)
-                                    .build()
-                    ));
+            throw new DataInvalidException(List.of(ErrorDetails.validationWithResource(
+                    AppConstant.ORDER,
+                    "You must provide coordinates (latitude/longitude) OR a detailed address.")));
         }
 
         if (dto.getTimeWindowStart() != null && dto.getTimeWindowEnd() != null) {
             if (dto.getTimeWindowStart().isAfter(dto.getTimeWindowEnd())) {
-                throw new DataInvalidException(
-                        List.of(
-                                ErrorDetail.builder()
-                                        .code(ErrorCode.VALIDATION_ERROR.getCode())
-                                        .message("Time Window start time cannot be after the end time.")
-                                        .resource(AppConstant.ORDER)
-                                        .build()
-                        ));
+                throw new DataInvalidException(List.of(ErrorDetails.validationWithResource(
+                        AppConstant.ORDER,
+                        "Time Window start time cannot be after the end time.")));
             }
         } else if (dto.getTimeWindowStart() != null || dto.getTimeWindowEnd() != null) {
-            throw new DataInvalidException(
-                    List.of(
-                            ErrorDetail.builder()
-                                    .code(ErrorCode.VALIDATION_ERROR.getCode())
-                                    .message("Time Window must have both start and end times, or neither.")
-                                    .resource(AppConstant.ORDER)
-                                    .build()
-                    ));
+            throw new DataInvalidException(List.of(ErrorDetails.validationWithResource(
+                    AppConstant.ORDER,
+                    "Time Window must have both start and end times, or neither.")));
         }
     }
 }

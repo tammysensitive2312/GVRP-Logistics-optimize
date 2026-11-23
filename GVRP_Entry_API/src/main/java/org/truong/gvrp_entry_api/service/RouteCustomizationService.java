@@ -29,7 +29,7 @@ import org.truong.gvrp_entry_api.entity.enums.SolutionStatus;
 import org.truong.gvrp_entry_api.entity.enums.SolutionType;
 import org.truong.gvrp_entry_api.entity.enums.VehicleSkill;
 import org.truong.gvrp_entry_api.exception.DataInvalidException;
-import org.truong.gvrp_entry_api.exception.ErrorDetail;
+import org.truong.gvrp_entry_api.exception.ErrorDetails;
 import org.truong.gvrp_entry_api.exception.ResourceNotFoundException;
 import org.truong.gvrp_entry_api.exception.RevisionConflictException;
 import org.truong.gvrp_entry_api.exception.UnprocessablePlanException;
@@ -552,11 +552,7 @@ public class RouteCustomizationService {
     }
 
     private DataInvalidException invalid(String message) {
-        return new DataInvalidException(List.of(
-                ErrorDetail.builder()
-                        .code(ErrorCode.VALIDATION_ERROR.getCode())
-                        .message(message)
-                        .build()));
+        return new DataInvalidException(List.of(ErrorDetails.validation(message)));
     }
 
     private record ValidatedPlan(

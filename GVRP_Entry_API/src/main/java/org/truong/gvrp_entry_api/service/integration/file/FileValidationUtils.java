@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.web.multipart.MultipartFile;
 import org.truong.gvrp_entry_api.exception.DataInvalidException;
 import org.truong.gvrp_entry_api.exception.ErrorDetail;
+import org.truong.gvrp_entry_api.exception.ErrorDetails;
 import org.truong.gvrp_entry_api.util.AppConstant;
 import org.truong.gvrp_entry_api.util.ErrorCode;
 
@@ -28,27 +29,15 @@ public final class FileValidationUtils {
         List<ErrorDetail> fileErrors = new ArrayList<>();
 
         if (file == null || file.isEmpty()) {
-            fileErrors.add(ErrorDetail.builder()
-                    .code(ErrorCode.EMPTY_FIELD_ERROR.getCode())
-                    .message(ErrorCode.EMPTY_FIELD_ERROR.getMessage())
-                    .resource(AppConstant.FILE)
-                    .build());
+            fileErrors.add(ErrorDetails.of(ErrorCode.EMPTY_FIELD_ERROR, AppConstant.FILE));
         } else {
             if (file.getSize() > MAX_FILE_SIZE) {
-                fileErrors.add(ErrorDetail.builder()
-                        .code(ErrorCode.FILE_SIZE_EXCEEDED.getCode())
-                        .message(ErrorCode.FILE_SIZE_EXCEEDED.getMessage())
-                        .resource(AppConstant.FILE)
-                        .build());
+                fileErrors.add(ErrorDetails.of(ErrorCode.FILE_SIZE_EXCEEDED, AppConstant.FILE));
             }
 
             String filename = file.getOriginalFilename();
             if (filename == null || !filename.toLowerCase().endsWith(extension)) {
-                fileErrors.add(ErrorDetail.builder()
-                        .code(ErrorCode.VALIDATION_ERROR.getCode())
-                        .message(ErrorCode.VALIDATION_ERROR.getMessage())
-                        .resource(AppConstant.FILE)
-                        .build());
+                fileErrors.add(ErrorDetails.of(ErrorCode.VALIDATION_ERROR, AppConstant.FILE));
             }
         }
 

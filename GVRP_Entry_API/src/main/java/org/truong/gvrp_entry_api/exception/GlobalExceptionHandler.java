@@ -42,10 +42,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     // ==================== SHARED RESPONSE HELPERS ====================
 
     private ResponseEntity<ErrorResponse> errorResponse(HttpStatus status, ErrorCode code, String message) {
-        return errorResponse(status, ErrorDetail.builder()
-                .code(code.getCode())
-                .message(message)
-                .build());
+        return errorResponse(status, ErrorDetails.of(code, null, null, message));
     }
 
     private ResponseEntity<ErrorResponse> errorResponse(HttpStatus status, ErrorDetail detail) {
@@ -77,23 +74,16 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleResourceNotFound(ResourceNotFoundException ex) {
-        return errorResponse(HttpStatus.NOT_FOUND, ErrorDetail.builder()
-                .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
-                .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
-                .resource(ex.getResource())
-                .field(ex.getField())
-                .build());
+        return errorResponse(HttpStatus.NOT_FOUND, ErrorDetails.of(
+                ErrorCode.RESOURCE_NOT_FOUND, ex.getResource(), ex.getField(),
+                ErrorCode.RESOURCE_NOT_FOUND.getMessage()));
     }
 
     /** 409 — the request collides with an existing resource or state (SEC-007, E-2, E-4). */
     @ExceptionHandler(ResourceConflictException.class)
     public ResponseEntity<ErrorResponse> handleResourceConflict(ResourceConflictException ex) {
-        return errorResponse(HttpStatus.CONFLICT, ErrorDetail.builder()
-                .code(ErrorCode.RESOURCE_CONFLICT.getCode())
-                .message(ex.getMessage())
-                .resource(ex.getResource())
-                .field(ex.getField())
-                .build());
+        return errorResponse(HttpStatus.CONFLICT, ErrorDetails.of(
+                ErrorCode.RESOURCE_CONFLICT, ex.getResource(), ex.getField(), ex.getMessage()));
     }
 
     @ExceptionHandler(UnprocessablePlanException.class)
@@ -169,11 +159,8 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     public ResponseEntity<ErrorResponse> handleConstraintViolation(ConstraintViolationException ex) {
         logger.warn("Constraint validation failed: {} violation(s)", ex.getConstraintViolations().size());
         List<ErrorDetail> details = ex.getConstraintViolations().stream()
-                .map(violation -> ErrorDetail.builder()
-                        .code(ErrorCode.UNSUPPORTED_VALUE.getCode())
-                        .message(violation.getMessage())
-                        .field(extractLeafPropertyName(violation))
-                        .build())
+                .map(violation -> ErrorDetails.unsupportedValue(
+                        extractLeafPropertyName(violation), violation.getMessage()))
                 .toList();
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErrorResponse(details));
     }
@@ -199,10 +186,8 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         Throwable cause = ex.getMostSpecificCause();
         logger.warn("Malformed request body ({})", cause.getClass().getSimpleName());
 
-        return mvcErrorResponse(HttpStatus.BAD_REQUEST, ErrorDetail.builder()
-                .code(ErrorCode.VALIDATION_ERROR.getCode())
-                .message("Malformed request body.")
-                .build());
+        return mvcErrorResponse(HttpStatus.BAD_REQUEST,
+                ErrorDetails.validation("Malformed request body."));
     }
 
     /**
@@ -220,11 +205,9 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 result.getErrorCount(), result.getObjectName());
 
         List<ErrorDetail> details = result.getAllErrors().stream()
-                .map(error -> ErrorDetail.builder()
-                        .code(ErrorCode.VALIDATION_ERROR.getCode())
-                        .message(error.getDefaultMessage())
-                        .field(error instanceof FieldError fieldError ? fieldError.getField() : null)
-                        .build())
+                .map(error -> ErrorDetails.validation(
+                        error instanceof FieldError fieldError ? fieldError.getField() : null,
+                        error.getDefaultMessage()))
                 .toList();
 
         return mvcErrorResponse(HttpStatus.BAD_REQUEST, details);
@@ -245,11 +228,8 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 : ex.getPropertyName();
         logger.warn("Invalid value type for parameter '{}' ({})", field, ex.getClass().getSimpleName());
 
-        return mvcErrorResponse(HttpStatus.BAD_REQUEST, ErrorDetail.builder()
-                .code(ErrorCode.INVALID_VALUE_TYPE.getCode())
-                .message(ErrorCode.INVALID_VALUE_TYPE.getMessage())
-                .field(field)
-                .build());
+        return mvcErrorResponse(HttpStatus.BAD_REQUEST, ErrorDetails.of(
+                ErrorCode.INVALID_VALUE_TYPE, null, field, ErrorCode.INVALID_VALUE_TYPE.getMessage()));
     }
 
     @Override
@@ -259,11 +239,9 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             HttpStatusCode status,
             WebRequest request) {
         logger.warn("Missing required parameter '{}'", ex.getParameterName());
-        return mvcErrorResponse(HttpStatus.BAD_REQUEST, ErrorDetail.builder()
-                .code(ErrorCode.EMPTY_FIELD_ERROR.getCode())
-                .message("Missing required parameter: " + ex.getParameterName())
-                .field(ex.getParameterName())
-                .build());
+        return mvcErrorResponse(HttpStatus.BAD_REQUEST, ErrorDetails.of(
+                ErrorCode.EMPTY_FIELD_ERROR, null, ex.getParameterName(),
+                "Missing required parameter: " + ex.getParameterName()));
     }
 
     @Override
@@ -275,17 +253,11 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         List<ErrorDetail> details = new ArrayList<>();
         ex.getParameterValidationResults().forEach(result -> {
             String paramName = result.getMethodParameter().getParameterName();
-            result.getResolvableErrors().forEach(error -> details.add(ErrorDetail.builder()
-                    .code(ErrorCode.UNSUPPORTED_VALUE.getCode())
-                    .message(error.getDefaultMessage())
-                    .field(paramName)
-                    .build()));
+            result.getResolvableErrors().forEach(error -> details.add(
+                    ErrorDetails.unsupportedValue(paramName, error.getDefaultMessage())));
         });
         if (details.isEmpty()) {
-            details.add(ErrorDetail.builder()
-                    .code(ErrorCode.UNSUPPORTED_VALUE.getCode())
-                    .message(ErrorCode.UNSUPPORTED_VALUE.getMessage())
-                    .build());
+            details.add(ErrorDetails.of(ErrorCode.UNSUPPORTED_VALUE));
         }
         logger.warn("Method parameter validation failed: {} error(s)", details.size());
         return mvcErrorResponse(HttpStatus.BAD_REQUEST, details);
@@ -298,10 +270,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             HttpStatusCode status,
             WebRequest request) {
         logger.warn("Resource not found: {} {}", ex.getHttpMethod(), ex.getResourcePath());
-        return mvcErrorResponse(HttpStatus.NOT_FOUND, ErrorDetail.builder()
-                .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
-                .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
-                .build());
+        return mvcErrorResponse(HttpStatus.NOT_FOUND, ErrorDetails.of(ErrorCode.RESOURCE_NOT_FOUND));
     }
 
     /** 405 — a supported URL called with the wrong method. */
@@ -312,10 +281,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             HttpStatusCode status,
             WebRequest request) {
         logger.warn("Unsupported request method: {}", ex.getMessage());
-        return mvcErrorResponse(HttpStatus.METHOD_NOT_ALLOWED, ErrorDetail.builder()
-                .code(ErrorCode.METHOD_NOT_ALLOWED.getCode())
-                .message(ErrorCode.METHOD_NOT_ALLOWED.getMessage())
-                .build());
+        return mvcErrorResponse(HttpStatus.METHOD_NOT_ALLOWED, ErrorDetails.of(ErrorCode.METHOD_NOT_ALLOWED));
     }
 
     @Override
@@ -325,10 +291,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             HttpStatusCode status,
             WebRequest request) {
         logger.warn("Unsupported media type: {}", ex.getContentType());
-        return mvcErrorResponse(HttpStatus.UNSUPPORTED_MEDIA_TYPE, ErrorDetail.builder()
-                .code(ErrorCode.UNSUPPORTED_MEDIA_TYPE.getCode())
-                .message(ErrorCode.UNSUPPORTED_MEDIA_TYPE.getMessage())
-                .build());
+        return mvcErrorResponse(HttpStatus.UNSUPPORTED_MEDIA_TYPE, ErrorDetails.of(ErrorCode.UNSUPPORTED_MEDIA_TYPE));
     }
 
     @Override
@@ -353,10 +316,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         ErrorCode code = statusCode.is4xxClientError()
                 ? ErrorCode.VALIDATION_ERROR
                 : ErrorCode.INTERNAL_ERROR;
-        return mvcErrorResponse(statusCode, ErrorDetail.builder()
-                .code(code.getCode())
-                .message(code.getMessage())
-                .build());
+        return mvcErrorResponse(statusCode, ErrorDetails.of(code));
     }
 
     @ExceptionHandler(Exception.class)

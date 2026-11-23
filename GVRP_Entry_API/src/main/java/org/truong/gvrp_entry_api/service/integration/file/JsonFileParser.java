@@ -15,7 +15,7 @@ import org.truong.gvrp_entry_api.dto.response.ImportError;
 import org.truong.gvrp_entry_api.exception.DataInvalidException;
 import org.truong.gvrp_entry_api.service.orders.OrderImportService;
 import org.truong.gvrp_entry_api.util.ErrorCode;
-import org.truong.gvrp_entry_api.exception.ErrorDetail;
+import org.truong.gvrp_entry_api.exception.ErrorDetails;
 import org.truong.gvrp_entry_api.util.AppConstant;
 
 import java.io.IOException;
@@ -49,12 +49,8 @@ public class JsonFileParser implements FileParser<OrderInputDTO> {
             JsonParser parser = objectMapper.getFactory().createParser(inputStream);
 
             if (parser.nextToken() != JsonToken.START_ARRAY) {
-                ErrorDetail errorDetail = ErrorDetail.builder()
-                        .code("0040001")
-                        .message("JSON root must be an array [...]")
-                        .resource("file")
-                        .build();
-                throw new DataInvalidException(List.of(errorDetail));
+                throw new DataInvalidException(List.of(
+                        ErrorDetails.validationWithResource(AppConstant.FILE, "JSON root must be an array [...]")));
             }
 
             while (parser.nextToken() != JsonToken.END_ARRAY) {
@@ -97,12 +93,7 @@ public class JsonFileParser implements FileParser<OrderInputDTO> {
             return new ParseResult<>(validOrders, errors, sourceLines);
 
         } catch (IOException e) {
-            ErrorDetail errorDetail = ErrorDetail.builder()
-                    .code(ErrorCode.INTERNAL_ERROR.getCode())
-                    .message(ErrorCode.INTERNAL_ERROR.getMessage())
-                    .resource(AppConstant.FILE)
-                    .build();
-            throw new DataInvalidException(List.of(errorDetail));
+            throw new DataInvalidException(List.of(ErrorDetails.of(ErrorCode.INTERNAL_ERROR, AppConstant.FILE)));
 
         } catch (Exception e) {
             if (e instanceof DataInvalidException) {

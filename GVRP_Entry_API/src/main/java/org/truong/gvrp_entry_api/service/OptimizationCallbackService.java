@@ -13,7 +13,7 @@ import org.truong.gvrp_entry_api.dto.request.EngineCallbackRequest;
 import org.truong.gvrp_entry_api.entity.*;
 import org.truong.gvrp_entry_api.entity.enums.*;
 import org.truong.gvrp_entry_api.exception.DataInvalidException;
-import org.truong.gvrp_entry_api.exception.ErrorDetail;
+import org.truong.gvrp_entry_api.exception.ErrorDetails;
 import org.truong.gvrp_entry_api.exception.CallbackRejectedException;
 import org.truong.gvrp_entry_api.exception.JobNotReadyException;
 import org.truong.gvrp_entry_api.exception.ResourceNotFoundException;
@@ -630,11 +630,7 @@ public class OptimizationCallbackService {
     }
 
     private DataInvalidException paretoInvalid(String message) {
-        return new DataInvalidException(List.of(
-                ErrorDetail.builder()
-                        .code(ErrorCode.VALIDATION_ERROR.getCode())
-                        .message(message)
-                        .build()));
+        return new DataInvalidException(List.of(ErrorDetails.validation(message)));
     }
 
     private SolutionStatus calculateSolutionStatus(EngineCallbackRequest.CompletionCallback callback) {

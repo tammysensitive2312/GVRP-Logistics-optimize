@@ -22,7 +22,7 @@ import org.truong.gvrp_entry_api.service.integration.file.JsonFileParser;
 import org.truong.gvrp_entry_api.service.integration.file.ParseResult;
 import org.truong.gvrp_entry_api.service.integration.file.TextDataParser;
 import org.truong.gvrp_entry_api.util.ErrorCode;
-import org.truong.gvrp_entry_api.exception.ErrorDetail;
+import org.truong.gvrp_entry_api.exception.ErrorDetails;
 import org.truong.gvrp_entry_api.mapper.OrderMapper;
 import org.truong.gvrp_entry_api.repository.BranchRepository;
 import org.truong.gvrp_entry_api.repository.OrderRepository;
@@ -81,19 +81,11 @@ public class OrderImportService {
         switch (choice) {
             case 0:
                 throw new DataInvalidException(List.of(
-                        ErrorDetail.builder()
-                                .code(ErrorCode.UNSUPPORTED_VALUE.getCode())
-                                .message("Request has both file and text input")
-                                .field(AppConstant.FILE)
-                                .build()
+                        ErrorDetails.unsupportedValue(AppConstant.FILE, "Request has both file and text input")
                 ));
             case 1:
                 throw new DataInvalidException(List.of(
-                        ErrorDetail.builder()
-                                .code(ErrorCode.UNSUPPORTED_VALUE.getCode())
-                                .message("Request has no file and text input")
-                                .field(AppConstant.FILE)
-                                .build()
+                        ErrorDetails.unsupportedValue(AppConstant.FILE, "Request has no file and text input")
                 ));
             case 2: {
                 MultipartFile file = request.getFile();
@@ -107,11 +99,7 @@ public class OrderImportService {
                         fileResult = jsonFileParser.parse(file);
                     } else {
                         throw new DataInvalidException(List.of(
-                                ErrorDetail.builder()
-                                        .code(ErrorCode.UNSUPPORTED_VALUE.getCode())
-                                        .message("Định dạng file không hỗ trợ (chỉ CSV/JSON).")
-                                        .field(AppConstant.FILE)
-                                        .build()
+                                ErrorDetails.unsupportedValue(AppConstant.FILE, "Định dạng file không hỗ trợ (chỉ CSV/JSON).")
                         ));
                     }
 
@@ -131,11 +119,8 @@ public class OrderImportService {
                 } catch (Exception e) {
                     log.error("Lỗi hệ thống khi đọc file: {}", e.getMessage(), e);
                     throw new DataInvalidException(List.of(
-                            ErrorDetail.builder()
-                                    .code(ErrorCode.BACKEND_SERVER_ERROR.getCode())
-                                    .message(ErrorCode.BACKEND_SERVER_ERROR.getMessage())
-                                    .field(AppConstant.FILE)
-                                    .build()
+                            ErrorDetails.of(ErrorCode.BACKEND_SERVER_ERROR, null, AppConstant.FILE,
+                                    ErrorCode.BACKEND_SERVER_ERROR.getMessage())
                     ));
                 }
                 break;
@@ -161,10 +146,7 @@ public class OrderImportService {
                 throw new RuntimeException("Unexpected backend server error simulation");
             default:
                 throw new DataInvalidException(List.of(
-                        ErrorDetail.builder()
-                                .code(ErrorCode.BACKEND_SERVER_ERROR.getCode())
-                                .code(ErrorCode.BACKEND_SERVER_ERROR.getCode())
-                                .build()
+                        ErrorDetails.of(ErrorCode.BACKEND_SERVER_ERROR)
                 ));
         }
 
@@ -328,12 +310,7 @@ public class OrderImportService {
     }
 
     private static DataInvalidException limitExceeded(String message) {
-        return new DataInvalidException(List.of(
-                ErrorDetail.builder()
-                        .code(ErrorCode.VALIDATION_ERROR.getCode())
-                        .message(message)
-                        .field(AppConstant.FILE)
-                        .build()));
+        return new DataInvalidException(List.of(ErrorDetails.validation(AppConstant.FILE, message)));
     }
 
     public static ImportError buildError(Integer lineNumber, String orderCode, String field, String message, String rawData) {

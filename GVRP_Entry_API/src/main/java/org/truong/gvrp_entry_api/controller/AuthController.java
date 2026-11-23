@@ -12,7 +12,7 @@ import org.truong.gvrp_entry_api.dto.response.LoginResponse;
 import org.truong.gvrp_entry_api.entity.Branch;
 import org.truong.gvrp_entry_api.entity.User;
 import org.truong.gvrp_entry_api.exception.DataInvalidException;
-import org.truong.gvrp_entry_api.exception.ErrorDetail;
+import org.truong.gvrp_entry_api.exception.ErrorDetails;
 import org.truong.gvrp_entry_api.exception.ForbiddenException;
 import org.truong.gvrp_entry_api.exception.ResourceNotFoundException;
 import org.truong.gvrp_entry_api.repository.BranchRepository;
@@ -57,13 +57,8 @@ public class AuthController {
 
         User user = userRepository.findByUsernameAndBranchId(loginRequest.getUsername(), branch.getId())
                 .orElseThrow(() -> new DataInvalidException(List.of(
-                        ErrorDetail.builder()
-                                .code(ErrorCode.INCORRECT_LOGIN_INFORMATION.getCode())
-                                .message(ErrorCode.INCORRECT_LOGIN_INFORMATION.getMessage())
-                                .resource(AppConstant.USER)
-                                .build()
-                ))
-                );
+                        ErrorDetails.of(ErrorCode.INCORRECT_LOGIN_INFORMATION, AppConstant.USER)
+                )));
 
         // Generate JWT token with claims
         String jwt = tokenProvider.generateTokenWithClaims(
