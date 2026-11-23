@@ -10,6 +10,7 @@ import org.truong.gvrp_entry_api.entity.RouteStop;
 import org.truong.gvrp_entry_api.entity.Solution;
 import org.truong.gvrp_entry_api.entity.UnassignedOrder;
 import org.truong.gvrp_entry_api.entity.enums.LezStatus;
+import org.truong.gvrp_entry_api.exception.ResourceNotFoundException;
 import org.truong.gvrp_entry_api.repository.RouteRepository;
 import org.truong.gvrp_entry_api.repository.SolutionRepository;
 import org.truong.gvrp_entry_api.util.AppConstant;
@@ -23,7 +24,7 @@ import java.util.Optional;
  * Read side of LEZ compliance (LEZ-001 N8): the planner panel and the map.
  *
  * <p>Branch-scoped and read-only apart from {@link #recheck}: another branch's id
- * answers exactly like a missing one ({@link LezNotFoundException}, 404).
+ * answers exactly like a missing one ({@link ResourceNotFoundException}, 404).
  * {@code STALE} is computed from the stored ruleset hash and never written by a
  * {@code GET} (design §16.2-6).
  */
@@ -74,7 +75,7 @@ public class ComplianceReadService {
                 .filter(found -> found.getSolution() != null
                         && found.getSolution().getBranch() != null
                         && branch.equals(found.getSolution().getBranch().getId()))
-                .orElseThrow(() -> new LezNotFoundException(AppConstant.ROUTE));
+                .orElseThrow(() -> new ResourceNotFoundException(AppConstant.ROUTE));
 
         List<RouteStop> stops = route.getSegments() == null ? List.of()
                 : route.getSegments().stream()
@@ -187,7 +188,7 @@ public class ComplianceReadService {
         return solutionRepository.findWithDetailsById(solutionId)
                 .filter(found -> found.getBranch() != null
                         && branchId.equals(found.getBranch().getId()))
-                .orElseThrow(() -> new LezNotFoundException(AppConstant.SOLUTION));
+                .orElseThrow(() -> new ResourceNotFoundException(AppConstant.SOLUTION));
     }
 
     private static List<Route> routesOf(Solution solution) {

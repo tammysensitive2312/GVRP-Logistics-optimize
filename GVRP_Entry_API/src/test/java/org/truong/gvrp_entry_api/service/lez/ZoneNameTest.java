@@ -18,6 +18,8 @@ import org.truong.gvrp_entry_api.entity.ZoneTemplate;
 import org.truong.gvrp_entry_api.entity.enums.BoundaryConfidence;
 import org.truong.gvrp_entry_api.entity.enums.BranchZoneMode;
 import org.truong.gvrp_entry_api.exception.DataInvalidException;
+import org.truong.gvrp_entry_api.exception.ResourceConflictException;
+import org.truong.gvrp_entry_api.exception.ResourceNotFoundException;
 import org.truong.gvrp_entry_api.repository.BranchRepository;
 import org.truong.gvrp_entry_api.repository.BranchZoneRepository;
 import org.truong.gvrp_entry_api.repository.BranchZoneRuleRepository;
@@ -206,7 +208,7 @@ class ZoneNameTest {
         stubZone(linked(5L, template));
 
         assertThatThrownBy(() -> service.updateZone(5L, rename("New"), BRANCH))
-                .isInstanceOf(LezConflictException.class);
+                .isInstanceOf(ResourceConflictException.class);
         verify(zoneRepository, never()).save(any());
     }
 
@@ -250,7 +252,7 @@ class ZoneNameTest {
         when(zoneRepository.findByIdAndBranchId(99L, BRANCH)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.updateZone(99L, rename("New"), BRANCH))
-                .isInstanceOf(LezNotFoundException.class);
+                .isInstanceOf(ResourceNotFoundException.class);
         verify(zoneRepository, never()).findByBranchIdOrderByIdAsc(any());
         verify(zoneRepository, never()).save(any());
     }

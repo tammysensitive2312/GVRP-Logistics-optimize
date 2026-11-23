@@ -11,6 +11,7 @@ import org.truong.gvrp_entry_api.dto.response.OrderDTO;
 import org.truong.gvrp_entry_api.entity.Branch;
 import org.truong.gvrp_entry_api.entity.Order;
 import org.truong.gvrp_entry_api.exception.DataInvalidException;
+import org.truong.gvrp_entry_api.exception.ResourceNotFoundException;
 import org.truong.gvrp_entry_api.mapper.OrderMapper;
 import org.truong.gvrp_entry_api.repository.BranchRepository;
 import org.truong.gvrp_entry_api.repository.OrderRepository;
@@ -160,7 +161,7 @@ class OrderServiceGeocodingTest {
         when(orderRepository.findByIdAndBranchId(9L, BRANCH)).thenReturn(Optional.empty());
 
         catchThrowableOfType(() -> service.updateOrdersById(9L, BRANCH, input(null, null, "2 Hang Bai")),
-                DataInvalidException.class);
+                ResourceNotFoundException.class);
 
         verifyNoInteractions(geocodingService);
         verify(orderRepository, never()).save(any());

@@ -494,7 +494,7 @@ export class ParetoViewComponent implements OnDestroy {
       this.conflict.set(true);
       return;
     }
-    if (status === 400 && first?.code === '0040402') {
+    if ((status === 404 || status === 400) && first?.code === '0040402') {
       this.toast.error('Plan not found');
       this.reload.emit();
       return;

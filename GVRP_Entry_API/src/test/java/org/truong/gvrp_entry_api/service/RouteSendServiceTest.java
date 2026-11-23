@@ -29,6 +29,7 @@ import org.truong.gvrp_entry_api.entity.enums.SolutionType;
 import org.truong.gvrp_entry_api.entity.enums.UserRole;
 import org.truong.gvrp_entry_api.exception.DataInvalidException;
 import org.truong.gvrp_entry_api.exception.ForbiddenException;
+import org.truong.gvrp_entry_api.exception.ResourceNotFoundException;
 import org.truong.gvrp_entry_api.repository.OrderRepository;
 import org.truong.gvrp_entry_api.repository.RouteRepository;
 import org.truong.gvrp_entry_api.repository.RouteSendRepository;
@@ -187,7 +188,7 @@ class RouteSendServiceTest {
         when(solutionRepository.findWithDetailsById(9L)).thenReturn(Optional.of(f.solution()));
         when(userRepository.findById(2L)).thenReturn(Optional.of(f.driver()));
 
-        assertThrows(DataInvalidException.class, () -> service.sendRoute(21L, sendRequest()));
+        assertThrows(ResourceNotFoundException.class, () -> service.sendRoute(21L, sendRequest()));
     }
 
     // ---------- driver reads ----------
@@ -296,7 +297,7 @@ class RouteSendServiceTest {
         asUser(1L, 2L, "PLANNER");
         when(routeRepository.findById(21L)).thenReturn(Optional.of(f.route()));
 
-        assertThrows(DataInvalidException.class, () -> service.routeSends(21L));
+        assertThrows(ResourceNotFoundException.class, () -> service.routeSends(21L));
         verify(sendRepository, never()).findByRouteIdOrderBySentAtDescIdDesc(any());
     }
 

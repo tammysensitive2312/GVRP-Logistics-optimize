@@ -22,6 +22,7 @@ import org.truong.gvrp_entry_api.entity.enums.SolutionStatus;
 import org.truong.gvrp_entry_api.entity.enums.SolutionType;
 import org.truong.gvrp_entry_api.exception.DataInvalidException;
 import org.truong.gvrp_entry_api.exception.ErrorDetail;
+import org.truong.gvrp_entry_api.exception.ResourceNotFoundException;
 import org.truong.gvrp_entry_api.exception.RevisionConflictException;
 import org.truong.gvrp_entry_api.exception.UnprocessablePlanException;
 import org.truong.gvrp_entry_api.mapper.SolutionMapper;
@@ -413,13 +414,8 @@ public class ParetoService {
         }
     }
 
-    private DataInvalidException candidateNotFound() {
-        return new DataInvalidException(List.of(
-                ErrorDetail.builder()
-                        .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
-                        .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
-                        .resource(AppConstant.PARETO_CANDIDATE)
-                        .build()));
+    private ResourceNotFoundException candidateNotFound() {
+        return new ResourceNotFoundException(AppConstant.PARETO_CANDIDATE);
     }
 
     private record Applicability(boolean applicable, String reason) {

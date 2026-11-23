@@ -16,6 +16,7 @@ import org.truong.gvrp_entry_api.dto.response.ImportResultDTO;
 import org.truong.gvrp_entry_api.entity.Branch;
 import org.truong.gvrp_entry_api.entity.Order;
 import org.truong.gvrp_entry_api.exception.DataInvalidException;
+import org.truong.gvrp_entry_api.exception.ResourceNotFoundException;
 import org.truong.gvrp_entry_api.service.integration.file.CsvFileParser;
 import org.truong.gvrp_entry_api.service.integration.file.JsonFileParser;
 import org.truong.gvrp_entry_api.service.integration.file.ParseResult;
@@ -70,13 +71,7 @@ public class OrderImportService {
 
         log.info("Importing orders for Branch ID: {}", branchId);
         Branch branch = branchRepository.findById(branchId)
-                .orElseThrow(() -> new DataInvalidException(List.of(
-                        ErrorDetail.builder()
-                                .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
-                                .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
-                                .resource(AppConstant.BRANCH)
-                                .build()
-                )));
+                .orElseThrow(() -> new ResourceNotFoundException(AppConstant.BRANCH));
 
         List<OrderInputDTO> allRawOrders = new ArrayList<>();
         List<ImportError> allErrors = new ArrayList<>();

@@ -29,8 +29,6 @@ import org.springframework.web.method.annotation.HandlerMethodValidationExceptio
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
-import org.truong.gvrp_entry_api.service.lez.LezConflictException;
-import org.truong.gvrp_entry_api.service.lez.LezNotFoundException;
 import org.truong.gvrp_entry_api.util.ErrorCode;
 
 import java.util.ArrayList;
@@ -77,20 +75,25 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return errorResponse(HttpStatus.FORBIDDEN, ErrorCode.FORBIDDEN, ex.getMessage());
     }
 
-    @ExceptionHandler(LezNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleLezNotFound(LezNotFoundException ex) {
-        return errorResponse(HttpStatus.NOT_FOUND, ErrorDetails.notFound(ex.getResource()));
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleResourceNotFound(ResourceNotFoundException ex) {
+        return errorResponse(HttpStatus.NOT_FOUND, ErrorDetail.builder()
+                .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
+                .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
+                .resource(ex.getResource())
+                .field(ex.getField())
+                .build());
     }
 
-    @ExceptionHandler(LezConflictException.class)
-    public ResponseEntity<ErrorResponse> handleLezConflict(LezConflictException ex) {
-        return errorResponse(HttpStatus.CONFLICT, ErrorCode.RESOURCE_CONFLICT, ex.getMessage());
-    }
-
-    /** 409 — the request collides with an existing resource (SEC-007: duplicate plate). */
+    /** 409 — the request collides with an existing resource or state (SEC-007, E-2, E-4). */
     @ExceptionHandler(ResourceConflictException.class)
     public ResponseEntity<ErrorResponse> handleResourceConflict(ResourceConflictException ex) {
-        return errorResponse(HttpStatus.CONFLICT, ErrorCode.RESOURCE_CONFLICT, ex.getMessage());
+        return errorResponse(HttpStatus.CONFLICT, ErrorDetail.builder()
+                .code(ErrorCode.RESOURCE_CONFLICT.getCode())
+                .message(ex.getMessage())
+                .resource(ex.getResource())
+                .field(ex.getField())
+                .build());
     }
 
     @ExceptionHandler(UnprocessablePlanException.class)

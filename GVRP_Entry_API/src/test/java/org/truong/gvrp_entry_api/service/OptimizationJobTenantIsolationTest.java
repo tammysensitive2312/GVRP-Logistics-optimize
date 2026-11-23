@@ -12,8 +12,7 @@ import org.truong.gvrp_entry_api.entity.Fleet;
 import org.truong.gvrp_entry_api.entity.Order;
 import org.truong.gvrp_entry_api.entity.Vehicle;
 import org.truong.gvrp_entry_api.entity.enums.OrderStatus;
-import org.truong.gvrp_entry_api.exception.DataInvalidException;
-import org.truong.gvrp_entry_api.exception.ErrorDetail;
+import org.truong.gvrp_entry_api.exception.ResourceNotFoundException;
 import org.truong.gvrp_entry_api.mapper.DepotMapper;
 import org.truong.gvrp_entry_api.mapper.OptimizationConfigMapper;
 import org.truong.gvrp_entry_api.mapper.OptimizationJobMapper;
@@ -32,7 +31,6 @@ import org.truong.gvrp_entry_api.repository.ZoneRuleTemplateRepository;
 import org.truong.gvrp_entry_api.service.integration.external_api.EngineApiClient;
 import org.truong.gvrp_entry_api.service.lez.RestrictionCompiler;
 import org.truong.gvrp_entry_api.util.AppConstant;
-import org.truong.gvrp_entry_api.util.ErrorCode;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -125,20 +123,18 @@ class OptimizationJobTenantIsolationTest {
                 .build();
 
         when(orderRepository.findAllById(List.of(99L))).thenReturn(List.of(foreignOrder));
-        DataInvalidException foreignEx = assertThrows(DataInvalidException.class,
+        ResourceNotFoundException foreignEx = assertThrows(ResourceNotFoundException.class,
                 () -> service.submitJob(request(List.of(99L), List.of(7L)), BRANCH_A, USER_A));
 
         when(orderRepository.findAllById(List.of(999L))).thenReturn(List.of());
-        DataInvalidException missingEx = assertThrows(DataInvalidException.class,
+        ResourceNotFoundException missingEx = assertThrows(ResourceNotFoundException.class,
                 () -> service.submitJob(request(List.of(999L), List.of(7L)), BRANCH_A, USER_A));
 
-        assertThat(foreignEx.getErrors()).hasSize(1);
-        ErrorDetail detail = foreignEx.getErrors().get(0);
-        assertThat(detail.getCode()).isEqualTo(ErrorCode.RESOURCE_NOT_FOUND.getCode());
-        assertThat(detail.getMessage()).isEqualTo(ErrorCode.RESOURCE_NOT_FOUND.getMessage());
-        assertThat(detail.getResource()).isEqualTo(AppConstant.ORDER);
-        assertThat(detail.getField()).isNull();
-        assertThat(foreignEx.getErrors()).usingRecursiveComparison().isEqualTo(missingEx.getErrors());
+        assertThat(foreignEx.getResource()).isEqualTo(AppConstant.ORDER);
+        assertThat(foreignEx.getField()).isNull();
+        assertThat(foreignEx.getMessage()).isEqualTo(missingEx.getMessage());
+        assertThat(foreignEx.getResource()).isEqualTo(missingEx.getResource());
+        assertThat(foreignEx.getField()).isEqualTo(missingEx.getField());
 
         verify(jobRepository, never()).save(any());
         verifyNoInteractions(engineApiClient);
@@ -153,20 +149,18 @@ class OptimizationJobTenantIsolationTest {
                 .fleet(Fleet.builder().id(5L).branch(branchB).build())
                 .build();
         when(vehicleRepository.findAllByIdWithDepots(List.of(55L))).thenReturn(List.of(foreignVehicle));
-        DataInvalidException foreignEx = assertThrows(DataInvalidException.class,
+        ResourceNotFoundException foreignEx = assertThrows(ResourceNotFoundException.class,
                 () -> service.submitJob(request(List.of(1L), List.of(55L)), BRANCH_A, USER_A));
 
         when(vehicleRepository.findAllByIdWithDepots(List.of(888L))).thenReturn(List.of());
-        DataInvalidException missingEx = assertThrows(DataInvalidException.class,
+        ResourceNotFoundException missingEx = assertThrows(ResourceNotFoundException.class,
                 () -> service.submitJob(request(List.of(1L), List.of(888L)), BRANCH_A, USER_A));
 
-        assertThat(foreignEx.getErrors()).hasSize(1);
-        ErrorDetail detail = foreignEx.getErrors().get(0);
-        assertThat(detail.getCode()).isEqualTo(ErrorCode.RESOURCE_NOT_FOUND.getCode());
-        assertThat(detail.getMessage()).isEqualTo(ErrorCode.RESOURCE_NOT_FOUND.getMessage());
-        assertThat(detail.getResource()).isEqualTo(AppConstant.VEHICLE);
-        assertThat(detail.getField()).isNull();
-        assertThat(foreignEx.getErrors()).usingRecursiveComparison().isEqualTo(missingEx.getErrors());
+        assertThat(foreignEx.getResource()).isEqualTo(AppConstant.VEHICLE);
+        assertThat(foreignEx.getField()).isNull();
+        assertThat(foreignEx.getMessage()).isEqualTo(missingEx.getMessage());
+        assertThat(foreignEx.getResource()).isEqualTo(missingEx.getResource());
+        assertThat(foreignEx.getField()).isEqualTo(missingEx.getField());
 
         verify(jobRepository, never()).save(any());
         verifyNoInteractions(engineApiClient);

@@ -41,6 +41,7 @@ import org.truong.gvrp_entry_api.entity.enums.SolutionType;
 import org.truong.gvrp_entry_api.entity.enums.UserRole;
 import org.truong.gvrp_entry_api.exception.DataInvalidException;
 import org.truong.gvrp_entry_api.exception.EngineUnavailableException;
+import org.truong.gvrp_entry_api.exception.ResourceNotFoundException;
 import org.truong.gvrp_entry_api.exception.UnprocessablePlanException;
 import org.truong.gvrp_entry_api.repository.BranchZoneRepository;
 import org.truong.gvrp_entry_api.repository.BranchZoneRuleRepository;
@@ -345,13 +346,12 @@ class RouteSendServiceLezTest {
         when(solutionRepository.findWithDetailsById(9L)).thenReturn(Optional.of(fixture.solution()));
         when(userRepository.findById(1L)).thenReturn(Optional.of(fixture.sender()));
 
-        DataInvalidException ex = org.junit.jupiter.api.Assertions.assertThrows(
-                DataInvalidException.class, () -> service.sendRoute(21L, sendRequest()));
+        ResourceNotFoundException ex = org.junit.jupiter.api.Assertions.assertThrows(
+                ResourceNotFoundException.class, () -> service.sendRoute(21L, sendRequest()));
 
-        assertThat(ex.getErrors().get(0).getCode()).isEqualTo(ErrorCode.RESOURCE_NOT_FOUND.getCode());
-        assertThat(ex.getErrors().get(0).getMessage()).isEqualTo(ErrorCode.RESOURCE_NOT_FOUND.getMessage());
-        assertThat(ex.getErrors().get(0).getResource()).isEqualTo(AppConstant.SOLUTION);
-        assertThat(ex.getErrors().get(0).getMessage()).doesNotContain("another branch");
+        assertThat(ex.getMessage()).isEqualTo(AppConstant.SOLUTION + " not found");
+        assertThat(ex.getResource()).isEqualTo(AppConstant.SOLUTION);
+        assertThat(ex.getMessage()).doesNotContain("another branch");
         verify(routeRepository, never()).findWithLockById(any());
         verify(sendRepository, never()).saveAndFlush(any());
         verifyNoInteractions(engineApiClient);

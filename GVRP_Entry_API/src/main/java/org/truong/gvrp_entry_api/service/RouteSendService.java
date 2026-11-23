@@ -25,6 +25,7 @@ import org.truong.gvrp_entry_api.entity.enums.UserRole;
 import org.truong.gvrp_entry_api.exception.DataInvalidException;
 import org.truong.gvrp_entry_api.exception.ErrorDetail;
 import org.truong.gvrp_entry_api.exception.ForbiddenException;
+import org.truong.gvrp_entry_api.exception.ResourceNotFoundException;
 import org.truong.gvrp_entry_api.exception.UnprocessablePlanException;
 import org.truong.gvrp_entry_api.repository.OrderRepository;
 import org.truong.gvrp_entry_api.repository.RouteRepository;
@@ -448,13 +449,8 @@ public class RouteSendService {
                 .build();
     }
 
-    private DataInvalidException notFound(String resource) {
-        return new DataInvalidException(List.of(
-                ErrorDetail.builder()
-                        .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
-                        .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
-                        .resource(resource)
-                        .build()));
+    private ResourceNotFoundException notFound(String resource) {
+        return new ResourceNotFoundException(resource);
     }
 
     private DataInvalidException invalid(String message) {

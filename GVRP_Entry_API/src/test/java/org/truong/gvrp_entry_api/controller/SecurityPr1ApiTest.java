@@ -208,7 +208,7 @@ class SecurityPr1ApiTest {
         MvcResult foreignRes = mockMvc.perform(plannerPost("/api/v1/jobs/plan",
                         """
                         {"order_ids":[99],"vehicle_ids":[7]}"""))
-                .andExpect(status().isBadRequest())
+                .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.errors.length()").value(1))
                 .andExpect(jsonPath("$.errors[0].code").value(ErrorCode.RESOURCE_NOT_FOUND.getCode()))
                 .andExpect(jsonPath("$.errors[0].resource").value(AppConstant.ORDER))
@@ -218,7 +218,7 @@ class SecurityPr1ApiTest {
         MvcResult missingRes = mockMvc.perform(plannerPost("/api/v1/jobs/plan",
                         """
                         {"order_ids":[999],"vehicle_ids":[7]}"""))
-                .andExpect(status().isBadRequest())
+                .andExpect(status().isNotFound())
                 .andReturn();
 
         String foreignBody = foreignRes.getResponse().getContentAsString();
@@ -242,7 +242,7 @@ class SecurityPr1ApiTest {
         MvcResult foreignRes = mockMvc.perform(plannerPost("/api/v1/jobs/plan",
                         """
                         {"order_ids":[1],"vehicle_ids":[55]}"""))
-                .andExpect(status().isBadRequest())
+                .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.errors.length()").value(1))
                 .andExpect(jsonPath("$.errors[0].code").value(ErrorCode.RESOURCE_NOT_FOUND.getCode()))
                 .andExpect(jsonPath("$.errors[0].resource").value(AppConstant.VEHICLE))
@@ -252,7 +252,7 @@ class SecurityPr1ApiTest {
         MvcResult missingRes = mockMvc.perform(plannerPost("/api/v1/jobs/plan",
                         """
                         {"order_ids":[1],"vehicle_ids":[888]}"""))
-                .andExpect(status().isBadRequest())
+                .andExpect(status().isNotFound())
                 .andReturn();
 
         String foreignBody = foreignRes.getResponse().getContentAsString();
@@ -275,7 +275,7 @@ class SecurityPr1ApiTest {
         MvcResult foreignRes = mockMvc.perform(plannerPost("/api/v1/routes/200/send",
                         """
                         {"driver_user_id":2,"solution_id":90}"""))
-                .andExpect(status().isBadRequest())
+                .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.errors.length()").value(1))
                 .andExpect(jsonPath("$.errors[0].code").value(ErrorCode.RESOURCE_NOT_FOUND.getCode()))
                 .andExpect(jsonPath("$.errors[0].resource").value(AppConstant.SOLUTION))
@@ -285,7 +285,7 @@ class SecurityPr1ApiTest {
         MvcResult missingRes = mockMvc.perform(plannerPost("/api/v1/routes/200/send",
                         """
                         {"driver_user_id":2,"solution_id":999}"""))
-                .andExpect(status().isBadRequest())
+                .andExpect(status().isNotFound())
                 .andReturn();
 
         String foreignBody = foreignRes.getResponse().getContentAsString();
@@ -305,7 +305,7 @@ class SecurityPr1ApiTest {
         mockMvc.perform(plannerPost("/api/v1/routes/888/send",
                         """
                         {"driver_user_id":2,"solution_id":9}"""))
-                .andExpect(status().isBadRequest())
+                .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.errors.length()").value(1))
                 .andExpect(jsonPath("$.errors[0].code").value(ErrorCode.RESOURCE_NOT_FOUND.getCode()))
                 .andExpect(jsonPath("$.errors[0].resource").value(AppConstant.ROUTE))
@@ -333,7 +333,7 @@ class SecurityPr1ApiTest {
         String missingBody = mockMvc.perform(plannerPost("/api/v1/routes/21/send",
                         """
                         {"driver_user_id":999,"solution_id":9}"""))
-                .andExpect(status().isBadRequest())
+                .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.errors.length()").value(1))
                 .andExpect(jsonPath("$.errors[0].code").value(ErrorCode.RESOURCE_NOT_FOUND.getCode()))
                 .andExpect(jsonPath("$.errors[0].resource").value("Driver"))
@@ -345,7 +345,7 @@ class SecurityPr1ApiTest {
             String body = mockMvc.perform(plannerPost("/api/v1/routes/21/send",
                             """
                             {"driver_user_id":%d,"solution_id":9}""".formatted(driverId)))
-                    .andExpect(status().isBadRequest())
+                    .andExpect(status().isNotFound())
                     .andReturn()
                     .getResponse()
                     .getContentAsString();

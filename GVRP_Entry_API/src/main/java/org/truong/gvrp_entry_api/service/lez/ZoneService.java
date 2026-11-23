@@ -22,6 +22,8 @@ import org.truong.gvrp_entry_api.entity.Vehicle;
 import org.truong.gvrp_entry_api.entity.ZoneRuleTemplate;
 import org.truong.gvrp_entry_api.entity.ZoneTemplate;
 import org.truong.gvrp_entry_api.entity.enums.BranchZoneMode;
+import org.truong.gvrp_entry_api.exception.ResourceConflictException;
+import org.truong.gvrp_entry_api.exception.ResourceNotFoundException;
 import org.truong.gvrp_entry_api.repository.BranchRepository;
 import org.truong.gvrp_entry_api.repository.BranchZoneRepository;
 import org.truong.gvrp_entry_api.repository.BranchZoneRuleRepository;
@@ -93,9 +95,9 @@ public class ZoneService {
             throw LezSupport.invalid("templateId and mode are required");
         }
         ZoneTemplate template = templateRepository.findById(request.getTemplateId())
-                .orElseThrow(() -> new LezNotFoundException(AppConstant.ZONE_TEMPLATE));
+                .orElseThrow(() -> new ResourceNotFoundException(AppConstant.ZONE_TEMPLATE));
         Branch branch = branchRepository.findById(branchId)
-                .orElseThrow(() -> new LezNotFoundException(AppConstant.BRANCH));
+                .orElseThrow(() -> new ResourceNotFoundException(AppConstant.BRANCH));
 
         BranchZone saved;
         if (request.getMode() == BranchZoneMode.LINKED) {
@@ -103,7 +105,7 @@ public class ZoneService {
             // the generated-column unique key of the migration is the backstop.
             if (zoneRepository.existsByBranchIdAndSourceTemplateIdAndMode(
                     branchId, template.getId(), BranchZoneMode.LINKED)) {
-                throw new LezConflictException("Template " + template.getId() + " is already linked to this branch");
+                throw new ResourceConflictException("Template " + template.getId() + " is already linked to this branch");
             }
             BranchZone zone = BranchZone.builder()
                     .branch(branch)
@@ -114,7 +116,7 @@ public class ZoneService {
             try {
                 saved = zoneRepository.saveAndFlush(zone);
             } catch (DataIntegrityViolationException e) {
-                throw new LezConflictException("Template " + template.getId() + " is already linked to this branch");
+                throw new ResourceConflictException("Template " + template.getId() + " is already linked to this branch");
             }
         } else {
             BranchZone zone = BranchZone.builder()
@@ -157,7 +159,7 @@ public class ZoneService {
         String name = null;
         if (request.getName() != null) {
             if (zone.getMode() == BranchZoneMode.LINKED) {
-                throw new LezConflictException("Zone " + zone.getId() + " is LINKED to its template and cannot be renamed");
+                throw new ResourceConflictException("Zone " + zone.getId() + " is LINKED to its template and cannot be renamed");
             }
             name = request.getName().trim();
             if (name.isEmpty()) {
@@ -252,7 +254,7 @@ public class ZoneService {
     public void deleteZone(Long id, Long branchId) {
         BranchZone zone = findZone(id, branchId);
         if (permitRepository.existsByBranchZoneIdAndBranchId(zone.getId(), branchId)) {
-            throw new LezConflictException("Zone " + id + " is referenced by a vehicle permit");
+            throw new ResourceConflictException("Zone " + id + " is referenced by a vehicle permit");
         }
         zoneRuleRepository.deleteByZoneAndBranch(zone.getId(), branchId);
         zoneRepository.delete(zone);
@@ -268,7 +270,7 @@ public class ZoneService {
             throw LezSupport.invalid("vehicleId and date are required");
         }
         Vehicle vehicle = vehicleRepository.findByIdAndFleetBranchId(vehicleId, branchId)
-                .orElseThrow(() -> new LezNotFoundException(AppConstant.VEHICLE));
+                .orElseThrow(() -> new ResourceNotFoundException(AppConstant.VEHICLE));
         List<PermitView> permits = permitRepository
                 .findByVehicleIdAndBranchZoneIdAndBranchId(vehicle.getId(), zone.getId(), branchId)
                 .stream().map(LezSupport::toPermitView).toList();
@@ -281,7 +283,7 @@ public class ZoneService {
     private BranchZone findZone(Long id, Long branchId) {
         LezSupport.requireBranch(branchId);
         return zoneRepository.findByIdAndBranchId(id, branchId)
-                .orElseThrow(() -> new LezNotFoundException(AppConstant.BRANCH_ZONE));
+                .orElseThrow(() -> new ResourceNotFoundException(AppConstant.BRANCH_ZONE));
     }
 
     /**
@@ -323,7 +325,7 @@ public class ZoneService {
 
     private static void requireCopied(BranchZone zone) {
         if (zone.getMode() != BranchZoneMode.COPIED) {
-            throw new LezConflictException("Zone " + zone.getId() + " is LINKED to its template and cannot be edited");
+            throw new ResourceConflictException("Zone " + zone.getId() + " is LINKED to its template and cannot be edited");
         }
     }
 

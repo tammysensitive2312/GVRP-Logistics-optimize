@@ -14,6 +14,7 @@ import org.truong.gvrp_entry_api.entity.User;
 import org.truong.gvrp_entry_api.exception.DataInvalidException;
 import org.truong.gvrp_entry_api.exception.ErrorDetail;
 import org.truong.gvrp_entry_api.exception.ForbiddenException;
+import org.truong.gvrp_entry_api.exception.ResourceNotFoundException;
 import org.truong.gvrp_entry_api.repository.BranchRepository;
 import org.truong.gvrp_entry_api.repository.UserRepository;
 import org.truong.gvrp_entry_api.security.BranchUsernamePasswordAuthenticationToken;
@@ -41,13 +42,7 @@ public class AuthController {
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest loginRequest) {
         String branchName = loginRequest.getBranchName();
         Branch branch = branchRepository.findByName(branchName)
-                .orElseThrow(() -> new DataInvalidException(List.of(
-                        ErrorDetail.builder()
-                                .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
-                                .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
-                                .resource(AppConstant.BRANCH)
-                                .build()
-                )));
+                .orElseThrow(() -> new ResourceNotFoundException(AppConstant.BRANCH));
 
         // Authenticate user
         Authentication authentication = authenticationManager.authenticate(

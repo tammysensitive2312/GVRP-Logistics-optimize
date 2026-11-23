@@ -11,10 +11,10 @@ import org.truong.gvrp_entry_api.entity.Branch;
 import org.truong.gvrp_entry_api.entity.Solution;
 import org.truong.gvrp_entry_api.entity.enums.SolutionStatus;
 import org.truong.gvrp_entry_api.entity.enums.SolutionType;
-import org.truong.gvrp_entry_api.exception.DataInvalidException;
+import org.truong.gvrp_entry_api.exception.ResourceNotFoundException;
 import org.truong.gvrp_entry_api.mapper.SolutionMapper;
 import org.truong.gvrp_entry_api.repository.SolutionRepository;
-import org.truong.gvrp_entry_api.util.ErrorCode;
+import org.truong.gvrp_entry_api.util.AppConstant;
 
 import java.util.List;
 import java.util.Optional;
@@ -46,15 +46,15 @@ class SolutionServiceTest {
                 .build();
     }
 
-    private static void assertNotFound(DataInvalidException ex) {
-        assertEquals(ErrorCode.RESOURCE_NOT_FOUND.getCode(), ex.getErrors().get(0).getCode());
+    private static void assertNotFound(ResourceNotFoundException ex) {
+        assertEquals(AppConstant.SOLUTION, ex.getResource());
     }
 
     @Test
     void getSolutionDetail_otherBranch_notFound() {
         when(solutionRepository.findWithDetailsById(9L)).thenReturn(Optional.of(solutionOfBranch1()));
 
-        DataInvalidException ex = assertThrows(DataInvalidException.class,
+        ResourceNotFoundException ex = assertThrows(ResourceNotFoundException.class,
                 () -> service.getSolutionDetail(9L, 2L));
         assertNotFound(ex);
         verify(solutionMapper, never()).toDTO(any());
@@ -64,7 +64,7 @@ class SolutionServiceTest {
     void getSolutionDetail_missingBranch_notFound() {
         when(solutionRepository.findWithDetailsById(9L)).thenReturn(Optional.of(solutionOfBranch1()));
 
-        assertThrows(DataInvalidException.class, () -> service.getSolutionDetail(9L, null));
+        assertThrows(ResourceNotFoundException.class, () -> service.getSolutionDetail(9L, null));
         verify(solutionMapper, never()).toDTO(any());
     }
 
@@ -73,12 +73,12 @@ class SolutionServiceTest {
         when(solutionRepository.findWithDetailsById(9L)).thenReturn(Optional.of(solutionOfBranch1()));
         when(solutionRepository.findWithDetailsById(404L)).thenReturn(Optional.empty());
 
-        DataInvalidException foreign = assertThrows(DataInvalidException.class,
+        ResourceNotFoundException foreign = assertThrows(ResourceNotFoundException.class,
                 () -> service.getSolutionDetail(9L, 2L));
-        DataInvalidException unknown = assertThrows(DataInvalidException.class,
+        ResourceNotFoundException unknown = assertThrows(ResourceNotFoundException.class,
                 () -> service.getSolutionDetail(404L, 2L));
-        assertEquals(unknown.getErrors().get(0).getCode(), foreign.getErrors().get(0).getCode());
-        assertEquals(unknown.getErrors().get(0).getMessage(), foreign.getErrors().get(0).getMessage());
+        assertEquals(unknown.getResource(), foreign.getResource());
+        assertEquals(unknown.getMessage(), foreign.getMessage());
     }
 
     @Test
@@ -95,7 +95,7 @@ class SolutionServiceTest {
     void revisionChain_otherBranch_notFound() {
         when(solutionRepository.findById(9L)).thenReturn(Optional.of(solutionOfBranch1()));
 
-        DataInvalidException ex = assertThrows(DataInvalidException.class,
+        ResourceNotFoundException ex = assertThrows(ResourceNotFoundException.class,
                 () -> service.revisionChain(9L, 2L));
         assertNotFound(ex);
         verify(solutionRepository, never()).findByParentSolutionId(any());

@@ -21,6 +21,7 @@ import org.truong.gvrp_entry_api.entity.enums.VehicleStatus;
 import org.truong.gvrp_entry_api.exception.DataInvalidException;
 import org.truong.gvrp_entry_api.exception.ErrorDetail;
 import org.truong.gvrp_entry_api.exception.ResourceConflictException;
+import org.truong.gvrp_entry_api.exception.ResourceNotFoundException;
 import org.truong.gvrp_entry_api.mapper.VehicleMapper;
 import org.truong.gvrp_entry_api.repository.DepotRepository;
 import org.truong.gvrp_entry_api.repository.FleetRepository;
@@ -77,43 +78,15 @@ public class VehicleService {
         // references gets the same answer whether or not the plate exists in
         // another branch (SEC-007).
         Fleet fleet = fleetRepository.findByIdAndBranchId(fleetId, branchId)
-                .orElseThrow(() -> new DataInvalidException(
-                        List.of(
-                                ErrorDetail.builder()
-                                        .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
-                                        .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
-                                        .resource(AppConstant.FLEET)
-                                        .build()
-                        )));
+                .orElseThrow(() -> new ResourceNotFoundException(AppConstant.FLEET));
 
         Depot startDepot = depotRepository.findByIdAndBranchId(input.getStartDepotId(), branchId)
-                .orElseThrow(() -> new DataInvalidException(
-                        List.of(
-                                ErrorDetail.builder()
-                                        .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
-                                        .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
-                                        .resource(AppConstant.DEPOT)
-                                        .build()
-                        )));
+                .orElseThrow(() -> new ResourceNotFoundException(AppConstant.DEPOT, "startDepotId"));
         Depot endDepot = depotRepository.findByIdAndBranchId(input.getEndDepotId(), branchId)
-                .orElseThrow(() -> new DataInvalidException(
-                        List.of(
-                                ErrorDetail.builder()
-                                        .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
-                                        .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
-                                        .resource(AppConstant.DEPOT)
-                                        .build()
-                        )));
+                .orElseThrow(() -> new ResourceNotFoundException(AppConstant.DEPOT, "endDepotId"));
 
         VehicleType vehicleType = typeRepository.findByIdAndBranchId(input.getVehicleTypeId(), branchId)
-                .orElseThrow(() -> new DataInvalidException(
-                        List.of(
-                                ErrorDetail.builder()
-                                        .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
-                                        .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
-                                        .resource(AppConstant.VEHICLE_TYPE)
-                                        .build()
-                        )));
+                .orElseThrow(() -> new ResourceNotFoundException(AppConstant.VEHICLE_TYPE));
 
         // Plates are unique across all branches (global unique key). The answer
         // is the same for a plate of the caller's branch and of another branch.
@@ -145,15 +118,7 @@ public class VehicleService {
 
         // Every referenced entity must belong to the caller's branch (tenant isolation).
         Vehicle vehicle = vehicleRepository.findByIdAndFleetBranchId(id, branchId)
-                .orElseThrow(() -> new DataInvalidException(
-                        List.of(
-                                ErrorDetail.builder()
-                                        .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
-                                        .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
-                                        .resource(AppConstant.VEHICLE)
-                                        .build()
-                        ))
-                );
+                .orElseThrow(() -> new ResourceNotFoundException(AppConstant.VEHICLE));
 
         if (input.getVehicleLicensePlate() != null
                 && vehicleRepository.existsByVehicleLicensePlateAndIdNot(input.getVehicleLicensePlate(), id)) {
@@ -164,40 +129,19 @@ public class VehicleService {
 
         if (input.getStartDepotId() != null) {
             Depot startDepot = depotRepository.findByIdAndBranchId(input.getStartDepotId(), branchId)
-                    .orElseThrow(() -> new DataInvalidException(
-                            List.of(
-                                    ErrorDetail.builder()
-                                            .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
-                                            .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
-                                            .resource(AppConstant.DEPOT)
-                                            .build()
-                            )));
+                    .orElseThrow(() -> new ResourceNotFoundException(AppConstant.DEPOT, "startDepotId"));
             vehicle.setStartDepot(startDepot);
         }
 
         if (input.getEndDepotId() != null) {
             Depot endDepot = depotRepository.findByIdAndBranchId(input.getEndDepotId(), branchId)
-                    .orElseThrow(() -> new DataInvalidException(
-                            List.of(
-                                    ErrorDetail.builder()
-                                            .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
-                                            .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
-                                            .resource(AppConstant.DEPOT)
-                                            .build()
-                            )));
+                    .orElseThrow(() -> new ResourceNotFoundException(AppConstant.DEPOT, "endDepotId"));
             vehicle.setEndDepot(endDepot);
         }
 
         if (input.getVehicleTypeId() != null) {
             VehicleType type = typeRepository.findByIdAndBranchId(input.getVehicleTypeId(), branchId)
-                    .orElseThrow(() -> new DataInvalidException(
-                            List.of(
-                                    ErrorDetail.builder()
-                                            .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
-                                            .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
-                                            .resource(AppConstant.VEHICLE_TYPE)
-                                            .build()
-                            )));
+                    .orElseThrow(() -> new ResourceNotFoundException(AppConstant.VEHICLE_TYPE));
             vehicle.setVehicleType(type);
         }
 

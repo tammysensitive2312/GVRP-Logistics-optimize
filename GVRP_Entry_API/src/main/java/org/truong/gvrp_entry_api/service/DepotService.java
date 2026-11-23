@@ -7,13 +7,11 @@ import org.truong.gvrp_entry_api.dto.request.DepotInputDTO;
 import org.truong.gvrp_entry_api.dto.response.DepotDTO;
 import org.truong.gvrp_entry_api.entity.Branch;
 import org.truong.gvrp_entry_api.entity.Depot;
-import org.truong.gvrp_entry_api.exception.DataInvalidException;
-import org.truong.gvrp_entry_api.exception.ErrorDetail;
+import org.truong.gvrp_entry_api.exception.ResourceNotFoundException;
 import org.truong.gvrp_entry_api.mapper.DepotMapper;
 import org.truong.gvrp_entry_api.repository.BranchRepository;
 import org.truong.gvrp_entry_api.repository.DepotRepository;
 import org.truong.gvrp_entry_api.util.AppConstant;
-import org.truong.gvrp_entry_api.util.ErrorCode;
 
 import java.util.List;
 
@@ -26,15 +24,7 @@ public class DepotService {
 
     public DepotDTO createDepot(DepotInputDTO depotInputDTO, Long branchId) {
         Branch branch = branchRepository.findById(branchId)
-                .orElseThrow(() -> new DataInvalidException(
-                        List.of(
-                                ErrorDetail.builder()
-                                        .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
-                                        .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
-                                        .resource(AppConstant.BRANCH)
-                                        .build()
-                        ))
-                );
+                .orElseThrow(() -> new ResourceNotFoundException(AppConstant.BRANCH));
 
         Depot depot = depotMapper.toEntity(depotInputDTO, branch);
         depot = depotRepository.save(depot);

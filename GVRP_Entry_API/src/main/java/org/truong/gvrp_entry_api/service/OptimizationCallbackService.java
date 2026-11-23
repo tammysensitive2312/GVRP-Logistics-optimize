@@ -16,6 +16,7 @@ import org.truong.gvrp_entry_api.exception.DataInvalidException;
 import org.truong.gvrp_entry_api.exception.ErrorDetail;
 import org.truong.gvrp_entry_api.exception.CallbackRejectedException;
 import org.truong.gvrp_entry_api.exception.JobNotReadyException;
+import org.truong.gvrp_entry_api.exception.ResourceNotFoundException;
 import org.truong.gvrp_entry_api.repository.*;
 import org.truong.gvrp_entry_api.service.orders.OrderStatusTransitionService;
 import org.truong.gvrp_entry_api.service.event.JobCompletionEvent;
@@ -58,15 +59,7 @@ public class OptimizationCallbackService {
     public void handleCompletion(EngineCallbackRequest.CompletionCallback callback) {
         try {
             OptimizationJob job = jobRepository.findById(callback.getJobId())
-                    .orElseThrow(() -> new DataInvalidException(
-                            List.of(
-                                    ErrorDetail.builder()
-                                            .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
-                                            .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
-                                            .resource(AppConstant.JOB)
-                                            .build()
-                            ))
-                    );
+                    .orElseThrow(() -> new ResourceNotFoundException(AppConstant.JOB));
 
             // ===== Idempotency =====
             // Engine có outbox và sẽ phát lại cùng một payload trong 2 tình huống:
@@ -189,16 +182,7 @@ public class OptimizationCallbackService {
         try {
             // 1. Load job
             OptimizationJob job = jobRepository.findById(callback.getJobId())
-                    .orElseThrow(
-                            () -> new DataInvalidException(
-                                    List.of(
-                                            ErrorDetail.builder()
-                                                    .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
-                                                    .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
-                                                    .resource(AppConstant.JOB)
-                                                    .build()
-                                    ))
-                    );
+                    .orElseThrow(() -> new ResourceNotFoundException(AppConstant.JOB));
 
             // 2. Validate job can receive failure
             if (job.getStatus() != OptimizationJobStatus.PROCESSING) {
@@ -246,16 +230,7 @@ public class OptimizationCallbackService {
 
         try {
             OptimizationJob job = jobRepository.findById(callback.getJobId())
-                    .orElseThrow(
-                            () -> new DataInvalidException(
-                                    List.of(
-                                            ErrorDetail.builder()
-                                                    .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
-                                                    .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
-                                                    .resource(AppConstant.JOB)
-                                                    .build()
-                                    ))
-                    );
+                    .orElseThrow(() -> new ResourceNotFoundException(AppConstant.JOB));
 
             // Chỉ set CANCELLED nếu job còn đang chạy — nếu đã CANCELLED/COMPLETED/FAILED thì bỏ qua.
             if (job.getStatus() != OptimizationJobStatus.PROCESSING) {

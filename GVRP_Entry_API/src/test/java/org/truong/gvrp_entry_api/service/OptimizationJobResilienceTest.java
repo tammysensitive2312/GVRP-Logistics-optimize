@@ -17,6 +17,7 @@ import org.truong.gvrp_entry_api.entity.OptimizationJob;
 import org.truong.gvrp_entry_api.entity.enums.OptimizationJobStatus;
 import org.truong.gvrp_entry_api.exception.DataInvalidException;
 import org.truong.gvrp_entry_api.exception.ErrorDetail;
+import org.truong.gvrp_entry_api.exception.ResourceNotFoundException;
 import org.truong.gvrp_entry_api.mapper.DepotMapper;
 import org.truong.gvrp_entry_api.mapper.OptimizationConfigMapper;
 import org.truong.gvrp_entry_api.mapper.OptimizationJobMapper;
@@ -183,13 +184,13 @@ class OptimizationJobResilienceTest {
         assertThat(service.getJobProgress(55L, BRANCH_A)).containsEntry("progress", 50);
 
         when(jobRepository.existsByIdAndBranchId(99L, BRANCH_A)).thenReturn(false);
-        DataInvalidException foreignEx = assertThrows(DataInvalidException.class,
+        ResourceNotFoundException foreignEx = assertThrows(ResourceNotFoundException.class,
                 () -> service.getJobProgress(99L, BRANCH_A));
-        assertThat(foreignEx.getErrors().get(0).getCode()).isEqualTo(ErrorCode.RESOURCE_NOT_FOUND.getCode());
+        assertThat(foreignEx.getResource()).isEqualTo(AppConstant.JOB);
 
-        DataInvalidException nullBranchEx = assertThrows(DataInvalidException.class,
+        ResourceNotFoundException nullBranchEx = assertThrows(ResourceNotFoundException.class,
                 () -> service.getJobProgress(55L, null));
-        assertThat(nullBranchEx.getErrors().get(0).getCode()).isEqualTo(ErrorCode.RESOURCE_NOT_FOUND.getCode());
+        assertThat(nullBranchEx.getResource()).isEqualTo(AppConstant.JOB);
 
         verify(engineApiClient, never()).getProgress(99L);
     }

@@ -18,6 +18,8 @@ import org.truong.gvrp_entry_api.entity.enums.OrderStatus;
 import org.truong.gvrp_entry_api.entity.enums.VehicleStatus;
 import org.truong.gvrp_entry_api.exception.DataInvalidException;
 import org.truong.gvrp_entry_api.exception.ErrorDetail;
+import org.truong.gvrp_entry_api.exception.ResourceConflictException;
+import org.truong.gvrp_entry_api.exception.ResourceNotFoundException;
 import org.truong.gvrp_entry_api.service.integration.external_api.EngineApiClient;
 import org.truong.gvrp_entry_api.service.lez.CompiledRestrictions;
 import org.truong.gvrp_entry_api.service.lez.RestrictionCompiler;
@@ -118,22 +120,10 @@ public class OptimizationJobService {
 
         // Step 4: Create job entity
         Branch branch = branchRepository.findById(branchId)
-                .orElseThrow(() -> new DataInvalidException(List.of(
-                        ErrorDetail.builder()
-                                .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
-                                .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
-                                .resource(AppConstant.BRANCH)
-                                .build()
-                )));
+                .orElseThrow(() -> new ResourceNotFoundException(AppConstant.BRANCH));
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new DataInvalidException(List.of(
-                        ErrorDetail.builder()
-                                .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
-                                .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
-                                .resource(AppConstant.USER)
-                                .build()
-                )));
+                .orElseThrow(() -> new ResourceNotFoundException(AppConstant.USER));
 
         OptimizationJob job = OptimizationJob.builder()
                 .branch(branch)
@@ -180,36 +170,18 @@ public class OptimizationJobService {
 
 
         if (jobs.size() != jobIds.size()) {
-            throw new DataInvalidException(List.of(
-                    ErrorDetail.builder()
-                            .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
-                            .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
-                            .resource(AppConstant.JOB)
-                            .build()
-            ));
+            throw new ResourceNotFoundException(AppConstant.JOB);
         }
 
         LocalDateTime cancelledAt = LocalDateTime.now();
 
         for (OptimizationJob job : jobs) {
             if (!job.getBranch().getId().equals(branchId)) {
-                throw new DataInvalidException(List.of(
-                        ErrorDetail.builder()
-                                .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
-                                .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
-                                .resource(AppConstant.JOB)
-                                .build()
-                ));
+                throw new ResourceNotFoundException(AppConstant.JOB);
             }
 
             if (!job.canBeCancelled()) {
-                throw new DataInvalidException(List.of(
-                        ErrorDetail.builder()
-                                .code(ErrorCode.RESOURCE_CONFLICT.getCode())
-                                .message("Job can't be cancelled")
-                                .resource(AppConstant.JOB)
-                                .build()
-                ));
+                throw new ResourceConflictException("Job can't be cancelled", AppConstant.JOB, null);
             }
 
             job.setStatus(OptimizationJobStatus.CANCELLED);
@@ -233,13 +205,7 @@ public class OptimizationJobService {
 
     public java.util.Map<String, Object> getJobProgress(Long jobId, Long branchId) {
         if (branchId == null || !jobRepository.existsByIdAndBranchId(jobId, branchId)) {
-            throw new DataInvalidException(List.of(
-                    ErrorDetail.builder()
-                            .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
-                            .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
-                            .resource(AppConstant.JOB)
-                            .build()
-            ));
+            throw new ResourceNotFoundException(AppConstant.JOB);
         }
 
         return engineApiClient.getProgress(jobId);
@@ -277,22 +243,10 @@ public class OptimizationJobService {
     @Transactional(readOnly = true)
     public OptimizationJobDTO getJobById(Long jobId, Long branchId) {
         OptimizationJob job = jobRepository.findById(jobId)
-                .orElseThrow(() -> new DataInvalidException(List.of(
-                        ErrorDetail.builder()
-                                .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
-                                .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
-                                .resource(AppConstant.JOB)
-                                .build()
-                )));
+                .orElseThrow(() -> new ResourceNotFoundException(AppConstant.JOB));
 
         if (!job.getBranch().getId().equals(branchId)) {
-            throw new DataInvalidException(List.of(
-                    ErrorDetail.builder()
-                            .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
-                            .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
-                            .resource(AppConstant.JOB)
-                            .build()
-            ));
+            throw new ResourceNotFoundException(AppConstant.JOB);
         }
 
         return jobMapper.toDTO(job);
@@ -302,26 +256,14 @@ public class OptimizationJobService {
         List<Order> orders = orderRepository.findAllById(orderIds);
 
         if (orders.size() != orderIds.size()) {
-            throw new DataInvalidException(List.of(
-                    ErrorDetail.builder()
-                            .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
-                            .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
-                            .resource(AppConstant.ORDER)
-                            .build()
-            ));
+            throw new ResourceNotFoundException(AppConstant.ORDER);
         }
 
         List<Order> wrongBranch = orders.stream()
                 .filter(o -> !o.getBranch().getId().equals(branchId))
                 .toList();
         if (!wrongBranch.isEmpty()) {
-            throw new DataInvalidException(List.of(
-                    ErrorDetail.builder()
-                            .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
-                            .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
-                            .resource(AppConstant.ORDER)
-                            .build()
-            ));
+            throw new ResourceNotFoundException(AppConstant.ORDER);
         }
 
         List<Order> invalidStatus = orders.stream()
@@ -336,25 +278,19 @@ public class OptimizationJobService {
                     + String.join(", ", codes.subList(0, Math.min(codes.size(), 10)))
                     + (more > 0 ? " (+" + more + " more)" : "")
                     + ".";
-            throw new DataInvalidException(List.of(
-                    ErrorDetail.builder()
-                            .code(ErrorCode.RESOURCE_CONFLICT.getCode())
-                            .message(message)
-                            .resource(AppConstant.ORDER)
-                            .field(invalidStatus.stream().map(Order::getOrderCode).collect(Collectors.joining(", ")))
-                            .build()
-            ));
+            throw new ResourceConflictException(message, AppConstant.ORDER, String.join(", ", codes));
         }
 
         List<Order> invalidCoords = orders.stream()
                 .filter(o -> o.getLocation() == null)
                 .toList();
         if (!invalidCoords.isEmpty()) {
+            String codes = invalidCoords.stream().map(Order::getOrderCode).collect(Collectors.joining(", "));
             throw new DataInvalidException(List.of(
                     ErrorDetail.builder()
                             .code(ErrorCode.VALIDATION_ERROR.getCode())
-                            .message(ErrorCode.VALIDATION_ERROR.getMessage())
-                            .resource(invalidCoords.stream().map(Order::getOrderCode).collect(Collectors.joining(", ")))
+                            .message("Orders missing location coordinates: " + codes)
+                            .resource(AppConstant.ORDER)
                             .field(AppConstant.LOCATION)
                             .build()
             ));
@@ -368,53 +304,30 @@ public class OptimizationJobService {
         List<Vehicle> vehicles = vehicleRepository.findAllByIdWithDepots(vehicleIds);
 
         if (vehicles.size() != vehicleIds.size()) {
-            throw new DataInvalidException(List.of(
-                    ErrorDetail.builder()
-                            .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
-                            .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
-                            .resource(AppConstant.VEHICLE)
-                            .build()
-            ));
+            throw new ResourceNotFoundException(AppConstant.VEHICLE);
         }
 
         List<Vehicle> wrongFleet = vehicles.stream()
                 .filter(v -> !v.getFleet().getBranch().getId().equals(branchId))
                 .toList();
         if (!wrongFleet.isEmpty()) {
-            throw new DataInvalidException(List.of(
-                    ErrorDetail.builder()
-                            .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
-                            .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
-                            .resource(AppConstant.VEHICLE)
-                            .build()
-            ));
+            throw new ResourceNotFoundException(AppConstant.VEHICLE);
         }
 
         List<Vehicle> notAvailable = vehicles.stream()
                 .filter(v -> v.getStatus() != VehicleStatus.AVAILABLE)
                 .toList();
         if (!notAvailable.isEmpty()) {
-            throw new DataInvalidException(List.of(
-                    ErrorDetail.builder()
-                            .code(ErrorCode.RESOURCE_CONFLICT.getCode())
-                            .message(ErrorCode.RESOURCE_CONFLICT.getMessage())
-                            .resource(AppConstant.VEHICLE)
-                            .build()
-            ));
+            throw new ResourceConflictException(
+                    ErrorCode.RESOURCE_CONFLICT.getMessage(), AppConstant.VEHICLE, null);
         }
 
         List<Vehicle> invalidDepot = vehicles.stream()
                 .filter(v -> v.getStartDepot() == null || v.getEndDepot() == null)
                 .toList();
         if (!invalidDepot.isEmpty()) {
-            throw new DataInvalidException(List.of(
-                    ErrorDetail.builder()
-                            .code(ErrorCode.RESOURCE_CONFLICT.getCode())
-                            .message(ErrorCode.RESOURCE_CONFLICT.getMessage())
-                            .resource(AppConstant.DEPOT)
-                            .field(AppConstant.VEHICLE)
-                            .build()
-            ));
+            throw new ResourceConflictException(
+                    "Vehicle is missing start or end depot.", AppConstant.VEHICLE, "depot");
         }
 
         log.info("Validated {} vehicles for branch {}", vehicles.size(), branchId);
