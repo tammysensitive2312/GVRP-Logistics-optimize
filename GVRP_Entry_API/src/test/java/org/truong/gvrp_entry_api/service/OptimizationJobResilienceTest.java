@@ -125,7 +125,7 @@ class OptimizationJobResilienceTest {
             DataInvalidException ex = assertThrows(DataInvalidException.class,
                     () -> service.getJobHistory(BRANCH_A, badLimit));
             ErrorDetail detail = ex.getErrors().get(0);
-            assertThat(detail.getCode()).isEqualTo(ErrorCode.VALIDATION_ERROR.getCode());
+            assertThat(detail.getCode()).isEqualTo(ErrorCode.UNSUPPORTED_VALUE.getCode());
             assertThat(detail.getField()).isEqualTo("limit");
         }
         verify(jobRepository, never()).findJobHistory(any(), any());

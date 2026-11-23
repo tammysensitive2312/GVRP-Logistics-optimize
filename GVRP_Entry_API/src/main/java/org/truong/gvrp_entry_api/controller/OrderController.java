@@ -1,6 +1,8 @@
 package org.truong.gvrp_entry_api.controller;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -15,17 +17,18 @@ import org.truong.gvrp_entry_api.dto.response.OrderDTO;
 import org.truong.gvrp_entry_api.dto.response.PageResponse;
 import org.truong.gvrp_entry_api.entity.enums.OrderStatus;
 import org.truong.gvrp_entry_api.exception.DataInvalidException;
-import org.truong.gvrp_entry_api.exception.ErrorDetail;
+import org.truong.gvrp_entry_api.exception.ErrorDetails;
 import org.truong.gvrp_entry_api.security.CurrentUserUtil;
 import org.truong.gvrp_entry_api.service.orders.OrderImportService;
 import org.truong.gvrp_entry_api.service.orders.OrderService;
-import org.truong.gvrp_entry_api.util.ErrorCode;
+import org.truong.gvrp_entry_api.util.AppConstant;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/orders")
 @RequiredArgsConstructor
+@Validated
 public class OrderController {
     private final OrderImportService orderImportService;
     private final OrderService orderService;
@@ -53,8 +56,12 @@ public class OrderController {
 
     @GetMapping
     public ResponseEntity<PageResponse<OrderDTO>> getListOrders(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "0")
+            @Min(value = 0, message = "Page index must not be negative") int page,
+            @RequestParam(defaultValue = "10")
+            @Min(value = 1, message = "Page size must be between 1 and " + AppConstant.MAX_ORDER_PAGE_SIZE)
+            @Max(value = AppConstant.MAX_ORDER_PAGE_SIZE,
+                    message = "Page size must be between 1 and " + AppConstant.MAX_ORDER_PAGE_SIZE) int size,
             @RequestParam(required = false) String date,
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String search
@@ -71,11 +78,7 @@ public class OrderController {
             return java.time.LocalDate.parse(date.trim());
         } catch (java.time.format.DateTimeParseException e) {
             throw new DataInvalidException(List.of(
-                    ErrorDetail.builder()
-                            .code(ErrorCode.VALIDATION_ERROR.getCode())
-                            .message("Invalid date, expected yyyy-MM-dd: " + date)
-                            .field("date")
-                            .build()));
+                    ErrorDetails.validation("date", "Invalid date, expected yyyy-MM-dd: " + date)));
         }
     }
 
@@ -85,11 +88,7 @@ public class OrderController {
             return org.truong.gvrp_entry_api.entity.enums.OrderStatus.valueOf(status.trim().toUpperCase());
         } catch (IllegalArgumentException e) {
             throw new DataInvalidException(List.of(
-                    ErrorDetail.builder()
-                            .code(ErrorCode.VALIDATION_ERROR.getCode())
-                            .message("Unsupported order status: " + status)
-                            .field("status")
-                            .build()));
+                    ErrorDetails.validation("status", "Unsupported order status: " + status)));
         }
     }
 
@@ -130,11 +129,7 @@ public class OrderController {
             newStatus = OrderStatus.valueOf(request.getStatus().trim().toUpperCase());
         } catch (IllegalArgumentException | NullPointerException e) {
             throw new DataInvalidException(List.of(
-                    ErrorDetail.builder()
-                            .code(ErrorCode.VALIDATION_ERROR.getCode())
-                            .message("Unsupported order status: " + request.getStatus())
-                            .field("status")
-                            .build()));
+                    ErrorDetails.validation("status", "Unsupported order status: " + request.getStatus())));
         }
 
         return ResponseEntity.ok(orderService.bulkUpdateStatus(branchId, request.getIds(), newStatus));

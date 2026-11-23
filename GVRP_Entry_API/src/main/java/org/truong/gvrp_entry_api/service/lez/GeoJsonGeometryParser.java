@@ -14,9 +14,8 @@ import org.locationtech.jts.geom.Point;
 import org.locationtech.jts.geom.Polygon;
 import org.locationtech.jts.geom.PrecisionModel;
 import org.truong.gvrp_entry_api.exception.DataInvalidException;
-import org.truong.gvrp_entry_api.exception.ErrorDetail;
+import org.truong.gvrp_entry_api.exception.ErrorDetails;
 import org.truong.gvrp_entry_api.util.AppConstant;
-import org.truong.gvrp_entry_api.util.ErrorCode;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -155,10 +154,6 @@ public final class GeoJsonGeometryParser {
     }
 
     private static DataInvalidException invalid(String message) {
-        return new DataInvalidException(List.of(ErrorDetail.builder()
-                .code(ErrorCode.VALIDATION_ERROR.getCode())
-                .message(message)
-                .field(AppConstant.GEOMETRY)
-                .build()));
+        return new DataInvalidException(List.of(ErrorDetails.validation(AppConstant.GEOMETRY, message)));
     }
 }

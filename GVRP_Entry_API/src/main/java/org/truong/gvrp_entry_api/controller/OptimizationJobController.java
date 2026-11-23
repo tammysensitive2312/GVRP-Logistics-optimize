@@ -1,15 +1,19 @@
 package org.truong.gvrp_entry_api.controller;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.truong.gvrp_entry_api.dto.request.BulkEditJobRequest;
 import org.truong.gvrp_entry_api.dto.request.RoutePlanningRequest;
 import org.truong.gvrp_entry_api.dto.response.OptimizationJobDTO;
 import org.truong.gvrp_entry_api.security.CurrentUserUtil;
 import org.truong.gvrp_entry_api.service.OptimizationJobService;
+import org.truong.gvrp_entry_api.util.AppConstant;
 
 import java.util.List;
 import java.util.Map;
@@ -18,6 +22,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/v1/jobs")
 @RequiredArgsConstructor
+@Validated
 public class OptimizationJobController {
     private final OptimizationJobService jobService;
 
@@ -34,7 +39,10 @@ public class OptimizationJobController {
 
     @GetMapping
     public ResponseEntity<List<OptimizationJobDTO>> getJobHistory(
-            @RequestParam(defaultValue = "10") int limit) {
+            @RequestParam(defaultValue = "10")
+            @Min(value = 1, message = "Limit must be between 1 and " + AppConstant.MAX_JOB_HISTORY_LIMIT)
+            @Max(value = AppConstant.MAX_JOB_HISTORY_LIMIT,
+                    message = "Limit must be between 1 and " + AppConstant.MAX_JOB_HISTORY_LIMIT) int limit) {
 
         Long branchId = CurrentUserUtil.getCurrentBranchId();
         List<OptimizationJobDTO> jobs = jobService.getJobHistory(branchId, limit);

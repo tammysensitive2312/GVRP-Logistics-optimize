@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
@@ -18,8 +17,6 @@ import org.truong.gvrp_entry_api.entity.Fleet;
 import org.truong.gvrp_entry_api.entity.Vehicle;
 import org.truong.gvrp_entry_api.entity.VehicleType;
 import org.truong.gvrp_entry_api.entity.enums.VehicleStatus;
-import org.truong.gvrp_entry_api.exception.DataInvalidException;
-import org.truong.gvrp_entry_api.exception.ErrorDetail;
 import org.truong.gvrp_entry_api.exception.ResourceConflictException;
 import org.truong.gvrp_entry_api.exception.ResourceNotFoundException;
 import org.truong.gvrp_entry_api.mapper.VehicleMapper;
@@ -28,7 +25,7 @@ import org.truong.gvrp_entry_api.repository.FleetRepository;
 import org.truong.gvrp_entry_api.repository.VehicleRepository;
 import org.truong.gvrp_entry_api.repository.VehicleTypeRepository;
 import org.truong.gvrp_entry_api.util.AppConstant;
-import org.truong.gvrp_entry_api.util.ErrorCode;
+import org.truong.gvrp_entry_api.util.PaginationUtils;
 
 import java.util.List;
 
@@ -44,21 +41,8 @@ public class VehicleService {
     
     @Transactional(readOnly = true)
     public PageResponse<VehicleDTO> getAllVehiclesPaginated(Long branchId, int pageNo, int pageSize) {
-        if (pageNo < 0) {
-            throw new DataInvalidException(List.of(ErrorDetail.builder()
-                    .code(ErrorCode.VALIDATION_ERROR.getCode())
-                    .message("Page index must not be negative")
-                    .field("page")
-                    .build()));
-        }
-        if (pageSize < 1 || pageSize > AppConstant.MAX_VEHICLE_PAGE_SIZE) {
-            throw new DataInvalidException(List.of(ErrorDetail.builder()
-                    .code(ErrorCode.VALIDATION_ERROR.getCode())
-                    .message("Page size must be between 1 and " + AppConstant.MAX_VEHICLE_PAGE_SIZE)
-                    .field("size")
-                    .build()));
-        }
-        Pageable pageable = PageRequest.of(pageNo, pageSize, Sort.by("id").descending());
+        Pageable pageable = PaginationUtils.pageRequest(
+                pageNo, pageSize, AppConstant.MAX_VEHICLE_PAGE_SIZE, Sort.by("id").descending());
         Page<Vehicle> vehiclePage = vehicleRepository.findByFleetBranchId(branchId, pageable);
         List<VehicleDTO> content = vehicleMapper.toDTOList(vehiclePage.getContent());
         
@@ -72,6 +56,13 @@ public class VehicleService {
                 .build();
     }
 
+    /**
+     * Creates a vehicle without a method-level {@code @Transactional} boundary so
+     * the single {@code vehicleRepository.save(vehicle)} commits immediately in its
+     * own transaction and any concurrent plate-uniqueness {@link DataIntegrityViolationException}
+     * is caught here and translated to HTTP 409 (contrast {@link #updateVehicle}, which
+     * runs under {@code @Transactional} and therefore flushes explicitly with {@code saveAndFlush}).
+     */
     public VehicleDTO createVehicle(VehicleInputDTO input, long fleetId, Long branchId) {
         // Every referenced entity must belong to the caller's branch (tenant isolation).
         // These checks run before the plate check, so a caller without valid own

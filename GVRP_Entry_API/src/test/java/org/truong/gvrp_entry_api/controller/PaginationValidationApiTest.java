@@ -124,13 +124,13 @@ class PaginationValidationApiTest {
         mockMvc.perform(get("/api/v1/vehicles").param("page", "-1").param("size", "10")
                         .requestAttr("branchId", BRANCH_A))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.errors[0].code").value(ErrorCode.VALIDATION_ERROR.getCode()))
+                .andExpect(jsonPath("$.errors[0].code").value(ErrorCode.UNSUPPORTED_VALUE.getCode()))
                 .andExpect(jsonPath("$.errors[0].field").value("page"));
 
         mockMvc.perform(get("/api/v1/vehicles").param("page", "0").param("size", "0")
                         .requestAttr("branchId", BRANCH_A))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.errors[0].code").value(ErrorCode.VALIDATION_ERROR.getCode()))
+                .andExpect(jsonPath("$.errors[0].code").value(ErrorCode.UNSUPPORTED_VALUE.getCode()))
                 .andExpect(jsonPath("$.errors[0].field").value("size"));
 
         mockMvc.perform(get("/api/v1/vehicles").param("page", "0")
@@ -155,7 +155,7 @@ class PaginationValidationApiTest {
         mockMvc.perform(get("/api/v1/orders").param("page", "-1").param("size", "10")
                         .requestAttr("branchId", BRANCH_A))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.errors[0].code").value(ErrorCode.VALIDATION_ERROR.getCode()))
+                .andExpect(jsonPath("$.errors[0].code").value(ErrorCode.UNSUPPORTED_VALUE.getCode()))
                 .andExpect(jsonPath("$.errors[0].field").value("page"));
 
         mockMvc.perform(get("/api/v1/orders").param("page", "0").param("size", "0")
@@ -185,7 +185,7 @@ class PaginationValidationApiTest {
         mockMvc.perform(get("/api/v1/jobs").param("limit", "0")
                         .requestAttr("branchId", BRANCH_A))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.errors[0].code").value(ErrorCode.VALIDATION_ERROR.getCode()))
+                .andExpect(jsonPath("$.errors[0].code").value(ErrorCode.UNSUPPORTED_VALUE.getCode()))
                 .andExpect(jsonPath("$.errors[0].field").value("limit"));
 
         mockMvc.perform(get("/api/v1/jobs")

@@ -6,7 +6,7 @@ import org.springframework.stereotype.Service;
 import org.truong.gvrp_entry_api.entity.Order;
 import org.truong.gvrp_entry_api.entity.enums.OrderStatus;
 import org.truong.gvrp_entry_api.exception.DataInvalidException;
-import org.truong.gvrp_entry_api.exception.ErrorDetail;
+import org.truong.gvrp_entry_api.exception.ErrorDetails;
 import org.truong.gvrp_entry_api.repository.OrderRepository;
 import org.truong.gvrp_entry_api.util.AppConstant;
 import org.truong.gvrp_entry_api.util.ErrorCode;
@@ -82,14 +82,11 @@ public class OrderStatusTransitionService {
 
     private void validateTransition(OrderStatus current, OrderStatus next, String orderCode) {
         if (!current.canTransitionTo(next)) {
-            ErrorDetail errorDetail = ErrorDetail.builder()
-                    .code(ErrorCode.INVALID_ORDER_TRANSITION.getCode())
-                    .message(String.format("Cannot transition order '%s' from [%s] to [%s]", orderCode, current, next))
-                    .resource(AppConstant.ORDER)
-                    .field("status")
-                    .build();
-
-            throw new DataInvalidException(List.of(errorDetail));
+            throw new DataInvalidException(List.of(ErrorDetails.of(
+                    ErrorCode.INVALID_ORDER_TRANSITION,
+                    AppConstant.ORDER,
+                    "status",
+                    String.format("Cannot transition order '%s' from [%s] to [%s]", orderCode, current, next))));
         }
     }
 
