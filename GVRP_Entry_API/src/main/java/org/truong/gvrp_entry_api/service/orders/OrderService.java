@@ -17,6 +17,7 @@ import org.truong.gvrp_entry_api.entity.Order;
 import org.truong.gvrp_entry_api.entity.enums.OrderStatus;
 import org.truong.gvrp_entry_api.exception.DataInvalidException;
 import org.truong.gvrp_entry_api.exception.ErrorDetail;
+import org.truong.gvrp_entry_api.exception.ResourceNotFoundException;
 import org.truong.gvrp_entry_api.mapper.OrderMapper;
 import org.truong.gvrp_entry_api.repository.BranchRepository;
 import org.truong.gvrp_entry_api.repository.OrderRepository;
@@ -82,15 +83,7 @@ public class OrderService {
         validateBusinessLogic(inputDTO);
 
         Order order = orderRepository.findByIdAndBranchId(orderId, branchId)
-                .orElseThrow(() -> new DataInvalidException(
-                        List.of(
-                                ErrorDetail.builder()
-                                        .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
-                                        .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
-                                        .resource(AppConstant.ORDER)
-                                        .build()
-                        )
-                ));
+                .orElseThrow(() -> new ResourceNotFoundException(AppConstant.ORDER));
 
         // After the branch-scoped lookup: another branch's id never triggers a geocoding call.
         resolveCoordinates(inputDTO);
@@ -106,15 +99,8 @@ public class OrderService {
     ) {
         resolveCoordinates(input);
         validateBusinessLogic(input);
-        Branch branch = branchRepository.findById(branchId).orElseThrow(() -> new DataInvalidException(
-                List.of(
-                        ErrorDetail.builder()
-                                .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
-                                .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
-                                .resource(AppConstant.BRANCH)
-                                .build()
-                )
-        ));
+        Branch branch = branchRepository.findById(branchId)
+                .orElseThrow(() -> new ResourceNotFoundException(AppConstant.BRANCH));
 
         Order order = orderMapper.toEntity(input, branch, input.getDeliveryDate());
         Order saved = orderRepository.save(order);
@@ -170,15 +156,9 @@ public class OrderService {
                 .build();
     }
 
-    public OrderDTO getOrderById(Long orderId, Long branchId) {        Order order = orderRepository.findByIdAndBranchId(orderId, branchId).orElseThrow(() -> new DataInvalidException(
-                List.of(
-                        ErrorDetail.builder()
-                                .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
-                                .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
-                                .resource(AppConstant.ORDER)
-                                .build()
-                )
-        ));
+    public OrderDTO getOrderById(Long orderId, Long branchId) {
+        Order order = orderRepository.findByIdAndBranchId(orderId, branchId)
+                .orElseThrow(() -> new ResourceNotFoundException(AppConstant.ORDER));
 
         return orderMapper.toDTO(order);
     }

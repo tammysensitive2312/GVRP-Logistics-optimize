@@ -25,6 +25,7 @@ import org.truong.gvrp_entry_api.entity.enums.ParetoFrontierStatus;
 import org.truong.gvrp_entry_api.entity.enums.SolutionStatus;
 import org.truong.gvrp_entry_api.entity.enums.SolutionType;
 import org.truong.gvrp_entry_api.exception.DataInvalidException;
+import org.truong.gvrp_entry_api.exception.ResourceNotFoundException;
 import org.truong.gvrp_entry_api.exception.RevisionConflictException;
 import org.truong.gvrp_entry_api.exception.UnprocessablePlanException;
 import org.truong.gvrp_entry_api.mapper.SolutionMapper;
@@ -113,8 +114,8 @@ class ParetoServiceTest {
                 .build();
     }
 
-    private static void assertNotFound(DataInvalidException ex) {
-        assertEquals(ErrorCode.RESOURCE_NOT_FOUND.getCode(), ex.getErrors().get(0).getCode());
+    private static void assertNotFound(ResourceNotFoundException ex) {
+        assertNotNull(ex.getResource());
     }
 
     // ---------- N-T4: tenant isolation on read ----------
@@ -124,7 +125,7 @@ class ParetoServiceTest {
         Solution foreign = Solution.builder().id(9L).branch(branch(1L)).build();
         when(solutionRepository.findById(9L)).thenReturn(Optional.of(foreign));
 
-        DataInvalidException ex = assertThrows(DataInvalidException.class,
+        ResourceNotFoundException ex = assertThrows(ResourceNotFoundException.class,
                 () -> service.getFrontier(9L, 2L));
         assertNotFound(ex);
         verifyNoInteractions(paretoCandidateRepository);
@@ -312,7 +313,7 @@ class ParetoServiceTest {
         Solution base = Solution.builder().id(9L).branch(foreign).build();
         when(solutionRepository.findWithDetailsById(9L)).thenReturn(Optional.of(base));
 
-        DataInvalidException ex = assertThrows(DataInvalidException.class,
+        ResourceNotFoundException ex = assertThrows(ResourceNotFoundException.class,
                 () -> service.apply(9L, 100L, 2L));
         assertNotFound(ex);
         verifyNoInteractions(paretoCandidateRepository);
@@ -331,7 +332,7 @@ class ParetoServiceTest {
         when(solutionRepository.findWithDetailsById(9L)).thenReturn(Optional.of(base));
         when(paretoCandidateRepository.findByIdAndBranchId(100L, 1L)).thenReturn(Optional.of(other));
 
-        DataInvalidException ex = assertThrows(DataInvalidException.class,
+        ResourceNotFoundException ex = assertThrows(ResourceNotFoundException.class,
                 () -> service.apply(9L, 100L, 1L));
         assertNotFound(ex);
         verify(solutionRepository, never()).save(any());
@@ -344,7 +345,7 @@ class ParetoServiceTest {
         when(solutionRepository.findWithDetailsById(9L)).thenReturn(Optional.of(base));
         when(paretoCandidateRepository.findByIdAndBranchId(100L, 1L)).thenReturn(Optional.empty());
 
-        DataInvalidException ex = assertThrows(DataInvalidException.class,
+        ResourceNotFoundException ex = assertThrows(ResourceNotFoundException.class,
                 () -> service.apply(9L, 100L, 1L));
         assertNotFound(ex);
         verify(solutionRepository, never()).save(any());

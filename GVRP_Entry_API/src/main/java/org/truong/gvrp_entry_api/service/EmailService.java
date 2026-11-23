@@ -16,8 +16,7 @@ import org.thymeleaf.context.Context;
 import org.truong.gvrp_entry_api.entity.OptimizationJob;
 import org.truong.gvrp_entry_api.entity.Solution;
 import org.truong.gvrp_entry_api.entity.User;
-import org.truong.gvrp_entry_api.exception.DataInvalidException;
-import org.truong.gvrp_entry_api.exception.ErrorDetails;
+import org.truong.gvrp_entry_api.exception.ResourceNotFoundException;
 import org.truong.gvrp_entry_api.repository.OptimizationJobRepository;
 import org.truong.gvrp_entry_api.repository.SolutionRepository;
 import org.truong.gvrp_entry_api.repository.UserRepository;
@@ -62,24 +61,12 @@ public class EmailService {
     @Async
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void sendOptimizationSuccessEmail(Long userId, Long jobId, Long solutionId) {
-        User user = userRepository.findById(userId).orElseThrow(
-                () -> new DataInvalidException(
-                        List.of(
-                                ErrorDetails.notFound(AppConstant.USER)
-                        ))
-        );
-        OptimizationJob job = jobRepository.findById(jobId).orElseThrow(
-                () -> new DataInvalidException(
-                        List.of(
-                                ErrorDetails.notFound(AppConstant.JOB)
-                        ))
-        );
-        Solution solution = solutionRepository.findById(solutionId).orElseThrow(
-                () -> new DataInvalidException(
-                        List.of(
-                                ErrorDetails.notFound(AppConstant.SOLUTION)
-                        ))
-        );
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException(AppConstant.USER));
+        OptimizationJob job = jobRepository.findById(jobId)
+                .orElseThrow(() -> new ResourceNotFoundException(AppConstant.JOB));
+        Solution solution = solutionRepository.findById(solutionId)
+                .orElseThrow(() -> new ResourceNotFoundException(AppConstant.SOLUTION));
 
 
         log.info("Sending success email to {} for job #{}", user.getEmail(), job.getId());
@@ -127,18 +114,10 @@ public class EmailService {
     @Async
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void sendOptimizationFailureEmail(Long userId, Long jobId, Exception error) {
-        User user = userRepository.findById(userId).orElseThrow(
-                () -> new DataInvalidException(
-                        List.of(
-                                ErrorDetails.notFound(AppConstant.USER)
-                        ))
-        );
-        OptimizationJob job = jobRepository.findById(jobId).orElseThrow(
-                () -> new DataInvalidException(
-                        List.of(
-                                ErrorDetails.notFound(AppConstant.JOB)
-                        ))
-        );
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException(AppConstant.USER));
+        OptimizationJob job = jobRepository.findById(jobId)
+                .orElseThrow(() -> new ResourceNotFoundException(AppConstant.JOB));
 
         log.info("Sending failure email to {} for job #{}", user.getEmail(), job.getId());
 

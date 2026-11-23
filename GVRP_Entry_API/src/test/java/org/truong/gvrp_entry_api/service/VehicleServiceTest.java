@@ -12,7 +12,7 @@ import org.truong.gvrp_entry_api.entity.Depot;
 import org.truong.gvrp_entry_api.entity.Fleet;
 import org.truong.gvrp_entry_api.entity.Vehicle;
 import org.truong.gvrp_entry_api.entity.VehicleType;
-import org.truong.gvrp_entry_api.exception.DataInvalidException;
+import org.truong.gvrp_entry_api.exception.ResourceNotFoundException;
 import org.truong.gvrp_entry_api.mapper.VehicleMapper;
 import org.truong.gvrp_entry_api.repository.DepotRepository;
 import org.truong.gvrp_entry_api.repository.FleetRepository;
@@ -70,7 +70,7 @@ class VehicleServiceTest {
 
     @Test
     void createVehicle_foreignFleet_notFound() {
-        assertThrows(DataInvalidException.class,
+        assertThrows(ResourceNotFoundException.class,
                 () -> service.createVehicle(input(), 5L, CALLER_BRANCH));
 
         verify(fleetRepository).findByIdAndBranchId(5L, CALLER_BRANCH);
@@ -82,7 +82,7 @@ class VehicleServiceTest {
     void createVehicle_foreignDepot_notFound() {
         when(fleetRepository.findByIdAndBranchId(5L, CALLER_BRANCH)).thenReturn(Optional.of(ownFleet()));
 
-        assertThrows(DataInvalidException.class,
+        assertThrows(ResourceNotFoundException.class,
                 () -> service.createVehicle(input(), 5L, CALLER_BRANCH));
 
         verify(depotRepository).findByIdAndBranchId(3L, CALLER_BRANCH);
@@ -96,7 +96,7 @@ class VehicleServiceTest {
         when(depotRepository.findByIdAndBranchId(3L, CALLER_BRANCH))
                 .thenReturn(Optional.of(Depot.builder().id(3L).build()));
 
-        assertThrows(DataInvalidException.class,
+        assertThrows(ResourceNotFoundException.class,
                 () -> service.createVehicle(input(), 5L, CALLER_BRANCH));
 
         verify(typeRepository).findByIdAndBranchId(4L, CALLER_BRANCH);
@@ -123,7 +123,7 @@ class VehicleServiceTest {
     void updateVehicle_foreignVehicle_notFound() {
         VehicleUpdateDTO update = new VehicleUpdateDTO();
 
-        assertThrows(DataInvalidException.class,
+        assertThrows(ResourceNotFoundException.class,
                 () -> service.updateVehicle(7L, update, CALLER_BRANCH));
 
         verify(vehicleRepository).findByIdAndFleetBranchId(7L, CALLER_BRANCH);
@@ -139,7 +139,7 @@ class VehicleServiceTest {
         VehicleUpdateDTO update = new VehicleUpdateDTO();
         update.setStartDepotId(3L);
 
-        assertThrows(DataInvalidException.class,
+        assertThrows(ResourceNotFoundException.class,
                 () -> service.updateVehicle(7L, update, CALLER_BRANCH));
 
         verify(depotRepository).findByIdAndBranchId(3L, CALLER_BRANCH);

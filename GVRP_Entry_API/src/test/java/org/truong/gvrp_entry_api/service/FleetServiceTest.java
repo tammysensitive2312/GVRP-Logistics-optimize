@@ -11,7 +11,7 @@ import org.truong.gvrp_entry_api.entity.Branch;
 import org.truong.gvrp_entry_api.entity.Fleet;
 import org.truong.gvrp_entry_api.entity.Vehicle;
 import org.truong.gvrp_entry_api.entity.VehicleType;
-import org.truong.gvrp_entry_api.exception.DataInvalidException;
+import org.truong.gvrp_entry_api.exception.ResourceNotFoundException;
 import org.truong.gvrp_entry_api.mapper.FleetMapper;
 import org.truong.gvrp_entry_api.repository.BranchRepository;
 import org.truong.gvrp_entry_api.repository.DepotRepository;
@@ -72,7 +72,7 @@ class FleetServiceTest {
         FleetInputDTO dto = input();
         stubBranchAndMapping(dto);
 
-        assertThrows(DataInvalidException.class, () -> service.createFleet(dto, CALLER_BRANCH));
+        assertThrows(ResourceNotFoundException.class, () -> service.createFleet(dto, CALLER_BRANCH));
 
         verify(typeRepository).findByIdAndBranchId(4L, CALLER_BRANCH);
         verify(typeRepository, never()).findById(any());
@@ -86,7 +86,7 @@ class FleetServiceTest {
         when(typeRepository.findByIdAndBranchId(4L, CALLER_BRANCH))
                 .thenReturn(Optional.of(VehicleType.builder().id(4L).build()));
 
-        assertThrows(DataInvalidException.class, () -> service.createFleet(dto, CALLER_BRANCH));
+        assertThrows(ResourceNotFoundException.class, () -> service.createFleet(dto, CALLER_BRANCH));
 
         verify(depotRepository).findByIdAndBranchId(3L, CALLER_BRANCH);
         verify(depotRepository, never()).findById(any());

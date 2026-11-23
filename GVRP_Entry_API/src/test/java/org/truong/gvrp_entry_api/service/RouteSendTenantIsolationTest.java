@@ -21,15 +21,13 @@ import org.truong.gvrp_entry_api.entity.enums.LocationType;
 import org.truong.gvrp_entry_api.entity.enums.SolutionStatus;
 import org.truong.gvrp_entry_api.entity.enums.SolutionType;
 import org.truong.gvrp_entry_api.entity.enums.UserRole;
-import org.truong.gvrp_entry_api.exception.DataInvalidException;
-import org.truong.gvrp_entry_api.exception.ErrorDetail;
+import org.truong.gvrp_entry_api.exception.ResourceNotFoundException;
 import org.truong.gvrp_entry_api.repository.OrderRepository;
 import org.truong.gvrp_entry_api.repository.RouteRepository;
 import org.truong.gvrp_entry_api.repository.RouteSendRepository;
 import org.truong.gvrp_entry_api.repository.SolutionRepository;
 import org.truong.gvrp_entry_api.repository.UserRepository;
 import org.truong.gvrp_entry_api.util.AppConstant;
-import org.truong.gvrp_entry_api.util.ErrorCode;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -120,27 +118,23 @@ class RouteSendTenantIsolationTest {
 
         Solution foreignSuccess = solution(90L, BRANCH_B, SolutionStatus.SUCCESS, 200L);
         when(solutionRepository.findWithDetailsById(90L)).thenReturn(Optional.of(foreignSuccess));
-        DataInvalidException foreignSuccessEx = assertThrows(DataInvalidException.class,
+        ResourceNotFoundException foreignSuccessEx = assertThrows(ResourceNotFoundException.class,
                 () -> service.sendRoute(200L, request(90L, 2L)));
 
         Solution foreignInfeasible = solution(91L, BRANCH_B, SolutionStatus.INFEASIBLE, 201L);
         when(solutionRepository.findWithDetailsById(91L)).thenReturn(Optional.of(foreignInfeasible));
-        DataInvalidException foreignInfeasibleEx = assertThrows(DataInvalidException.class,
+        ResourceNotFoundException foreignInfeasibleEx = assertThrows(ResourceNotFoundException.class,
                 () -> service.sendRoute(201L, request(91L, 2L)));
 
         when(solutionRepository.findWithDetailsById(999L)).thenReturn(Optional.empty());
-        DataInvalidException missingEx = assertThrows(DataInvalidException.class,
+        ResourceNotFoundException missingEx = assertThrows(ResourceNotFoundException.class,
                 () -> service.sendRoute(200L, request(999L, 2L)));
 
-        assertThat(foreignSuccessEx.getErrors()).hasSize(1);
-        ErrorDetail detail = foreignSuccessEx.getErrors().get(0);
-        assertThat(detail.getCode()).isEqualTo(ErrorCode.RESOURCE_NOT_FOUND.getCode());
-        assertThat(detail.getMessage()).isEqualTo(ErrorCode.RESOURCE_NOT_FOUND.getMessage());
-        assertThat(detail.getResource()).isEqualTo(AppConstant.SOLUTION);
-        assertThat(detail.getField()).isNull();
+        assertThat(foreignSuccessEx.getResource()).isEqualTo(AppConstant.SOLUTION);
+        assertThat(foreignSuccessEx.getField()).isNull();
 
-        assertThat(foreignSuccessEx.getErrors()).usingRecursiveComparison().isEqualTo(missingEx.getErrors());
-        assertThat(foreignInfeasibleEx.getErrors()).usingRecursiveComparison().isEqualTo(missingEx.getErrors());
+        assertThat(foreignSuccessEx).usingRecursiveComparison().isEqualTo(missingEx);
+        assertThat(foreignInfeasibleEx).usingRecursiveComparison().isEqualTo(missingEx);
 
         verify(routeRepository, never()).findWithLockById(any());
         verify(sendRepository, never()).saveAndFlush(any());
@@ -153,15 +147,11 @@ class RouteSendTenantIsolationTest {
         Solution ownSolution = solution(9L, BRANCH_A, SolutionStatus.SUCCESS, 21L);
         when(solutionRepository.findWithDetailsById(9L)).thenReturn(Optional.of(ownSolution));
 
-        DataInvalidException foreignRouteEx = assertThrows(DataInvalidException.class,
+        ResourceNotFoundException foreignRouteEx = assertThrows(ResourceNotFoundException.class,
                 () -> service.sendRoute(888L, request(9L, 2L)));
 
-        assertThat(foreignRouteEx.getErrors()).hasSize(1);
-        ErrorDetail detail = foreignRouteEx.getErrors().get(0);
-        assertThat(detail.getCode()).isEqualTo(ErrorCode.RESOURCE_NOT_FOUND.getCode());
-        assertThat(detail.getMessage()).isEqualTo(ErrorCode.RESOURCE_NOT_FOUND.getMessage());
-        assertThat(detail.getResource()).isEqualTo(AppConstant.ROUTE);
-        assertThat(detail.getField()).isNull();
+        assertThat(foreignRouteEx.getResource()).isEqualTo(AppConstant.ROUTE);
+        assertThat(foreignRouteEx.getField()).isNull();
 
         verify(routeRepository, never()).findWithLockById(any());
         verify(sendRepository, never()).saveAndFlush(any());
@@ -184,31 +174,27 @@ class RouteSendTenantIsolationTest {
         User plannerUser = User.builder().id(32L).branch(branchA).role(UserRole.PLANNER).enabled(true).build();
 
         when(userRepository.findById(30L)).thenReturn(Optional.of(foreignDriver));
-        DataInvalidException foreignDriverEx = assertThrows(DataInvalidException.class,
+        ResourceNotFoundException foreignDriverEx = assertThrows(ResourceNotFoundException.class,
                 () -> service.sendRoute(21L, request(9L, 30L)));
 
         when(userRepository.findById(31L)).thenReturn(Optional.of(disabledDriver));
-        DataInvalidException disabledDriverEx = assertThrows(DataInvalidException.class,
+        ResourceNotFoundException disabledDriverEx = assertThrows(ResourceNotFoundException.class,
                 () -> service.sendRoute(21L, request(9L, 31L)));
 
         when(userRepository.findById(32L)).thenReturn(Optional.of(plannerUser));
-        DataInvalidException nonDriverEx = assertThrows(DataInvalidException.class,
+        ResourceNotFoundException nonDriverEx = assertThrows(ResourceNotFoundException.class,
                 () -> service.sendRoute(21L, request(9L, 32L)));
 
         when(userRepository.findById(999L)).thenReturn(Optional.empty());
-        DataInvalidException missingDriverEx = assertThrows(DataInvalidException.class,
+        ResourceNotFoundException missingDriverEx = assertThrows(ResourceNotFoundException.class,
                 () -> service.sendRoute(21L, request(9L, 999L)));
 
-        assertThat(foreignDriverEx.getErrors()).hasSize(1);
-        ErrorDetail detail = foreignDriverEx.getErrors().get(0);
-        assertThat(detail.getCode()).isEqualTo(ErrorCode.RESOURCE_NOT_FOUND.getCode());
-        assertThat(detail.getMessage()).isEqualTo(ErrorCode.RESOURCE_NOT_FOUND.getMessage());
-        assertThat(detail.getResource()).isEqualTo("Driver");
-        assertThat(detail.getField()).isNull();
+        assertThat(foreignDriverEx.getResource()).isEqualTo("Driver");
+        assertThat(foreignDriverEx.getField()).isNull();
 
-        assertThat(foreignDriverEx.getErrors()).usingRecursiveComparison().isEqualTo(missingDriverEx.getErrors());
-        assertThat(disabledDriverEx.getErrors()).usingRecursiveComparison().isEqualTo(missingDriverEx.getErrors());
-        assertThat(nonDriverEx.getErrors()).usingRecursiveComparison().isEqualTo(missingDriverEx.getErrors());
+        assertThat(foreignDriverEx).usingRecursiveComparison().isEqualTo(missingDriverEx);
+        assertThat(disabledDriverEx).usingRecursiveComparison().isEqualTo(missingDriverEx);
+        assertThat(nonDriverEx).usingRecursiveComparison().isEqualTo(missingDriverEx);
 
         verify(sendRepository, never()).saveAndFlush(any());
     }

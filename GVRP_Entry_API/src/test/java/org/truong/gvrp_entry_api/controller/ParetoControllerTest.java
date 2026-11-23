@@ -10,14 +10,12 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.truong.gvrp_entry_api.dto.response.ParetoCandidateDTO;
 import org.truong.gvrp_entry_api.dto.response.ParetoFrontierDTO;
 import org.truong.gvrp_entry_api.dto.response.SolutionDetailResponseDTO;
-import org.truong.gvrp_entry_api.exception.DataInvalidException;
-import org.truong.gvrp_entry_api.exception.ErrorDetail;
 import org.truong.gvrp_entry_api.exception.GlobalExceptionHandler;
+import org.truong.gvrp_entry_api.exception.ResourceNotFoundException;
 import org.truong.gvrp_entry_api.exception.RevisionConflictException;
 import org.truong.gvrp_entry_api.exception.UnprocessablePlanException;
 import org.truong.gvrp_entry_api.service.ParetoService;
 import org.truong.gvrp_entry_api.util.AppConstant;
-import org.truong.gvrp_entry_api.util.ErrorCode;
 
 import java.util.List;
 
@@ -85,18 +83,12 @@ class ParetoControllerTest {
 
     @Test
     void getFrontier_otherBranch_returns400NotFoundEnvelope() throws Exception {
-        when(paretoService.getFrontier(9L, BRANCH)).thenThrow(new DataInvalidException(
-                List.of(ErrorDetail.builder()
-                        .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
-                        .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
-                        .resource(AppConstant.PARETO_CANDIDATE)
-                        .build())));
+        when(paretoService.getFrontier(9L, BRANCH))
+                .thenThrow(new ResourceNotFoundException(AppConstant.PARETO_CANDIDATE));
 
-        // Design maps "not found" to 404, but GlobalExceptionHandler maps
-        // DataInvalidException to 400 — recorded as a deviation.
         mockMvc().perform(get("/api/v1/solutions/9/pareto")
                         .requestAttr("branchId", BRANCH))
-                .andExpect(status().isBadRequest())
+                .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.errors[0].code").value("0040402"));
     }
 

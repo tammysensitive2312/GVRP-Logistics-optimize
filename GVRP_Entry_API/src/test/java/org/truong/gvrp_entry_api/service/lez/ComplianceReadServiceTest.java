@@ -15,6 +15,7 @@ import org.truong.gvrp_entry_api.entity.Solution;
 import org.truong.gvrp_entry_api.entity.Vehicle;
 import org.truong.gvrp_entry_api.entity.enums.LezStatus;
 import org.truong.gvrp_entry_api.entity.enums.LocationType;
+import org.truong.gvrp_entry_api.exception.ResourceNotFoundException;
 import org.truong.gvrp_entry_api.repository.RouteRepository;
 import org.truong.gvrp_entry_api.repository.SolutionRepository;
 import org.truong.gvrp_entry_api.util.AppConstant;
@@ -40,7 +41,7 @@ import static org.truong.gvrp_entry_api.service.lez.LezFixtures.encode;
  * DB-free: the repositories and the compliance service are Mockito substitutes.
  *
  * <p>Branch A asking for branch B's ids must behave exactly like asking for a
- * missing id: {@link LezNotFoundException} (404) and no read side effect.
+ * missing id: {@link ResourceNotFoundException} (404) and no read side effect.
  */
 @ExtendWith(MockitoExtension.class)
 class ComplianceReadServiceTest {
@@ -88,7 +89,7 @@ class ComplianceReadServiceTest {
                 .thenReturn(Optional.of(solution(99L, BRANCH_B)));
 
         assertThatThrownBy(() -> service.compliance(99L, BRANCH_A))
-                .isInstanceOf(LezNotFoundException.class)
+                .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining(AppConstant.SOLUTION);
 
         verifyNoInteractions(routeComplianceService);
@@ -101,7 +102,7 @@ class ComplianceReadServiceTest {
                 .thenReturn(Optional.of(solution(99L, BRANCH_B)));
 
         assertThatThrownBy(() -> service.recheck(99L, BRANCH_A))
-                .isInstanceOf(LezNotFoundException.class);
+                .isInstanceOf(ResourceNotFoundException.class);
 
         verifyNoInteractions(routeComplianceService);
         verify(solutionRepository, never()).save(any());
@@ -114,7 +115,7 @@ class ComplianceReadServiceTest {
         when(routeRepository.findById(88L)).thenReturn(Optional.of(route(88L, other)));
 
         assertThatThrownBy(() -> service.geometry(88L, BRANCH_A))
-                .isInstanceOf(LezNotFoundException.class)
+                .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining(AppConstant.ROUTE);
 
         verifyNoInteractions(routeComplianceService);
@@ -125,7 +126,7 @@ class ComplianceReadServiceTest {
         when(solutionRepository.findWithDetailsById(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.compliance(99L, BRANCH_A))
-                .isInstanceOf(LezNotFoundException.class)
+                .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining(AppConstant.SOLUTION);
         verifyNoInteractions(routeComplianceService);
     }

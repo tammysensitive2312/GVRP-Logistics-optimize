@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.truong.gvrp_entry_api.dto.response.ZoneTemplateDTO;
 import org.truong.gvrp_entry_api.entity.ZoneTemplate;
+import org.truong.gvrp_entry_api.exception.ResourceNotFoundException;
 import org.truong.gvrp_entry_api.repository.ZoneRuleTemplateRepository;
 import org.truong.gvrp_entry_api.repository.ZoneTemplateRepository;
 import org.truong.gvrp_entry_api.util.AppConstant;
@@ -35,7 +36,7 @@ public class ZoneTemplateService {
     public ZoneTemplateDTO getTemplate(Long id, Long branchId) {
         LezSupport.requireBranch(branchId);
         ZoneTemplate template = templateRepository.findById(id)
-                .orElseThrow(() -> new LezNotFoundException(AppConstant.ZONE_TEMPLATE));
+                .orElseThrow(() -> new ResourceNotFoundException(AppConstant.ZONE_TEMPLATE));
         return LezSupport.templateSummary(template)
                 .geometry(GeoJsonGeometryParser.toGeoJson(template.getGeometry()))
                 .rules(ruleTemplateRepository

@@ -31,6 +31,8 @@ import org.truong.gvrp_entry_api.entity.enums.BranchZoneMode;
 import org.truong.gvrp_entry_api.entity.enums.LegalClass;
 import org.truong.gvrp_entry_api.exception.DataInvalidException;
 import org.truong.gvrp_entry_api.exception.ForbiddenException;
+import org.truong.gvrp_entry_api.exception.ResourceConflictException;
+import org.truong.gvrp_entry_api.exception.ResourceNotFoundException;
 import org.truong.gvrp_entry_api.repository.BranchRepository;
 import org.truong.gvrp_entry_api.repository.BranchZoneRepository;
 import org.truong.gvrp_entry_api.repository.BranchZoneRuleRepository;
@@ -184,7 +186,7 @@ class ZoneServiceTest {
         assertThat(first.getRules()).hasSize(2);
 
         assertThatThrownBy(() -> service.createZone(request, CALLER_BRANCH))
-                .isInstanceOf(LezConflictException.class);
+                .isInstanceOf(ResourceConflictException.class);
         verify(zoneRepository, times(1)).saveAndFlush(any());
     }
 
@@ -235,11 +237,11 @@ class ZoneServiceTest {
         JsonNode polygon = JSON.readTree("{\"type\":\"Polygon\",\"coordinates\":[[[0,0],[1,0],[1,1],[0,1],[0,0]]]}");
 
         assertThatThrownBy(() -> service.replaceGeometry(7L, polygon, CALLER_BRANCH))
-                .isInstanceOf(LezConflictException.class);
+                .isInstanceOf(ResourceConflictException.class);
         assertThatThrownBy(() -> service.replaceRules(7L, List.of(), CALLER_BRANCH))
-                .isInstanceOf(LezConflictException.class);
+                .isInstanceOf(ResourceConflictException.class);
         assertThatThrownBy(() -> service.acknowledge(7L, new ZoneAcknowledgeRequest(2), CALLER_BRANCH))
-                .isInstanceOf(LezConflictException.class);
+                .isInstanceOf(ResourceConflictException.class);
 
         verify(zoneRepository, never()).save(any());
         verify(zoneRuleRepository, never()).deleteByZoneAndBranch(anyLong(), anyLong());
@@ -253,18 +255,18 @@ class ZoneServiceTest {
         JsonNode polygon = JSON.readTree("{\"type\":\"Polygon\",\"coordinates\":[[[0,0],[1,0],[1,1],[0,1],[0,0]]]}");
         Long id = OTHER_BRANCH_ZONE_ID;
 
-        assertThatThrownBy(() -> service.getZone(id, CALLER_BRANCH)).isInstanceOf(LezNotFoundException.class);
+        assertThatThrownBy(() -> service.getZone(id, CALLER_BRANCH)).isInstanceOf(ResourceNotFoundException.class);
         assertThatThrownBy(() -> service.updateZone(id, new BranchZoneUpdateRequest(false), CALLER_BRANCH))
-                .isInstanceOf(LezNotFoundException.class);
+                .isInstanceOf(ResourceNotFoundException.class);
         assertThatThrownBy(() -> service.replaceGeometry(id, polygon, CALLER_BRANCH))
-                .isInstanceOf(LezNotFoundException.class);
+                .isInstanceOf(ResourceNotFoundException.class);
         assertThatThrownBy(() -> service.replaceRules(id, List.of(), CALLER_BRANCH))
-                .isInstanceOf(LezNotFoundException.class);
+                .isInstanceOf(ResourceNotFoundException.class);
         assertThatThrownBy(() -> service.acknowledge(id, new ZoneAcknowledgeRequest(2), CALLER_BRANCH))
-                .isInstanceOf(LezNotFoundException.class);
-        assertThatThrownBy(() -> service.deleteZone(id, CALLER_BRANCH)).isInstanceOf(LezNotFoundException.class);
+                .isInstanceOf(ResourceNotFoundException.class);
+        assertThatThrownBy(() -> service.deleteZone(id, CALLER_BRANCH)).isInstanceOf(ResourceNotFoundException.class);
         assertThatThrownBy(() -> service.verdict(id, 3L, LocalDate.of(2027, 3, 3), CALLER_BRANCH))
-                .isInstanceOf(LezNotFoundException.class);
+                .isInstanceOf(ResourceNotFoundException.class);
 
         verify(zoneRepository, times(7)).findByIdAndBranchId(id, CALLER_BRANCH);
         verify(zoneRepository, never()).findById(any());
@@ -281,7 +283,7 @@ class ZoneServiceTest {
         when(zoneRepository.findByIdAndBranchId(7L, CALLER_BRANCH)).thenReturn(Optional.of(linkedZone(7L)));
 
         assertThatThrownBy(() -> service.verdict(7L, 3L, LocalDate.of(2027, 3, 3), CALLER_BRANCH))
-                .isInstanceOf(LezNotFoundException.class);
+                .isInstanceOf(ResourceNotFoundException.class);
         verify(vehicleRepository).findByIdAndFleetBranchId(3L, CALLER_BRANCH);
         verify(vehicleRepository, never()).findById(any());
     }
@@ -362,7 +364,7 @@ class ZoneServiceTest {
         when(zoneRepository.findByIdAndBranchId(7L, CALLER_BRANCH)).thenReturn(Optional.of(linkedZone(7L)));
         when(permitRepository.existsByBranchZoneIdAndBranchId(7L, CALLER_BRANCH)).thenReturn(true);
 
-        assertThatThrownBy(() -> service.deleteZone(7L, CALLER_BRANCH)).isInstanceOf(LezConflictException.class);
+        assertThatThrownBy(() -> service.deleteZone(7L, CALLER_BRANCH)).isInstanceOf(ResourceConflictException.class);
 
         verify(zoneRepository, never()).delete(any());
         verify(zoneRuleRepository, never()).deleteByZoneAndBranch(anyLong(), anyLong());

@@ -267,4 +267,18 @@ describe('ParetoViewComponent', () => {
     expect(toast.error).toHaveBeenCalledWith('Plan not found');
     expect(store.setSolution).not.toHaveBeenCalled();
   });
+
+  it('treats a 404 with code 0040402 as "Plan not found"', () => {
+    api.applyParetoCandidate.and.returnValue(throwError(() => ({
+      status: 404,
+      error: { errors: [{ code: '0040402', message: 'not found' }] }
+    })));
+
+    component.select(1);
+    fixture.detectChanges();
+    component.apply();
+
+    expect(toast.error).toHaveBeenCalledWith('Plan not found');
+    expect(store.setSolution).not.toHaveBeenCalled();
+  });
 });

@@ -10,8 +10,7 @@ import org.truong.gvrp_entry_api.dto.request.RoutePlanningRequest;
 import org.truong.gvrp_entry_api.entity.Branch;
 import org.truong.gvrp_entry_api.entity.Order;
 import org.truong.gvrp_entry_api.entity.enums.OrderStatus;
-import org.truong.gvrp_entry_api.exception.DataInvalidException;
-import org.truong.gvrp_entry_api.exception.ErrorDetail;
+import org.truong.gvrp_entry_api.exception.ResourceConflictException;
 import org.truong.gvrp_entry_api.mapper.DepotMapper;
 import org.truong.gvrp_entry_api.mapper.OptimizationConfigMapper;
 import org.truong.gvrp_entry_api.mapper.OptimizationJobMapper;
@@ -29,7 +28,7 @@ import org.truong.gvrp_entry_api.repository.VehicleRepository;
 import org.truong.gvrp_entry_api.repository.ZoneRuleTemplateRepository;
 import org.truong.gvrp_entry_api.service.integration.external_api.EngineApiClient;
 import org.truong.gvrp_entry_api.service.lez.RestrictionCompiler;
-import org.truong.gvrp_entry_api.util.ErrorCode;
+import org.truong.gvrp_entry_api.util.AppConstant;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -96,12 +95,12 @@ class OptimizationJobStatusMessageTest {
                 .build();
     }
 
-    private DataInvalidException submit(List<Order> orders) {
+    private ResourceConflictException submit(List<Order> orders) {
         when(orderRepository.findAllById(any())).thenReturn(orders);
         RoutePlanningRequest request = new RoutePlanningRequest();
         request.setOrderIds(orders.stream().map(Order::getId).toList());
         request.setVehicleIds(List.of(7L));
-        return assertThrows(DataInvalidException.class, () -> service.submitJob(request, BRANCH, 2L));
+        return assertThrows(ResourceConflictException.class, () -> service.submitJob(request, BRANCH, 2L));
     }
 
     @Test
@@ -109,14 +108,12 @@ class OptimizationJobStatusMessageTest {
         List<Order> orders = IntStream.rangeClosed(1, 12)
                 .mapToObj(i -> order(i, OrderStatus.ON_ROUTE)).toList();
 
-        DataInvalidException ex = submit(orders);
+        ResourceConflictException ex = submit(orders);
 
-        assertThat(ex.getErrors()).hasSize(1);
-        ErrorDetail detail = ex.getErrors().get(0);
-        assertThat(detail.getCode()).isEqualTo(ErrorCode.RESOURCE_CONFLICT.getCode());
-        assertThat(detail.getField()).isEqualTo(String.join(", ",
+        assertThat(ex.getResource()).isEqualTo(AppConstant.ORDER);
+        assertThat(ex.getField()).isEqualTo(String.join(", ",
                 IntStream.rangeClosed(1, 12).mapToObj(i -> "ORD-" + i).toList()));
-        assertThat(detail.getMessage())
+        assertThat(ex.getMessage())
                 .startsWith("Only SCHEDULED orders can be planned")
                 .contains("ORD-1, ORD-2, ORD-3, ORD-4, ORD-5, ORD-6, ORD-7, ORD-8, ORD-9, ORD-10 (+2 more).")
                 .doesNotContain("ORD-11")
@@ -127,11 +124,11 @@ class OptimizationJobStatusMessageTest {
 
     @Test
     void bfT4_fewOrders_areAllNamedWithoutACount() {
-        DataInvalidException ex = submit(List.of(
+        ResourceConflictException ex = submit(List.of(
                 order(1, OrderStatus.SCHEDULED), order(2, OrderStatus.UNASSIGNED), order(3, OrderStatus.COMPLETED)));
 
-        ErrorDetail detail = ex.getErrors().get(0);
-        assertThat(detail.getField()).isEqualTo("ORD-2, ORD-3");
-        assertThat(detail.getMessage()).endsWith(": ORD-2, ORD-3.").doesNotContain("more");
+        assertThat(ex.getResource()).isEqualTo(AppConstant.ORDER);
+        assertThat(ex.getField()).isEqualTo("ORD-2, ORD-3");
+        assertThat(ex.getMessage()).endsWith(": ORD-2, ORD-3.").doesNotContain("more");
     }
 }

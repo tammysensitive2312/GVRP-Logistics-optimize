@@ -13,8 +13,8 @@ import org.truong.gvrp_entry_api.entity.Depot;
 import org.truong.gvrp_entry_api.entity.Fleet;
 import org.truong.gvrp_entry_api.entity.Vehicle;
 import org.truong.gvrp_entry_api.entity.VehicleType;
-import org.truong.gvrp_entry_api.exception.DataInvalidException;
 import org.truong.gvrp_entry_api.exception.ResourceConflictException;
+import org.truong.gvrp_entry_api.exception.ResourceNotFoundException;
 import org.truong.gvrp_entry_api.mapper.VehicleMapper;
 import org.truong.gvrp_entry_api.repository.DepotRepository;
 import org.truong.gvrp_entry_api.repository.FleetRepository;
@@ -86,12 +86,9 @@ class VehicleServicePlateTest {
         lenient().when(vehicleRepository.existsByVehicleLicensePlate(FOREIGN_PLATE)).thenReturn(true);
 
         assertThatThrownBy(() -> service.createVehicle(input(FOREIGN_PLATE), 999L, CALLER_BRANCH))
-                .isInstanceOf(DataInvalidException.class)
-                .satisfies(ex -> {
-                    var detail = ((DataInvalidException) ex).getErrors().get(0);
-                    assertThat(detail.getCode()).isEqualTo(ErrorCode.RESOURCE_NOT_FOUND.getCode());
-                    assertThat(detail.getResource()).isEqualTo(AppConstant.FLEET);
-                });
+                .isInstanceOf(ResourceNotFoundException.class)
+                .satisfies(ex -> assertThat(((ResourceNotFoundException) ex).getResource())
+                        .isEqualTo(AppConstant.FLEET));
 
         verify(vehicleRepository, never()).existsByVehicleLicensePlate(anyString());
         verify(vehicleRepository, never()).save(any());

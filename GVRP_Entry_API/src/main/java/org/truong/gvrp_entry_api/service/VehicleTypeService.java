@@ -10,6 +10,7 @@ import org.truong.gvrp_entry_api.entity.VehicleType;
 import org.truong.gvrp_entry_api.exception.DataInvalidException;
 import org.truong.gvrp_entry_api.exception.ErrorDetail;
 import org.truong.gvrp_entry_api.exception.ErrorDetails;
+import org.truong.gvrp_entry_api.exception.ResourceNotFoundException;
 import org.truong.gvrp_entry_api.mapper.VehicleTypeMapper;
 import org.truong.gvrp_entry_api.repository.BranchRepository;
 import org.truong.gvrp_entry_api.repository.VehicleTypeRepository;
@@ -30,14 +31,7 @@ public class VehicleTypeService {
 
     public VehicleTypeDTO createVehicleType(VehicleTypeInputDTO dto, Long branchId) {
         Branch branch = branchRepository.findById(branchId)
-                .orElseThrow(() -> new DataInvalidException(
-                        List.of(
-                                ErrorDetail.builder()
-                                        .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
-                                        .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
-                                        .resource(AppConstant.BRANCH)
-                                        .build()
-                        )));
+                .orElseThrow(() -> new ResourceNotFoundException(AppConstant.BRANCH));
 
         validateLegalAttributes(dto);
         var vehicleTypeEntity = typeMapper.toEntity(dto);
@@ -56,14 +50,7 @@ public class VehicleTypeService {
 
     public VehicleTypeDTO updateVehicleType(Long id, VehicleTypeInputDTO input, Long branchId) {
         VehicleType existingType = typeRepository.findByIdAndBranchId(id, branchId)
-                .orElseThrow(() -> new DataInvalidException(
-                        List.of(
-                                ErrorDetail.builder()
-                                        .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
-                                        .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
-                                        .resource(AppConstant.VEHICLE_TYPE)
-                                        .build()
-                        )));
+                .orElseThrow(() -> new ResourceNotFoundException(AppConstant.VEHICLE_TYPE));
 
         validateLegalAttributes(input);
         existingType.setTypeName(input.getTypeName());

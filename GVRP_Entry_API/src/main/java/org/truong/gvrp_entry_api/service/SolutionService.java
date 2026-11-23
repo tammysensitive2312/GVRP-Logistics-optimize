@@ -6,12 +6,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.truong.gvrp_entry_api.dto.response.RevisionDTO;
 import org.truong.gvrp_entry_api.dto.response.SolutionDetailResponseDTO;
 import org.truong.gvrp_entry_api.entity.Solution;
-import org.truong.gvrp_entry_api.exception.DataInvalidException;
-import org.truong.gvrp_entry_api.exception.ErrorDetail;
+import org.truong.gvrp_entry_api.exception.ResourceNotFoundException;
 import org.truong.gvrp_entry_api.mapper.SolutionMapper;
 import org.truong.gvrp_entry_api.repository.SolutionRepository;
 import org.truong.gvrp_entry_api.util.AppConstant;
-import org.truong.gvrp_entry_api.util.ErrorCode;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -60,15 +58,8 @@ public class SolutionService {
                 && Objects.equals(solution.getBranch().getId(), branchId);
     }
 
-    static DataInvalidException solutionNotFound() {
-        return new DataInvalidException(
-                List.of(
-                        ErrorDetail.builder()
-                                .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
-                                .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
-                                .resource(AppConstant.SOLUTION)
-                                .build()
-                ));
+    static ResourceNotFoundException solutionNotFound() {
+        return new ResourceNotFoundException(AppConstant.SOLUTION);
     }
 
     private void collectRevisions(Solution node, List<RevisionDTO> chain) {

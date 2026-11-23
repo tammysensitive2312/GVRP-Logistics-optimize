@@ -25,6 +25,7 @@ import org.truong.gvrp_entry_api.entity.enums.LocationType;
 import org.truong.gvrp_entry_api.entity.enums.SolutionStatus;
 import org.truong.gvrp_entry_api.entity.enums.SolutionType;
 import org.truong.gvrp_entry_api.exception.DataInvalidException;
+import org.truong.gvrp_entry_api.exception.ResourceNotFoundException;
 import org.truong.gvrp_entry_api.exception.RevisionConflictException;
 import org.truong.gvrp_entry_api.exception.UnprocessablePlanException;
 import org.truong.gvrp_entry_api.mapper.DepotMapper;
@@ -313,7 +314,7 @@ class RouteCustomizationServiceTest {
         Fixture f = fixture();
         when(solutionRepository.findWithDetailsById(9L)).thenReturn(Optional.of(f.base()));
 
-        assertThrows(DataInvalidException.class,
+        assertThrows(ResourceNotFoundException.class,
                 () -> service.evaluate(9L, 2L, sequences(7L, 12L, 11L)));
         verify(engineApiClient, never()).evaluateRoutes(any());
     }
@@ -323,7 +324,7 @@ class RouteCustomizationServiceTest {
         Fixture f = fixture();
         when(solutionRepository.findWithDetailsById(9L)).thenReturn(Optional.of(f.base()));
 
-        assertThrows(DataInvalidException.class,
+        assertThrows(ResourceNotFoundException.class,
                 () -> service.evaluate(9L, null, sequences(7L, 12L, 11L)));
         verify(engineApiClient, never()).evaluateRoutes(any());
     }
@@ -333,7 +334,7 @@ class RouteCustomizationServiceTest {
         Fixture f = fixture();
         when(solutionRepository.findWithDetailsById(9L)).thenReturn(Optional.of(f.base()));
 
-        assertThrows(DataInvalidException.class,
+        assertThrows(ResourceNotFoundException.class,
                 () -> service.saveRevision(9L, 2L, sequences(7L, 12L, 11L)));
         verify(solutionRepository, never()).save(any());
         verify(engineApiClient, never()).evaluateRoutes(any());
@@ -344,7 +345,7 @@ class RouteCustomizationServiceTest {
         Fixture f = fixture();
         when(solutionRepository.findById(9L)).thenReturn(Optional.of(f.base()));
 
-        assertThrows(DataInvalidException.class, () -> service.latestRevisionId(9L, 2L));
+        assertThrows(ResourceNotFoundException.class, () -> service.latestRevisionId(9L, 2L));
     }
 
     @Test

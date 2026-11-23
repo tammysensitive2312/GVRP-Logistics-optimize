@@ -8,6 +8,7 @@ import org.truong.gvrp_entry_api.dto.response.VehiclePermitDTO;
 import org.truong.gvrp_entry_api.entity.BranchZone;
 import org.truong.gvrp_entry_api.entity.Vehicle;
 import org.truong.gvrp_entry_api.entity.VehiclePermit;
+import org.truong.gvrp_entry_api.exception.ResourceNotFoundException;
 import org.truong.gvrp_entry_api.repository.BranchZoneRepository;
 import org.truong.gvrp_entry_api.repository.VehiclePermitRepository;
 import org.truong.gvrp_entry_api.repository.VehicleRepository;
@@ -77,12 +78,12 @@ public class VehiclePermitService {
     private Vehicle findVehicle(Long vehicleId, Long branchId) {
         LezSupport.requireBranch(branchId);
         return vehicleRepository.findByIdAndFleetBranchId(vehicleId, branchId)
-                .orElseThrow(() -> new LezNotFoundException(AppConstant.VEHICLE));
+                .orElseThrow(() -> new ResourceNotFoundException(AppConstant.VEHICLE));
     }
 
     private VehiclePermit findPermit(Long permitId, Vehicle vehicle, Long branchId) {
         return permitRepository.findByIdAndVehicleIdAndBranchId(permitId, vehicle.getId(), branchId)
-                .orElseThrow(() -> new LezNotFoundException(AppConstant.VEHICLE_PERMIT));
+                .orElseThrow(() -> new ResourceNotFoundException(AppConstant.VEHICLE_PERMIT));
     }
 
     private BranchZone findZone(VehiclePermitInputDTO input, Long branchId) {
@@ -90,7 +91,7 @@ public class VehiclePermitService {
             throw LezSupport.invalid("branchZoneId is required");
         }
         return zoneRepository.findByIdAndBranchId(input.getBranchZoneId(), branchId)
-                .orElseThrow(() -> new LezNotFoundException(AppConstant.BRANCH_ZONE));
+                .orElseThrow(() -> new ResourceNotFoundException(AppConstant.BRANCH_ZONE));
     }
 
     private static RuleSchedule validate(VehiclePermitInputDTO input) {

@@ -14,6 +14,7 @@ import org.truong.gvrp_entry_api.entity.Vehicle;
 import org.truong.gvrp_entry_api.entity.VehiclePermit;
 import org.truong.gvrp_entry_api.entity.enums.BranchZoneMode;
 import org.truong.gvrp_entry_api.exception.DataInvalidException;
+import org.truong.gvrp_entry_api.exception.ResourceNotFoundException;
 import org.truong.gvrp_entry_api.repository.BranchZoneRepository;
 import org.truong.gvrp_entry_api.repository.VehiclePermitRepository;
 import org.truong.gvrp_entry_api.repository.VehicleRepository;
@@ -72,9 +73,9 @@ class VehiclePermitServiceTest {
     void vpT1_anotherBranchVehicle_is404_andNothingIsSaved() {
         assertThatThrownBy(() -> service.createPermit(5L,
                 input(LocalDate.of(2027, 1, 1), LocalDate.of(2027, 12, 31)), CALLER_BRANCH))
-                .isInstanceOf(LezNotFoundException.class);
-        assertThatThrownBy(() -> service.listPermits(5L, CALLER_BRANCH)).isInstanceOf(LezNotFoundException.class);
-        assertThatThrownBy(() -> service.deletePermit(5L, 9L, CALLER_BRANCH)).isInstanceOf(LezNotFoundException.class);
+                .isInstanceOf(ResourceNotFoundException.class);
+        assertThatThrownBy(() -> service.listPermits(5L, CALLER_BRANCH)).isInstanceOf(ResourceNotFoundException.class);
+        assertThatThrownBy(() -> service.deletePermit(5L, 9L, CALLER_BRANCH)).isInstanceOf(ResourceNotFoundException.class);
 
         verify(vehicleRepository, times(3)).findByIdAndFleetBranchId(5L, CALLER_BRANCH);
         verify(vehicleRepository, never()).findById(any());
@@ -88,7 +89,7 @@ class VehiclePermitServiceTest {
 
         assertThatThrownBy(() -> service.createPermit(5L,
                 input(LocalDate.of(2027, 1, 1), LocalDate.of(2027, 12, 31)), CALLER_BRANCH))
-                .isInstanceOf(LezNotFoundException.class);
+                .isInstanceOf(ResourceNotFoundException.class);
 
         verify(zoneRepository).findByIdAndBranchId(7L, CALLER_BRANCH);
         verify(zoneRepository, never()).findById(any());
@@ -103,7 +104,7 @@ class VehiclePermitServiceTest {
 
         assertThatThrownBy(() -> service.updatePermit(5L, 9L,
                 input(LocalDate.of(2027, 1, 1), LocalDate.of(2027, 12, 31)), CALLER_BRANCH))
-                .isInstanceOf(LezNotFoundException.class);
+                .isInstanceOf(ResourceNotFoundException.class);
         verify(permitRepository, never()).save(any());
     }
 

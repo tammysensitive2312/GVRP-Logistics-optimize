@@ -15,8 +15,8 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.truong.gvrp_entry_api.dto.response.BranchZoneDTO;
 import org.truong.gvrp_entry_api.entity.enums.BranchZoneMode;
 import org.truong.gvrp_entry_api.exception.GlobalExceptionHandler;
-import org.truong.gvrp_entry_api.service.lez.LezConflictException;
-import org.truong.gvrp_entry_api.service.lez.LezNotFoundException;
+import org.truong.gvrp_entry_api.exception.ResourceConflictException;
+import org.truong.gvrp_entry_api.exception.ResourceNotFoundException;
 import org.truong.gvrp_entry_api.service.lez.MinuteInterval;
 import org.truong.gvrp_entry_api.service.lez.ZoneService;
 import org.truong.gvrp_entry_api.service.lez.ZoneVerdict;
@@ -85,7 +85,7 @@ class BranchZoneControllerTest {
     @Test
     void secondLink_returns409Envelope() throws Exception {
         when(zoneService.createZone(any(), eq(CALLER_BRANCH)))
-                .thenThrow(new LezConflictException("Template 10 is already linked to this branch"));
+                .thenThrow(new ResourceConflictException("Template 10 is already linked to this branch"));
 
         mvc().perform(post("/api/v1/zones")
                         .contentType(MediaType.APPLICATION_JSON).content("{\"template_id\":10,\"mode\":\"LINKED\"}"))
@@ -95,7 +95,7 @@ class BranchZoneControllerTest {
 
     @Test
     void otherBranchZone_returns404Envelope() throws Exception {
-        when(zoneService.getZone(99L, CALLER_BRANCH)).thenThrow(new LezNotFoundException("zones"));
+        when(zoneService.getZone(99L, CALLER_BRANCH)).thenThrow(new ResourceNotFoundException("zones"));
 
         mvc().perform(get("/api/v1/zones/99"))
                 .andExpect(status().isNotFound())
@@ -105,7 +105,7 @@ class BranchZoneControllerTest {
 
     @Test
     void deleteReferencedZone_returns409() throws Exception {
-        org.mockito.Mockito.doThrow(new LezConflictException("Zone 7 is referenced by a vehicle permit"))
+        org.mockito.Mockito.doThrow(new ResourceConflictException("Zone 7 is referenced by a vehicle permit"))
                 .when(zoneService).deleteZone(7L, CALLER_BRANCH);
 
         mvc().perform(delete("/api/v1/zones/7")).andExpect(status().isConflict());
@@ -135,7 +135,7 @@ class BranchZoneControllerTest {
     @Test
     void permitOnOtherBranchVehicle_returns404() throws Exception {
         when(permitService.createPermit(eq(5L), any(), eq(CALLER_BRANCH)))
-                .thenThrow(new LezNotFoundException("vehicles"));
+                .thenThrow(new ResourceNotFoundException("vehicles"));
 
         mvc().perform(post("/api/v1/vehicles/5/permits")
                         .contentType(MediaType.APPLICATION_JSON)
