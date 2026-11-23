@@ -46,7 +46,7 @@ Major components include:
 * `work-items` — business feature runs and their evidence
 * `.github` — CI and Dependabot configuration
 * `.agents/skills` — specialized scientific skills
-* `.opencode/agents` — specialized agent roles
+* `.opencode/agents` — specialized agent roles (OpenCode)
 
 Exact implementation details and dependency versions must be verified from the repository.
 
@@ -199,6 +199,9 @@ with `tools/feature-workflow/workflow.mjs` and record each transition. Keep desi
 code and verification linked. Wait for actual user acceptance of the handed-off
 version before performance optimization. This does not replace or modify the
 research workflow below. Read-only explanations and reviews do not require a run.
+For bugs in an existing feature: treat a defect against the accepted specification
+as an engineering task; open or resume a business feature run only when the fix
+changes accepted business behavior or requirements.
 
 ### Research task
 
@@ -521,7 +524,7 @@ Agents do not remember previous sessions. Continuity comes only from repository 
 
 | Layer | Home | Written by |
 |---|---|---|
-| Rules | `AGENTS.md`, `CLAUDE.md`, `.opencode/agents/` | only on explicit user request |
+| Rules | `AGENTS.md`, `CLAUDE.md` (Claude Code), `.opencode/agents/` (OpenCode), `.agents/plugins/gvrp-dev-tools/rules/AGENTS.md` (Antigravity, gitignored) | only on explicit user request |
 | Verified project knowledge | `docs/research/*` | under the section 12 promotion rules |
 | Security state | `docs/security/SECURITY_CHECKLIST.md` | when a finding is opened or its status changes |
 | Engineering lessons | `docs/engineering/LESSONS.md` | when a work item hits a non-obvious trap |
@@ -530,7 +533,7 @@ Agents do not remember previous sessions. Continuity comes only from repository 
 
 ### Session start
 
-1. Run `node tools/session-brief.mjs`. It recomputes open work items, security findings not FIXED, the lesson index and knowledge-file freshness from the files above. It writes nothing.
+1. For engineering, business feature, or research tasks, run `node tools/session-brief.mjs`. It recomputes open work items, security findings not FIXED, the lesson index and knowledge-file freshness from the files above. It writes nothing. Fast read-only questions may skip this step.
 2. Before continuing a work item, run `node tools/feature-workflow/workflow.mjs recover work-items/<ID>/run.json` and resolve every reported issue first.
 3. Treat the brief as an index, not as evidence: re-read the source file before relying on a detail.
 4. Report stale work items (flagged STALE) to the user; do not resume, cancel or close them without the user's decision.
