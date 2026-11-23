@@ -18,7 +18,7 @@ class GlobalExceptionHandlerClientErrorsTest {
     private final GlobalExceptionHandler handler = new GlobalExceptionHandler();
 
     @Test
-    void unreadableBodyAnswers400WithTheDeepestCause() {
+    void unreadableBodyAnswers400WithoutLeakingCauseDetails() {
         HttpMessageNotReadableException ex = new HttpMessageNotReadableException(
                 "JSON parse error",
                 new IllegalArgumentException("Unrecognized field \"vehicle_features\""),
@@ -30,8 +30,27 @@ class GlobalExceptionHandlerClientErrorsTest {
         ErrorDetail detail = firstDetail(response);
         assertThat(detail.getCode()).isEqualTo(ErrorCode.VALIDATION_ERROR.getCode());
         assertThat(detail.getMessage())
-                .startsWith("Malformed request body")
-                .contains("Unrecognized field \"vehicle_features\"");
+                .isEqualTo("Malformed request body.")
+                .doesNotContain("vehicle_features");
+    }
+
+    @Test
+    void unreadableBodyDoesNotExposeInternalClassOrRejectedCustomerValue() {
+        HttpMessageNotReadableException ex = new HttpMessageNotReadableException(
+                "JSON parse error",
+                new IllegalArgumentException(
+                        "Cannot deserialize value of type `org.truong.gvrp_entry_api.dto.request.OrderInputDTO` from String \"0901234567\""),
+                null);
+
+        ResponseEntity<ErrorResponse> response = handler.handleUnreadableBody(ex);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        ErrorDetail detail = firstDetail(response);
+        assertThat(detail.getMessage())
+                .isEqualTo("Malformed request body.")
+                .doesNotContain("org.truong")
+                .doesNotContain("OrderInputDTO")
+                .doesNotContain("0901234567");
     }
 
     @Test
