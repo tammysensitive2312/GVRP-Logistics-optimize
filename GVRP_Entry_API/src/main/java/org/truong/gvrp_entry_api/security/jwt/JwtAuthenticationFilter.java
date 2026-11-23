@@ -1,5 +1,6 @@
 package org.truong.gvrp_entry_api.security.jwt;
 
+import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -7,7 +8,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -22,6 +22,7 @@ import org.truong.gvrp_entry_api.security.UserPrincipal;
 
 import java.io.IOException;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * JWT Authentication Filter
@@ -42,21 +43,26 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                     FilterChain filterChain) throws ServletException, IOException {
         try {
             String jwt = getJwtFromRequest(request);
+            Optional<Claims> parsedClaims = StringUtils.hasText(jwt)
+                    ? tokenProvider.parseValidClaims(jwt)
+                    : Optional.empty();
 
-            if (StringUtils.hasText(jwt) && tokenProvider.validateToken(jwt)) {
-                String username = tokenProvider.getUsernameFromToken(jwt);
+            if (parsedClaims.isPresent()) {
+                Claims claims = parsedClaims.get();
+                String username = claims.getSubject();
 
                 // Load user details
                 UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
-                // Get additional info from token
-                Long userId = tokenProvider.getUserIdFromToken(jwt);
-                Long branchId = tokenProvider.getBranchIdFromToken(jwt);
-                String role = tokenProvider.getRoleFromToken(jwt);
+                // Extract all claims from the single parse (R-5)
+                Long userId = claims.get("userId", Long.class);
+                Long branchId = claims.get("branchId", Long.class);
+                String role = claims.get("role", String.class);
 
-                if (isUsable(userDetails, userId, branchId, role)) {
+                String rejection = rejectionReason(userDetails, userId, branchId, role);
+                if (rejection == null) {
                     // Tenant scope comes from the reloaded user (equal to the claim once
-                    // isUsable passed); the claim is used only for a user without a branch,
+                    // rejectionReason passed); the claim is used only for a user without a branch,
                     // which the NOT NULL users.branch_id column rules out in the database.
                     Long currentBranchId = currentBranchId((UserPrincipal) userDetails);
                     if (currentBranchId != null) {
@@ -86,10 +92,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 } else {
                     // Disabled/locked account, or a userId/branchId/role claim that no longer
                     // matches the user: leave the request unauthenticated so protected
-                    // endpoints answer 401 (SS-001..SS-003, SEC-AUTH-002).
-                    logger.warn("Rejected authentication for user '{}': account disabled/locked "
-                            + "or token claims (user id, branch, role) do not match the current user",
-                            username);
+                    // endpoints answer 401 (SS-001..SS-003, SEC-AUTH-002, R-6).
+                    logger.warn("Rejected authentication for user '{}': {}", username, rejection);
                 }
             }
         } catch (Exception ex) {
@@ -100,28 +104,32 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     /**
-     * A token is usable only when its user is enabled and unlocked, and its claims still
-     * match the user loaded from the database: {@code userId}, {@code branchId} (the
-     * tenant scope, SEC-AUTH-002) and {@code role}. A user moved to another branch or
-     * role must log in again instead of keeping the former scope until the token expires.
+     * Returns {@code null} when the user and token claims are valid, or a short reason
+     * string for diagnostics when authentication must be refused (R-6).
      */
-    private boolean isUsable(UserDetails userDetails, Long userIdFromToken,
-                             Long branchIdFromToken, String roleFromToken) {
-        if (!userDetails.isEnabled() || !userDetails.isAccountNonLocked()) {
-            return false;
+    private String rejectionReason(UserDetails userDetails, Long userIdFromToken,
+                                   Long branchIdFromToken, String roleFromToken) {
+        if (!userDetails.isEnabled()) {
+            return "account disabled";
+        }
+        if (!userDetails.isAccountNonLocked()) {
+            return "account locked";
         }
         if (!(userDetails instanceof UserPrincipal principal)) {
-            return false;
+            return "unexpected principal type";
         }
         User user = principal.getUser();
         if (!Objects.equals(user.getId(), userIdFromToken)) {
-            return false;
+            return "userId claim mismatch";
         }
         Long currentBranchId = currentBranchId(principal);
         if (currentBranchId != null && !currentBranchId.equals(branchIdFromToken)) {
-            return false;
+            return "branchId claim mismatch";
         }
-        return user.getRole() != null && user.getRole().name().equals(roleFromToken);
+        if (user.getRole() == null || !user.getRole().name().equals(roleFromToken)) {
+            return "role claim mismatch";
+        }
+        return null;
     }
 
     /**

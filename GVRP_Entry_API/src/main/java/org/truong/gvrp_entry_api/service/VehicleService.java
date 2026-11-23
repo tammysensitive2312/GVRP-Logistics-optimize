@@ -43,6 +43,20 @@ public class VehicleService {
     
     @Transactional(readOnly = true)
     public PageResponse<VehicleDTO> getAllVehiclesPaginated(Long branchId, int pageNo, int pageSize) {
+        if (pageNo < 0) {
+            throw new DataInvalidException(List.of(ErrorDetail.builder()
+                    .code(ErrorCode.VALIDATION_ERROR.getCode())
+                    .message("Page index must not be negative")
+                    .field("page")
+                    .build()));
+        }
+        if (pageSize < 1 || pageSize > AppConstant.MAX_VEHICLE_PAGE_SIZE) {
+            throw new DataInvalidException(List.of(ErrorDetail.builder()
+                    .code(ErrorCode.VALIDATION_ERROR.getCode())
+                    .message("Page size must be between 1 and " + AppConstant.MAX_VEHICLE_PAGE_SIZE)
+                    .field("size")
+                    .build()));
+        }
         Pageable pageable = PageRequest.of(pageNo, pageSize, Sort.by("id").descending());
         Page<Vehicle> vehiclePage = vehicleRepository.findByFleetBranchId(branchId, pageable);
         List<VehicleDTO> content = vehicleMapper.toDTOList(vehiclePage.getContent());

@@ -121,7 +121,7 @@ class SecurityPr1ApiTest {
                 vehicleTypeMapper, jobMapper, snake, optimizationConfigMapper, engineApiClient,
                 new RestrictionCompiler(zoneRepository, zoneRuleRepository, ruleTemplateRepository,
                         permitRepository));
-        lenient().when(jobRepository.countByBranchIdAndStatus(any(), any())).thenReturn(0L);
+        lenient().when(jobRepository.countByBranchIdAndStatusIn(any(), any())).thenReturn(0L);
 
         RouteSendService routeSendService = new RouteSendService(
                 sendRepository, routeRepository, solutionRepository, userRepository, orderRepository);

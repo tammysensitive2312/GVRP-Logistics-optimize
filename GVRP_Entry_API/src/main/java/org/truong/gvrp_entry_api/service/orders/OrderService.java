@@ -43,7 +43,22 @@ public class OrderService {
     @Transactional(readOnly = true)
     public PageResponse<OrderDTO> getAllOrdersPaginated(
             Long branchId, int pageNo, int pageSize,
-            LocalDate deliveryDate, OrderStatus status, String search) {        Pageable pageable = PageRequest.of(pageNo, pageSize, Sort.by("id").descending());
+            LocalDate deliveryDate, OrderStatus status, String search) {
+        if (pageNo < 0) {
+            throw new DataInvalidException(List.of(ErrorDetail.builder()
+                    .code(ErrorCode.VALIDATION_ERROR.getCode())
+                    .message("Page index must not be negative")
+                    .field("page")
+                    .build()));
+        }
+        if (pageSize < 1 || pageSize > AppConstant.MAX_ORDER_PAGE_SIZE) {
+            throw new DataInvalidException(List.of(ErrorDetail.builder()
+                    .code(ErrorCode.VALIDATION_ERROR.getCode())
+                    .message("Page size must be between 1 and " + AppConstant.MAX_ORDER_PAGE_SIZE)
+                    .field("size")
+                    .build()));
+        }
+        Pageable pageable = PageRequest.of(pageNo, pageSize, Sort.by("id").descending());
         String keyword = search != null && !search.isBlank() ? search.trim() : null;
         Page<Order> orderPage = orderRepository.searchOrders(
                 branchId, deliveryDate, status, keyword, pageable);

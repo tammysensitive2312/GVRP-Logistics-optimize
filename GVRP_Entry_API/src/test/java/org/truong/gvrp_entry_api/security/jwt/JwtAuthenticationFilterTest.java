@@ -1,5 +1,7 @@
 package org.truong.gvrp_entry_api.security.jwt;
 
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -12,6 +14,8 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.truong.gvrp_entry_api.entity.User;
 import org.truong.gvrp_entry_api.entity.enums.UserRole;
 import org.truong.gvrp_entry_api.security.UserPrincipal;
+
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -59,11 +63,13 @@ class JwtAuthenticationFilterTest {
     }
 
     private void stubValidToken(Long tokenUserId) {
-        when(tokenProvider.validateToken(TOKEN)).thenReturn(true);
-        when(tokenProvider.getUsernameFromToken(TOKEN)).thenReturn(USERNAME);
-        when(tokenProvider.getUserIdFromToken(TOKEN)).thenReturn(tokenUserId);
-        when(tokenProvider.getBranchIdFromToken(TOKEN)).thenReturn(1L);
-        when(tokenProvider.getRoleFromToken(TOKEN)).thenReturn("PLANNER");
+        Claims claims = Jwts.claims()
+                .subject(USERNAME)
+                .add("userId", tokenUserId)
+                .add("branchId", 1L)
+                .add("role", "PLANNER")
+                .build();
+        when(tokenProvider.parseValidClaims(TOKEN)).thenReturn(Optional.of(claims));
     }
 
     @Test
@@ -99,8 +105,7 @@ class JwtAuthenticationFilterTest {
 
     @Test
     void missingUser_doesNotAuthenticateAndNoExceptionEscapes() throws Exception {
-        when(tokenProvider.validateToken(TOKEN)).thenReturn(true);
-        when(tokenProvider.getUsernameFromToken(TOKEN)).thenReturn(USERNAME);
+        stubValidToken(USER_ID);
         when(userDetailsService.loadUserByUsername(USERNAME))
                 .thenThrow(new UsernameNotFoundException("User not found: " + USERNAME));
 
@@ -128,7 +133,7 @@ class JwtAuthenticationFilterTest {
 
     @Test
     void invalidToken_doesNotLoadUser() throws Exception {
-        when(tokenProvider.validateToken(TOKEN)).thenReturn(false);
+        when(tokenProvider.parseValidClaims(TOKEN)).thenReturn(Optional.empty());
 
         MockHttpServletRequest request = requestWithToken();
         MockFilterChain chain = new MockFilterChain();
