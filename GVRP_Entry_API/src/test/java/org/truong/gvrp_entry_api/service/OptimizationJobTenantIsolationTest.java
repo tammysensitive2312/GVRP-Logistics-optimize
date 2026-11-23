@@ -90,7 +90,7 @@ class OptimizationJobTenantIsolationTest {
                 optimizationConfigMapper, engineApiClient,
                 new RestrictionCompiler(zoneRepository, zoneRuleRepository, ruleTemplateRepository,
                         permitRepository));
-        when(jobRepository.countByBranchIdAndStatus(any(), any())).thenReturn(0L);
+        when(jobRepository.countByBranchIdAndStatusIn(any(), any())).thenReturn(0L);
     }
 
     private RoutePlanningRequest request(List<Long> orderIds, List<Long> vehicleIds) {

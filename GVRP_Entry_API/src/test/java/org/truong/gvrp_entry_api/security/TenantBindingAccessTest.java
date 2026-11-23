@@ -1,5 +1,7 @@
 package org.truong.gvrp_entry_api.security;
 
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -20,6 +22,8 @@ import org.truong.gvrp_entry_api.security.jwt.JwtAuthenticationFilter;
 import org.truong.gvrp_entry_api.security.jwt.JwtTokenProvider;
 import org.truong.gvrp_entry_api.service.orders.OrderImportService;
 import org.truong.gvrp_entry_api.service.orders.OrderService;
+
+import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
@@ -75,11 +79,13 @@ class TenantBindingAccessTest {
     private AuthenticationManager authenticationManager;
 
     private void tokenWithBranchClaim(long branchClaim) {
-        when(tokenProvider.validateToken(TOKEN)).thenReturn(true);
-        when(tokenProvider.getUsernameFromToken(TOKEN)).thenReturn(USERNAME);
-        when(tokenProvider.getUserIdFromToken(TOKEN)).thenReturn(USER_ID);
-        when(tokenProvider.getBranchIdFromToken(TOKEN)).thenReturn(branchClaim);
-        when(tokenProvider.getRoleFromToken(TOKEN)).thenReturn("PLANNER");
+        Claims claims = Jwts.claims()
+                .subject(USERNAME)
+                .add("userId", USER_ID)
+                .add("branchId", branchClaim)
+                .add("role", "PLANNER")
+                .build();
+        when(tokenProvider.parseValidClaims(TOKEN)).thenReturn(Optional.of(claims));
     }
 
     private void userNowInBranch(long branchId) {
