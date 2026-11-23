@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
 import java.util.List;
 
 public interface OptimizationJobRepository extends JpaRepository<OptimizationJob, Long> {
@@ -43,6 +44,12 @@ public interface OptimizationJobRepository extends JpaRepository<OptimizationJob
      * @return Count
      */
     Long countByBranchIdAndStatus(Long branchId, OptimizationJobStatus status);
+
+    /** Count active (PENDING / PROCESSING) jobs for concurrency limit checks (R-1). */
+    long countByBranchIdAndStatusIn(Long branchId, Collection<OptimizationJobStatus> statuses);
+
+    /** Lightweight ownership check without loading full job graph (R-3). */
+    boolean existsByIdAndBranchId(Long id, Long branchId);
 
     /**
      * IDs of terminal jobs older than the cutoff, oldest first.

@@ -42,6 +42,9 @@ import static org.truong.gvrp_entry_api.util.AppConstant.maxConcurrentJobs;
 @RequiredArgsConstructor
 public class OptimizationJobService {
 
+    private static final List<OptimizationJobStatus> ACTIVE_JOB_STATUSES =
+            List.of(OptimizationJobStatus.PENDING, OptimizationJobStatus.PROCESSING);
+
     private final OptimizationJobRepository jobRepository;
     private final OrderRepository orderRepository;
     private final VehicleRepository vehicleRepository;
@@ -69,8 +72,8 @@ public class OptimizationJobService {
     @Transactional
     public OptimizationJobDTO submitJob(RoutePlanningRequest request, Long branchId, Long userId) {
 
-        // Step 1: Check concurrent job limit
-        long runningJobsCount = jobRepository.countByBranchIdAndStatus(branchId, OptimizationJobStatus.PROCESSING);
+        // Step 1: Check concurrent job limit (PENDING + PROCESSING, R-1)
+        long runningJobsCount = jobRepository.countByBranchIdAndStatusIn(branchId, ACTIVE_JOB_STATUSES);
 
         if (runningJobsCount >= maxConcurrentJobs) {
             log.warn("Branch {} has reached the limit of running jobs {}", branchId, maxConcurrentJobs);
@@ -214,22 +217,22 @@ public class OptimizationJobService {
         }
 
         jobRepository.saveAll(jobs);
-        jobs.forEach(job -> engineApiClient.requestCancel(job.getId()));
+        List<Long> cancelledIds = jobs.stream().map(OptimizationJob::getId).toList();
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    cancelledIds.forEach(engineApiClient::requestCancel);
+                }
+            });
+        } else {
+            cancelledIds.forEach(engineApiClient::requestCancel);
+        }
         log.info("Cancelled {} jobs successfully", jobs.size());
     }
 
-    @Transactional(readOnly = true)
     public java.util.Map<String, Object> getJobProgress(Long jobId, Long branchId) {
-        OptimizationJob job = jobRepository.findById(jobId)
-                .orElseThrow(() -> new DataInvalidException(List.of(
-                        ErrorDetail.builder()
-                                .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
-                                .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
-                                .resource(AppConstant.JOB)
-                                .build()
-                )));
-
-        if (!job.getBranch().getId().equals(branchId)) {
+        if (branchId == null || !jobRepository.existsByIdAndBranchId(jobId, branchId)) {
             throw new DataInvalidException(List.of(
                     ErrorDetail.builder()
                             .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
@@ -250,6 +253,15 @@ public class OptimizationJobService {
      */
     @Transactional(readOnly = true)
     public List<OptimizationJobDTO> getJobHistory(Long branchId, int limit) {
+        if (limit < 1 || limit > AppConstant.MAX_JOB_HISTORY_LIMIT) {
+            throw new DataInvalidException(List.of(
+                    ErrorDetail.builder()
+                            .code(ErrorCode.VALIDATION_ERROR.getCode())
+                            .message("Limit must be between 1 and " + AppConstant.MAX_JOB_HISTORY_LIMIT)
+                            .field("limit")
+                            .build()
+            ));
+        }
         Pageable pageable = PageRequest.of(0, limit);
         return jobRepository.findJobHistory(branchId, pageable).stream()
                 .map(jobMapper::fromHistory)

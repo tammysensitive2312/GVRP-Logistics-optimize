@@ -84,7 +84,7 @@ class OptimizationJobStatusMessageTest {
                 optimizationConfigMapper, engineApiClient,
                 new RestrictionCompiler(zoneRepository, zoneRuleRepository, ruleTemplateRepository,
                         permitRepository));
-        when(jobRepository.countByBranchIdAndStatus(any(), any())).thenReturn(0L);
+        when(jobRepository.countByBranchIdAndStatusIn(any(), any())).thenReturn(0L);
     }
 
     private Order order(long id, OrderStatus status) {

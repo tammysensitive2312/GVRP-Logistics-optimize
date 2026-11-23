@@ -1,5 +1,7 @@
 package org.truong.gvrp_entry_api.security.jwt;
 
+import io.jsonwebtoken.ClaimsBuilder;
+import io.jsonwebtoken.Jwts;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -12,6 +14,8 @@ import org.truong.gvrp_entry_api.entity.Branch;
 import org.truong.gvrp_entry_api.entity.User;
 import org.truong.gvrp_entry_api.entity.enums.UserRole;
 import org.truong.gvrp_entry_api.security.UserPrincipal;
+
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -54,11 +58,14 @@ class JwtClaimBindingTest {
     }
 
     private void stubToken(Long branchClaim, String roleClaim) {
-        when(tokenProvider.validateToken(TOKEN)).thenReturn(true);
-        when(tokenProvider.getUsernameFromToken(TOKEN)).thenReturn(USERNAME);
-        when(tokenProvider.getUserIdFromToken(TOKEN)).thenReturn(USER_ID);
-        when(tokenProvider.getBranchIdFromToken(TOKEN)).thenReturn(branchClaim);
-        when(tokenProvider.getRoleFromToken(TOKEN)).thenReturn(roleClaim);
+        ClaimsBuilder builder = Jwts.claims()
+                .subject(USERNAME)
+                .add("userId", USER_ID)
+                .add("role", roleClaim);
+        if (branchClaim != null) {
+            builder.add("branchId", branchClaim);
+        }
+        when(tokenProvider.parseValidClaims(TOKEN)).thenReturn(Optional.of(builder.build()));
     }
 
     private MockHttpServletRequest run() throws Exception {

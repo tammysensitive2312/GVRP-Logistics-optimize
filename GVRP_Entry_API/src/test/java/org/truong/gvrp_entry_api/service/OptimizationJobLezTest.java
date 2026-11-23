@@ -119,7 +119,7 @@ class OptimizationJobLezTest {
                 new RestrictionCompiler(zoneRepository, zoneRuleRepository, ruleTemplateRepository,
                         permitRepository));
 
-        lenient().when(jobRepository.countByBranchIdAndStatus(any(), any())).thenReturn(0L);
+        lenient().when(jobRepository.countByBranchIdAndStatusIn(any(), any())).thenReturn(0L);
         lenient().when(branchRepository.findById(BRANCH)).thenReturn(Optional.of(branch));
         lenient().when(userRepository.findById(USER))
                 .thenReturn(Optional.of(User.builder().id(USER).branch(branch).build()));
