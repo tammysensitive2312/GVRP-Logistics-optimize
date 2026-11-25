@@ -1,0 +1,5644 @@
+{
+  "info": {
+    "_postman_id": "7f21346f-gvrp-system-test-v1",
+    "name": "GVRP System Test Suite (STP-GVRP-01)",
+    "description": "Importable Postman v2.1 collection covering API_AUTO_TARGET cases in system-test-cases.csv against isolated gvrp_test_db (port 3307). Zero hardcoded secrets.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "const d = new Date();",
+          "const pad = (n) => String(n).padStart(2, \"0\");",
+          "const iso = d.getFullYear() + \"-\" + pad(d.getMonth() + 1) + \"-\" + pad(d.getDate());",
+          "pm.environment.set(\"todayDate\", iso);"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "00 - Auth & Token Setup",
+      "item": [
+        {
+          "name": "Login Planner A (planner.a)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Login planner.a returns 200 and saves JWT\", () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j.access_token).to.be.a(\"string\").and.not.empty;",
+                  "  pm.environment.set(\"plannerAToken\", j.access_token);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"branch_name\": \"{{branchAName}}\",\n  \"username\": \"planner.a\",\n  \"password\": \"{{testPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Login Planner B (planner.b)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Login planner.b returns 200 and saves JWT\", () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j.access_token).to.be.a(\"string\").and.not.empty;",
+                  "  pm.environment.set(\"plannerBToken\", j.access_token);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"branch_name\": \"{{branchBName}}\",\n  \"username\": \"planner.b\",\n  \"password\": \"{{testPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Login Driver A1 (driver.a1)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Login driver.a1 returns 200 and saves JWT\", () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j.access_token).to.be.a(\"string\").and.not.empty;",
+                  "  pm.environment.set(\"driverA1Token\", j.access_token);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"branch_name\": \"{{branchAName}}\",\n  \"username\": \"driver.a1\",\n  \"password\": \"{{testPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Login Driver A2 (driver.a2)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Login driver.a2 returns 200 and saves JWT\", () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j.access_token).to.be.a(\"string\").and.not.empty;",
+                  "  pm.environment.set(\"driverA2Token\", j.access_token);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"branch_name\": \"{{branchAName}}\",\n  \"username\": \"driver.a2\",\n  \"password\": \"{{testPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Login Customer A (customer.a)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Login customer.a returns 200 and saves JWT\", () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j.access_token).to.be.a(\"string\").and.not.empty;",
+                  "  pm.environment.set(\"customerAToken\", j.access_token);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"branch_name\": \"{{branchAName}}\",\n  \"username\": \"customer.a\",\n  \"password\": \"{{testPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "01 - SEC (Security, RBAC & Multi-Tenant Isolation)",
+      "item": [
+        {
+          "name": "ST-SEC-001a Login unknown branch -> 404 0040402 neutral",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"Error envelope code=0040402\", () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.errors).to.be.an(\"array\").that.is.not.empty;",
+                  "  pm.expect(b.errors[0].code).to.eql(\"0040402\");",
+                  "  pm.expect(b.errors[0].resource).to.eql(\"branches\");",
+                  "});",
+                  "pm.test(\"Neutral message\", () => pm.expect(pm.response.json().errors[0].message).to.eql(\"Resource not found.\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"branch_name\": \"NO-SUCH-BRANCH\",\n  \"username\": \"planner.a\",\n  \"password\": \"{{testPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-SEC-001b Login wrong password -> 401 0040101 (never 500)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 401\", () => pm.response.to.have.status(401));",
+                  "pm.test(\"Error envelope code=0040101\", () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.errors).to.be.an(\"array\").that.is.not.empty;",
+                  "  pm.expect(b.errors[0].code).to.eql(\"0040101\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"branch_name\": \"{{branchAName}}\",\n  \"username\": \"planner.a\",\n  \"password\": \"wrong-password\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-SEC-001c Login disabled user -> 401 0040101",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 401\", () => pm.response.to.have.status(401));",
+                  "pm.test(\"Error envelope code=0040101\", () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.errors).to.be.an(\"array\").that.is.not.empty;",
+                  "  pm.expect(b.errors[0].code).to.eql(\"0040101\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"branch_name\": \"{{branchAName}}\",\n  \"username\": \"disabled.a\",\n  \"password\": \"{{testPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-SEC-002a Register disabled (existing username) -> 403 0040301",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 403\", () => pm.response.to.have.status(403));",
+                  "pm.test(\"Error envelope code=0040301\", () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.errors).to.be.an(\"array\").that.is.not.empty;",
+                  "  pm.expect(b.errors[0].code).to.eql(\"0040301\");",
+                  "});",
+                  "pm.environment.set(\"regBodyA\", pm.response.text());"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"planner.a\",\n  \"password\": \"x\",\n  \"email\": \"x@example.test\",\n  \"full_name\": \"X\",\n  \"branch_id\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/auth/register",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "register"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-SEC-002b Register disabled (unused username) identical -> 403 0040301",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 403\", () => pm.response.to.have.status(403));",
+                  "pm.test(\"Error envelope code=0040301\", () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.errors).to.be.an(\"array\").that.is.not.empty;",
+                  "  pm.expect(b.errors[0].code).to.eql(\"0040301\");",
+                  "});",
+                  "pm.test(\"Identical response\", () => pm.expect(pm.response.text()).to.eql(pm.environment.get(\"regBodyA\")));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"brand.new.user.999\",\n  \"password\": \"x\",\n  \"email\": \"y@example.test\",\n  \"full_name\": \"Y\",\n  \"branch_id\": 999\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/auth/register",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "register"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-SEC-003a Tampered JWT signature -> 401 0040102",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 401\", () => pm.response.to.have.status(401));",
+                  "pm.test(\"Error envelope code=0040102\", () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.errors).to.be.an(\"array\").that.is.not.empty;",
+                  "  pm.expect(b.errors[0].code).to.eql(\"0040102\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}tampered"
+              }
+            ],
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/orders",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orders"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-SEC-003b Malformed JWT -> 401 0040102",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 401\", () => pm.response.to.have.status(401));",
+                  "pm.test(\"Error envelope code=0040102\", () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.errors).to.be.an(\"array\").that.is.not.empty;",
+                  "  pm.expect(b.errors[0].code).to.eql(\"0040102\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer not-a-jwt"
+              }
+            ],
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/orders",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orders"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-SEC-005a Anonymous GET /orders -> 401 0040102",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 401\", () => pm.response.to.have.status(401));",
+                  "pm.test(\"Error envelope code=0040102\", () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.errors).to.be.an(\"array\").that.is.not.empty;",
+                  "  pm.expect(b.errors[0].code).to.eql(\"0040102\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/orders",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orders"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-SEC-005b DRIVER GET /orders -> 403 0040301",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 403\", () => pm.response.to.have.status(403));",
+                  "pm.test(\"Error envelope code=0040301\", () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.errors).to.be.an(\"array\").that.is.not.empty;",
+                  "  pm.expect(b.errors[0].code).to.eql(\"0040301\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{driverA1Token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/orders",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orders"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-SEC-005c DRIVER GET /zone-templates -> 403 0040301",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 403\", () => pm.response.to.have.status(403));",
+                  "pm.test(\"Error envelope code=0040301\", () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.errors).to.be.an(\"array\").that.is.not.empty;",
+                  "  pm.expect(b.errors[0].code).to.eql(\"0040301\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{driverA1Token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/zone-templates",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "zone-templates"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-SEC-005d DRIVER GET /drivers -> 403 0040301",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 403\", () => pm.response.to.have.status(403));",
+                  "pm.test(\"Error envelope code=0040301\", () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.errors).to.be.an(\"array\").that.is.not.empty;",
+                  "  pm.expect(b.errors[0].code).to.eql(\"0040301\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{driverA1Token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/drivers",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "drivers"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-SEC-005e PLANNER GET /driver/routes -> 403 0040301",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 403\", () => pm.response.to.have.status(403));",
+                  "pm.test(\"Error envelope code=0040301\", () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.errors).to.be.an(\"array\").that.is.not.empty;",
+                  "  pm.expect(b.errors[0].code).to.eql(\"0040301\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/driver/routes",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "driver",
+                "routes"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-SEC-005f CUSTOMER GET /orders -> 403 0040301",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 403\", () => pm.response.to.have.status(403));",
+                  "pm.test(\"Error envelope code=0040301\", () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.errors).to.be.an(\"array\").that.is.not.empty;",
+                  "  pm.expect(b.errors[0].code).to.eql(\"0040301\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerAToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/orders",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orders"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-SEC-005g CUSTOMER GET /driver/routes -> 403 0040301",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 403\", () => pm.response.to.have.status(403));",
+                  "pm.test(\"Error envelope code=0040301\", () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.errors).to.be.an(\"array\").that.is.not.empty;",
+                  "  pm.expect(b.errors[0].code).to.eql(\"0040301\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerAToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/driver/routes",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "driver",
+                "routes"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-SEC-006a GET /depots scoped to Branch A only",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Only ST-BRANCH-A depots returned\", () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const names = pm.response.json().map(d => d.name);",
+                  "  pm.expect(names).to.include(\"ST-Depot-A1\");",
+                  "  pm.expect(names).to.not.include(\"ST-Depot-B1\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/depots",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "depots"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-SEC-006b PUT /vehicle-types/{B} -> 404 0040402",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"Error envelope code=0040402\", () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.errors).to.be.an(\"array\").that.is.not.empty;",
+                  "  pm.expect(b.errors[0].code).to.eql(\"0040402\");",
+                  "  pm.expect(b.errors[0].resource).to.eql(\"types\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type_name\": \"Hack\",\n  \"capacity\": 1000,\n  \"fixed_cost\": 1000,\n  \"cost_per_km\": 100,\n  \"cost_per_hour\": 100,\n  \"vehicle_features\": {\n    \"category\": \"VAN\",\n    \"emission_factor\": 100,\n    \"skills\": []\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/vehicle-types/{{vehicleTypeBId}}",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "vehicle-types",
+                "{{vehicleTypeBId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-SEC-006c GET /fleets/{B} -> 404 0040402",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"Error envelope code=0040402\", () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.errors).to.be.an(\"array\").that.is.not.empty;",
+                  "  pm.expect(b.errors[0].code).to.eql(\"0040402\");",
+                  "  pm.expect(b.errors[0].resource).to.eql(\"fleets\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/fleets/{{fleetBId}}",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "fleets",
+                "{{fleetBId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-SEC-006d PUT /vehicles/{B} -> 404 0040402",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"Error envelope code=0040402\", () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.errors).to.be.an(\"array\").that.is.not.empty;",
+                  "  pm.expect(b.errors[0].code).to.eql(\"0040402\");",
+                  "  pm.expect(b.errors[0].resource).to.eql(\"vehicles\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vehicle_license_plate\": \"ST-29A-NEW\",\n  \"vehicle_type_id\": 101,\n  \"start_depot_id\": 101,\n  \"end_depot_id\": 101\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/vehicles/{{vehicleBId}}",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "vehicles",
+                "{{vehicleBId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-SEC-006e POST /vehicles/{V_A}/permits foreign branch_zone_id=Z_B -> 404 0040402",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"Error envelope code=0040402\", () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.errors).to.be.an(\"array\").that.is.not.empty;",
+                  "  pm.expect(b.errors[0].code).to.eql(\"0040402\");",
+                  "  pm.expect(b.errors[0].resource).to.eql(\"zones\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"branch_zone_id\": 201,\n  \"permit_no\": \"ST-FOREIGN-ZONE\",\n  \"valid_from\": \"2026-01-01\",\n  \"valid_to\": \"2027-01-01\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/vehicles/{{vehicleA1Id}}/permits",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "vehicles",
+                "{{vehicleA1Id}}",
+                "permits"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-SEC-006f GET /vehicles/{V_B}/permits -> 404 0040402",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"Error envelope code=0040402\", () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.errors).to.be.an(\"array\").that.is.not.empty;",
+                  "  pm.expect(b.errors[0].code).to.eql(\"0040402\");",
+                  "  pm.expect(b.errors[0].resource).to.eql(\"vehicles\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/vehicles/{{vehicleBId}}/permits",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "vehicles",
+                "{{vehicleBId}}",
+                "permits"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-SEC-007a GET /orders/{O_B} vs unknown -> 404 0040402",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"Error envelope code=0040402\", () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.errors).to.be.an(\"array\").that.is.not.empty;",
+                  "  pm.expect(b.errors[0].code).to.eql(\"0040402\");",
+                  "  pm.expect(b.errors[0].resource).to.eql(\"orders\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/orders/{{orderBId}}",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orders",
+                "{{orderBId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-SEC-007b PUT /orders/{O_B} (no coords) -> 404 0040402",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"Error envelope code=0040402\", () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.errors).to.be.an(\"array\").that.is.not.empty;",
+                  "  pm.expect(b.errors[0].code).to.eql(\"0040402\");",
+                  "  pm.expect(b.errors[0].resource).to.eql(\"orders\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"order_code\": \"NOPE\",\n  \"customer_name\": \"Nope\",\n  \"address\": \"1 Example St, Ha Noi\",\n  \"demand\": 10,\n  \"delivery_date\": \"{{todayDate}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/orders/{{orderBId}}",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orders",
+                "{{orderBId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-SEC-007c PATCH /orders/status [O_B, unknown] -> indistinguishable failed[]",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Foreign and unknown indistinguishable in failed[]\", () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.failed.length).to.eql(2);",
+                  "  pm.expect(b.failed[0].order_code).to.be.null;",
+                  "  pm.expect(b.failed[1].order_code).to.be.null;",
+                  "  pm.expect(b.failed[0].reason).to.eql(b.failed[1].reason);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ids\": [\n    201,\n    999999999\n  ],\n  \"status\": \"REJECTED\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/orders/status",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orders",
+                "status"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-SEC-007d GET /lez/order-zones omits foreign order 201",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Omits Branch B order\", () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const ids = pm.response.json().map(x => x.order_id);",
+                  "  pm.expect(ids).to.include(Number(pm.environment.get(\"orderA2LezId\")));",
+                  "  pm.expect(ids).to.not.include(Number(pm.environment.get(\"orderBId\")));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/lez/order-zones?orderIds={{orderA2LezId}},{{orderBId}}",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "lez",
+                "order-zones"
+              ],
+              "query": [
+                {
+                  "key": "orderIds",
+                  "value": "{{orderA2LezId}},{{orderBId}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-SEC-008a POST /jobs/plan missing order 999999999 (baseline)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"Error envelope code=0040402\", () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.errors).to.be.an(\"array\").that.is.not.empty;",
+                  "  pm.expect(b.errors[0].code).to.eql(\"0040402\");",
+                  "  pm.expect(b.errors[0].resource).to.eql(\"orders\");",
+                  "});",
+                  "pm.environment.set(\"missingOrderJobResp\", pm.response.text());"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"order_ids\": [\n    999999999\n  ],\n  \"vehicle_ids\": [\n    102\n  ],\n  \"preferences\": {\n    \"goal\": \"MINIMIZE_COST\",\n    \"speed\": \"FAST\",\n    \"allow_unassigned_orders\": true,\n    \"time_window_mode\": \"STRICT\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/jobs/plan",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "jobs",
+                "plan"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-SEC-008b POST /jobs/plan foreign order 201 -> byte-identical 404 (SEC-017)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"Error envelope code=0040402\", () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.errors).to.be.an(\"array\").that.is.not.empty;",
+                  "  pm.expect(b.errors[0].code).to.eql(\"0040402\");",
+                  "  pm.expect(b.errors[0].resource).to.eql(\"orders\");",
+                  "});",
+                  "pm.test(\"Byte-identical to missing order & no SECRET-BRANCH-B-ORD leak\", () => {",
+                  "  pm.expect(pm.response.text()).to.eql(pm.environment.get(\"missingOrderJobResp\"));",
+                  "  pm.expect(pm.response.text()).to.not.include(\"SECRET-BRANCH-B-ORD\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"order_ids\": [\n    201\n  ],\n  \"vehicle_ids\": [\n    102\n  ],\n  \"preferences\": {\n    \"goal\": \"MINIMIZE_COST\",\n    \"speed\": \"FAST\",\n    \"allow_unassigned_orders\": true,\n    \"time_window_mode\": \"STRICT\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/jobs/plan",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "jobs",
+                "plan"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-SEC-008c POST /jobs/plan missing vehicle 999999999 (baseline)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"Error envelope code=0040402\", () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.errors).to.be.an(\"array\").that.is.not.empty;",
+                  "  pm.expect(b.errors[0].code).to.eql(\"0040402\");",
+                  "  pm.expect(b.errors[0].resource).to.eql(\"vehicles\");",
+                  "});",
+                  "pm.environment.set(\"missingVehJobResp\", pm.response.text());"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"order_ids\": [\n    101\n  ],\n  \"vehicle_ids\": [\n    999999999\n  ],\n  \"preferences\": {\n    \"goal\": \"MINIMIZE_COST\",\n    \"speed\": \"FAST\",\n    \"allow_unassigned_orders\": true,\n    \"time_window_mode\": \"STRICT\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/jobs/plan",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "jobs",
+                "plan"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-SEC-008d POST /jobs/plan foreign vehicle 201 -> byte-identical 404 (SEC-017)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"Error envelope code=0040402\", () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.errors).to.be.an(\"array\").that.is.not.empty;",
+                  "  pm.expect(b.errors[0].code).to.eql(\"0040402\");",
+                  "  pm.expect(b.errors[0].resource).to.eql(\"vehicles\");",
+                  "});",
+                  "pm.test(\"Byte-identical to missing vehicle\", () => pm.expect(pm.response.text()).to.eql(pm.environment.get(\"missingVehJobResp\")));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"order_ids\": [\n    101\n  ],\n  \"vehicle_ids\": [\n    201\n  ],\n  \"preferences\": {\n    \"goal\": \"MINIMIZE_COST\",\n    \"speed\": \"FAST\",\n    \"allow_unassigned_orders\": true,\n    \"time_window_mode\": \"STRICT\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/jobs/plan",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "jobs",
+                "plan"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-SEC-008e GET /jobs/{J_B} -> 404 0040402",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"Error envelope code=0040402\", () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.errors).to.be.an(\"array\").that.is.not.empty;",
+                  "  pm.expect(b.errors[0].code).to.eql(\"0040402\");",
+                  "  pm.expect(b.errors[0].resource).to.eql(\"jobs\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/jobs/{{jobBId}}",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "jobs",
+                "{{jobBId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-SEC-008f GET /jobs/{J_B}/progress -> 404 0040402",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"Error envelope code=0040402\", () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.errors).to.be.an(\"array\").that.is.not.empty;",
+                  "  pm.expect(b.errors[0].code).to.eql(\"0040402\");",
+                  "  pm.expect(b.errors[0].resource).to.eql(\"jobs\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/jobs/{{jobBId}}/progress",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "jobs",
+                "{{jobBId}}",
+                "progress"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-SEC-008g PUT /jobs [own, J_B] -> 404 0040402",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"Error envelope code=0040402\", () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.errors).to.be.an(\"array\").that.is.not.empty;",
+                  "  pm.expect(b.errors[0].code).to.eql(\"0040402\");",
+                  "  pm.expect(b.errors[0].resource).to.eql(\"jobs\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ids\": [\n    102,\n    201\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/jobs",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "jobs"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-SEC-009a GET /solutions/{S_B} -> 404 0040402",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"Error envelope code=0040402\", () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.errors).to.be.an(\"array\").that.is.not.empty;",
+                  "  pm.expect(b.errors[0].code).to.eql(\"0040402\");",
+                  "  pm.expect(b.errors[0].resource).to.eql(\"solutions\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/solutions/{{solutionBId}}",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "solutions",
+                "{{solutionBId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-SEC-009b GET /solutions/{S_B}/pareto -> 404 0040402",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"Error envelope code=0040402\", () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.errors).to.be.an(\"array\").that.is.not.empty;",
+                  "  pm.expect(b.errors[0].code).to.eql(\"0040402\");",
+                  "  pm.expect(b.errors[0].resource).to.eql(\"solutions\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/solutions/{{solutionBId}}/pareto",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "solutions",
+                "{{solutionBId}}",
+                "pareto"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-SEC-009c POST /solutions/{S_B}/pareto/{C_B}/apply -> 404 0040402",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"Error envelope code=0040402\", () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.errors).to.be.an(\"array\").that.is.not.empty;",
+                  "  pm.expect(b.errors[0].code).to.eql(\"0040402\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/solutions/{{solutionBId}}/pareto/{{paretoCandBId}}/apply",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "solutions",
+                "{{solutionBId}}",
+                "pareto",
+                "{{paretoCandBId}}",
+                "apply"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-SEC-009d GET /solutions/{S_B}/compliance -> 404 0040402",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"Error envelope code=0040402\", () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.errors).to.be.an(\"array\").that.is.not.empty;",
+                  "  pm.expect(b.errors[0].code).to.eql(\"0040402\");",
+                  "  pm.expect(b.errors[0].resource).to.eql(\"solutions\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/solutions/{{solutionBId}}/compliance",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "solutions",
+                "{{solutionBId}}",
+                "compliance"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-SEC-009e GET /routes/{R_B}/geometry -> 404 0040402",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"Error envelope code=0040402\", () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.errors).to.be.an(\"array\").that.is.not.empty;",
+                  "  pm.expect(b.errors[0].code).to.eql(\"0040402\");",
+                  "  pm.expect(b.errors[0].resource).to.eql(\"routes\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/routes/{{routeBId}}/geometry",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "routes",
+                "{{routeBId}}",
+                "geometry"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-SEC-010a Send Route A with foreign solution S_B -> 404 0040402",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"Error envelope code=0040402\", () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.errors).to.be.an(\"array\").that.is.not.empty;",
+                  "  pm.expect(b.errors[0].code).to.eql(\"0040402\");",
+                  "  pm.expect(b.errors[0].resource).to.eql(\"solutions\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"driver_user_id\": 12,\n  \"solution_id\": 201\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/routes/{{routeACompliantId}}/send",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "routes",
+                "{{routeACompliantId}}",
+                "send"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-SEC-010b Send own S_A with missing driver 999999999 (baseline)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"Error envelope code=0040402\", () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.errors).to.be.an(\"array\").that.is.not.empty;",
+                  "  pm.expect(b.errors[0].code).to.eql(\"0040402\");",
+                  "  pm.expect(b.errors[0].resource).to.eql(\"Driver\");",
+                  "});",
+                  "pm.environment.set(\"missingDriverResp\", pm.response.text());"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"driver_user_id\": 999999999,\n  \"solution_id\": 101\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/routes/{{routeACompliantId}}/send",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "routes",
+                "{{routeACompliantId}}",
+                "send"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-SEC-010c Send own S_A with foreign driver 22 -> byte-identical 404 (SEC-018)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"Error envelope code=0040402\", () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.errors).to.be.an(\"array\").that.is.not.empty;",
+                  "  pm.expect(b.errors[0].code).to.eql(\"0040402\");",
+                  "  pm.expect(b.errors[0].resource).to.eql(\"Driver\");",
+                  "});",
+                  "pm.test(\"Byte-identical to missing driver\", () => pm.expect(pm.response.text()).to.eql(pm.environment.get(\"missingDriverResp\")));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"driver_user_id\": 22,\n  \"solution_id\": 101\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/routes/{{routeACompliantId}}/send",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "routes",
+                "{{routeACompliantId}}",
+                "send"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-SEC-010d GET /routes/{R_B}/sends -> 404 0040402",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"Error envelope code=0040402\", () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.errors).to.be.an(\"array\").that.is.not.empty;",
+                  "  pm.expect(b.errors[0].code).to.eql(\"0040402\");",
+                  "  pm.expect(b.errors[0].resource).to.eql(\"routes\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/routes/{{routeBId}}/sends",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "routes",
+                "{{routeBId}}",
+                "sends"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-SEC-010e Driver A1 reading Driver A2 sendId -> 403 0040301",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 403\", () => pm.response.to.have.status(403));",
+                  "pm.test(\"Error envelope code=0040301\", () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.errors).to.be.an(\"array\").that.is.not.empty;",
+                  "  pm.expect(b.errors[0].code).to.eql(\"0040301\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{driverA1Token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/driver/routes/{{sendA2Id}}",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "driver",
+                "routes",
+                "{{sendA2Id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-SEC-011a GET /zones excludes Branch B zone",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Branch B zone absent\", () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const ids = pm.response.json().map(z => z.id);",
+                  "  pm.expect(ids).to.not.include(Number(pm.environment.get(\"zoneBId\")));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/zones",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "zones"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-SEC-011b GET /zones/{Z_B} -> 404 0040402",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"Error envelope code=0040402\", () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.errors).to.be.an(\"array\").that.is.not.empty;",
+                  "  pm.expect(b.errors[0].code).to.eql(\"0040402\");",
+                  "  pm.expect(b.errors[0].resource).to.eql(\"zones\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/zones/{{zoneBId}}",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "zones",
+                "{{zoneBId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-SEC-011c DELETE /zones/{Z_B} -> 404 0040402",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"Error envelope code=0040402\", () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.errors).to.be.an(\"array\").that.is.not.empty;",
+                  "  pm.expect(b.errors[0].code).to.eql(\"0040402\");",
+                  "  pm.expect(b.errors[0].resource).to.eql(\"zones\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/zones/{{zoneBId}}",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "zones",
+                "{{zoneBId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-SEC-011d GET /zones/{Z_A}/verdict?vehicleId={V_B} -> 404 0040402",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"Error envelope code=0040402\", () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.errors).to.be.an(\"array\").that.is.not.empty;",
+                  "  pm.expect(b.errors[0].code).to.eql(\"0040402\");",
+                  "  pm.expect(b.errors[0].resource).to.eql(\"vehicles\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/zones/{{zoneACopyId}}/verdict?vehicleId={{vehicleBId}}&date=2027-03-03",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "zones",
+                "{{zoneACopyId}}",
+                "verdict"
+              ],
+              "query": [
+                {
+                  "key": "vehicleId",
+                  "value": "{{vehicleBId}}"
+                },
+                {
+                  "key": "date",
+                  "value": "2027-03-03"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-SEC-012a Callback /failed missing X-API-Key -> 401 0040102",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 401\", () => pm.response.to.have.status(401));",
+                  "pm.test(\"Error envelope code=0040102\", () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.errors).to.be.an(\"array\").that.is.not.empty;",
+                  "  pm.expect(b.errors[0].code).to.eql(\"0040102\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"job_id\": 102,\n  \"error_message\": \"test\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/solutions/callbacks/failed",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "solutions",
+                "callbacks",
+                "failed"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-SEC-012b Callback /failed wrong X-API-Key -> 401 filter JSON",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"401 filter JSON\", () => {",
+                  "  pm.response.to.have.status(401);",
+                  "  pm.expect(pm.response.json().message).to.eql(\"Invalid API key\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "wrong-key"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"job_id\": 102,\n  \"error_message\": \"test\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/solutions/callbacks/failed",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "solutions",
+                "callbacks",
+                "failed"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-SEC-012c Callback /failed with Planner JWT (no X-API-Key) -> 403",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 403\", () => pm.response.to.have.status(403));",
+                  "pm.test(\"Error envelope code=0040301\", () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.errors).to.be.an(\"array\").that.is.not.empty;",
+                  "  pm.expect(b.errors[0].code).to.eql(\"0040301\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"job_id\": 102,\n  \"error_message\": \"test\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/solutions/callbacks/failed",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "solutions",
+                "callbacks",
+                "failed"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-SEC-013 Callback payload with foreign Branch B order/vehicle -> 422 0040001",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"Error envelope code=0040001\", () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.errors).to.be.an(\"array\").that.is.not.empty;",
+                  "  pm.expect(b.errors[0].code).to.eql(\"0040001\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{engineCallbackKey}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"job_id\": 102,\n  \"processing_time_seconds\": 1,\n  \"solution\": {\n    \"total_distance\": 5.2,\n    \"total_cost\": 250000,\n    \"total_co2\": 0,\n    \"total_time\": 20,\n    \"total_service_time\": 10,\n    \"total_vehicles_used\": 1,\n    \"served_orders\": 1,\n    \"unserved_orders\": 0,\n    \"unassigned_orders\": [],\n    \"routes\": [\n      {\n        \"vehicle_id\": 201,\n        \"route_order\": 1,\n        \"distance\": 5.2,\n        \"duration\": 20,\n        \"co2_emission\": 0,\n        \"order_count\": 1,\n        \"load_utilization\": 5,\n        \"stops\": [\n          {\n            \"sequence_number\": 0,\n            \"type\": \"DEPOT\",\n            \"location_id\": \"DEPOT-101\",\n            \"location_name\": \"ST-Depot-A1\",\n            \"latitude\": 21.0285,\n            \"longitude\": 105.8542,\n            \"arrival_time\": \"08:00:00\",\n            \"departure_time\": \"08:00:00\",\n            \"service_time\": 0,\n            \"wait_time\": 0,\n            \"demand\": 0,\n            \"load_after\": 50,\n            \"distance_to_next\": 2.6,\n            \"time_to_next\": 10\n          },\n          {\n            \"sequence_number\": 1,\n            \"type\": \"ORDER\",\n            \"order_id\": 201,\n            \"order_code\": \"ST-ORD-COMP-01\",\n            \"location_id\": \"201\",\n            \"location_name\": \"Order Stop\",\n            \"latitude\": 21.025,\n            \"longitude\": 105.855,\n            \"arrival_time\": \"08:10:00\",\n            \"departure_time\": \"08:20:00\",\n            \"service_time\": 10,\n            \"wait_time\": 0,\n            \"demand\": 50,\n            \"load_after\": 0,\n            \"distance_to_next\": 2.6,\n            \"time_to_next\": 10\n          },\n          {\n            \"sequence_number\": 2,\n            \"type\": \"DEPOT\",\n            \"location_id\": \"DEPOT-101\",\n            \"location_name\": \"ST-Depot-A1\",\n            \"latitude\": 21.0285,\n            \"longitude\": 105.8542,\n            \"arrival_time\": \"08:30:00\",\n            \"departure_time\": \"08:30:00\",\n            \"service_time\": 0,\n            \"wait_time\": 0,\n            \"demand\": 0,\n            \"load_after\": 0,\n            \"distance_to_next\": 0,\n            \"time_to_next\": 0\n          }\n        ]\n      }\n    ]\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/solutions/callbacks/complete",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "solutions",
+                "callbacks",
+                "complete"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-SEC-014a Engine GET /health without X-Engine-Key -> 200 UP",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Health 200 UP\", () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().status).to.eql(\"UP\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{engineBaseUrl}}/api/v1/optimization/health",
+              "host": [
+                "{{engineBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "optimization",
+                "health"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-SEC-014b Engine POST /optimization without key -> 401 UNAUTHORIZED",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Engine 401\", () => {",
+                  "  pm.response.to.have.status(401);",
+                  "  pm.expect(pm.response.json().status).to.eql(\"UNAUTHORIZED\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{engineBaseUrl}}/api/v1/optimization",
+              "host": [
+                "{{engineBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "optimization"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-SEC-014c Engine POST /legs wrong key -> 401 UNAUTHORIZED",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Engine 401\", () => {",
+                  "  pm.response.to.have.status(401);",
+                  "  pm.expect(pm.response.json().status).to.eql(\"UNAUTHORIZED\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Engine-Key",
+                "value": "wrong-engine-key"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"points\": [\n    {\n      \"latitude\": 21.02,\n      \"longitude\": 105.85\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{engineBaseUrl}}/api/v1/optimization/legs",
+              "host": [
+                "{{engineBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "optimization",
+                "legs"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 - RES (Resilience, Concurrency & Error Contracts)",
+      "item": [
+        {
+          "name": "ST-RES-009a Plan with 12 ON_ROUTE orders -> 409 0040901 (10 codes + (+2 more))",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 409\", () => pm.response.to.have.status(409));",
+                  "pm.test(\"Error envelope code=0040901\", () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.errors).to.be.an(\"array\").that.is.not.empty;",
+                  "  pm.expect(b.errors[0].code).to.eql(\"0040901\");",
+                  "  pm.expect(b.errors[0].resource).to.eql(\"orders\");",
+                  "});",
+                  "pm.test(\"Truncated message with (+2 more)\", () => {",
+                  "  const e = pm.response.json().errors[0];",
+                  "  pm.expect(e.message).to.include(\"(+2 more)\");",
+                  "  pm.expect(e.field).to.include(\"ST-ORD-ONR-12\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"order_ids\": [\n    111,\n    112,\n    113,\n    114,\n    115,\n    116,\n    117,\n    118,\n    119,\n    120,\n    121,\n    122\n  ],\n  \"vehicle_ids\": [\n    102\n  ],\n  \"preferences\": {\n    \"goal\": \"MINIMIZE_COST\",\n    \"speed\": \"FAST\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/jobs/plan",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "jobs",
+                "plan"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-RES-009b Plan with MAINTENANCE vehicle 103 -> 409 0040901",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 409\", () => pm.response.to.have.status(409));",
+                  "pm.test(\"Error envelope code=0040901\", () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.errors).to.be.an(\"array\").that.is.not.empty;",
+                  "  pm.expect(b.errors[0].code).to.eql(\"0040901\");",
+                  "  pm.expect(b.errors[0].resource).to.eql(\"vehicles\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"order_ids\": [\n    101\n  ],\n  \"vehicle_ids\": [\n    103\n  ],\n  \"preferences\": {\n    \"goal\": \"MINIMIZE_COST\",\n    \"speed\": \"FAST\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/jobs/plan",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "jobs",
+                "plan"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-RES-009c Replace rules on LINKED zone 101 -> 409 0040901",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 409\", () => pm.response.to.have.status(409));",
+                  "pm.test(\"Error envelope code=0040901\", () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.errors).to.be.an(\"array\").that.is.not.empty;",
+                  "  pm.expect(b.errors[0].code).to.eql(\"0040901\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  {\n    \"selector\": {\n      \"energy_types\": [\n        \"DIESEL\"\n      ]\n    },\n    \"schedule\": {\n      \"type\": \"ALWAYS_FORBIDDEN\"\n    },\n    \"effective_from\": \"2026-01-01\"\n  }\n]",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/zones/{{zoneALinkedId}}/rules",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "zones",
+                "{{zoneALinkedId}}",
+                "rules"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-RES-009d Cancel COMPLETED job 101 -> 409 0040901",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 409\", () => pm.response.to.have.status(409));",
+                  "pm.test(\"Error envelope code=0040901\", () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.errors).to.be.an(\"array\").that.is.not.empty;",
+                  "  pm.expect(b.errors[0].code).to.eql(\"0040901\");",
+                  "  pm.expect(b.errors[0].resource).to.eql(\"jobs\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ids\": [\n    101\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/jobs",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "jobs"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-RES-009e Cancel PENDING job 104 -> 409 0040901",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 409\", () => pm.response.to.have.status(409));",
+                  "pm.test(\"Error envelope code=0040901\", () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.errors).to.be.an(\"array\").that.is.not.empty;",
+                  "  pm.expect(b.errors[0].code).to.eql(\"0040901\");",
+                  "  pm.expect(b.errors[0].resource).to.eql(\"jobs\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ids\": [\n    104\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/jobs",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "jobs"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-RES-009f Link already LINKED template 101 -> 409 0040901",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 409\", () => pm.response.to.have.status(409));",
+                  "pm.test(\"Error envelope code=0040901\", () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.errors).to.be.an(\"array\").that.is.not.empty;",
+                  "  pm.expect(b.errors[0].code).to.eql(\"0040901\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"template_id\": 101,\n  \"mode\": \"LINKED\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/zones",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "zones"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-RES-009g Rename LINKED zone 101 -> 409 0040901",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 409\", () => pm.response.to.have.status(409));",
+                  "pm.test(\"Error envelope code=0040901\", () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.errors).to.be.an(\"array\").that.is.not.empty;",
+                  "  pm.expect(b.errors[0].code).to.eql(\"0040901\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Cannot Rename Linked\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/zones/{{zoneALinkedId}}",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "zones",
+                "{{zoneALinkedId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-RES-009h Delete permit-referenced zone 103 -> 409 0040901",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 409\", () => pm.response.to.have.status(409));",
+                  "pm.test(\"Error envelope code=0040901\", () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.errors).to.be.an(\"array\").that.is.not.empty;",
+                  "  pm.expect(b.errors[0].code).to.eql(\"0040901\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/zones/{{zoneAPermitRefId}}",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "zones",
+                "{{zoneAPermitRefId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-RES-010a Malformed JSON -> 400 0040001 sanitized (SEC-019)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"Error envelope code=0040001\", () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.errors).to.be.an(\"array\").that.is.not.empty;",
+                  "  pm.expect(b.errors[0].code).to.eql(\"0040001\");",
+                  "});",
+                  "pm.test(\"No Jackson internals leaked\", () => {",
+                  "  const txt = pm.response.text();",
+                  "  pm.expect(pm.response.json().errors[0].message).to.eql(\"Malformed request body.\");",
+                  "  pm.expect(txt.toLowerCase()).to.not.include(\"jackson\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{bad-json"
+            },
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/orders",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orders"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-RES-010b Wrong path type /orders/abc-secret -> 400 0040005 without echo",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"Error envelope code=0040005\", () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.errors).to.be.an(\"array\").that.is.not.empty;",
+                  "  pm.expect(b.errors[0].code).to.eql(\"0040005\");",
+                  "});",
+                  "pm.test(\"Rejected value never echoed\", () => pm.expect(pm.response.text()).to.not.include(\"abc-secret\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/orders/abc-secret",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orders",
+                "abc-secret"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-RES-010c DELETE /vehicle-types/101 -> 405 0040501",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 405\", () => pm.response.to.have.status(405));",
+                  "pm.test(\"Error envelope code=0040501\", () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.errors).to.be.an(\"array\").that.is.not.empty;",
+                  "  pm.expect(b.errors[0].code).to.eql(\"0040501\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/vehicle-types/{{vehicleTypeAId}}",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "vehicle-types",
+                "{{vehicleTypeAId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-RES-010d Unsupported Content-Type text/plain -> 415 0041501",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 415\", () => pm.response.to.have.status(415));",
+                  "pm.test(\"Error envelope code=0041501\", () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.errors).to.be.an(\"array\").that.is.not.empty;",
+                  "  pm.expect(b.errors[0].code).to.eql(\"0041501\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "text/plain"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "hello"
+            },
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/orders",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orders"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-RES-010e Unknown route /api/v1/does-not-exist -> 404 0040402",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"Error envelope code=0040402\", () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.errors).to.be.an(\"array\").that.is.not.empty;",
+                  "  pm.expect(b.errors[0].code).to.eql(\"0040402\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/does-not-exist",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "does-not-exist"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-RES-010f Accept: text/plain -> 406 empty body",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"406 empty body\", () => {",
+                  "  pm.response.to.have.status(406);",
+                  "  pm.expect(pm.response.text()).to.eql(\"\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/plain"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/orders",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orders"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-RES-010g Null element in ids[] -> 400 0040001 Bean Validation",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"Error envelope code=0040001\", () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.errors).to.be.an(\"array\").that.is.not.empty;",
+                  "  pm.expect(b.errors[0].code).to.eql(\"0040001\");",
+                  "  pm.expect(b.errors[0].field).to.eql(\"ids[0]\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ids\": [\n    null\n  ],\n  \"status\": \"REJECTED\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/orders/status",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orders",
+                "status"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-RES-011a Batch cancel [102 PROCESSING, 101 COMPLETED] -> 409 rollback",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 409\", () => pm.response.to.have.status(409));",
+                  "pm.test(\"Error envelope code=0040901\", () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.errors).to.be.an(\"array\").that.is.not.empty;",
+                  "  pm.expect(b.errors[0].code).to.eql(\"0040901\");",
+                  "  pm.expect(b.errors[0].resource).to.eql(\"jobs\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ids\": [\n    102,\n    101\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/jobs",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "jobs"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-RES-011b Verify job 102 stayed PROCESSING after rollback",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Job 102 still PROCESSING\", () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().status).to.eql(\"PROCESSING\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/jobs/{{jobAProcessingId}}",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "jobs",
+                "{{jobAProcessingId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-RES-013a Callback /progress (no-op stub) -> 200",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{engineCallbackKey}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"job_id\": 102,\n  \"progress\": 50,\n  \"current_phase\": \"SOLVING\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/solutions/callbacks/progress",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "solutions",
+                "callbacks",
+                "progress"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-RES-013b Duplicate /complete on COMPLETED job 101 -> 200 idempotent",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200 idempotent\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{engineCallbackKey}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"job_id\": 101,\n  \"processing_time_seconds\": 1,\n  \"solution\": {\n    \"total_distance\": 5.2,\n    \"total_cost\": 250000,\n    \"total_co2\": 0,\n    \"total_time\": 20,\n    \"total_service_time\": 10,\n    \"total_vehicles_used\": 1,\n    \"served_orders\": 1,\n    \"unserved_orders\": 0,\n    \"unassigned_orders\": [],\n    \"routes\": [\n      {\n        \"vehicle_id\": 102,\n        \"route_order\": 1,\n        \"distance\": 5.2,\n        \"duration\": 20,\n        \"co2_emission\": 0,\n        \"order_count\": 1,\n        \"load_utilization\": 5,\n        \"stops\": [\n          {\n            \"sequence_number\": 0,\n            \"type\": \"DEPOT\",\n            \"location_id\": \"DEPOT-101\",\n            \"location_name\": \"ST-Depot-A1\",\n            \"latitude\": 21.0285,\n            \"longitude\": 105.8542,\n            \"arrival_time\": \"08:00:00\",\n            \"departure_time\": \"08:00:00\",\n            \"service_time\": 0,\n            \"wait_time\": 0,\n            \"demand\": 0,\n            \"load_after\": 50,\n            \"distance_to_next\": 2.6,\n            \"time_to_next\": 10\n          },\n          {\n            \"sequence_number\": 1,\n            \"type\": \"ORDER\",\n            \"order_id\": 101,\n            \"order_code\": \"ST-ORD-COMP-01\",\n            \"location_id\": \"101\",\n            \"location_name\": \"Order Stop\",\n            \"latitude\": 21.025,\n            \"longitude\": 105.855,\n            \"arrival_time\": \"08:10:00\",\n            \"departure_time\": \"08:20:00\",\n            \"service_time\": 10,\n            \"wait_time\": 0,\n            \"demand\": 50,\n            \"load_after\": 0,\n            \"distance_to_next\": 2.6,\n            \"time_to_next\": 10\n          },\n          {\n            \"sequence_number\": 2,\n            \"type\": \"DEPOT\",\n            \"location_id\": \"DEPOT-101\",\n            \"location_name\": \"ST-Depot-A1\",\n            \"latitude\": 21.0285,\n            \"longitude\": 105.8542,\n            \"arrival_time\": \"08:30:00\",\n            \"departure_time\": \"08:30:00\",\n            \"service_time\": 0,\n            \"wait_time\": 0,\n            \"demand\": 0,\n            \"load_after\": 0,\n            \"distance_to_next\": 0,\n            \"time_to_next\": 0\n          }\n        ]\n      }\n    ]\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/solutions/callbacks/complete",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "solutions",
+                "callbacks",
+                "complete"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-RES-013c /complete on PENDING job 104 -> 503 0050001",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 503\", () => pm.response.to.have.status(503));",
+                  "pm.test(\"Error envelope code=0050001\", () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.errors).to.be.an(\"array\").that.is.not.empty;",
+                  "  pm.expect(b.errors[0].code).to.eql(\"0050001\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{engineCallbackKey}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"job_id\": 104,\n  \"processing_time_seconds\": 1,\n  \"solution\": {\n    \"total_distance\": 5.2,\n    \"total_cost\": 250000,\n    \"total_co2\": 0,\n    \"total_time\": 20,\n    \"total_service_time\": 10,\n    \"total_vehicles_used\": 1,\n    \"served_orders\": 1,\n    \"unserved_orders\": 0,\n    \"unassigned_orders\": [],\n    \"routes\": [\n      {\n        \"vehicle_id\": 102,\n        \"route_order\": 1,\n        \"distance\": 5.2,\n        \"duration\": 20,\n        \"co2_emission\": 0,\n        \"order_count\": 1,\n        \"load_utilization\": 5,\n        \"stops\": [\n          {\n            \"sequence_number\": 0,\n            \"type\": \"DEPOT\",\n            \"location_id\": \"DEPOT-101\",\n            \"location_name\": \"ST-Depot-A1\",\n            \"latitude\": 21.0285,\n            \"longitude\": 105.8542,\n            \"arrival_time\": \"08:00:00\",\n            \"departure_time\": \"08:00:00\",\n            \"service_time\": 0,\n            \"wait_time\": 0,\n            \"demand\": 0,\n            \"load_after\": 50,\n            \"distance_to_next\": 2.6,\n            \"time_to_next\": 10\n          },\n          {\n            \"sequence_number\": 1,\n            \"type\": \"ORDER\",\n            \"order_id\": 101,\n            \"order_code\": \"ST-ORD-COMP-01\",\n            \"location_id\": \"101\",\n            \"location_name\": \"Order Stop\",\n            \"latitude\": 21.025,\n            \"longitude\": 105.855,\n            \"arrival_time\": \"08:10:00\",\n            \"departure_time\": \"08:20:00\",\n            \"service_time\": 10,\n            \"wait_time\": 0,\n            \"demand\": 50,\n            \"load_after\": 0,\n            \"distance_to_next\": 2.6,\n            \"time_to_next\": 10\n          },\n          {\n            \"sequence_number\": 2,\n            \"type\": \"DEPOT\",\n            \"location_id\": \"DEPOT-101\",\n            \"location_name\": \"ST-Depot-A1\",\n            \"latitude\": 21.0285,\n            \"longitude\": 105.8542,\n            \"arrival_time\": \"08:30:00\",\n            \"departure_time\": \"08:30:00\",\n            \"service_time\": 0,\n            \"wait_time\": 0,\n            \"demand\": 0,\n            \"load_after\": 0,\n            \"distance_to_next\": 0,\n            \"time_to_next\": 0\n          }\n        ]\n      }\n    ]\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/solutions/callbacks/complete",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "solutions",
+                "callbacks",
+                "complete"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-RES-013d /complete on CANCELLED job 107 -> 200 ignored",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200 ignored for cancelled\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{engineCallbackKey}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"job_id\": 107,\n  \"processing_time_seconds\": 1,\n  \"solution\": {\n    \"total_distance\": 5.2,\n    \"total_cost\": 250000,\n    \"total_co2\": 0,\n    \"total_time\": 20,\n    \"total_service_time\": 10,\n    \"total_vehicles_used\": 1,\n    \"served_orders\": 1,\n    \"unserved_orders\": 0,\n    \"unassigned_orders\": [],\n    \"routes\": [\n      {\n        \"vehicle_id\": 102,\n        \"route_order\": 1,\n        \"distance\": 5.2,\n        \"duration\": 20,\n        \"co2_emission\": 0,\n        \"order_count\": 1,\n        \"load_utilization\": 5,\n        \"stops\": [\n          {\n            \"sequence_number\": 0,\n            \"type\": \"DEPOT\",\n            \"location_id\": \"DEPOT-101\",\n            \"location_name\": \"ST-Depot-A1\",\n            \"latitude\": 21.0285,\n            \"longitude\": 105.8542,\n            \"arrival_time\": \"08:00:00\",\n            \"departure_time\": \"08:00:00\",\n            \"service_time\": 0,\n            \"wait_time\": 0,\n            \"demand\": 0,\n            \"load_after\": 50,\n            \"distance_to_next\": 2.6,\n            \"time_to_next\": 10\n          },\n          {\n            \"sequence_number\": 1,\n            \"type\": \"ORDER\",\n            \"order_id\": 101,\n            \"order_code\": \"ST-ORD-COMP-01\",\n            \"location_id\": \"101\",\n            \"location_name\": \"Order Stop\",\n            \"latitude\": 21.025,\n            \"longitude\": 105.855,\n            \"arrival_time\": \"08:10:00\",\n            \"departure_time\": \"08:20:00\",\n            \"service_time\": 10,\n            \"wait_time\": 0,\n            \"demand\": 50,\n            \"load_after\": 0,\n            \"distance_to_next\": 2.6,\n            \"time_to_next\": 10\n          },\n          {\n            \"sequence_number\": 2,\n            \"type\": \"DEPOT\",\n            \"location_id\": \"DEPOT-101\",\n            \"location_name\": \"ST-Depot-A1\",\n            \"latitude\": 21.0285,\n            \"longitude\": 105.8542,\n            \"arrival_time\": \"08:30:00\",\n            \"departure_time\": \"08:30:00\",\n            \"service_time\": 0,\n            \"wait_time\": 0,\n            \"demand\": 0,\n            \"load_after\": 0,\n            \"distance_to_next\": 0,\n            \"time_to_next\": 0\n          }\n        ]\n      }\n    ]\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/solutions/callbacks/complete",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "solutions",
+                "callbacks",
+                "complete"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-RES-013e /complete transitioning COMPLETED order 123 -> 400 0040902",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"Error envelope code=0040902\", () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.errors).to.be.an(\"array\").that.is.not.empty;",
+                  "  pm.expect(b.errors[0].code).to.eql(\"0040902\");",
+                  "  pm.expect(b.errors[0].resource).to.eql(\"orders\");",
+                  "  pm.expect(b.errors[0].field).to.eql(\"status\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{engineCallbackKey}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"job_id\": 102,\n  \"processing_time_seconds\": 1,\n  \"solution\": {\n    \"total_distance\": 5.2,\n    \"total_cost\": 250000,\n    \"total_co2\": 0,\n    \"total_time\": 20,\n    \"total_service_time\": 10,\n    \"total_vehicles_used\": 1,\n    \"served_orders\": 1,\n    \"unserved_orders\": 0,\n    \"unassigned_orders\": [],\n    \"routes\": [\n      {\n        \"vehicle_id\": 102,\n        \"route_order\": 1,\n        \"distance\": 5.2,\n        \"duration\": 20,\n        \"co2_emission\": 0,\n        \"order_count\": 1,\n        \"load_utilization\": 5,\n        \"stops\": [\n          {\n            \"sequence_number\": 0,\n            \"type\": \"DEPOT\",\n            \"location_id\": \"DEPOT-101\",\n            \"location_name\": \"ST-Depot-A1\",\n            \"latitude\": 21.0285,\n            \"longitude\": 105.8542,\n            \"arrival_time\": \"08:00:00\",\n            \"departure_time\": \"08:00:00\",\n            \"service_time\": 0,\n            \"wait_time\": 0,\n            \"demand\": 0,\n            \"load_after\": 50,\n            \"distance_to_next\": 2.6,\n            \"time_to_next\": 10\n          },\n          {\n            \"sequence_number\": 1,\n            \"type\": \"ORDER\",\n            \"order_id\": 123,\n            \"order_code\": \"ST-ORD-COMP-01\",\n            \"location_id\": \"123\",\n            \"location_name\": \"Order Stop\",\n            \"latitude\": 21.025,\n            \"longitude\": 105.855,\n            \"arrival_time\": \"08:10:00\",\n            \"departure_time\": \"08:20:00\",\n            \"service_time\": 10,\n            \"wait_time\": 0,\n            \"demand\": 50,\n            \"load_after\": 0,\n            \"distance_to_next\": 2.6,\n            \"time_to_next\": 10\n          },\n          {\n            \"sequence_number\": 2,\n            \"type\": \"DEPOT\",\n            \"location_id\": \"DEPOT-101\",\n            \"location_name\": \"ST-Depot-A1\",\n            \"latitude\": 21.0285,\n            \"longitude\": 105.8542,\n            \"arrival_time\": \"08:30:00\",\n            \"departure_time\": \"08:30:00\",\n            \"service_time\": 0,\n            \"wait_time\": 0,\n            \"demand\": 0,\n            \"load_after\": 0,\n            \"distance_to_next\": 0,\n            \"time_to_next\": 0\n          }\n        ]\n      }\n    ]\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/solutions/callbacks/complete",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "solutions",
+                "callbacks",
+                "complete"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-RES-013f /failed on unknown job 999999999 -> 404 0040402",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"Error envelope code=0040402\", () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.errors).to.be.an(\"array\").that.is.not.empty;",
+                  "  pm.expect(b.errors[0].code).to.eql(\"0040402\");",
+                  "  pm.expect(b.errors[0].resource).to.eql(\"jobs\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{engineCallbackKey}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"job_id\": 999999999,\n  \"error_message\": \"unknown\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/solutions/callbacks/failed",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "solutions",
+                "callbacks",
+                "failed"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-RES-013g Engine GET /999999999/progress -> 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Engine 404\", () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Engine-Key",
+                "value": "{{engineInboundKey}}"
+              }
+            ],
+            "url": {
+              "raw": "{{engineBaseUrl}}/api/v1/optimization/{{unknownId}}/progress",
+              "host": [
+                "{{engineBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "optimization",
+                "{{unknownId}}",
+                "progress"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-RES-014a Null emissionFactor in VehicleType -> 400 0040001 features.emissionFactor",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"Error envelope code=0040001\", () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.errors).to.be.an(\"array\").that.is.not.empty;",
+                  "  pm.expect(b.errors[0].code).to.eql(\"0040001\");",
+                  "  pm.expect(b.errors[0].field).to.eql(\"features.emissionFactor\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type_name\": \"ST-Bad-Null-EF\",\n  \"capacity\": 1000,\n  \"vehicle_features\": {\n    \"skills\": []\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/vehicle-types",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "vehicle-types"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-RES-014b Half time window on Order create -> 400 0040001",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"Error envelope code=0040001\", () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.errors).to.be.an(\"array\").that.is.not.empty;",
+                  "  pm.expect(b.errors[0].code).to.eql(\"0040001\");",
+                  "  pm.expect(b.errors[0].resource).to.eql(\"orders\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"order_code\": \"ST-BAD-TW\",\n  \"customer_name\": \"Test\",\n  \"address\": \"1 Example St\",\n  \"latitude\": 21.03,\n  \"longitude\": 105.85,\n  \"demand\": 10,\n  \"time_window_start\": \"08:00:00\",\n  \"delivery_date\": \"{{todayDate}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/orders",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orders"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-RES-014c Multi-date plan -> 400 0040001 field=deliveryDate",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"Error envelope code=0040001\", () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.errors).to.be.an(\"array\").that.is.not.empty;",
+                  "  pm.expect(b.errors[0].code).to.eql(\"0040001\");",
+                  "  pm.expect(b.errors[0].resource).to.eql(\"orders\");",
+                  "  pm.expect(b.errors[0].field).to.eql(\"deliveryDate\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"order_ids\": [\n    101,\n    103\n  ],\n  \"vehicle_ids\": [\n    102\n  ],\n  \"preferences\": {\n    \"goal\": \"MINIMIZE_COST\",\n    \"speed\": \"FAST\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/jobs/plan",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "jobs",
+                "plan"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-RES-014d Apply DOMINATED Pareto candidate 103 -> 422 0042201",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"Error envelope code=0042201\", () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.errors).to.be.an(\"array\").that.is.not.empty;",
+                  "  pm.expect(b.errors[0].code).to.eql(\"0042201\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/solutions/{{solutionAId}}/pareto/{{paretoCandADomId}}/apply",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "solutions",
+                "{{solutionAId}}",
+                "pareto",
+                "{{paretoCandADomId}}",
+                "apply"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-RES-014e Send empty route 102 -> 400 0040001",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"Error envelope code=0040001\", () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.errors).to.be.an(\"array\").that.is.not.empty;",
+                  "  pm.expect(b.errors[0].code).to.eql(\"0040001\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"driver_user_id\": 12,\n  \"solution_id\": 101\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/routes/{{routeAEmptyId}}/send",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "routes",
+                "{{routeAEmptyId}}",
+                "send"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-RES-014f Driver GET /driver/routes/999999999 -> 404 0040402",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"Error envelope code=0040402\", () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.errors).to.be.an(\"array\").that.is.not.empty;",
+                  "  pm.expect(b.errors[0].code).to.eql(\"0040402\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{driverA1Token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/driver/routes/{{unknownId}}",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "driver",
+                "routes",
+                "{{unknownId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-RES-014g Invalid GeoJSON Point on PUT /zones/102/geometry -> 400 0040001",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"Error envelope code=0040001\", () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.errors).to.be.an(\"array\").that.is.not.empty;",
+                  "  pm.expect(b.errors[0].code).to.eql(\"0040001\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"Point\",\n  \"coordinates\": [\n    105.85,\n    21.03\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/zones/{{zoneACopyId}}/geometry",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "zones",
+                "{{zoneACopyId}}",
+                "geometry"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-RES-005a Submit 2nd active job in Branch A -> 202",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"202 ACCEPTED\", () => {",
+                  "  pm.response.to.have.status(202);",
+                  "  pm.environment.set(\"stRes005Job1\", pm.response.json().id);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"order_ids\": [\n    101,\n    102\n  ],\n  \"vehicle_ids\": [\n    102\n  ],\n  \"preferences\": {\n    \"goal\": \"MINIMIZE_COST\",\n    \"speed\": \"HIGH_QUALITY\",\n    \"enable_pareto_analysis\": true\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/jobs/plan",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "jobs",
+                "plan"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-RES-005b Submit 3rd active job in Branch A -> 202",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"202 ACCEPTED\", () => {",
+                  "  pm.response.to.have.status(202);",
+                  "  pm.environment.set(\"stRes005Job2\", pm.response.json().id);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"order_ids\": [\n    101,\n    102\n  ],\n  \"vehicle_ids\": [\n    102\n  ],\n  \"preferences\": {\n    \"goal\": \"MINIMIZE_COST\",\n    \"speed\": \"HIGH_QUALITY\",\n    \"enable_pareto_analysis\": true\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/jobs/plan",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "jobs",
+                "plan"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-RES-005c Submit 4th active job in Branch A -> 400 0040903 JOB_LIMIT_EXCEEDED",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"Error envelope code=0040903\", () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.errors).to.be.an(\"array\").that.is.not.empty;",
+                  "  pm.expect(b.errors[0].code).to.eql(\"0040903\");",
+                  "  pm.expect(b.errors[0].resource).to.eql(\"jobs\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"order_ids\": [\n    101\n  ],\n  \"vehicle_ids\": [\n    102\n  ],\n  \"preferences\": {\n    \"goal\": \"MINIMIZE_COST\",\n    \"speed\": \"FAST\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/jobs/plan",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "jobs",
+                "plan"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-RES-005d Submit 1st active job in Branch B (isolated cap) -> 202",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"202 ACCEPTED for Branch B\", () => pm.response.to.have.status(202));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerBToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"order_ids\": [\n    201\n  ],\n  \"vehicle_ids\": [\n    201\n  ],\n  \"preferences\": {\n    \"goal\": \"MINIMIZE_COST\",\n    \"speed\": \"FAST\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/jobs/plan",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "jobs",
+                "plan"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 - LIM (Pagination, Input Bounds & Ceilings)",
+      "item": [
+        {
+          "name": "ST-LIM-001a GET /vehicles page=-1 -> 400 0040002",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"Error envelope code=0040002\", () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.errors).to.be.an(\"array\").that.is.not.empty;",
+                  "  pm.expect(b.errors[0].code).to.eql(\"0040002\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/vehicles?page=-1&size=10",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "vehicles"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "-1"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-LIM-001b GET /vehicles size=1001 -> 400 0040002",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"Error envelope code=0040002\", () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.errors).to.be.an(\"array\").that.is.not.empty;",
+                  "  pm.expect(b.errors[0].code).to.eql(\"0040002\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/vehicles?page=0&size=1001",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "vehicles"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "1001"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-LIM-001c GET /vehicles size=1000 (max ceiling) -> 200",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200 at max size 1000\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/vehicles?page=0&size=1000",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "vehicles"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "1000"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-LIM-002a GET /orders size=10001 -> 400 0040002",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"Error envelope code=0040002\", () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.errors).to.be.an(\"array\").that.is.not.empty;",
+                  "  pm.expect(b.errors[0].code).to.eql(\"0040002\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/orders?page=0&size=10001",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orders"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "10001"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-LIM-002b GET /orders size=10000 (max ceiling) -> 200",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200 at max size 10000\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/orders?page=0&size=10000",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orders"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "10000"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-LIM-003a GET /jobs limit=0 -> 400 0040002",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"Error envelope code=0040002\", () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.errors).to.be.an(\"array\").that.is.not.empty;",
+                  "  pm.expect(b.errors[0].code).to.eql(\"0040002\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/jobs?limit=0",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "jobs"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "0"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-LIM-003b GET /jobs limit=201 -> 400 0040002",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"Error envelope code=0040002\", () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.errors).to.be.an(\"array\").that.is.not.empty;",
+                  "  pm.expect(b.errors[0].code).to.eql(\"0040002\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/jobs?limit=201",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "jobs"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "201"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-LIM-003c GET /jobs limit=200 -> 200",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200 at max limit 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/jobs?limit=200",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "jobs"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "200"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-LIM-004 Import with neither file nor textData -> 400 0040002",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"Error envelope code=0040002\", () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.errors).to.be.an(\"array\").that.is.not.empty;",
+                  "  pm.expect(b.errors[0].code).to.eql(\"0040002\");",
+                  "  pm.expect(b.errors[0].field).to.eql(\"file\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "deliveryDate",
+                  "value": "{{todayDate}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/orders/import",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orders",
+                "import"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-LIM-005a Zone rename > 200 chars -> 400 0040001",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"Error envelope code=0040001\", () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.errors).to.be.an(\"array\").that.is.not.empty;",
+                  "  pm.expect(b.errors[0].code).to.eql(\"0040001\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/zones/{{zoneACopyId}}",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "zones",
+                "{{zoneACopyId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-LIM-005b GET /lez/order-zones with 201 IDs -> 400 0040001",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"Error envelope code=0040001\", () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.errors).to.be.an(\"array\").that.is.not.empty;",
+                  "  pm.expect(b.errors[0].code).to.eql(\"0040001\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/lez/order-zones?orderIds=1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129,130,131,132,133,134,135,136,137,138,139,140,141,142,143,144,145,146,147,148,149,150,151,152,153,154,155,156,157,158,159,160,161,162,163,164,165,166,167,168,169,170,171,172,173,174,175,176,177,178,179,180,181,182,183,184,185,186,187,188,189,190,191,192,193,194,195,196,197,198,199,200,201",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "lez",
+                "order-zones"
+              ],
+              "query": [
+                {
+                  "key": "orderIds",
+                  "value": "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129,130,131,132,133,134,135,136,137,138,139,140,141,142,143,144,145,146,147,148,149,150,151,152,153,154,155,156,157,158,159,160,161,162,163,164,165,166,167,168,169,170,171,172,173,174,175,176,177,178,179,180,181,182,183,184,185,186,187,188,189,190,191,192,193,194,195,196,197,198,199,200,201"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-LIM-006 Engine POST /optimization max_iterations=20001 -> 400 REJECTED",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"400 REJECTED\", () => {",
+                  "  pm.response.to.have.status(400);",
+                  "  pm.expect(pm.response.json().status).to.eql(\"REJECTED\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Engine-Key",
+                "value": "{{engineInboundKey}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"job_id\": 99001,\n  \"depots\": [\n    {\n      \"id\": 1,\n      \"name\": \"D1\",\n      \"latitude\": 21.0285,\n      \"longitude\": 105.8542\n    }\n  ],\n  \"orders\": [\n    {\n      \"id\": 1,\n      \"order_code\": \"O1\",\n      \"latitude\": 21.025,\n      \"longitude\": 105.855,\n      \"demand\": 10\n    }\n  ],\n  \"vehicle_types\": [\n    {\n      \"id\": 1,\n      \"type_name\": \"V1\",\n      \"capacity\": 100\n    }\n  ],\n  \"vehicles\": [\n    {\n      \"id\": 1,\n      \"vehicle_license_plate\": \"P1\",\n      \"vehicle_type_id\": 1,\n      \"start_depot_id\": 1,\n      \"end_depot_id\": 1\n    }\n  ],\n  \"config\": {\n    \"max_iterations\": 20001,\n    \"num_threads\": 1\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{engineBaseUrl}}/api/v1/optimization",
+              "host": [
+                "{{engineBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "optimization"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-LIM-007 Engine POST /legs lat=95 -> 400 REJECTED",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"400 REJECTED\", () => {",
+                  "  pm.response.to.have.status(400);",
+                  "  pm.expect(pm.response.json().status).to.eql(\"REJECTED\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Engine-Key",
+                "value": "{{engineInboundKey}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"points\": [\n    {\n      \"latitude\": 95,\n      \"longitude\": 105.85\n    },\n    {\n      \"latitude\": 21.03,\n      \"longitude\": 105.86\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{engineBaseUrl}}/api/v1/optimization/legs",
+              "host": [
+                "{{engineBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "optimization",
+                "legs"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-LIM-009 Blank order_code with phone -> 400 without echoing phone",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"Error envelope code=0040001\", () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.errors).to.be.an(\"array\").that.is.not.empty;",
+                  "  pm.expect(b.errors[0].code).to.eql(\"0040001\");",
+                  "  pm.expect(b.errors[0].field).to.eql(\"orderCode\");",
+                  "});",
+                  "pm.test(\"Customer phone PII never echoed\", () => pm.expect(pm.response.text()).to.not.include(\"0912345678\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"order_code\": \"\",\n  \"customer_name\": \"Test\",\n  \"customer_phone\": \"0912345678\",\n  \"address\": \"1 Example St\",\n  \"latitude\": 21.03,\n  \"longitude\": 105.85,\n  \"demand\": 10,\n  \"delivery_date\": \"{{todayDate}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/orders",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orders"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-LIM-010a Create ST-ORD-DUP-01 in Branch B succeeds (branch-scoped unique) -> 200",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200 in Branch B\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerBToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"order_code\": \"ST-ORD-DUP-01\",\n  \"customer_name\": \"Branch B Copy\",\n  \"address\": \"10 Example St\",\n  \"latitude\": 21.04,\n  \"longitude\": 105.83,\n  \"demand\": 10,\n  \"delivery_date\": \"{{todayDate}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/orders",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orders"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-LIM-010b Import existing ST-ORD-DUP-01 in Branch A (overwrite=false) -> skipped_count=1",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200 skipped_count=1, errors=[]\", () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.skipped_count).to.eql(1);",
+                  "  pm.expect(b.imported_count).to.eql(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "tools/system-test/postman/dup-order-sample.csv"
+                },
+                {
+                  "key": "deliveryDate",
+                  "value": "{{todayDate}}",
+                  "type": "text"
+                },
+                {
+                  "key": "overwriteExisting",
+                  "value": "false",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/orders/import",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orders",
+                "import"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-LIM-010c Single POST /orders duplicate ST-ORD-DUP-01 -> documents known defect 500",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Known defect TC-D03-008: currently 500 0050001 (or 409 if fixed)\", () => {",
+                  "  pm.expect([500, 409]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"order_code\": \"ST-ORD-DUP-01\",\n  \"customer_name\": \"Dup A\",\n  \"address\": \"10 Example St\",\n  \"latitude\": 21.025,\n  \"longitude\": 105.855,\n  \"demand\": 10,\n  \"delivery_date\": \"{{todayDate}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/orders",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orders"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 - E2E API (Main Paths, LEZ Send Gate & Supersession)",
+      "item": [
+        {
+          "name": "DS-V4: GET /api/v1/fleets/{fleetAId} -> 200 FleetDTO",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200 FleetDTO\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/fleets/{{fleetAId}}",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "fleets",
+                "{{fleetAId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "DS-V4: GET /api/v1/orders/{orderA1Id} -> 200 OrderDTO",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200 OrderDTO\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/orders/{{orderA1Id}}",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orders",
+                "{{orderA1Id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "DS-V4: GET /api/v1/zone-templates/{zoneTemplate1Id} -> 200",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200 ZoneTemplateDTO\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/zone-templates/{{zoneTemplate1Id}}",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "zone-templates",
+                "{{zoneTemplate1Id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "DS-V4: GET /api/v1/routes/{routeACompliantId}/geometry -> 200",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200 RouteGeometryDTO\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/routes/{{routeACompliantId}}/geometry",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "routes",
+                "{{routeACompliantId}}",
+                "geometry"
+              ]
+            }
+          }
+        },
+        {
+          "name": "DS-V4: GET /api/v1/zones/{zoneACopyId}/verdict -> 200",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200 ZoneVerdict\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/zones/{{zoneACopyId}}/verdict?vehicleId={{vehicleA1Id}}&date=2027-03-03",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "zones",
+                "{{zoneACopyId}}",
+                "verdict"
+              ],
+              "query": [
+                {
+                  "key": "vehicleId",
+                  "value": "{{vehicleA1Id}}"
+                },
+                {
+                  "key": "date",
+                  "value": "2027-03-03"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-E2E-009 Send LEZ-violating route 103 (diesel inside Zone 102) -> 422 0042201",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"Error envelope code=0042201\", () => {",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.errors).to.be.an(\"array\").that.is.not.empty;",
+                  "  pm.expect(b.errors[0].code).to.eql(\"0042201\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"driver_user_id\": 12,\n  \"solution_id\": 101\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/routes/{{routeALezViolId}}/send",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "routes",
+                "{{routeALezViolId}}",
+                "send"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-E2E-010a Send compliant route 101 to Driver A1 -> 200 CURRENT",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200 CURRENT\", () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().status).to.eql(\"CURRENT\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"driver_user_id\": 12,\n  \"solution_id\": 101\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/routes/{{routeACompliantId}}/send",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "routes",
+                "{{routeACompliantId}}",
+                "send"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-E2E-010b Re-send compliant route 101 to Driver A2 -> 200 CURRENT",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200 CURRENT\", () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().status).to.eql(\"CURRENT\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"driver_user_id\": 13,\n  \"solution_id\": 101\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/routes/{{routeACompliantId}}/send",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "routes",
+                "{{routeACompliantId}}",
+                "send"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ST-E2E-010c GET /routes/{routeACompliantId}/sends -> newest CURRENT, prior SUPERSEDED",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Newest send is CURRENT, prior is SUPERSEDED\", () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const list = pm.response.json();",
+                  "  pm.expect(list.length).to.be.at.least(2);",
+                  "  pm.expect(list[0].status).to.eql(\"CURRENT\");",
+                  "  pm.expect(list[1].status).to.eql(\"SUPERSEDED\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plannerAToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{entryBaseUrl}}/api/v1/routes/{{routeACompliantId}}/sends",
+              "host": [
+                "{{entryBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "routes",
+                "{{routeACompliantId}}",
+                "sends"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

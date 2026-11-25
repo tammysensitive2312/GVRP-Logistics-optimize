@@ -1,0 +1,15 @@
+{
+  "name": "gvrp-system-test-playwright",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Isolated Playwright E2E system test suite for GVRP (STP-GVRP-01)",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:ui": "playwright test --ui",
+    "report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.65.1"
+  }
+}

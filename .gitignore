@@ -92,3 +92,11 @@ GVRP_Benchmark/scripts/00_env.bat
 # Claude Code — personal, machine-local files
 CLAUDE.local.md
 .claude/settings.local.json
+
+# System test runtime outputs and local Postman environments (may hold ephemeral test keys)
+tools/system-test/postman/*.local.json
+tools/system-test/reports/
+tools/system-test/playwright/node_modules/
+tools/system-test/playwright/test-results/
+tools/system-test/playwright/playwright-report/
+tools/system-test/playwright/.auth/
