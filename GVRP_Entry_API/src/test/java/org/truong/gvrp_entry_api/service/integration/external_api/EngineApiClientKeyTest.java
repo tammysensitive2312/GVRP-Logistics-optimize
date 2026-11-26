@@ -98,7 +98,7 @@ class EngineApiClientKeyTest {
     void engine401IsReportedAsUnavailableNotAsBadInput() {
         server.expect(requestTo(BASE + "/optimization/evaluate"))
                 .andRespond(withStatus(HttpStatus.UNAUTHORIZED).contentType(MediaType.APPLICATION_JSON)
-                        .body("{\"status\":\"UNAUTHORIZED\"}"));
+                        .body("{\"errors\":[{\"code\":\"0040102\",\"message\":\"Unauthorized.\"}]}"));
         assertThrows(EngineUnavailableException.class, () -> client.evaluateRoutes(new EngineEvaluateRequestDTO()));
         server.verify();
     }

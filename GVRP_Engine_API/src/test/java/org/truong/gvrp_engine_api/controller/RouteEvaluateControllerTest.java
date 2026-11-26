@@ -5,6 +5,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.server.ResponseStatusException;
+import org.truong.gvrp_engine_api.exception.GlobalExceptionHandler;
 import org.truong.gvrp_engine_api.model.RouteEvaluateRequest;
 import org.truong.gvrp_engine_api.model.RouteEvaluateResponse;
 import org.truong.gvrp_engine_api.service.RouteEvaluationService;
@@ -19,14 +20,16 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * Controller envelope tests for {@code POST /api/v1/optimization/evaluate}.
  *
- * <p>Uses standalone MockMvc with a stubbed service — no Spring context, no Mockito.
+ * <p>Uses standalone MockMvc with {@link GlobalExceptionHandler} and a stubbed service — no Spring context, no Mockito.
  */
 class RouteEvaluateControllerTest {
 
     private static MockMvc mockMvc(RouteEvaluationService service) {
         OptimizationController controller = new OptimizationController(
                 null, null, null, null, service);
-        return MockMvcBuilders.standaloneSetup(controller).build();
+        return MockMvcBuilders.standaloneSetup(controller)
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .build();
     }
 
     private static RouteEvaluationService okService() {
@@ -62,7 +65,8 @@ class RouteEvaluateControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"routes\":[]}"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.status").value("REJECTED"));
+                .andExpect(jsonPath("$.errors[0].code").value("0040001"))
+                .andExpect(jsonPath("$.errors[0].message").value("Routes list cannot be empty"));
     }
 
     @Test
@@ -79,7 +83,8 @@ class RouteEvaluateControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"routes\":[]}"))
                 .andExpect(status().isPayloadTooLarge())
-                .andExpect(jsonPath("$.status").value("REJECTED"));
+                .andExpect(jsonPath("$.errors[0].code").value("0041301"))
+                .andExpect(jsonPath("$.errors[0].message").value("Too many stops"));
     }
 
     @Test
@@ -96,6 +101,7 @@ class RouteEvaluateControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"routes\":[]}"))
                 .andExpect(status().isInternalServerError())
-                .andExpect(jsonPath("$.status").value("ERROR"));
+                .andExpect(jsonPath("$.errors[0].code").value("0050001"))
+                .andExpect(jsonPath("$.errors[0].message").value("Internal server error."));
     }
 }

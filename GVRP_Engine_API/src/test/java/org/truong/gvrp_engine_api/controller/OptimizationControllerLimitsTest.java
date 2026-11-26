@@ -1,19 +1,29 @@
 package org.truong.gvrp_engine_api.controller;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.truong.gvrp_engine_api.config.EngineLimits;
+import org.truong.gvrp_engine_api.exception.GlobalExceptionHandler;
 import org.truong.gvrp_engine_api.job.JobRegistry;
 import org.truong.gvrp_engine_api.model.*;
 import org.truong.gvrp_engine_api.service.OptimizationService;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.blankOrNullString;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
  * SEC-ENGINE-001 EN-T6, EN-T7: work above the server ceilings is refused before anything is
@@ -65,10 +75,23 @@ class OptimizationControllerLimitsTest {
         return request;
     }
 
-    private void assertRejected(OptimizationController controller, EngineOptimizationRequest request, int status) {
-        ResponseEntity<EngineOptimizationResponse> response = controller.optimize(request);
-        assertEquals(status, response.getStatusCode().value());
-        assertEquals("REJECTED", response.getBody().getStatus());
+    private static final JsonMapper JSON = JsonMapper.builder().build();
+
+    private void assertRejected(OptimizationController controller, EngineOptimizationRequest request, int statusCode) {
+        MockMvc mvc = MockMvcBuilders.standaloneSetup(controller)
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .build();
+        String expectedErrorCode = statusCode == 413 ? "0041301" : "0040001";
+        try {
+            mvc.perform(post("/api/v1/optimization")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(JSON.writeValueAsString(request)))
+                    .andExpect(status().is(statusCode))
+                    .andExpect(jsonPath("$.errors[0].code").value(expectedErrorCode))
+                    .andExpect(jsonPath("$.errors[0].message", not(blankOrNullString())));
+        } catch (Exception e) {
+            fail(e);
+        }
         verify(service, never()).optimizeAsync(any());
     }
 

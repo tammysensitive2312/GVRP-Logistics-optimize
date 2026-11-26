@@ -1,37 +1,17 @@
 package org.truong.gvrp_engine_api.exception;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
-import lombok.*;
-
-import java.time.LocalDateTime;
-import java.util.Map;
+import java.util.List;
 
 /**
- * Standard error response format
+ * Standard error response format matching GVRP Entry API.
  */
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
-public class ErrorResponse {
+public record ErrorResponse(List<ErrorDetail> errors) {
 
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime timestamp;
+    public static ErrorResponse of(ErrorDetail detail) {
+        return new ErrorResponse(List.of(detail));
+    }
 
-    private String errorCode;
-    private String message;
-    private String path;
-    private String method;
-    private Map<String, String> validationErrors;
-
-    public static ErrorResponse of(String errorCode, String message, String path) {
-        return ErrorResponse.builder()
-                .timestamp(LocalDateTime.now())
-                .errorCode(errorCode)
-                .message(message)
-                .path(path)
-                .build();
+    public static ErrorResponse of(List<ErrorDetail> details) {
+        return new ErrorResponse(List.copyOf(details));
     }
 }
-

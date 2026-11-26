@@ -2,22 +2,31 @@ package org.truong.gvrp_engine_api.controller;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.truong.gvrp_engine_api.distance_matrix.RoutePathProvider;
+import org.truong.gvrp_engine_api.exception.GlobalExceptionHandler;
 import org.truong.gvrp_engine_api.model.LegInstruction;
 import org.truong.gvrp_engine_api.model.LegPath;
 import org.truong.gvrp_engine_api.model.RouteLegsRequest;
 import org.truong.gvrp_engine_api.model.RouteLegsResponse;
 import org.truong.gvrp_engine_api.service.LegsService;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
+import static org.hamcrest.Matchers.blankOrNullString;
+import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
  * EB-T5/EB-T6: the {@code /legs} endpoint validates the point list and returns one
@@ -69,32 +78,48 @@ class LegsEndpointTest {
         assertEquals("en", ((RouteLegsResponse) response.getBody()).getLocale());
     }
 
-    @Test
-    void rejectsFewerThanTwoPoints() {
-        ResponseEntity<?> response = controller(FAKE).legs(request("vi", 21.0, 105.0));
+    private static final JsonMapper JSON = JsonMapper.builder().build();
 
-        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
-        assertEquals("REJECTED", ((Map<?, ?>) response.getBody()).get("status"));
+    private static MockMvc mockMvc(RoutePathProvider provider) {
+        return MockMvcBuilders.standaloneSetup(controller(provider))
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .build();
     }
 
     @Test
-    void rejectsMoreThanOneThousandAndOnePoints() {
+    void rejectsFewerThanTwoPoints() throws Exception {
+        mockMvc(FAKE).perform(post("/api/v1/optimization/legs")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(JSON.writeValueAsString(request("vi", 21.0, 105.0))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors[0].code").value("0040001"))
+                .andExpect(jsonPath("$.errors[0].message", not(blankOrNullString())));
+    }
+
+    @Test
+    void rejectsMoreThanOneThousandAndOnePoints() throws Exception {
         double[] pairs = new double[1_002 * 2];
         for (int i = 0; i < 1_002; i++) {
             pairs[i * 2] = 21.0 + i * 0.000_1;
             pairs[i * 2 + 1] = 105.0;
         }
 
-        ResponseEntity<?> response = controller(FAKE).legs(request("vi", pairs));
-
-        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        mockMvc(FAKE).perform(post("/api/v1/optimization/legs")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(JSON.writeValueAsString(request("vi", pairs))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors[0].code").value("0040001"))
+                .andExpect(jsonPath("$.errors[0].message", not(blankOrNullString())));
     }
 
     @Test
-    void rejectsOutOfRangeLatitude() {
-        ResponseEntity<?> response = controller(FAKE).legs(request("vi", 91.0, 105.0, 21.0, 105.0));
-
-        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    void rejectsOutOfRangeLatitude() throws Exception {
+        mockMvc(FAKE).perform(post("/api/v1/optimization/legs")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(JSON.writeValueAsString(request("vi", 91.0, 105.0, 21.0, 105.0))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors[0].code").value("0040001"))
+                .andExpect(jsonPath("$.errors[0].message", not(blankOrNullString())));
     }
 
     @Test
