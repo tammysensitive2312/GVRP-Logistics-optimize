@@ -5,10 +5,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.util.ReflectionTestUtils;
 import org.truong.gvrp_entry_api.dto.request.CustomizeRoutesRequest;
 import org.truong.gvrp_entry_api.dto.request.EngineOrderDTO;
 import org.truong.gvrp_entry_api.dto.request.RouteSequenceRequest;
@@ -100,20 +98,19 @@ class RouteCustomizationServiceLezTest {
     @Mock private ZoneRuleTemplateRepository ruleTemplateRepository;
     @Mock private VehiclePermitRepository permitRepository;
 
-    @InjectMocks
     private RouteCustomizationService service;
 
     private Fixture fixture;
 
     @BeforeEach
     void setUp() {
+        RouteComplianceService complianceService = new RouteComplianceService(
+                new RestrictionCompiler(zoneRepository, zoneRuleRepository, ruleTemplateRepository, permitRepository),
+                new ObjectMapper().findAndRegisterModules());
         service = new RouteCustomizationService(solutionRepository, orderRepository,
                 vehicleRepository, orderMapper, depotMapper, vehicleTypeMapper,
-                vehicleFeaturesService, geometryMapper, solutionMapper, engineApiClient);
-        ReflectionTestUtils.setField(service, "routeComplianceService",
-                new RouteComplianceService(new RestrictionCompiler(zoneRepository,
-                        zoneRuleRepository, ruleTemplateRepository, permitRepository),
-                        new ObjectMapper().findAndRegisterModules()));
+                vehicleFeaturesService, geometryMapper, solutionMapper, engineApiClient,
+                complianceService);
 
         fixture = fixture();
     }

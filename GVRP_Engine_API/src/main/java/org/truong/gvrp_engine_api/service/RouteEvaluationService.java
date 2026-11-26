@@ -1,7 +1,6 @@
 package org.truong.gvrp_engine_api.service;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -37,18 +36,9 @@ public class RouteEvaluationService {
     private final LegGeometryService legGeometryService;
 
     /**
-     * Backward-compatible constructor for direct unit tests: no path provider,
-     * so {@code geometryToNext} stays null.
-     */
-    public RouteEvaluationService(DistanceProvider distanceProvider) {
-        this(distanceProvider, null);
-    }
-
-    /**
      * Production path: the same GraphHopper router fills per-leg polylines
      * (LEZ-001, design §16.2-3).
      */
-    @Autowired
     public RouteEvaluationService(
             @Qualifier("graphHoperDistanceProvider") DistanceProvider distanceProvider,
             RoutePathProvider routePathProvider) {

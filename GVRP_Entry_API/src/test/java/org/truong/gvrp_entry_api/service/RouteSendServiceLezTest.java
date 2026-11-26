@@ -8,7 +8,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockHttpServletRequest;
-import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import org.truong.gvrp_entry_api.dto.request.EngineLegsRequestDTO;
@@ -116,9 +115,7 @@ class RouteSendServiceLezTest {
                 new com.fasterxml.jackson.databind.ObjectMapper().findAndRegisterModules());
 
         service = new RouteSendService(sendRepository, routeRepository, solutionRepository,
-                userRepository, orderRepository);
-        ReflectionTestUtils.setField(service, "routeComplianceService", complianceService);
-        ReflectionTestUtils.setField(service, "engineApiClient", engineApiClient);
+                userRepository, orderRepository, complianceService, engineApiClient);
 
         fixture = fixture();
     }

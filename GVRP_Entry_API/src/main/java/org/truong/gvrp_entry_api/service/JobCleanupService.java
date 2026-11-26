@@ -1,8 +1,6 @@
 package org.truong.gvrp_entry_api.service;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -49,12 +47,29 @@ import java.util.Set;
  */
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class JobCleanupService {
 
     private final OptimizationJobRepository jobRepository;
     private final SolutionRepository solutionRepository;
     private final RouteSendRepository routeSendRepository;
+    private final TransactionOperations perJobTransaction;
+
+    public JobCleanupService(
+            OptimizationJobRepository jobRepository,
+            SolutionRepository solutionRepository,
+            RouteSendRepository routeSendRepository,
+            PlatformTransactionManager transactionManager) {
+        this.jobRepository = jobRepository;
+        this.solutionRepository = solutionRepository;
+        this.routeSendRepository = routeSendRepository;
+        if (transactionManager != null) {
+            TransactionTemplate template = new TransactionTemplate(transactionManager);
+            template.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+            this.perJobTransaction = template;
+        } else {
+            this.perJobTransaction = TransactionOperations.withoutTransaction();
+        }
+    }
 
     @Value("${gvrp.cleanup.enabled:true}")
     private boolean enabled;
@@ -73,19 +88,6 @@ public class JobCleanupService {
 
     @Value("${gvrp.cleanup.batch-size:200}")
     private int batchSize;
-
-    /**
-     * One transaction per job. Without a transaction manager (plain unit
-     * tests built from the constructor) the work runs without a transaction.
-     */
-    private TransactionOperations perJobTransaction = TransactionOperations.withoutTransaction();
-
-    @Autowired
-    void setTransactionManager(PlatformTransactionManager transactionManager) {
-        TransactionTemplate template = new TransactionTemplate(transactionManager);
-        template.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-        this.perJobTransaction = template;
-    }
 
     public record CleanupCounts(long cancelled, long failed, long completed) {
         public long total() {

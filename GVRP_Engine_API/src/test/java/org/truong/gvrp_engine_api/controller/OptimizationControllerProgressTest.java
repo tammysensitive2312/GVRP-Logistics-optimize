@@ -1,6 +1,7 @@
 package org.truong.gvrp_engine_api.controller;
 
 import org.junit.jupiter.api.Test;
+import org.truong.gvrp_engine_api.config.EngineLimits;
 import org.truong.gvrp_engine_api.job.JobRegistry;
 
 import java.time.Instant;
@@ -15,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class OptimizationControllerProgressTest {
 
     private static OptimizationController controller(JobRegistry registry) {
-        return new OptimizationController(null, registry, null, null, null);
+        return new OptimizationController(null, registry, null, null, null, null, EngineLimits.defaults());
     }
 
     @Test

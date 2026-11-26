@@ -124,7 +124,8 @@ class SecurityPr1ApiTest {
         lenient().when(jobRepository.countByBranchIdAndStatusIn(any(), any())).thenReturn(0L);
 
         RouteSendService routeSendService = new RouteSendService(
-                sendRepository, routeRepository, solutionRepository, userRepository, orderRepository);
+                sendRepository, routeRepository, solutionRepository, userRepository, orderRepository,
+                null, null);
 
         mockMvc = MockMvcBuilders.standaloneSetup(
                         new OptimizationJobController(jobService),

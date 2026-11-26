@@ -51,7 +51,7 @@ public class OrderImportService {
 
     private final Validator validator;
 
-    static final int DEFAULT_MAX_IMPORT_ROWS = 10_000;
+    static final int DEFAULT_MAX_IMPORT_ROWS = 25_000;
     static final int DEFAULT_MAX_GEOCODE_ROWS = 5_000;
 
     /**

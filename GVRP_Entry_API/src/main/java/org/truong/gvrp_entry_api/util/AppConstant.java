@@ -5,7 +5,7 @@ public class AppConstant {
     public static final Double EPSILON = 0.0001;
 
     public static final int MAX_VEHICLE_PAGE_SIZE = 1000;
-    public static final int MAX_ORDER_PAGE_SIZE = 10_000;
+    public static final int MAX_ORDER_PAGE_SIZE = 25_000;
     public static final int MAX_JOB_HISTORY_LIMIT = 200;
 
     public static final String FILE = "file";

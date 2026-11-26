@@ -4,6 +4,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.truong.gvrp_engine_api.config.EngineLimits;
 import org.truong.gvrp_engine_api.controller.OptimizationController;
 import org.truong.gvrp_engine_api.job.JobRegistry;
 
@@ -27,7 +28,8 @@ class ServiceKeyFilterMockMvcTest {
     void setUp() {
         JobRegistry registry = new JobRegistry();
         registry.register(42L);
-        OptimizationController controller = new OptimizationController(null, registry, null, null, null);
+        OptimizationController controller = new OptimizationController(
+                null, registry, null, null, null, null, EngineLimits.defaults());
         mvc = MockMvcBuilders.standaloneSetup(controller).addFilters(new ServiceKeyFilter(KEY)).build();
     }
 
@@ -43,7 +45,8 @@ class ServiceKeyFilterMockMvcTest {
         JobRegistry registry = new JobRegistry();
         JobRegistry.JobHandle handle = registry.register(7L);
         MockMvc local = MockMvcBuilders
-                .standaloneSetup(new OptimizationController(null, registry, null, null, null))
+                .standaloneSetup(new OptimizationController(
+                        null, registry, null, null, null, null, EngineLimits.defaults()))
                 .addFilters(new ServiceKeyFilter(KEY)).build();
 
         local.perform(post("/api/v1/optimization/7/cancel")).andExpect(status().isUnauthorized());

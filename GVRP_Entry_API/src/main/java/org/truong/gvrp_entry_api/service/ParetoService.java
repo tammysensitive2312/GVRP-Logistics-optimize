@@ -3,7 +3,6 @@ package org.truong.gvrp_entry_api.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.truong.gvrp_entry_api.dto.request.EngineCallbackRequest;
@@ -71,14 +70,7 @@ public class ParetoService {
     private final EnginePlanMaterializer enginePlanMaterializer;
     private final SolutionMapper solutionMapper;
     private final ObjectMapper objectMapper;
-
-    /**
-     * LEZ certification (LEZ-001 N6b). Field-injected and optional so the
-     * historical unit tests, which build this service without it, keep their
-     * exact behaviour; a null field leaves the routes {@code UNCHECKED}.
-     */
-    @Autowired(required = false)
-    private RouteComplianceService routeComplianceService;
+    private final RouteComplianceService routeComplianceService;
 
     @Transactional(readOnly = true)
     public ParetoFrontierDTO getFrontier(Long solutionId, Long branchId) {

@@ -2,7 +2,6 @@ package org.truong.gvrp_entry_api.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.truong.gvrp_entry_api.dto.request.EngineLegsRequestDTO;
@@ -68,17 +67,8 @@ public class RouteSendService {
     private final UserRepository userRepository;
     private final OrderRepository orderRepository;
 
-    /**
-     * LEZ send guard (LEZ-001 N7). Field-injected and optional so the historical
-     * unit tests, which construct this service with its five repositories, keep
-     * their exact behaviour; a null collaborator skips the gate.
-     */
-    @Autowired(required = false)
-    private RouteComplianceService routeComplianceService;
-
-    /** Engine client used only to fill missing leg geometry at send time. */
-    @Autowired(required = false)
-    private EngineApiClient engineApiClient;
+    private final RouteComplianceService routeComplianceService;
+    private final EngineApiClient engineApiClient;
 
     // ---------- dispatcher ----------
 

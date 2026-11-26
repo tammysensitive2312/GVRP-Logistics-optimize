@@ -18,8 +18,9 @@ import org.truong.gvrp_entry_api.exception.CallbackRejectedException;
 import org.truong.gvrp_entry_api.exception.JobNotReadyException;
 import org.truong.gvrp_entry_api.exception.ResourceNotFoundException;
 import org.truong.gvrp_entry_api.repository.*;
-import org.truong.gvrp_entry_api.service.orders.OrderStatusTransitionService;
 import org.truong.gvrp_entry_api.service.event.JobCompletionEvent;
+import org.truong.gvrp_entry_api.service.lez.RouteComplianceService;
+import org.truong.gvrp_entry_api.service.orders.OrderStatusTransitionService;
 import org.truong.gvrp_entry_api.util.AppConstant;
 import org.truong.gvrp_entry_api.util.ErrorCode;
 
@@ -46,14 +47,7 @@ public class OptimizationCallbackService {
     private final ApplicationEventPublisher eventPublisher;
     private final JobStatusUpdater jobStatusUpdater;
     private final OrderStatusTransitionService orderStatusTransitionService;
-
-    /**
-     * LEZ certification (LEZ-001). Field-injected and optional so the P1a/earlier
-     * unit tests, which construct this service through @InjectMocks with the
-     * historical collaborators, keep their exact behaviour.
-     */
-    @org.springframework.beans.factory.annotation.Autowired(required = false)
-    private org.truong.gvrp_entry_api.service.lez.RouteComplianceService routeComplianceService;
+    private final RouteComplianceService routeComplianceService;
 
     @Transactional
     public void handleCompletion(EngineCallbackRequest.CompletionCallback callback) {
