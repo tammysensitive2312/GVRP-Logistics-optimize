@@ -139,10 +139,11 @@ Level 3 — basic design (one folder per domain)
 Level 4 — test design
 
 - [01-test-strategy.md](04-test-design/01-test-strategy.md)
-- [test-cases.csv](04-test-design/test-cases.csv) — source of truth
-- [tools/build_test_cases.py](04-test-design/tools/build_test_cases.py) — CSV → XLSX generator
-- `GVRP_Test_Cases.xlsx` — generated workbook (see `04-test-design/01-test-strategy.md` for the
-  current generation status)
+- [02-system-test-plan.md](04-test-design/02-system-test-plan.md)
+- [test-cases.csv](04-test-design/test-cases.csv) — domain/unit/client test source of truth
+- [system-test-cases.csv](04-test-design/system-test-cases.csv) — system test source of truth
+- [tools/build_test_cases.py](04-test-design/tools/build_test_cases.py) — CSV validator (`--validate-only`) & XLSX generator (default and `--system`)
+- `GVRP_Test_Cases.xlsx` / `GVRP_System_Test_Cases.xlsx` — generated workbooks (see [01-test-strategy.md](04-test-design/01-test-strategy.md) for current generation status)
 
 History
 
