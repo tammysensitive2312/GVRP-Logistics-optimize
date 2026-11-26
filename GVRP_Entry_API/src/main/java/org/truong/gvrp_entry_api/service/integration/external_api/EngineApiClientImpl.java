@@ -1,5 +1,6 @@
 package org.truong.gvrp_entry_api.service.integration.external_api;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,11 +22,14 @@ import org.truong.gvrp_entry_api.entity.OptimizationJob;
 import org.truong.gvrp_entry_api.entity.enums.OptimizationJobStatus;
 import org.truong.gvrp_entry_api.exception.DataInvalidException;
 import org.truong.gvrp_entry_api.exception.EngineUnavailableException;
+import org.truong.gvrp_entry_api.exception.ErrorDetail;
 import org.truong.gvrp_entry_api.exception.ErrorDetails;
 import org.truong.gvrp_entry_api.exception.ResourceNotFoundException;
 import org.truong.gvrp_entry_api.repository.OptimizationJobRepository;
 import org.truong.gvrp_entry_api.util.AppConstant;
+import org.truong.gvrp_entry_api.util.ErrorCode;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -114,7 +118,9 @@ public class EngineApiClientImpl implements EngineApiClient{
         } catch (HttpClientErrorException | HttpServerErrorException e) {
             // HTTP error (4xx, 5xx)
             log.error("Engine API error: jobId={}, status={}", jobId, e.getStatusCode(), e);
-            errorMessage = "Engine API error: " + e.getMessage();
+            String cleanMsg = extractEngineErrorMessage(
+                    e.getResponseBodyAsString(), "HTTP " + e.getStatusCode().value());
+            errorMessage = "Engine API error: " + cleanMsg;
             finalStatus = OptimizationJobStatus.FAILED;
         }
         catch (Exception e) {
@@ -168,9 +174,9 @@ public class EngineApiClientImpl implements EngineApiClient{
         } catch (HttpClientErrorException.Unauthorized e) {
             throw engineKeyRejected("route evaluation", e);
         } catch (HttpClientErrorException e) {
-            // Engine rejected OUR payload — surface as a 400 with the engine message.
+            // Engine rejected OUR payload — surface cleanly using structured envelope if present.
             throw new DataInvalidException(List.of(
-                    ErrorDetails.validation("Engine rejected route sequences: " + e.getResponseBodyAsString())));
+                    mapEngineClientError(e, "Engine rejected route sequences")));
         } catch (HttpServerErrorException | ResourceAccessException e) {
             throw new EngineUnavailableException(
                     "Cannot reach optimization engine for route evaluation. Retry later; unsaved edits are kept.",
@@ -196,12 +202,50 @@ public class EngineApiClientImpl implements EngineApiClient{
             throw engineKeyRejected("leg geometry", e);
         } catch (HttpClientErrorException e) {
             throw new DataInvalidException(List.of(
-                    ErrorDetails.validation("Engine rejected leg points: " + e.getResponseBodyAsString())));
+                    mapEngineClientError(e, "Engine rejected leg points")));
         } catch (HttpServerErrorException | ResourceAccessException e) {
             throw new EngineUnavailableException(
                     "Cannot reach optimization engine for leg geometry. Retry later; the route was not sent.",
                     e);
         }
+    }
+
+    private ErrorDetail mapEngineClientError(HttpClientErrorException e, String prefix) {
+        String detailMessage = extractEngineErrorMessage(
+                e.getResponseBodyAsString(), "HTTP " + e.getStatusCode().value());
+        ErrorCode code = e.getStatusCode().value() == HttpStatus.PAYLOAD_TOO_LARGE.value()
+                ? ErrorCode.PAYLOAD_TOO_LARGE
+                : ErrorCode.VALIDATION_ERROR;
+        return ErrorDetails.of(code, null, null, prefix + ": " + detailMessage);
+    }
+
+    private String extractEngineErrorMessage(String responseBody, String fallback) {
+        if (responseBody == null || responseBody.isBlank()) {
+            return fallback;
+        }
+        try {
+            JsonNode root = objectMapper.readTree(responseBody);
+            JsonNode errors = root.path("errors");
+            if (errors.isArray() && !errors.isEmpty()) {
+                List<String> messages = new ArrayList<>();
+                for (JsonNode error : errors) {
+                    String msg = error.path("message").asText(null);
+                    if (msg != null && !msg.isBlank()) {
+                        messages.add(msg);
+                    }
+                }
+                if (!messages.isEmpty()) {
+                    return String.join("; ", messages);
+                }
+            }
+            String legacyMsg = root.path("message").asText(null);
+            if (legacyMsg != null && !legacyMsg.isBlank()) {
+                return legacyMsg;
+            }
+        } catch (Exception ignored) {
+            // Non-JSON response body falls back safely without leaking raw HTML/text.
+        }
+        return fallback;
     }
 
     /**

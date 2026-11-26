@@ -34,7 +34,7 @@ class ServiceKeyFilterTest {
         MockHttpServletResponse response = run(filter, request, chain);
         assertEquals(401, response.getStatus(), request.getMethod() + " " + request.getRequestURI());
         assertNull(chain.getRequest(), "chain must not be called");
-        assertEquals("{\"status\":\"UNAUTHORIZED\"}", response.getContentAsString());
+        assertEquals("{\"errors\":[{\"code\":\"0040102\",\"message\":\"Unauthorized.\"}]}", response.getContentAsString());
     }
 
     private static void assertPassed(ServiceKeyFilter filter, MockHttpServletRequest request) throws Exception {

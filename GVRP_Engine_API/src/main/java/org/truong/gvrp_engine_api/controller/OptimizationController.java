@@ -51,53 +51,15 @@ public class OptimizationController {
     @PostMapping
     public ResponseEntity<EngineOptimizationResponse> optimize(
             @Valid @RequestBody EngineOptimizationRequest request) {
+        validateRequest(request);
+        optimizationService.optimizeAsync(request);
 
-        try {
-            // Validate request
-            validateRequest(request);
+        EngineOptimizationResponse response = new EngineOptimizationResponse();
+        response.setExternalJobId("engine-" + request.getJobId());
+        response.setStatus("ACCEPTED");
+        response.setMessage("Optimization job accepted and processing");
 
-            // Submit to async processing
-            optimizationService.optimizeAsync(request);
-
-            // Return accepted response
-            EngineOptimizationResponse response = new EngineOptimizationResponse();
-            response.setExternalJobId("engine-" + request.getJobId());
-            response.setStatus("ACCEPTED");
-            response.setMessage("Optimization job accepted and processing");
-
-            return ResponseEntity.status(HttpStatus.ACCEPTED).body(response);
-
-        } catch (IllegalArgumentException e) {
-            log.error("❌ Validation error: {}", e.getMessage());
-
-            EngineOptimizationResponse errorResponse = new EngineOptimizationResponse();
-            errorResponse.setExternalJobId("engine-" + request.getJobId());
-            errorResponse.setStatus("REJECTED");
-            errorResponse.setMessage(e.getMessage());
-
-            return ResponseEntity.badRequest().body(errorResponse);
-
-        } catch (ResponseStatusException e) {
-            log.warn("Optimization request for job #{} rejected: {}", request.getJobId(), e.getReason());
-
-            EngineOptimizationResponse errorResponse = new EngineOptimizationResponse();
-            errorResponse.setExternalJobId("engine-" + request.getJobId());
-            errorResponse.setStatus("REJECTED");
-            errorResponse.setMessage(e.getReason());
-
-            return ResponseEntity.status(e.getStatusCode()).body(errorResponse);
-
-        } catch (Exception e) {
-            log.error("❌ Unexpected error processing job #{}", request.getJobId(), e);
-
-            EngineOptimizationResponse errorResponse = new EngineOptimizationResponse();
-            errorResponse.setExternalJobId("engine-" + request.getJobId());
-            errorResponse.setStatus("ERROR");
-            errorResponse.setMessage("Internal server error: " + e.getMessage());
-
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(errorResponse);
-        }
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(response);
     }
 
     private void validateRequest(EngineOptimizationRequest request) {
@@ -171,7 +133,7 @@ public class OptimizationController {
     public ResponseEntity<Map<String, Object>> progress(@PathVariable Long jobId) {
         JobRegistry.JobHandle h = jobRegistry.get(jobId);
         if (h == null) {
-            return ResponseEntity.notFound().build();
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Job not found.");
         }
 
         Map<String, Object> body = new HashMap<>();
@@ -219,21 +181,19 @@ public class OptimizationController {
     @PostMapping("/{jobId}/cancel")
     public ResponseEntity<Map<String, Object>> cancel(@PathVariable Long jobId) {
         boolean accepted = jobRegistry.requestCancel(jobId);
-        Map<String, Object> body = new HashMap<>();
-        body.put("jobId", jobId);
-
         if (accepted) {
+            Map<String, Object> body = new HashMap<>();
+            body.put("jobId", jobId);
             body.put("status", "CANCEL_REQUESTED");
             return ResponseEntity.accepted().body(body);
         }
 
         JobRegistry.JobHandle h = jobRegistry.get(jobId);
         if (h == null) {
-            return ResponseEntity.notFound().build();
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Job not found.");
         }
-        body.put("status", h.status());
-        body.put("message", "Job đã kết thúc, không thể hủy");
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
+        throw new ResponseStatusException(HttpStatus.CONFLICT,
+                "Job đã kết thúc, không thể hủy");
     }
 
     /**
@@ -247,7 +207,7 @@ public class OptimizationController {
     public ResponseEntity<Map<String, Object>> result(@PathVariable Long jobId) {
         return resultSpool.load(jobId)
                 .map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.notFound().build());
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Result not found."));
     }
 
     /**
@@ -258,17 +218,18 @@ public class OptimizationController {
     public ResponseEntity<Map<String, Object>> resend(@PathVariable Long jobId) {
         Optional<Map<String, Object>> payload = resultSpool.load(jobId);
         if (payload.isEmpty()) {
-            return ResponseEntity.notFound().build();
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Result not found.");
         }
 
         boolean delivered = callbackService.deliver(jobId, payload.get());
+        if (!delivered) {
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Failed to deliver callback.");
+        }
 
         Map<String, Object> body = new HashMap<>();
         body.put("jobId", jobId);
-        body.put("delivered", delivered);
-        return ResponseEntity
-                .status(delivered ? HttpStatus.OK : HttpStatus.BAD_GATEWAY)
-                .body(body);
+        body.put("delivered", true);
+        return ResponseEntity.ok(body);
     }
 
     @GetMapping("/health")
@@ -288,28 +249,8 @@ public class OptimizationController {
      * (possibly infeasible), 400 on malformed sequences, 413 over the stop cap.
      */
     @PostMapping("/evaluate")
-    public ResponseEntity<?> evaluate(@RequestBody RouteEvaluateRequest request) {
-        try {
-            RouteEvaluateResponse response = routeEvaluationService.evaluate(request);
-            return ResponseEntity.ok(response);
-        } catch (IllegalArgumentException e) {
-            log.warn("Evaluate rejected: {}", e.getMessage());
-            Map<String, Object> body = new HashMap<>();
-            body.put("status", "REJECTED");
-            body.put("message", e.getMessage());
-            return ResponseEntity.badRequest().body(body);
-        } catch (org.springframework.web.server.ResponseStatusException e) {
-            Map<String, Object> body = new HashMap<>();
-            body.put("status", "REJECTED");
-            body.put("message", e.getReason());
-            return ResponseEntity.status(e.getStatusCode()).body(body);
-        } catch (Exception e) {
-            log.error("Unexpected error evaluating routes", e);
-            Map<String, Object> body = new HashMap<>();
-            body.put("status", "ERROR");
-            body.put("message", "Internal server error: " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(body);
-        }
+    public ResponseEntity<RouteEvaluateResponse> evaluate(@RequestBody RouteEvaluateRequest request) {
+        return ResponseEntity.ok(routeEvaluationService.evaluate(request));
     }
 
     /**
@@ -321,22 +262,7 @@ public class OptimizationController {
      * {@code error} code; the request itself still succeeds.
      */
     @PostMapping("/legs")
-    public ResponseEntity<?> legs(@RequestBody RouteLegsRequest request) {
-        try {
-            RouteLegsResponse response = legsService.build(request);
-            return ResponseEntity.ok(response);
-        } catch (IllegalArgumentException e) {
-            log.warn("Legs rejected: {}", e.getMessage());
-            Map<String, Object> body = new HashMap<>();
-            body.put("status", "REJECTED");
-            body.put("message", e.getMessage());
-            return ResponseEntity.badRequest().body(body);
-        } catch (Exception e) {
-            log.error("Unexpected error building legs", e);
-            Map<String, Object> body = new HashMap<>();
-            body.put("status", "ERROR");
-            body.put("message", "Internal server error: " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(body);
-        }
+    public ResponseEntity<RouteLegsResponse> legs(@RequestBody RouteLegsRequest request) {
+        return ResponseEntity.ok(legsService.build(request));
     }
 }

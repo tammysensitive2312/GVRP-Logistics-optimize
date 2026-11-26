@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.truong.gvrp_engine_api.exception.ErrorCode;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -29,6 +30,11 @@ public class ServiceKeyFilter extends OncePerRequestFilter {
     public static final String HEADER = "X-Engine-Key";
     public static final String HEALTH_PATH = "/api/v1/optimization/health";
     static final int MIN_KEY_LENGTH = 32;
+    private static final String UNAUTHORIZED_BODY = "{\"errors\":[{\"code\":\""
+            + ErrorCode.UNAUTHORIZED.getCode()
+            + "\",\"message\":\""
+            + ErrorCode.UNAUTHORIZED.getMessage()
+            + "\"}]}";
 
     private final byte[] expected;
 
@@ -51,8 +57,9 @@ public class ServiceKeyFilter extends OncePerRequestFilter {
             return;
         }
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        response.setCharacterEncoding(StandardCharsets.UTF_8.name());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-        response.getWriter().write("{\"status\":\"UNAUTHORIZED\"}");
+        response.getWriter().write(UNAUTHORIZED_BODY);
     }
 
     private static boolean isHealthCheck(HttpServletRequest request) {

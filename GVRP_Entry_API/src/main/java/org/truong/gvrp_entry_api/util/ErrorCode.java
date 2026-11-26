@@ -35,6 +35,9 @@ public enum ErrorCode {
     INVALID_ORDER_TRANSITION("0040902", "Invalid order status transition."),
     JOB_LIMIT_EXCEEDED("0040903", "Branch reached job limit."),
 
+    // 413
+    PAYLOAD_TOO_LARGE("0041301", "Payload too large."),
+
     // 415
     UNSUPPORTED_MEDIA_TYPE("0041501", "Unsupported media type."),
 

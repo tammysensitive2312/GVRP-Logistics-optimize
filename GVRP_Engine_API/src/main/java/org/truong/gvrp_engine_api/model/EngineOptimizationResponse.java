@@ -8,6 +8,6 @@ import lombok.*;
 @NoArgsConstructor
 public class EngineOptimizationResponse {
     private String externalJobId;
-    private String status;  // ACCEPTED, REJECTED, ERROR
+    private String status;  // ACCEPTED
     private String message;
 }
