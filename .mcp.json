@@ -10,7 +10,7 @@
         "--transport",
         "stdio",
         "--config",
-        "${CLAUDE_PROJECT_DIR:-.}/.opencode/dbhub.toml"
+        "${CLAUDE_PROJECT_DIR:-.}/tools/mcp/dbhub.toml"
       ]
     }
   }
