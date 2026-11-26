@@ -108,13 +108,13 @@ class OrderImportLimitsTest {
 
     @Test
     void defaultRowCeiling_refusesBeforeGeocodingAndDatabase() {
-        assertThatThrownBy(() -> service.createOrdersByImportRequest(textRequest(rows(10_001)), BRANCH))
+        assertThatThrownBy(() -> service.createOrdersByImportRequest(textRequest(rows(25_001)), BRANCH))
                 .isInstanceOf(DataInvalidException.class)
                 .satisfies(ex -> {
                     ErrorDetail detail = onlyDetail(ex);
                     assertThat(detail.getCode()).isEqualTo(ErrorCode.VALIDATION_ERROR.getCode());
                     assertThat(detail.getField()).isEqualTo(AppConstant.FILE);
-                    assertThat(detail.getMessage()).contains("10001").contains("10000");
+                    assertThat(detail.getMessage()).contains("25001").contains("25000");
                 });
 
         verifyNoInteractions(geocodingService);

@@ -25,7 +25,7 @@ class RouteEvaluationServiceTest {
             new DistanceMatrixEntry(Duration.ofSeconds(120), Distance.ofMeters(1000.0));
 
     private final RouteEvaluationService service =
-            new RouteEvaluationService(STUB_PROVIDER);
+            new RouteEvaluationService(STUB_PROVIDER, null);
 
     // ---------- fixtures ----------
 
@@ -192,7 +192,7 @@ class RouteEvaluationServiceTest {
             return new DistanceMatrixEntry(Duration.ofSeconds(120), Distance.ofMeters(1000.0));
         };
         RouteEvaluationService failingService =
-                new RouteEvaluationService(failing);
+                new RouteEvaluationService(failing, null);
 
         RouteEvaluateResponse response = failingService.evaluate(
                 request(route(vehicleType(100), order(1L, 10.0))));
@@ -241,7 +241,7 @@ class RouteEvaluationServiceTest {
             calls.incrementAndGet();
             return new DistanceMatrixEntry(Duration.ofSeconds(120), Distance.ofMeters(1000.0));
         };
-        RouteEvaluationService countingService = new RouteEvaluationService(counting);
+        RouteEvaluationService countingService = new RouteEvaluationService(counting, null);
 
         // 3 orders -> 4 consecutive legs (depot -> o1 -> o2 -> o3 -> depot),
         // not a 5x5 = 20-pair matrix. Guards the O(n^2) timeout regression.

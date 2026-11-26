@@ -5,6 +5,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.server.ResponseStatusException;
+import org.truong.gvrp_engine_api.config.EngineLimits;
 import org.truong.gvrp_engine_api.exception.GlobalExceptionHandler;
 import org.truong.gvrp_engine_api.model.RouteEvaluateRequest;
 import org.truong.gvrp_engine_api.model.RouteEvaluateResponse;
@@ -26,14 +27,14 @@ class RouteEvaluateControllerTest {
 
     private static MockMvc mockMvc(RouteEvaluationService service) {
         OptimizationController controller = new OptimizationController(
-                null, null, null, null, service);
+                null, null, null, null, service, null, EngineLimits.defaults());
         return MockMvcBuilders.standaloneSetup(controller)
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
     }
 
     private static RouteEvaluationService okService() {
-        return new RouteEvaluationService(null) {
+        return new RouteEvaluationService(null, null) {
             @Override
             public RouteEvaluateResponse evaluate(RouteEvaluateRequest request) {
                 return new RouteEvaluateResponse(true, List.of(), List.of(), null);
@@ -53,7 +54,7 @@ class RouteEvaluateControllerTest {
 
     @Test
     void evaluate_malformed_returns400() throws Exception {
-        RouteEvaluationService failing = new RouteEvaluationService(null) {
+        RouteEvaluationService failing = new RouteEvaluationService(null, null) {
             @Override
             public RouteEvaluateResponse evaluate(RouteEvaluateRequest request) {
                 throw new IllegalArgumentException("Routes list cannot be empty");
@@ -71,7 +72,7 @@ class RouteEvaluateControllerTest {
 
     @Test
     void evaluate_oversized_returns413() throws Exception {
-        RouteEvaluationService tooLarge = new RouteEvaluationService(null) {
+        RouteEvaluationService tooLarge = new RouteEvaluationService(null, null) {
             @Override
             public RouteEvaluateResponse evaluate(RouteEvaluateRequest request) {
                 throw new ResponseStatusException(PAYLOAD_TOO_LARGE, "Too many stops");
@@ -89,7 +90,7 @@ class RouteEvaluateControllerTest {
 
     @Test
     void evaluate_unexpected_returns500() throws Exception {
-        RouteEvaluationService broken = new RouteEvaluationService(null) {
+        RouteEvaluationService broken = new RouteEvaluationService(null, null) {
             @Override
             public RouteEvaluateResponse evaluate(RouteEvaluateRequest request) {
                 throw new RuntimeException("boom");

@@ -3,7 +3,6 @@ package org.truong.gvrp_engine_api.controller;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.truong.gvrp_engine_api.config.EngineLimits;
@@ -34,11 +33,14 @@ class OptimizationControllerLimitsTest {
     private final OptimizationService service = mock(OptimizationService.class);
 
     private OptimizationController controller(EngineLimits limits) {
-        OptimizationController controller = new OptimizationController(service, new JobRegistry(), null, null, null);
-        if (limits != null) {
-            ReflectionTestUtils.setField(controller, "engineLimits", limits);
-        }
-        return controller;
+        return new OptimizationController(
+                service,
+                new JobRegistry(),
+                null,
+                null,
+                null,
+                null,
+                limits != null ? limits : EngineLimits.defaults());
     }
 
     private static EngineOptimizationRequest request(int orders, int vehicles, Integer iterations, Integer threads) {
@@ -126,7 +128,7 @@ class OptimizationControllerLimitsTest {
 
     @Test
     void listsAboveTheirCeilingAreRefusedWith413() { // EN-T7
-        EngineLimits small = new EngineLimits(20000, 16, 3, 2, 500, 500, 7200);
+        EngineLimits small = new EngineLimits(20000, 16, 3, 2, 500, 500, 7200L);
         assertRejected(controller(small), request(4, 2, 2000, 4), 413);
         assertRejected(controller(small), request(3, 3, 2000, 4), 413);
         assertEquals(202, controller(small).optimize(request(3, 2, 2000, 4)).getStatusCode().value());
@@ -134,9 +136,9 @@ class OptimizationControllerLimitsTest {
 
     @Test
     void depotAndTypeCeilings() { // EN-T7
-        EngineLimits none = new EngineLimits(20000, 16, 10, 10, 0, 500, 7200);
+        EngineLimits none = new EngineLimits(20000, 16, 10, 10, 0, 500, 7200L);
         assertRejected(controller(none), request(1, 1, 2000, 4), 413);
-        EngineLimits noTypes = new EngineLimits(20000, 16, 10, 10, 500, 0, 7200);
+        EngineLimits noTypes = new EngineLimits(20000, 16, 10, 10, 500, 0, 7200L);
         assertRejected(controller(noTypes), request(1, 1, 2000, 4), 413);
     }
 }

@@ -2,7 +2,6 @@ package org.truong.gvrp_entry_api.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.truong.gvrp_entry_api.dto.request.CustomizeRoutesRequest;
@@ -83,14 +82,7 @@ public class RouteCustomizationService {
     private final GeometryMapper geometryMapper;
     private final SolutionMapper solutionMapper;
     private final EngineApiClient engineApiClient;
-
-    /**
-     * LEZ certification (LEZ-001 N6c). Field-injected and optional so the
-     * historical unit tests, which build this service without it, keep their
-     * exact behaviour; a null field disables the LEZ findings.
-     */
-    @Autowired(required = false)
-    private RouteComplianceService routeComplianceService;
+    private final RouteComplianceService routeComplianceService;
 
     @Transactional(readOnly = true)
     public RouteEvaluateResponseDTO evaluate(Long baseSolutionId, Long branchId,

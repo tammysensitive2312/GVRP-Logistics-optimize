@@ -2,6 +2,7 @@ package org.truong.gvrp_engine_api.service;
 
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.truong.gvrp_engine_api.config.EngineLimits;
 import org.truong.gvrp_engine_api.distance_matrix.*;
 import org.truong.gvrp_engine_api.job.JobRegistry;
 import org.truong.gvrp_engine_api.model.*;
@@ -82,7 +83,7 @@ class OptimizationServiceParetoTest {
                 });
 
         JobRegistry registry = new JobRegistry();
-        OptimizationService service = new OptimizationService(dms, null, registry);
+        OptimizationService service = new OptimizationService(dms, null, registry, null, EngineLimits.defaults());
         EngineOptimizationRequest request = request(1000, 10, 2, true);
         JobRegistry.JobHandle handle = registry.register(7L);
 
@@ -104,7 +105,7 @@ class OptimizationServiceParetoTest {
                 });
 
         JobRegistry registry = new JobRegistry();
-        OptimizationService service = new OptimizationService(dms, null, registry);
+        OptimizationService service = new OptimizationService(dms, null, registry, null, EngineLimits.defaults());
         EngineOptimizationRequest request = request(12, 3, 2, true);
         JobRegistry.JobHandle handle = registry.register(8L);
 
@@ -137,7 +138,7 @@ class OptimizationServiceParetoTest {
         });
 
         JobRegistry registry = new JobRegistry();
-        OptimizationService service = new OptimizationService(dms, null, registry);
+        OptimizationService service = new OptimizationService(dms, null, registry, null, EngineLimits.defaults());
         EngineOptimizationRequest request = request(12, 3, 2, true);
         JobRegistry.JobHandle handle = registry.register(11L);
 

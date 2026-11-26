@@ -14,6 +14,7 @@ import com.graphhopper.jsprit.core.problem.vehicle.VehicleTypeImpl;
 import com.graphhopper.jsprit.core.util.Solutions;
 import org.junit.jupiter.api.Test;
 import org.truong.gvrp_engine_api.distance_matrix.MatrixBasedTransportCosts;
+import org.truong.gvrp_engine_api.config.EngineLimits;
 import org.truong.gvrp_engine_api.job.JobRegistry;
 import org.truong.gvrp_engine_api.model.*;
 
@@ -103,7 +104,7 @@ class MaxDistanceRegressionTest {
                     .addJob(a).addJob(b).addJob(c).setRoutingCost(costs)
                     .setFleetSize(VehicleRoutingProblem.FleetSize.FINITE).build();
             var registry = new JobRegistry();
-            var service = new OptimizationService(null, null, registry);
+            var service = new OptimizationService(null, null, registry, null, EngineLimits.defaults());
             var config = new OptimizationConfig();
             config.setSeed(1L);
             config.setNumThreads(1);

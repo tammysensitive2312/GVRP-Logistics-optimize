@@ -35,18 +35,8 @@ public class OptimizationController {
     private final ResultSpool resultSpool;
     private final CallbackService callbackService;
     private final RouteEvaluationService routeEvaluationService;
-    /**
-     * Leg geometry (LEZ-001 E4). Field-injected so the historical constructor keeps
-     * its five arguments, which the existing controller tests build.
-     */
-    @org.springframework.beans.factory.annotation.Autowired(required = false)
-    private LegsService legsService;
-    /**
-     * Server-side work ceilings (SEC-ENGINE-001, design D4). Field-injected like
-     * {@link #legsService}; the defaults apply when absent.
-     */
-    @org.springframework.beans.factory.annotation.Autowired(required = false)
-    private EngineLimits engineLimits = new EngineLimits();
+    private final LegsService legsService;
+    private final EngineLimits engineLimits;
 
     @PostMapping
     public ResponseEntity<EngineOptimizationResponse> optimize(
@@ -104,16 +94,16 @@ public class OptimizationController {
      * Configured work out of range → 400; lists above their ceiling → 413. Values are never clamped.
      */
     private void validateLimits(EngineOptimizationRequest request) {
-        EngineLimits limits = engineLimits != null ? engineLimits : new EngineLimits();
+        EngineLimits limits = engineLimits != null ? engineLimits : EngineLimits.defaults();
         var config = request.getConfig();
         if (config != null) {
-            requireInRange("max_iterations", config.getMaxIterations(), limits.getMaxIterations());
-            requireInRange("num_threads", config.getNumThreads(), limits.getMaxThreads());
+            requireInRange("max_iterations", config.getMaxIterations(), limits.maxIterations());
+            requireInRange("num_threads", config.getNumThreads(), limits.maxThreads());
         }
-        requireAtMost("orders", request.getOrders().size(), limits.getMaxOrders());
-        requireAtMost("vehicles", request.getVehicles().size(), limits.getMaxVehicles());
-        requireAtMost("depots", request.getDepots().size(), limits.getMaxDepots());
-        requireAtMost("vehicle_types", request.getVehicleTypes().size(), limits.getMaxVehicleTypes());
+        requireAtMost("orders", request.getOrders().size(), limits.maxOrders());
+        requireAtMost("vehicles", request.getVehicles().size(), limits.maxVehicles());
+        requireAtMost("depots", request.getDepots().size(), limits.maxDepots());
+        requireAtMost("vehicle_types", request.getVehicleTypes().size(), limits.maxVehicleTypes());
     }
 
     private static void requireInRange(String field, Integer value, int max) {

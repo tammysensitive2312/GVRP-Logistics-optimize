@@ -1,6 +1,7 @@
 package org.truong.gvrp_engine_api.service;
 
 import org.junit.jupiter.api.Test;
+import org.truong.gvrp_engine_api.config.EngineLimits;
 import org.truong.gvrp_engine_api.distance_matrix.DenseCostMatrix;
 import org.truong.gvrp_engine_api.distance_matrix.DistanceMatrix;
 import org.truong.gvrp_engine_api.distance_matrix.DistanceMatrixService;
@@ -112,7 +113,7 @@ class LezSkillAssignmentTest {
         });
 
         JobRegistry registry = new JobRegistry();
-        OptimizationService service = new OptimizationService(dms, null, registry);
+        OptimizationService service = new OptimizationService(dms, null, registry, null, EngineLimits.defaults());
         return service.optimize(request, registry.register(21L));
     }
 

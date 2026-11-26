@@ -4,9 +4,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.truong.gvrp_engine_api.config.EngineLimits;
 import org.truong.gvrp_engine_api.distance_matrix.RoutePathProvider;
 import org.truong.gvrp_engine_api.exception.GlobalExceptionHandler;
 import org.truong.gvrp_engine_api.model.LegInstruction;
@@ -42,9 +42,8 @@ class LegsEndpointTest {
             List.of(new LegInstruction("Turn right", 250.0, 12_000L, 2, "Le Loi")));
 
     private static OptimizationController controller(RoutePathProvider provider) {
-        OptimizationController controller = new OptimizationController(null, null, null, null, null);
-        ReflectionTestUtils.setField(controller, "legsService", new LegsService(provider));
-        return controller;
+        return new OptimizationController(null, null, null, null, null,
+                new LegsService(provider), EngineLimits.defaults());
     }
 
     private static RouteLegsRequest request(String locale, double... latLonPairs) {

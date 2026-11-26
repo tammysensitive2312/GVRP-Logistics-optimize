@@ -4,12 +4,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.test.util.ReflectionTestUtils;
 import org.truong.gvrp_entry_api.dto.request.EngineCallbackRequest;
 import org.truong.gvrp_entry_api.entity.Branch;
 import org.truong.gvrp_entry_api.entity.Fleet;
@@ -89,7 +87,6 @@ class OptimizationCallbackServiceLezTest {
     @Mock private ZoneRuleTemplateRepository ruleTemplateRepository;
     @Mock private VehiclePermitRepository permitRepository;
 
-    @InjectMocks
     private OptimizationCallbackService service;
 
     private RouteComplianceService complianceService;
@@ -104,7 +101,21 @@ class OptimizationCallbackServiceLezTest {
                 new RestrictionCompiler(zoneRepository, zoneRuleRepository, ruleTemplateRepository,
                         permitRepository),
                 objectMapper);
-        ReflectionTestUtils.setField(service, "routeComplianceService", complianceService);
+        service = new OptimizationCallbackService(
+                jobRepository,
+                solutionRepository,
+                routeRepository,
+                routeStopRepository,
+                orderRepository,
+                vehicleRepository,
+                paretoCandidateRepository,
+                emailService,
+                objectMapper,
+                enginePlanMaterializer,
+                eventPublisher,
+                jobStatusUpdater,
+                orderStatusTransitionService,
+                complianceService);
 
         branch = Branch.builder().id(BRANCH).name("Branch 1").build();
         vehicle = Vehicle.builder().id(VEHICLE).fleet(Fleet.builder().branch(branch).build()).build();

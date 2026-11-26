@@ -23,7 +23,6 @@ import com.graphhopper.jsprit.core.util.Coordinate;
 import com.graphhopper.jsprit.core.util.Solutions;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.truong.gvrp_engine_api.distance_matrix.*;
 import org.truong.gvrp_engine_api.model.*;
@@ -88,21 +87,8 @@ public class OptimizationService {
     private final DistanceMatrixService distanceMatrixService;
     private final CallbackService callbackService;
     private final JobRegistry jobRegistry;
-
-    /**
-     * Fills {@code Stop.geometryToNext} on final routes (LEZ-001). Field-injected
-     * and optional because the existing unit tests construct this service with
-     * the historical three-argument constructor.
-     */
-    @Autowired(required = false)
-    private LegGeometryService legGeometryService;
-
-    /**
-     * Server-side work limits (SEC-ENGINE-001). Field-injected and optional for the same reason as
-     * {@link #legGeometryService}; the defaults apply when absent.
-     */
-    @Autowired(required = false)
-    private EngineLimits engineLimits;
+    private final LegGeometryService legGeometryService;
+    private final EngineLimits engineLimits;
 
     // ==================== ASYNC ENTRY POINT ====================
 
@@ -780,8 +766,8 @@ public class OptimizationService {
         // Stop on cancel or on the job-wide runtime cap (SEC-ENGINE-001, design D3 option B). The
         // request's timeoutSeconds stays advisory: it was never enforced, and enforcing it would
         // change every recorded result.
-        long maxRuntimeSeconds = (engineLimits != null ? engineLimits : new EngineLimits())
-                .getMaxRuntimeSeconds();
+        long maxRuntimeSeconds = (engineLimits != null ? engineLimits : EngineLimits.defaults())
+                .maxRuntimeSeconds();
         SolverDeadline deadline = new SolverDeadline(handle::isCancelRequested, handle.startedAt(),
                 Duration.ofSeconds(maxRuntimeSeconds), Clock.systemUTC());
         algorithm.setPrematureAlgorithmTermination(solution -> deadline.shouldStop());
