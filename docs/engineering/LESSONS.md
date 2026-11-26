@@ -9,7 +9,7 @@ Scope boundary:
   `docs/research/KNOWN_ISSUES.md`.
 * Security findings go to `docs/security/SECURITY_CHECKLIST.md`.
 * Facts true only on one machine (paths, JDK location, local ports in use) go
-  to the user-level agent file (`~/.config/opencode/AGENTS.md`), not here.
+  to the user-level agent file (e.g. `~/.claude/CLAUDE.md`, `~/.gemini/GEMINI.md`), not here.
 
 Rules (AGENTS.md section 16):
 
@@ -86,7 +86,7 @@ post-closure edits after `finish`.
 Date: 2026-10-16
 Source: work-items/SEC-ROLE-001/closure.md (friction), SEC-SESSION-001/closure.md
 Applies to: Claude → OpenCode delegation (`/delegate`)
-Status: ACTIVE
+Status: OBSOLETE — OpenCode harness removed, 2026-11-25
 Lesson: Claude may have file tools but no shell on the user's machine. Relaying
 individual commands through the user was the main friction in the first trial.
 The engineer runs Steps 0–4 including workflow commands; closing is one

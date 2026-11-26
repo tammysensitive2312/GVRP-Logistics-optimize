@@ -9,10 +9,11 @@ AGENTS.md, AGENTS.md wins and the conflict must be reported to the user.
 
 ## Session start
 
-Follow AGENTS.md §16: start by running `node tools/session-brief.mjs`
-(read-only). Claude may have no shell on the user's machine; then read the
-same sources directly (`work-items/*/run.json`, the security checklist,
-`docs/engineering/LESSONS.md`) or ask the engineer agent for the output.
+Follow AGENTS.md §16: for engineering, business feature, or research tasks,
+start by running `node tools/session-brief.mjs` (read-only; fast read-only
+questions may skip). Claude may have no shell on the user's machine; then read
+the same sources directly (`work-items/*/run.json`, the security checklist,
+`docs/engineering/LESSONS.md`).
 
 For research tasks, read `docs/research/PROJECT_STATE.md` before acting
 (AGENTS.md §7). Durable conclusions go into `docs/research/*` files, not
